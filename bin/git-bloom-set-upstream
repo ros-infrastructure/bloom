@@ -4,10 +4,10 @@ TOP=$(cd `dirname $0` ; /bin/pwd)
 . $TOP/bloom_util.sh
 
 LONG_USAGE=$(/bin/cat <<EOF
-usage: git catkin set-upstream <upstream-repo> <upstream-repo-type>
+usage: git bloom set-upstream <upstream-repo> <upstream-repo-type>
 
-Creates (if necessary) an orphan branch "catkin" in the current gbp repo and sets
-the upstream repo and type in the catkin.conf.  The rest of the catkin utilities
+Creates (if necessary) an orphan branch "bloom" in the current gbp repo and sets
+the upstream repo and type in the bloom.conf.  The rest of the bloom utilities
 pivot off of these values.
 
 EOF
@@ -45,22 +45,22 @@ then
     git commit -m "initial commit" --allow-empty
 fi
 
-if git show-branch origin/catkin
+if git show-branch origin/bloom
 then
-    status "Found remote branch catkin, checking out."
-    git checkout catkin
+    status "Found remote branch bloom, checking out."
+    git checkout bloom
 else
-    status "No catkin branch... initializing"
-    git symbolic-ref HEAD refs/heads/catkin
+    status "No bloom branch... initializing"
+    git symbolic-ref HEAD refs/heads/bloom
     rm -f .git/index
     git clean -fdx
-    git commit --allow-empty -m "Initial catkin branch"
+    git commit --allow-empty -m "Initial bloom branch"
 fi
 
-git config -f catkin.conf catkin.upstream "$UPSTREAM_REPO"
-git config -f catkin.conf catkin.upstreamtype "$UPSTREAM_TYPE"
+git config -f bloom.conf bloom.upstream "$UPSTREAM_REPO"
+git config -f bloom.conf bloom.upstreamtype "$UPSTREAM_TYPE"
 
-git add catkin.conf
-git commit -m "catkin branch update by git-catkin-set-upstream"
+git add bloom.conf
+git commit -m "bloom branch update by git-bloom-set-upstream"
 
 exit 0

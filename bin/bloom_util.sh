@@ -200,10 +200,10 @@ to_github_uri ()
         status "URI ${boldon}${!SHORTY}${boldoff} appears to already point to github."
         return 0
     fi
-    export TO_GITHUB_TRANSFORM=$(git config catkin.gbproot)
+    export TO_GITHUB_TRANSFORM=$(git config bloom.gbproot)
     DEFAULT='git@github.com:wg-debs/$ARG.git'
     if [ -z "$TO_GITHUB_TRANSFORM" ] ; then
-        /bin/echo "Your git doesn't have a 'catkin.gbproot' defined."
+        /bin/echo "Your git doesn't have a 'bloom.gbproot' defined."
         /bin/echo "using default of $DEFAULT"
         TO_GITHUB_TRANSFORM=$DEFAULT
     fi
@@ -312,7 +312,7 @@ repo_export ()
 
 
 _track_all(){
-    for x in catkin upstream
+    for x in bloom upstream
     do
 	if git branch | grep $x >/dev/null
 	then
