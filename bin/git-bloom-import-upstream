@@ -2,7 +2,7 @@
 
 WORK=$(pwd)
 TOP=$(cd `dirname $0` ; pwd)
-. $TOP/catkin_util.sh
+. $TOP/bloom_util.sh
 
 LONG_USAGE=$(/bin/echo <<EOF
 usage: git catkin-import-upstream

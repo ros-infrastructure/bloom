@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
 TOP=$(cd `dirname $0` ; /bin/pwd)
-. $TOP/catkin_util.sh
+. $TOP/bloom_util.sh
 
 LONG_USAGE=$(/bin/cat <<EOF
 usage: git catkin set-upstream <upstream-repo> <upstream-repo-type>
