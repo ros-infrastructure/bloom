@@ -24,13 +24,8 @@ initializeANSI()
 
 initializeANSI
 
-find_workspace() {
-    VAR=$1
-    pushd .
-
-}
-
-maybe_continue () {
+maybe_continue()
+{
     DEFAULT=$1
     shift
     PROMPT=$*
@@ -52,7 +47,7 @@ maybe_continue () {
     fi
 }
 
-get_version_component ()
+get_version_component()
 {
     REGEX='/.*\((\d+)\.(\d+)\.(\d+)\-(\d+)(\w+)\)/'
     NUM=$1
@@ -60,7 +55,7 @@ get_version_component ()
     VALUE=$(perl -e "\"$REV\" =~ $REGEX  && print \$$NUM")
 }
 
-get_upstream_version_component ()
+get_upstream_version_component()
 {
     REGEX='/upstream\/(\d+)\.(\d+)\.(\d+)/'
     NUM=$1
@@ -68,24 +63,28 @@ get_upstream_version_component ()
     VALUE=$(perl -e "\"$REV\" =~ $REGEX  && print \$$NUM")
 }
 
-bailout ()  {
+bailout()
+{
     /bin/echo "${redf}${boldon}$*${reset}"
     exit 1
 }
 
-checking ()  {
+checking()
+{
     /bin/echo "${yellowf}$*${reset}"
 }
 
-status () {
+status()
+{
     /bin/echo "$*"
 }
 
-okay ()  {
+okay()
+{
     /bin/echo "${greenf}$*${reset}"
 }
 
-read_stack_yaml ()
+read_stack_yaml()
 {
     FILENAME=$1
     if [ ! -e $FILENAME ] ; then
@@ -107,17 +106,7 @@ read_stack_yaml ()
     CHECKOUT_TAG=$(/bin/echo $TXT | perl -ne '/Release-Tag:\s+([^\s]+)/ && print $1')
 }
 
-prompt_continue()
-{
-    /bin/echo $*
-    status "Press enter to continue, ^C to abort..."
-    read MEH
-    if [ "$MEH" = 'q' -o "$MEH" = 'Q' ] ; then
-        bailout "exiting"
-    fi
-}
-
-assert_is_remote_git_repo ()
+assert_is_remote_git_repo()
 {
     REPO=$1
     checking "Verifying that $REPO is a git repo...${reset}"
@@ -130,26 +119,7 @@ assert_is_remote_git_repo ()
     fi
 }
 
-assert_is_gbp_repo ()
-{
-    REPO=$1
-    NDEBTAGS=$(git ls-remote --tags $REPO debian/\* | wc -l)
-    checking "Verifying that repo is a git-buildpackage repo"
-    if [ $NDEBTAGS -eq 0 ] ; then
-        bailout "Repo $REPO doesn't seem to have any tags with 'debian' in them"
-    else
-        okay "There are $NDEBTAGS debian tags in there. Good."
-    fi
-    NUPSTREAM=$(git ls-remote --tags $REPO upstream/\* | wc -l)
-    checking "Verifying that repo is a git-buildpackage repo"
-    if [ $NUPSTREAM -eq 0 ] ; then
-        bailout "Repo $REPO doesn't seem to have any tags with 'upstream' in them"
-    else
-        okay "There are $NUPSTREAM upstream tags.  Good."
-    fi
-}
-
-assert_is_not_gbp_repo ()
+assert_is_not_gbp_repo()
 {
     REPO=$1
     LSREMOT=$(git ls-remote --heads $REPO upstream\* | wc -l)
@@ -163,14 +133,14 @@ assert_is_not_gbp_repo ()
     fi
 }
 
-assert_nonempty ()
+assert_nonempty()
 {
     if [ -z "$1" ] ; then
         bailout "assertion, failed variable unset"
     fi
 }
 
-get_upstream_version_component ()
+get_upstream_version_component()
 {
     REGEX='/upstream\/(\d+)\.(\d+)\.(\d+)/'
     NUM=$1
@@ -179,7 +149,7 @@ get_upstream_version_component ()
 }
 
 
-extract_gbp_upstream_version ()
+extract_gbp_upstream_version()
 {
     LASTTAG=$1
     get_upstream_version_component 1 "$LASTTAG"
@@ -191,72 +161,7 @@ extract_gbp_upstream_version ()
     GBP_PATCH=$VALUE
 }
 
-to_github_uri ()
-{
-    SHORTY=$1
-    /bin/echo "Having a look at ${!SHORTY}... is it a github url?"
-
-    if [[ "${!SHORTY}" =~ ^git@github.com:wg-debs ]] ; then
-        status "URI ${boldon}${!SHORTY}${boldoff} appears to already point to github."
-        return 0
-    fi
-    export TO_GITHUB_TRANSFORM=$(git config bloom.gbproot)
-    DEFAULT='git@github.com:wg-debs/$ARG.git'
-    if [ -z "$TO_GITHUB_TRANSFORM" ] ; then
-        /bin/echo "Your git doesn't have a 'bloom.gbproot' defined."
-        /bin/echo "using default of $DEFAULT"
-        TO_GITHUB_TRANSFORM=$DEFAULT
-    fi
-    ARG=${!SHORTY}
-    TRANSFORMED=$(eval /bin/echo "$TO_GITHUB_TRANSFORM")
-    NEW=$(/bin/echo ${!TO_GITHUB_TRANSFORM})
-    status "Redirecting '${!SHORTY}' to ${boldon}$TRANSFORMED${boldoff}"
-    eval $SHORTY=$TRANSFORMED
-}
-
-check_git_version ()
-{
-    set -e
-    status "Checking git compatibility.  If things bail out your git is too old"
-    status "Version 1.7.4.1 is known to work"
-    mkdir -p $TMPDIR/gittest
-    pushd $TMPDIR/gittest
-    git init
-    V=compat_test_if_this_fails_your_git_is_too_old
-    touch $V
-    git add $V
-    git commit -m $V
-    git checkout --orphan $V
-    set +e
-    /bin/echo "Your ${boldon}$(git --version)${boldoff} appears to work."
-    popd
-    rm -rf $TMPDIR/gittest
-}
-
-github_api ()
-{
-    VARNAME=$1
-    shift
-    CALL=$1
-    shift
-    URLS=$(curl -s https://api.github.com/$CALL | $TOP/json-extract $*)
-    eval $VARNAME="\"$URLS\""
-}
-
-github_raw ()
-{
-    #set -x
-    VARNAME=$1
-    shift
-    CALL=$1
-    shift
-    TXT=$(curl -s https://raw.github.com/$CALL)
-    eval $VARNAME="\"$TXT\""
-}
-# check_git_version
-
-
-repo_clone ()
+repo_clone()
 {
     TYPE=$1
     URL=$2
@@ -277,8 +182,7 @@ repo_clone ()
     #set +x
 }
 
-
-repo_export ()
+repo_export()
 {
     #set -x
     TYPE=$1
@@ -310,16 +214,16 @@ repo_export ()
     esac
 }
 
-
-_track_all(){
+_track_all()
+{
     for x in bloom upstream
     do
-	if git branch | grep $x >/dev/null
-	then
-	    status "$(basename `pwd`) has branch $x."
-	elif git branch -r | grep origin/$x >/dev/null
-	then
-	    git branch --track $x origin/$x
-	fi
+        if git branch | grep $x >/dev/null
+        then
+            status "$(basename `pwd`) has branch $x."
+        elif git branch -r | grep origin/$x >/dev/null
+        then
+            git branch --track $x origin/$x
+        fi
     done
 }
