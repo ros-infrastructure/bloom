@@ -2,7 +2,7 @@ Release
 -------
 
 Catkin uses a git backend (essentially defined workflows built on
-git-buildpackage) to manage releases and packaging of projects.
+git-buildpackage) to manage releases and packaging of projects, called ``bloom``.
 Packaging, in the current context refers to the eventual creation of
 binary debians.
 
@@ -12,11 +12,11 @@ There are a few use cases of packaging that it should handle with varying amount
 #. native Catkin releases
 #. Existing debian packages
 
-For 1 and 2, the packages that will be created by catkin and the build
+For 1 and 2, the packages that will be created by bloom and the build
 farm will be installed to a :term:`FHS` that is determined by the
 ``CMAKE_INSTALL_PREFIX`` variable.  For ROS, this is
 ``/opt/ros/DISTRO`` where ``DISTRO`` is a ros distribution.  This is
-the assumed case if you are making releases with catkin.  However,
+the assumed case if you are making releases with bloom.  However,
 there should be no reason that debians can not be manufactured that
 install to ``/``.
 
@@ -28,5 +28,5 @@ that are very stable.
 .. toctree::
    :maxdepth: 1
 
-   catkin-release
+   bloom-release
    thirdparty

@@ -2,11 +2,11 @@
 ------------------
 
 3rd party releases required the finest grain control over the process, and are good to examine
-in order to understand the catkin packaging mechanisms.
+in order to understand the bloom packaging mechanisms.
 
-Make sure you have catkin in your bin. To enter an interactive shell with the right environment set::
+Make sure you have bloom in your bin. To enter an interactive shell with the right environment set::
 
-  /path/to/catkin/install/or/build/env.sh
+  /path/to/bloom/install/or/build/env.sh
 
 3rd party release example
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -27,10 +27,10 @@ Git import orig it::
 
 Create a cakin orphan branch::
 
-    git checkout --orphan catkin
+    git checkout --orphan bloom
     git rm -rf .
-    cat > catkin.conf <<EOF
-    [catkin]
+    cat > bloom.conf <<EOF
+    [bloom]
         upstream =  https://github.com/wg-debs/flann/tarball/upstream/1.7.1
         upstreamtype = manual
     EOF
@@ -58,8 +58,8 @@ Create a cakin orphan branch::
     Catkin-CopyrightType:  willowgarage
     Catkin-DebRulesType: cmake
     EOF
-    git add catkin.conf stack.yaml
-    git commit -m "Adding catkin.conf and stack.yaml"
+    git add bloom.conf stack.yaml
+    git commit -m "Adding bloom.conf and stack.yaml"
 
 If you want to pick a specific package name add a "Package" key to stack.yaml with the 
 debian package name you want as the output. The default value is "ros-%(rosdistro)s-%(Catkin-PackageName)s
@@ -81,16 +81,16 @@ http://raphaelhertzog.com/2010/11/18/4-tips-to-maintain-a-3-0-quilt-debian-sourc
     END
 
 
-Merge the catkin branch::
+Merge the bloom branch::
 
     git checkout master
-    git merge -X theirs catkin
+    git merge -X theirs bloom
 
-Verify that it actually overlayed catkin onto the master branch.
+Verify that it actually overlayed bloom onto the master branch.
 
 Now generate debian files::
 
-    catkin-generate-debian fuerte
+    bloom-generate-debian fuerte
 
 Test it locally::
 
@@ -136,20 +136,20 @@ Clone your :term:`GBP repository` (use a pushable URI for convenience)::
   
     % git branch -r
     origin/HEAD -> origin/master
-    origin/catkin
+    origin/bloom
     origin/master
     origin/upstream
   
   Since you are about to import upstream source, you can verify what
   will be imported::
   
-    % git show origin/catkin:catkin.conf
-    [catkin]
+    % git show origin/bloom:bloom.conf
+    [bloom]
             upstream = git@github.com:project/STACK.git
             upstreamtype = git
   
-  This is essentially catting the file ``catkin.conf`` from the
-  origin's ``catkin`` branch.
+  This is essentially catting the file ``bloom.conf`` from the
+  origin's ``bloom`` branch.
   
 
 Create a tarball of the new updated code
@@ -200,14 +200,14 @@ For some reason, I have to do ``git checkout master`` in the first place (to ini
 Update the stack.yaml
 +++++++++++++++++++++
 
-Switch to the catkin branch and modify whatever you want in there (at least the stack.yaml, but patches too maybe)::
+Switch to the bloom branch and modify whatever you want in there (at least the stack.yaml, but patches too maybe)::
 
-  git checkout catkin
+  git checkout bloom
 
 Patches
 +++++++
 
-If you have patches to commit, simply put the new file with the corresponding hierarchy in the catkin branch.
+If you have patches to commit, simply put the new file with the corresponding hierarchy in the bloom branch.
 No need to deal with the ``debian/patches`` folder.
 
 Create the debian packaging
@@ -216,13 +216,13 @@ Create the debian packaging
 Now you can relax and repeat the instructions from above.::
 
     git checkout master
-    git merge -X theirs catkin
+    git merge -X theirs bloom
 
-Verify that it actually overlayed catkin onto the master branch.
+Verify that it actually overlayed bloom onto the master branch.
 
 Now generate debian files::
 
-    catkin-generate-debian fuerte
+    bloom-generate-debian fuerte
 
 Test it locally::
 

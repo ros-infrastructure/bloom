@@ -3,11 +3,11 @@ Glossary
 
 .. glossary::
 
-   catkin.conf
-        A file that lives on a special orphan branch `catkin` in a
-        :term:`GBP repository` which contains catkin meta-information (like
+   bloom.conf
+        A file that lives on a special orphan branch `bloom` in a
+        :term:`GBP repository` which contains bloom meta-information (like
         upstream repository location and type) used when making releases with
-        catkin.
+        bloom.
 
    cmake current files directory
         A location used by catkin to store intermediate

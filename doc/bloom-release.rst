@@ -4,10 +4,10 @@ Creating debian packages for "Native" catkin projects
 Environment
 ===========
 
-First verify that catkin's ``git`` utilities are in your path::
+First verify that bloom's ``git`` utilities are in your path::
 
-    % which git-catkin
-    /home/catkin/test/src/catkin/bin/git-catkin
+    % which git-bloom-generate-debian
+    /home/catkin/test/src/bloom/bin/git-bloom-generate-debian
 
 If they aren't, source your :ref:`environment setup files <envfiles>` as appropriate.
 
@@ -66,21 +66,21 @@ Create a new GBP repository for your release
   cd STACK-release
   git init .
 
-We need to tell the catkin tools how to get our upstream code using
-the ``catkin-set-upstream`` command.  The command is called with the
+We need to tell the bloom tools how to get our upstream code using
+the ``bloom-set-upstream`` command.  The command is called with the
 upstream URL and VCS type (e.g. ``git``, ``svn``, ``hg``):
 
   ``git``::
 
-    git catkin-set-upstream git://github.com/someproject/STACK.git git
+    git bloom-set-upstream git://github.com/someproject/STACK.git git
 
   ``svn`` (set to the release tag URL)::
 
-    git catkin-set-upstream https://path/to/STACK/tag/STACK-0.1.1 svn
+    git bloom-set-upstream https://path/to/STACK/tag/STACK-0.1.1 svn
 
 You should now be on an orphaned branch in your repository, called
-``catkin``, which was created by the ``catkin-set-upstream`` command.
-If you look at ``catkin.conf``, you will see the upstream URL and VCS
+``bloom``, which was created by the ``bloom-set-upstream`` command.
+If you look at ``bloom.conf``, you will see the upstream URL and VCS
 type.
 
 Now, let's get back to ``master`` branch if everything looks
@@ -92,32 +92,32 @@ This isn't strictly necessary, but it helps show how things are
 configured. ``master`` is the main branch from which debian packages
 are created.
 
-Now that we have a catkin release repository, we can import from
-upstream using the ``catkin-import-upstream`` command::
+Now that we have a bloom release repository, we can import from
+upstream using the ``bloom-import-upstream`` command::
 
-  git catkin-import-upstream
+  git bloom-import-upstream
 
 This will export the upstream repository and import it in GBP
 repository.  The exact behavior depends on your version control tool:
 
-- ``git``: catkin will look for a tag in in your upstream repo that
+- ``git``: bloom will look for a tag in in your upstream repo that
   corresponds to the ``Version`` in the ``stack.yaml``.
 
-- ``svn``: catkin will export the upstream URL that you provided.
+- ``svn``: bloom will export the upstream URL that you provided.
   Please make sure this is the exact code corresponding to
   ``Version``.
 
 Creating the debian package
 +++++++++++++++++++++++++++
 
-We will now use the ``catkin-generate-debian`` command to create our
+We will now use the ``bloom-generate-debian`` command to create our
 debian package configuration files.  This command creates/updates a
 ``debian/`` folder.  It also creates git tags that are used for
 creating source and binary debians from your GBP repository.  We're
 going to run this command with the ``fuerte`` argument to setup a
 release for the ``fuerte`` distribution::
 
-  git catkin-generate-debian fuerte
+  git bloom-generate-debian fuerte
 
 To test the debians try checking out a tag and using ``git
 buildpackage`` to create a binary debian.  In our example, we released
@@ -174,20 +174,20 @@ Clone your :term:`GBP repository` (use a pushable URI for convenience)::
   
     % git branch -r
     origin/HEAD -> origin/master
-    origin/catkin
+    origin/bloom
     origin/master
     origin/upstream
   
   Since you are about to import upstream source, you can verify what
   will be imported::
   
-    % git show origin/catkin:catkin.conf
-    [catkin]
+    % git show origin/bloom:bloom.conf
+    [bloom]
             upstream = git@github.com:project/STACK.git
             upstreamtype = git
   
-  This is essentially catting the file ``catkin.conf`` from the
-  origin's ``catkin`` branch.
+  This is essentially catting the file ``bloom.conf`` from the
+  origin's ``bloom`` branch.
   
 
 SVN: update your upstream URL
@@ -195,28 +195,28 @@ SVN: update your upstream URL
 
 For ``svn`` it is important to update this to point to the new release tag::
 
-   git catkin-set-upstream https://path/to/STACK/tags/STACK-0.1.1 svn
+   git bloom-set-upstream https://path/to/STACK/tags/STACK-0.1.1 svn
 
 Import a new version of upstream
 ++++++++++++++++++++++++++++++++
 
 Now you need to resync with your upstream source using
-``catkin-import-upstream``.  The upstream source will be retrieved
+``bloom-import-upstream``.  The upstream source will be retrieved
 from source control and imported in to this :term:`GBP
 repository`. You'll be prompted to verify the upstream version::
 
-  git catkin-import-upstream
+  git bloom-import-upstream
 
 
 ..
 
   Example output::
 
-    % git catkin-import-upstream
-    STACK has branch catkin.
+    % git bloom-import-upstream
+    STACK has branch bloom.
     Branch upstream set up to track remote branch upstream from origin.
-    + git checkout catkin
-    Switched to branch 'catkin'
+    + git checkout bloom
+    Switched to branch 'bloom'
     upstream repo: git@github.com:project/STACK.git
     upstream type: git
     Verifying a couple of things about the upstream git repo
@@ -235,17 +235,17 @@ repository`. You'll be prompted to verify the upstream version::
 Create the debian packaging
 +++++++++++++++++++++++++++
 
-Now we need to generate git tags for our release using the ``catkin-generate-debian`` command, which is called with the name of the ROS distribution codename. In this example, we are going to release to the ``fuerte`` ROS distribution::
+Now we need to generate git tags for our release using the ``bloom-generate-debian`` command, which is called with the name of the ROS distribution codename. In this example, we are going to release to the ``fuerte`` ROS distribution::
 
-  git catkin-generate-debian fuerte
+  git bloom-generate-debian fuerte
 
 ..
 
   Example output::
 
-    % git catkin-generate-debian fuerte
-    catkin has branch catkin.
-    catkin has branch upstream.
+    % git bloom-generate-debian fuerte
+    bloom has branch bloom.
+    bloom has branch upstream.
     M    debian/changelog
     Already on 'master'
     Your branch is ahead of 'origin/master' by 2 commits.
