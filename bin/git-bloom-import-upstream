@@ -29,7 +29,6 @@ UPSTREAM_TYPE=$(git config -f bloom.conf bloom.upstreamtype)
 status "upstream repo: ${boldon}$UPSTREAM_REPO${reset}"
 status "upstream type: ${boldon}$UPSTREAM_TYPE${reset}"
 
-
 if [ $UPSTREAM_TYPE = "git" ] ; then
     status "Verifying a couple of things about the upstream git repo"
     assert_is_remote_git_repo $UPSTREAM_REPO

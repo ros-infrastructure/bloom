@@ -3,7 +3,6 @@ WORK=$(pwd)
 TOP=$(cd `dirname $0` ; pwd)
 . $TOP/bloom_util.sh
 
-
 _track_all
 
 if ! git show-ref refs/heads/bloom >/dev/null
@@ -27,8 +26,6 @@ else
     status "Upstream version is: ${boldon}$GBP_MAJOR.$GBP_MINOR.$GBP_PATCH${reset}"
 fi
 
-
 $TOP/bloom-generate-debian $@
-
 
 exit 0
