@@ -22,6 +22,10 @@ then
   then
     # Rename old catkin refs to bloom
     git branch -m catkin bloom
+    # rename the file
+    git checkout bloom
+    git mv catkin.conf bloom.conf
+    sed -i 's/\[catkin\]/\[bloom\]/g' bloom.conf
   else
     bailout "This does not appear to be a bloom release repo. Please initialize it first using:
     git bloom-set-upstream <UPSTREAM_VCS_URL> <VCS_TYPE>"
