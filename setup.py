@@ -19,7 +19,7 @@ setup(name='bloom',
       download_url = 'http://pr.willowgarage.com/downloads/bloom/',
       keywords = ['ROS'],
       classifiers = ['Programming Language :: Python',
-                     'Programming Language :: Bash',
+                     'Programming Language :: Unix Shell',
                      'License :: OSI Approved :: BSD License'],
       description = 'A tool for facilitating gitbuildpackage releases',
       long_description = '''\
