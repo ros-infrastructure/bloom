@@ -84,7 +84,7 @@ okay()
     /bin/echo "${greenf}$*${reset}"
 }
 
-read_stack_yaml()
+read_stack_xml()
 {
     FILENAME=$1
     if [ ! -e $FILENAME ] ; then
@@ -93,7 +93,7 @@ read_stack_yaml()
 
     TXT=$(cat $FILENAME)
 
-    VERSION_FULL=$(/bin/echo $TXT | perl -ne '/Version:\s+([^\s]+)/ && print $1')
+    VERSION_FULL=$(/bin/echo $TXT | perl -ne '/<version[^>]*>([^<]*)<\/version>/ && print $1')
     get_version_component 1 $VERSION_FULL
     VERSION_MAJOR=$VALUE
     get_version_component 2 $VERSION_FULL
@@ -101,9 +101,7 @@ read_stack_yaml()
     get_version_component 3 $VERSION_FULL
     VERSION_PATCH=$VALUE
 
-    PACKAGE_NAME=$(/bin/echo $TXT | perl -ne '/Catkin-ProjectName:\s+([^\s]+)/ && print $1')
-
-    CHECKOUT_TAG=$(/bin/echo $TXT | perl -ne '/Release-Tag:\s+([^\s]+)/ && print $1')
+    PACKAGE_NAME=$(/bin/echo $TXT | perl -ne '/<name>([^<]*)<\/name>/ && print $1'
 }
 
 assert_is_remote_git_repo()

@@ -15,9 +15,9 @@ from pprint import pprint
 from subprocess import Popen, CalledProcessError
 
 try:
-    import yaml
+    import rospkg.stack
 except ImportError:
-    print("Please install python-yaml", file=sys.stderr)
+    print("Please pip install -U rospkg", file=sys.stderr)
     sys.exit(1)
 
 try:
@@ -25,8 +25,6 @@ try:
 except ImportError:
     print("Please pip install -U rosdep", file=sys.stderr)
     sys.exit(2)
-
-name_key = 'Catkin-ProjectName'
 
 '''
 The Debian binary package file names conform to the following convention:
@@ -97,57 +95,46 @@ def make_working(working_dir):
 def sanitize_package_name(name):
     return name.replace('_', '-')
 
-def parse_stack_yaml(args):
-    yaml_path = os.path.join('.', 'stack.yaml')
-    stack_yaml = yaml.load(open(yaml_path))
+def parse_stack_xml(args):
+    xml_path = os.path.join('.', 'stack.xml')
+    stack = rospkg.stack(xml_path)
 
-    if 'Catkin-ChangelogType' not in stack_yaml:
-        stack_yaml['Catkin-ChangelogType'] = ''
+    data = {}
+    data['Name'] = stack.name
+    data['Version'] = stack.version
+    data['Catkin-ChangelogType'] = ''
+    data['Catkin-DebRulesType'] = stack.build_type
+    data['Catkin-CopyrightType'] = stack.copyright
 
-    stack_yaml['DebianInc'] = args.debian_inc
-    if 'Package' in stack_yaml:
-        if stack_yaml['Package'] != sanitize_package_name(stack_yaml['Package']):
-            print ("Package: tag is not a valid debian package string. Aka, no underscores!")
-            sys.exit(1)
+    data['DebianInc'] = args.debian_inc
+    if args.rosdistro == 'backports':
+        data['Package'] = sanitize_package_name("%s"%(stack.name))
     else:
-        if args.rosdistro == 'backports':
-            stack_yaml['Package'] = sanitize_package_name("%s"%(stack_yaml[name_key]))
-        else:
-            stack_yaml['Package'] = sanitize_package_name("ros-%s-%s"%(args.rosdistro, stack_yaml[name_key]))
+        data['Package'] = sanitize_package_name("ros-%s-%s"%(args.rosdistro, stack.name))
 
-    stack_yaml['ROS_DISTRO'] = args.rosdistro
+    data['ROS_DISTRO'] = args.rosdistro
 
     #allow override of these values
     if args.rosdistro == 'backports':
-        stack_yaml['INSTALL_PREFIX'] = args.install_prefix if args.install_prefix != None else '/usr'
+        data['INSTALL_PREFIX'] = args.install_prefix if args.install_prefix != None else '/usr'
     else:
-        stack_yaml['INSTALL_PREFIX'] = args.install_prefix if args.install_prefix != None else '/opt/ros/%s' % args.rosdistro
-    
+        data['INSTALL_PREFIX'] = args.install_prefix if args.install_prefix != None else '/opt/ros/%s' % args.rosdistro
 
-    deps = stack_yaml['Depends']
-    if type(deps) == str:
-        stack_yaml['Depends'] = set([x.strip() for x in deps.split(',') if len(x.strip()) > 0])
-    else:
-        stack_yaml['Depends'] = set(deps)
+    data['Depends'] = set(stack.depends)
 
     maintainer_form = 'maintainer name <maintainer email>'
-    if 'Maintainer' not in stack_yaml:
-        print('You must have a Maintainer key in your stack.yaml.' +
-              '\nValue should be:\n' +
-              '\t%s'%maintainer_form, file=sys.stderr)
-        sys.exit(1)
-    if not re.search(r'.* <.+>', stack_yaml['Maintainer']):
-        print('You have a malformed Maintainer field in your stack.yaml.' +
-              '\nYours is:\n\t%s' % stack_yaml['Maintainer'] +
+    if not re.search(r'.* <.+>', stack.maintainer):
+        print('You have a malformed Maintainer field in your stack.xml.' +
+              '\nYours is:\n\t%s' % stack.maintainer +
               '\nIt should be of the form:\n' +
               '\t%s'%maintainer_form, file=sys.stderr)
         sys.exit(1)
-    return stack_yaml
+    return data
 
 def template_dir():
     return os.path.join(os.path.dirname(__file__), 'em')
 
-def expand(fname, stack_yaml, source_dir, dest_dir, filetype=''):
+def expand(fname, stack_data, source_dir, dest_dir, filetype=''):
     #where normal templates live
     templatedir = template_dir()
     #the default input template file path
@@ -164,7 +151,7 @@ def expand(fname, stack_yaml, source_dir, dest_dir, filetype=''):
     print("Reading %s template from %s" % (fname, ifilename))
     file_em = open(ifilename).read()
 
-    s = em.expand(file_em, **stack_yaml)
+    s = em.expand(file_em, **stack_data)
 
     ofilename = os.path.join(dest_dir, fname)
     ofilestr = open(ofilename, "w")
@@ -173,10 +160,10 @@ def expand(fname, stack_yaml, source_dir, dest_dir, filetype=''):
     if fname == 'rules':
         os.chmod(ofilename, 0755)
 
-def find_deps(stack_yaml, apt_installer, rosdistro, debian_distro):
+def find_deps(stack_data, apt_installer, rosdistro, debian_distro):
     os_name = 'ubuntu'
 
-    deps = stack_yaml['Depends']
+    deps = stack_data['Depends']
 
     rosdep_view = rosdep2.catkin_support.get_catkin_view(rosdistro, os_name, debian_distro)
     
@@ -185,17 +172,17 @@ def find_deps(stack_yaml, apt_installer, rosdistro, debian_distro):
         resolved = rosdep2.catkin_support.resolve_for_apt(dep, rosdep_view, apt_installer, os_name, debian_distro)
         ubuntu_deps.update(resolved)
 
-    print(stack_yaml[name_key], "has the following dependencies for ubuntu %s" % debian_distro)
+    print(stack_data['Name'], "has the following dependencies for ubuntu %s" % debian_distro)
     pprint(ubuntu_deps)
     return list(ubuntu_deps)
 
-def generate_deb(stack_yaml, repo_path, stamp, rosdistro, debian_distro):
+def generate_deb(stack_data, repo_path, stamp, rosdistro, debian_distro):
     apt_installer = rosdep2.catkin_support.get_apt_installer()
-    depends = find_deps(stack_yaml, apt_installer, rosdistro, debian_distro)
-    stack_yaml['DebDepends'] = depends
-    stack_yaml['Distribution'] = debian_distro
-    stack_yaml['Date'] = stamp.strftime('%a, %d %b %Y %T %z')
-    stack_yaml['YYYY'] = stamp.strftime('%Y')
+    depends = find_deps(stack_data, apt_installer, rosdistro, debian_distro)
+    stack_data['DebDepends'] = depends
+    stack_data['Distribution'] = debian_distro
+    stack_data['Date'] = stamp.strftime('%a, %d %b %Y %T %z')
+    stack_data['YYYY'] = stamp.strftime('%Y')
 
     source_dir = '.' # repo_path
     print("source_dir=%s"%source_dir)
@@ -204,10 +191,10 @@ def generate_deb(stack_yaml, repo_path, stamp, rosdistro, debian_distro):
         os.makedirs(dest_dir)
 
     #create control file:
-    expand('control', stack_yaml, source_dir, dest_dir)
-    expand('changelog', stack_yaml, source_dir, dest_dir, filetype=stack_yaml['Catkin-ChangelogType'])
-    expand('rules', stack_yaml, source_dir, dest_dir, filetype=stack_yaml['Catkin-DebRulesType'])
-    expand('copyright', stack_yaml, source_dir, dest_dir, filetype=stack_yaml['Catkin-CopyrightType'])
+    expand('control', stack_data, source_dir, dest_dir)
+    expand('changelog', stack_data, source_dir, dest_dir, filetype=stack_data['Catkin-ChangelogType'])
+    expand('rules', stack_data, source_dir, dest_dir, filetype=stack_data['Catkin-DebRulesType'])
+    expand('copyright', stack_data, source_dir, dest_dir, filetype=stack_data['Catkin-CopyrightType'])
 
     #compat to quiet warnings, 7 .. lucid
     ofilename = os.path.join(dest_dir, 'compat')
@@ -223,15 +210,15 @@ def generate_deb(stack_yaml, repo_path, stamp, rosdistro, debian_distro):
     print("3.0 (quilt)", file=ofilestr)
     ofilestr.close()
 
-def commit_debian(stack_yaml, repo_path):
+def commit_debian(stack_data, repo_path):
     call(repo_path, ['git', 'add', 'debian'])
     message = '''+ Creating debian mods for distro: %(Distribution)s, rosdistro: %(ROS_DISTRO)s, upstream version: %(Version)s
-''' % stack_yaml
+''' % stack_data
     call(repo_path, ['git', 'commit', '-m', message])
 
 def main(args):
     stamp = datetime.datetime.now(dateutil.tz.tzlocal())
-    stack_yaml = parse_stack_yaml(args)
+    stack_data = parse_stack_xml(args)
     make_working(args.working)
 
     debian_distros = args.distros
@@ -241,11 +228,11 @@ def main(args):
     tags = []
     try:
         for debian_distro in debian_distros:
-            generate_deb(stack_yaml, ".", stamp, args.rosdistro, debian_distro)
-            commit_debian(stack_yaml, ".")
-            tag_name = 'debian/%(Package)s_%(Version)s_%(Distribution)s' % stack_yaml
+            generate_deb(stack_data, ".", stamp, args.rosdistro, debian_distro)
+            commit_debian(stack_data, ".")
+            tag_name = 'debian/%(Package)s_%(Version)s_%(Distribution)s' % stack_data
             print("tag: %s" % tag_name)
-            call(".", ['git', 'tag', '-f', tag_name, '-m', 'Debian release %(Version)s' % stack_yaml])
+            call(".", ['git', 'tag', '-f', tag_name, '-m', 'Debian release %(Version)s' % stack_data])
     except rosdep2.catkin_support.ValidationFailed as e:
         print(e.args[0], file=sys.stderr)
         sys.exit(1)

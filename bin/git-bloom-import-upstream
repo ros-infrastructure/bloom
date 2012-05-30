@@ -37,13 +37,13 @@ fi
 
 UPSTREAM_CLONE=$TMPDIR/upstream
 repo_clone $UPSTREAM_TYPE $UPSTREAM_REPO $UPSTREAM_CLONE
-if [ -f $UPSTREAM_CLONE/stack.yaml ]; then
-    read_stack_yaml $UPSTREAM_CLONE/stack.yaml
+if [ -f $UPSTREAM_CLONE/stack.xml ]; then
+    read_stack_xml $UPSTREAM_CLONE/stack.xml
 else
-    read_stack_yaml stack.yaml
+    read_stack_xml stack.xml
 fi
 
-status "Upstream's stack.yaml has version ${boldon}$VERSION_FULL${reset}"
+status "Upstream's stack.xml has version ${boldon}$VERSION_FULL${reset}"
 status "Upstream's name is ${boldon}$PACKAGE_NAME${reset}"
 
 PACKAGE_NAME=$(/bin/echo $PACKAGE_NAME | tr _ -)
@@ -52,13 +52,8 @@ TARBALL=$TARBALL_PREFIX.tar.gz
 (
     # set -x
     cd $UPSTREAM_CLONE
-    if [ -n "$CHECKOUT_TAG" ]; then
-      status "Cloning tag $CHECKOUT_TAG"
-      repo_export $UPSTREAM_TYPE $UPSTREAM_CLONE $TARBALL_PREFIX $CHECKOUT_TAG
-    else
-      status "Cloning tag $VERSION_FULL"
-      repo_export $UPSTREAM_TYPE $UPSTREAM_CLONE $TARBALL_PREFIX $VERSION_FULL
-    fi
+    status "Cloning tag $VERSION_FULL"
+    repo_export $UPSTREAM_TYPE $UPSTREAM_CLONE $TARBALL_PREFIX $VERSION_FULL
     exit
 )
 
