@@ -18,9 +18,18 @@ _track_all
 
 if ! git show-ref refs/heads/bloom >/dev/null
 then
+  if git show-ref refs/heads/catkin >/dev/null
+  then
+    # Rename old catkin refs to bloom
+    git branch -m catkin bloom
+    # rename the file
+    git checkout bloom
+    git mv catkin.conf bloom.conf
+    sed -i 's/\[catkin\]/\[bloom\]/g' bloom.conf
+  else
     bailout "This does not appear to be a bloom release repo. Please initialize it first using:
-
-   git bloom-set-upstream <UPSTREAM_VCS_URL> <VCS_TYPE>"
+    git bloom-set-upstream <UPSTREAM_VCS_URL> <VCS_TYPE>"
+  fi
 fi
 
 (set -x && git checkout bloom)

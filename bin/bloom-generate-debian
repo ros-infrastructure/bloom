@@ -7,6 +7,7 @@ import em
 import os
 import re
 import optparse
+import rospkg
 import subprocess
 import sys
 import tarfile
@@ -102,6 +103,8 @@ def parse_stack_xml(args):
     data = {}
     data['Name'] = stack.name
     data['Version'] = stack.version
+    data['Description'] = stack.description
+
     data['Catkin-ChangelogType'] = ''
     data['Catkin-DebRulesType'] = stack.build_type
     data['Catkin-CopyrightType'] = stack.copyright
@@ -129,6 +132,30 @@ def parse_stack_xml(args):
               '\nIt should be of the form:\n' +
               '\t%s'%maintainer_form, file=sys.stderr)
         sys.exit(1)
+
+    # Go over the different subfolders and find all the packages
+    package_descriptions = {}
+    import string    
+    markup_remover = re.compile(r'<.*?>')
+
+    for root, dirs, files in os.walk('.'):
+        for file_name in files:
+            if file_name == 'manifest.xml':
+	   	# parse the manifest, in case it is not valid
+                manifest = rospkg.parse_manifest_file(root, file_name)
+                # remove markups
+                description = markup_remover.sub('', manifest.description)
+                description = re.sub('\s+', ' ', description)
+                description = description.strip()
+                package_descriptions[os.path.split(root)[-1]] = description
+    # Enhance the description with the list of packages in the stack
+    if package_descriptions:
+        if data['Description']:
+            data['Description'] += '\n .'
+        data['Description'] += '\n This stack contains the packages:'
+        for name, description in package_descriptions.items():
+            data['Description'] += '\n * %s: %s' % (name, description)
+
     return data
 
 def template_dir():
