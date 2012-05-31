@@ -104,10 +104,12 @@ def parse_stack_xml(args):
     data['Name'] = stack.name
     data['Version'] = stack.version
     data['Description'] = stack.description
+    data['Homepage'] = stack.url
 
     data['Catkin-ChangelogType'] = ''
     data['Catkin-DebRulesType'] = stack.build_type
-    data['Catkin-CopyrightType'] = stack.copyright
+    #data['Catkin-CopyrightType'] = stack.copyright
+    data['copyright'] = stack.copyright
 
     data['DebianInc'] = args.debian_inc
     if args.rosdistro == 'backports':
@@ -123,7 +125,7 @@ def parse_stack_xml(args):
     else:
         data['INSTALL_PREFIX'] = args.install_prefix if args.install_prefix != None else '/opt/ros/%s' % args.rosdistro
 
-    data['Depends'] = set(stack.depends)
+    data['Depends'] = set([ depend.name for depend in stack.depends])
 
     maintainers = []
     for m in stack.maintainers:
@@ -221,7 +223,11 @@ def generate_deb(stack_data, repo_path, stamp, rosdistro, debian_distro):
     expand('control', stack_data, source_dir, dest_dir)
     expand('changelog', stack_data, source_dir, dest_dir, filetype=stack_data['Catkin-ChangelogType'])
     expand('rules', stack_data, source_dir, dest_dir, filetype=stack_data['Catkin-DebRulesType'])
-    expand('copyright', stack_data, source_dir, dest_dir, filetype=stack_data['Catkin-CopyrightType'])
+    #expand('copyright', stack_data, source_dir, dest_dir, filetype=stack_data['Catkin-CopyrightType'])
+    ofilename = os.path.join(dest_dir, 'copyright')
+    ofilestr = open(ofilename, "w")
+    print(stack_data['copyright'], file=ofilestr)
+    ofilestr.close()
 
     #compat to quiet warnings, 7 .. lucid
     ofilename = os.path.join(dest_dir, 'compat')
