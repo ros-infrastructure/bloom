@@ -101,7 +101,7 @@ read_stack_xml()
     get_version_component 3 $VERSION_FULL
     VERSION_PATCH=$VALUE
 
-    PACKAGE_NAME=$(/bin/echo $TXT | perl -ne '/<name>([^<]*)<\/name>/ && print $1'
+    PACKAGE_NAME=$(/bin/echo $TXT | perl -ne '/<name>([^<]*)<\/name>/ && print $1')
 }
 
 assert_is_remote_git_repo()
