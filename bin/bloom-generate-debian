@@ -98,7 +98,7 @@ def sanitize_package_name(name):
 
 def parse_stack_xml(args):
     xml_path = os.path.join('.', 'stack.xml')
-    stack = rospkg.stack(xml_path)
+    stack = rospkg.stack.parse_stack_file(xml_path)
 
     data = {}
     data['Name'] = stack.name
@@ -125,13 +125,13 @@ def parse_stack_xml(args):
 
     data['Depends'] = set(stack.depends)
 
-    maintainer_form = 'maintainer name <maintainer email>'
-    if not re.search(r'.* <.+>', stack.maintainer):
-        print('You have a malformed Maintainer field in your stack.xml.' +
-              '\nYours is:\n\t%s' % stack.maintainer +
-              '\nIt should be of the form:\n' +
-              '\t%s'%maintainer_form, file=sys.stderr)
-        sys.exit(1)
+    maintainers = []
+    for m in stack.maintainers:
+        maintainer = m.name
+        if m.email:
+            maintainer += ' <%s>' % m.email
+        maintainers.append(maintainer)
+    data['Maintainer'] = ', '.join(maintainers)
 
     # Go over the different subfolders and find all the packages
     package_descriptions = {}
