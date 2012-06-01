@@ -96,6 +96,13 @@ def make_working(working_dir):
 def sanitize_package_name(name):
     return name.replace('_', '-')
 
+def debianize_string(value):
+    markup_remover = re.compile(r'<.*?>')
+    value = markup_remover.sub('', value)
+    value = re.sub('\s+', ' ', value)
+    value = value.strip()
+    return value
+
 def parse_stack_xml(args):
     xml_path = os.path.join('.', 'stack.xml')
     stack = rospkg.stack.parse_stack_file(xml_path)
@@ -103,7 +110,7 @@ def parse_stack_xml(args):
     data = {}
     data['Name'] = stack.name
     data['Version'] = stack.version
-    data['Description'] = stack.description
+    data['Description'] = debianize_string(stack.description)
     data['Homepage'] = stack.url
 
     data['Catkin-ChangelogType'] = ''
@@ -137,8 +144,6 @@ def parse_stack_xml(args):
 
     # Go over the different subfolders and find all the packages
     package_descriptions = {}
-    import string    
-    markup_remover = re.compile(r'<.*?>')
 
     # search for manifest in current folder and direct subfolders
     for dir_name in [ '.' ] + os.listdir('.'):
@@ -152,17 +157,15 @@ def parse_stack_xml(args):
                 # remove markups
                 if manifest.description is None:
                     manifest.description = ''
-                description = markup_remover.sub('', manifest.description)
-                description = re.sub('\s+', ' ', description)
-                description = description.strip()
+                description = debianize_string(manifest.description)
                 if dir_name == '.':
                     dir_name = stack.name
                 package_descriptions[dir_name] = description
     # Enhance the description with the list of packages in the stack
     if package_descriptions:
         if data['Description']:
-            data['Description'] += '\n .'
-        data['Description'] += '\n This stack contains the packages:'
+            data['Description'] += '\n .\n'
+        data['Description'] += ' This stack contains the packages:'
         for name, description in package_descriptions.items():
             data['Description'] += '\n * %s: %s' % (name, description)
 
