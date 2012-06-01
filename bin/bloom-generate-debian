@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 
+import copy
 import datetime
 import dateutil.tz
 import em
@@ -132,7 +133,8 @@ def parse_stack_xml(args):
     else:
         data['INSTALL_PREFIX'] = args.install_prefix if args.install_prefix != None else '/opt/ros/%s' % args.rosdistro
 
-    data['Depends'] = set([ depend.name for depend in stack.depends])
+    data['Depends'] = set([ d.name for d in stack.depends])
+    data['BuildDepends'] = set([ d.name for d in stack.build_depends])
 
     maintainers = []
     for m in stack.maintainers:
@@ -204,22 +206,32 @@ def find_deps(stack_data, apt_installer, rosdistro, debian_distro):
     os_name = 'ubuntu'
 
     deps = stack_data['Depends']
+    build_deps = stack_data['BuildDepends']
 
     rosdep_view = rosdep2.catkin_support.get_catkin_view(rosdistro, os_name, debian_distro)
-    
+
     ubuntu_deps = set()
     for dep in deps:
         resolved = rosdep2.catkin_support.resolve_for_apt(dep, rosdep_view, apt_installer, os_name, debian_distro)
         ubuntu_deps.update(resolved)
 
+    ubuntu_build_deps = set()
+    for dep in build_deps:
+        resolved = rosdep2.catkin_support.resolve_for_apt(dep, rosdep_view, apt_installer, os_name, debian_distro)
+        ubuntu_build_deps.update(resolved)
+
     print(stack_data['Name'], "has the following dependencies for ubuntu %s" % debian_distro)
+    print('Run dependencies:')
     pprint(ubuntu_deps)
-    return list(ubuntu_deps)
+    print('Build dependencies:')
+    pprint(ubuntu_build_deps)
+    return list(ubuntu_deps), list(ubuntu_build_deps)
 
 def generate_deb(stack_data, repo_path, stamp, rosdistro, debian_distro):
     apt_installer = rosdep2.catkin_support.get_apt_installer()
-    depends = find_deps(stack_data, apt_installer, rosdistro, debian_distro)
-    stack_data['DebDepends'] = depends
+    depends, build_depends = find_deps(stack_data, apt_installer, rosdistro, debian_distro)
+    stack_data['Depends'] = depends
+    stack_data['BuildDepends'] = build_depends
     stack_data['Distribution'] = debian_distro
     stack_data['Date'] = stamp.strftime('%a, %d %b %Y %T %z')
     stack_data['YYYY'] = stamp.strftime('%Y')
@@ -272,11 +284,12 @@ def main(args):
     tags = []
     try:
         for debian_distro in debian_distros:
-            generate_deb(stack_data, ".", stamp, args.rosdistro, debian_distro)
-            commit_debian(stack_data, ".")
-            tag_name = 'debian/%(Package)s_%(Version)s_%(Distribution)s' % stack_data
+            data = copy.copy(stack_data)
+            generate_deb(data, ".", stamp, args.rosdistro, debian_distro)
+            commit_debian(data, ".")
+            tag_name = 'debian/%(Package)s_%(Version)s_%(Distribution)s' % data
             print("tag: %s" % tag_name)
-            call(".", ['git', 'tag', '-f', tag_name, '-m', 'Debian release %(Version)s' % stack_data])
+            call(".", ['git', 'tag', '-f', tag_name, '-m', 'Debian release %(Version)s' % data])
     except rosdep2.catkin_support.ValidationFailed as e:
         print(e.args[0], file=sys.stderr)
         sys.exit(1)
