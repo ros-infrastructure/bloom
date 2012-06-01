@@ -140,16 +140,24 @@ def parse_stack_xml(args):
     import string    
     markup_remover = re.compile(r'<.*?>')
 
-    for root, dirs, files in os.walk('.'):
-        for file_name in files:
+    # search for manifest in current folder and direct subfolders
+    for dir_name in [ '.' ] + os.listdir('.'):
+        if not os.path.isdir(dir_name):
+            continue
+        dir_path = os.path.join('.', dir_name)
+        for file_name in os.listdir(dir_path):
             if file_name == 'manifest.xml':
-	   	# parse the manifest, in case it is not valid
-                manifest = rospkg.parse_manifest_file(root, file_name)
+                # parse the manifest, in case it is not valid
+                manifest = rospkg.parse_manifest_file(dir_path, file_name)
                 # remove markups
+                if manifest.description is None:
+                    manifest.description = ''
                 description = markup_remover.sub('', manifest.description)
                 description = re.sub('\s+', ' ', description)
                 description = description.strip()
-                package_descriptions[os.path.split(root)[-1]] = description
+                if dir_name == '.':
+                    dir_name = stack.name
+                package_descriptions[dir_name] = description
     # Enhance the description with the list of packages in the stack
     if package_descriptions:
         if data['Description']:
