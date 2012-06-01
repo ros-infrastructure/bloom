@@ -74,9 +74,13 @@ upstream URL and VCS type (e.g. ``git``, ``svn``, ``hg``):
 
     git bloom-set-upstream git://github.com/someproject/STACK.git git
 
+  ``hg``::
+
+    git bloom-set-upstream https://path/to/STACK hg
+
   ``svn`` (set to the release tag URL)::
 
-    git bloom-set-upstream https://path/to/STACK/tag/STACK-0.1.1 svn
+    git bloom-set-upstream https://path/to/STACK/tags/STACK-0.1.1 svn
 
 You should now be on an orphaned branch in your repository, called
 ``bloom``, which was created by the ``bloom-set-upstream`` command.
