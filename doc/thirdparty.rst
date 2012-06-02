@@ -25,7 +25,7 @@ Git import orig it::
     cd flann
     git import-orig ../flann-1.7.1.tar.gz
 
-Create a cakin orphan branch::
+Create a bloom orphan branch::
 
     git checkout --orphan bloom
     git rm -rf .
