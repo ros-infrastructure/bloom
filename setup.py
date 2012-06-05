@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name='bloom',
-      version='0.0.5',
+      version='0.0.6',
       packages=['bloom'],
       package_dir = {'bloom': 'src/bloom'},
       scripts = ['bin/bloom-generate-debian',
