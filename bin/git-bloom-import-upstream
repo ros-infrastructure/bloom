@@ -26,6 +26,7 @@ then
     git checkout bloom
     git mv catkin.conf bloom.conf
     sed -i 's/\[catkin\]/\[bloom\]/g' bloom.conf
+    git commit bloom.conf -m "rename catkin.conf to bloom.conf"
   else
     bailout "This does not appear to be a bloom release repo. Please initialize it first using:
     git bloom-set-upstream <UPSTREAM_VCS_URL> <VCS_TYPE>"
