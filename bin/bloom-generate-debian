@@ -44,11 +44,11 @@ def parse_options():
     parser = argparse.ArgumentParser(description='Creates/updates a gpb from a catkin project.')
     parser.add_argument('--working', help='A scratch build path. Default: %(default)s',
                         default='.tmp/%u/' % os.getpid())
-    parser.add_argument('--debian-revison', dest='debian_revision',
+    parser.add_argument('--debian-revision', dest='debian_revision',
                         help='Bump the changelog debian number.'+
                         ' Please enter a monotonically increasing number from the last upload.',
                         default=0)
-    parser.add_argument('--install_prefix', dest='install_prefix',
+    parser.add_argument('--install-prefix', dest='install_prefix',
                         help='The full prefix ...')
     parser.add_argument('--distros', nargs='+',
                         help='A list of debian distros. Default: %(default)s',
