@@ -3,15 +3,15 @@
 from distutils.core import setup
 
 setup(name='bloom',
-      version='0.0.5',
+      version='0.0.8',
       packages=['bloom'],
-      package_dir = {'bloom': ''},
+      package_dir = {'bloom': 'src/bloom'},
       scripts = ['bin/bloom-generate-debian',
                  'bin/bloom_util.sh',
                  'bin/git-bloom-generate-debian',
                  'bin/git-bloom-import-upstream',
                  'bin/git-bloom-set-upstream'],
-      package_data = {'bloom': ['bin/em/*.em']},
+      package_data = {'bloom': ['resources/em/*.em']},
       install_requires = ['empy', 'pyyaml', 'argparse'],
       author = 'Tully Foote', 
       author_email = 'tfoote@willowgarage.com',

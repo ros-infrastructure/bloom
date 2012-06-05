@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 
+import pkg_resources
 import copy
 import datetime
 import dateutil.tz
@@ -12,6 +13,7 @@ import rospkg
 import subprocess
 import sys
 import tarfile
+
 
 from pprint import pprint
 from subprocess import Popen, CalledProcessError
@@ -42,7 +44,7 @@ def parse_options():
     parser = argparse.ArgumentParser(description='Creates/updates a gpb from a catkin project.')
     parser.add_argument('--working', help='A scratch build path. Default: %(default)s',
                         default='.tmp/%u/' % os.getpid())
-    parser.add_argument('--debian_inc', dest='debian_inc',
+    parser.add_argument('--debian-revison', dest='debian_revision',
                         help='Bump the changelog debian number.'+
                         ' Please enter a monotonically increasing number from the last upload.',
                         default=0)
@@ -119,7 +121,7 @@ def parse_stack_xml(args):
     #data['Catkin-CopyrightType'] = stack.copyright
     data['copyright'] = stack.copyright
 
-    data['DebianInc'] = args.debian_inc
+    data['DebianInc'] = args.debian_revision
     if args.rosdistro == 'backports':
         data['Package'] = sanitize_package_name("%s"%(stack.name))
     else:
@@ -173,32 +175,24 @@ def parse_stack_xml(args):
 
     return data
 
-def template_dir():
-    return os.path.join(os.path.dirname(__file__), 'em')
+def expand(fname, stack_data, dest_dir, filetype=''):
 
-def expand(fname, stack_data, source_dir, dest_dir, filetype=''):
-    #where normal templates live
-    templatedir = template_dir()
-    #the default input template file path
-    ifilename = os.path.join(templatedir, fname)
-
+    # insert template type
     if filetype != '':
-        if filetype.startswith('+'):
-            ifilename = os.path.join(source_dir, filetype[1:])
-        else:
-            ifilename += ('.' + filetype + '.em')
+        ifilename = (fname + '.' + filetype + '.em')
     else:
-        ifilename += '.em'
+        ifilename = fname + '.em'
+    
+    ifilename = os.path.join('resources', 'em', ifilename)
 
     print("Reading %s template from %s" % (fname, ifilename))
-    file_em = open(ifilename).read()
+    file_em = pkg_resources.resource_string('bloom', ifilename)
 
     s = em.expand(file_em, **stack_data)
 
     ofilename = os.path.join(dest_dir, fname)
-    ofilestr = open(ofilename, "w")
-    print(s, file=ofilestr)
-    ofilestr.close()
+    with open(ofilename, "w") as ofilestr:
+        print(s, file=ofilestr)
     if fname == 'rules':
         os.chmod(ofilename, 0755)
 
@@ -243,10 +237,10 @@ def generate_deb(stack_data, repo_path, stamp, rosdistro, debian_distro):
         os.makedirs(dest_dir)
 
     #create control file:
-    expand('control', stack_data, source_dir, dest_dir)
-    expand('changelog', stack_data, source_dir, dest_dir, filetype=stack_data['Catkin-ChangelogType'])
-    expand('rules', stack_data, source_dir, dest_dir, filetype=stack_data['Catkin-DebRulesType'])
-    #expand('copyright', stack_data, source_dir, dest_dir, filetype=stack_data['Catkin-CopyrightType'])
+    expand('control', stack_data, dest_dir)
+    expand('changelog', stack_data, dest_dir, filetype=stack_data['Catkin-ChangelogType'])
+    expand('rules', stack_data, dest_dir, filetype=stack_data['Catkin-DebRulesType'])
+    #expand('copyright', stack_data, dest_dir, filetype=stack_data['Catkin-CopyrightType'])
     ofilename = os.path.join(dest_dir, 'copyright')
     ofilestr = open(ofilename, "w")
     print(stack_data['copyright'], file=ofilestr)
