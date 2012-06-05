@@ -44,7 +44,7 @@ def parse_options():
     parser = argparse.ArgumentParser(description='Creates/updates a gpb from a catkin project.')
     parser.add_argument('--working', help='A scratch build path. Default: %(default)s',
                         default='.tmp/%u/' % os.getpid())
-    parser.add_argument('--debian_inc', dest='debian_inc',
+    parser.add_argument('--debian-revison', dest='debian_revision',
                         help='Bump the changelog debian number.'+
                         ' Please enter a monotonically increasing number from the last upload.',
                         default=0)
@@ -121,7 +121,7 @@ def parse_stack_xml(args):
     #data['Catkin-CopyrightType'] = stack.copyright
     data['copyright'] = stack.copyright
 
-    data['DebianInc'] = args.debian_inc
+    data['DebianInc'] = args.debian_revision
     if args.rosdistro == 'backports':
         data['Package'] = sanitize_package_name("%s"%(stack.name))
     else:
