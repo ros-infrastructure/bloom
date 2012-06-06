@@ -118,6 +118,7 @@ def parse_stack_xml(args):
 
     data['Catkin-ChangelogType'] = ''
     data['Catkin-DebRulesType'] = stack.build_type
+    data['Catkin-DebRulesFile'] = stack.build_type_file
     #data['Catkin-CopyrightType'] = stack.copyright
     data['copyright'] = stack.copyright
 
@@ -178,15 +179,18 @@ def parse_stack_xml(args):
 def expand(fname, stack_data, dest_dir, filetype=''):
 
     # insert template type
-    if filetype != '':
-        ifilename = (fname + '.' + filetype + '.em')
+    if fname == 'rules' and stack_data['Catkin-DebRulesType'] == 'custom':
+        f = open(os.path.join(dest_dir, '..', stack_data['Catkin-DebRulesFile']))
+        file_em = f.read()
+        f.close()
     else:
-        ifilename = fname + '.em'
-    
-    ifilename = os.path.join('resources', 'em', ifilename)
-
-    print("Reading %s template from %s" % (fname, ifilename))
-    file_em = pkg_resources.resource_string('bloom', ifilename)
+        if filetype != '':
+            ifilename = (fname + '.' + filetype + '.em')
+        else:
+            ifilename = fname + '.em'
+        ifilename = os.path.join('resources', 'em', ifilename)
+        print("Reading %s template from %s" % (fname, ifilename))
+        file_em = pkg_resources.resource_string('bloom', ifilename)
 
     s = em.expand(file_em, **stack_data)
 
