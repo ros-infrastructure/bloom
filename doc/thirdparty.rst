@@ -34,7 +34,7 @@ Create a bloom orphan branch::
         upstream =  https://github.com/wg-debs/flann/tarball/upstream/1.7.1
         upstreamtype = manual
     EOF
-    cat > stack.yaml <<EOF
+    cat > stack.xml <<EOF
     Catkin-ProjectName: flann
     Version: 1.7.1
 
@@ -58,10 +58,10 @@ Create a bloom orphan branch::
     Catkin-CopyrightType:  willowgarage
     Catkin-DebRulesType: cmake
     EOF
-    git add bloom.conf stack.yaml
-    git commit -m "Adding bloom.conf and stack.yaml"
+    git add bloom.conf stack.xml
+    git commit -m "Adding bloom.conf and stack.xml"
 
-If you want to pick a specific package name add a "Package" key to stack.yaml with the 
+If you want to pick a specific package name add a "Package" key to stack.xml with the 
 debian package name you want as the output. The default value is "ros-%(rosdistro)s-%(Catkin-PackageName)s
 Also supported is INSTALL_PREFIX as a key, to set the install prefix.  Default: /opt/ros/%(rosdistro)s/
 
@@ -197,10 +197,10 @@ For some reason, I have to do ``git checkout master`` in the first place (to ini
     Merge made by recursive.
     gbp:info: Successfully imported version 2.3.9 of /home/vrabaud/opencv.tgz
 
-Update the stack.yaml
-+++++++++++++++++++++
+Update the stack.xml
+++++++++++++++++++++
 
-Switch to the bloom branch and modify whatever you want in there (at least the stack.yaml, but patches too maybe)::
+Switch to the bloom branch and modify whatever you want in there (at least the stack.xml, but patches too maybe)::
 
   git checkout bloom
 
