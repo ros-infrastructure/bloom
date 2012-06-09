@@ -6,7 +6,7 @@
 export DH_VERBOSE=1
 export DH_OPTIONS=-v --buildsystem=cmake
 export CMAKE_PREFIX_PATH=@(INSTALL_PREFIX)
-
+export PKG_CONFIG_PATH=@(INSTALL_PREFIX)/lib/pkgconfig
 
 %:
 	dh  $@@

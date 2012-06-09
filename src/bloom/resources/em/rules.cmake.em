@@ -14,6 +14,7 @@ export DH_OPTIONS=-v --buildsystem=cmake
 #  https://code.ros.org/trac/ros/ticket/2977
 #  https://code.ros.org/trac/ros/ticket/3842
 export LDFLAGS=
+export PKG_CONFIG_PATH=@(INSTALL_PREFIX)/lib/pkgconfig
 
 %:
 	dh  $@@
