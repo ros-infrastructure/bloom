@@ -37,7 +37,7 @@ show_sphinx = False
 master_doc = 'index'
 
 # General information about the project.
-project = u'catkin'
+project = u'bloom'
 gitcmd = 'git log -n1 --pretty=format:%cD'.split()
 
 lastmod = subprocess.Popen(gitcmd, stdout=subprocess.PIPE).communicate()[0]

@@ -1,5 +1,8 @@
 #!/bin/bash -e
 
+# get the current git branch
+CURRENT_BRANCH=$(echo $(git branch | grep "*" | sed "s/* //"))
+
 WORK=$(pwd)
 TOP=$(cd `dirname $0` ; pwd)
 . $TOP/bloom_util.sh
@@ -115,6 +118,9 @@ fi
     git push --all
     git push --tags
 )
+
+# checkout the original git branch
+git checkout $CURRENT_BRANCH
 
 status "I'm happy.  You should be too."
 

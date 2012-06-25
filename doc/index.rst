@@ -8,6 +8,7 @@ binary debians.
 
 There are a few use cases of packaging that it should handle with varying amounts manual labor.
 
+
 #. 3rdparty releases
 #. native Catkin releases
 #. Existing debian packages
@@ -30,3 +31,11 @@ that are very stable.
 
    bloom-release
    thirdparty
+
+
+Installation
+============
+
+Bloom is available through pypi.python.org
+
+    sudo pip install -U bloom
