@@ -35,28 +35,31 @@ Create a bloom orphan branch::
         upstreamtype = manual
     EOF
     cat > stack.xml <<EOF
-    Catkin-ProjectName: flann
-    Version: 1.7.1
-
-    Depends: cmake,
-        libtbb-dev,
-        libgtest-dev,
-        python,
-        python-numpy,
-        boost
-
-    Description: FLANN is a library for performing fast approximate nearest
+    <stack>
+      <name>flann</name>
+      <version>1.7.1</name>
+      <description>FLANN is a library for performing fast approximate nearest
         neighbor searches in high dimensional spaces. It contains a collection
         of algorithms we found to work best for nearest neighbor search and
         a system for automatically choosing the best algorithm and
-        optimum parameters depending on the dataset.
+        optimum parameters depending on the dataset.</description>
+      <author email="mariusm@cs.ubc.ca">Marius Muja</author>
+      <maintainer email="erublee@willowgarage.com">Ethan Rublee</maintainer>
+      <license>BSD</license>
+      <copyright>Marius Muja</copyright>
+      <url>http://people.cs.ubc.ca/~mariusm/index.php/FLANN/FLANN</url>
 
-    Author: Marius Muja <mariusm@cs.ubc.ca>
-    Maintainer: Ethan Rublee <erublee@willowgarage.com>
-    Homepage: http://people.cs.ubc.ca/~mariusm/index.php/FLANN/FLANN
-
-    Catkin-CopyrightType:  willowgarage
-    Catkin-DebRulesType: cmake
+      <build_depends>cmake</build_depends>
+      <build_depends>libtbb-dev</build_depends>
+      <build_depends>libgtest-dev</build_depends>
+      <build_depends>python</build_depends>
+      <build_depends>python-numpy</build_depends>
+      <build_depends>boost</build_depends>
+      <depends>libtbb-dev</depends>
+      <depends>python</depends>
+      <depends>python-numpy</depends>
+      <depends>boost</depends>
+    </stack>
     EOF
     git add bloom.conf stack.xml
     git commit -m "Adding bloom.conf and stack.xml"
