@@ -37,7 +37,7 @@ Create a bloom orphan branch::
     cat > stack.xml <<EOF
     <stack>
       <name>flann</name>
-      <version>1.7.1</name>
+      <version>1.7.1</version>
       <description>FLANN is a library for performing fast approximate nearest
         neighbor searches in high dimensional spaces. It contains a collection
         of algorithms we found to work best for nearest neighbor search and
