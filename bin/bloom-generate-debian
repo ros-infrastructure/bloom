@@ -210,12 +210,12 @@ def find_deps(stack_data, apt_installer, rosdistro, debian_distro):
 
     ubuntu_deps = set()
     for dep in deps:
-        resolved = rosdep2.catkin_support.resolve_for_apt(dep, rosdep_view, apt_installer, os_name, debian_distro)
+        resolved = rosdep2.catkin_support.resolve_for_os(dep, rosdep_view, apt_installer, os_name, debian_distro)
         ubuntu_deps.update(resolved)
 
     ubuntu_build_deps = set()
     for dep in build_deps:
-        resolved = rosdep2.catkin_support.resolve_for_apt(dep, rosdep_view, apt_installer, os_name, debian_distro)
+        resolved = rosdep2.catkin_support.resolve_for_os(dep, rosdep_view, apt_installer, os_name, debian_distro)
         ubuntu_build_deps.update(resolved)
 
     print(stack_data['Name'], "has the following dependencies for ubuntu %s" % debian_distro)
@@ -226,7 +226,7 @@ def find_deps(stack_data, apt_installer, rosdistro, debian_distro):
     return list(ubuntu_deps), list(ubuntu_build_deps)
 
 def generate_deb(stack_data, repo_path, stamp, rosdistro, debian_distro):
-    apt_installer = rosdep2.catkin_support.get_apt_installer()
+    apt_installer = rosdep2.catkin_support.get_installer(APT_INSTALLER)
     depends, build_depends = find_deps(stack_data, apt_installer, rosdistro, debian_distro)
     stack_data['Depends'] = depends
     stack_data['BuildDepends'] = build_depends
