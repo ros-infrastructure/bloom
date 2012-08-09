@@ -21,13 +21,13 @@ from subprocess import Popen, CalledProcessError
 try:
     import rospkg.stack
 except ImportError:
-    print("Please pip install -U rospkg", file=sys.stderr)
+    print("rospkg was not detected, please install it.", file=sys.stderr)
     sys.exit(1)
 
 try:
     import rosdep2.catkin_support
 except ImportError:
-    print("Please pip install -U rosdep", file=sys.stderr)
+    print("rosdep was not detected, please install it.", file=sys.stderr)
     sys.exit(2)
 
 '''
