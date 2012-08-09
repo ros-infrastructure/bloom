@@ -3,9 +3,9 @@
 from distutils.core import setup
 
 setup(name='bloom',
-      version='0.0.11',
+      version='0.0.12',
       packages=['bloom'],
-      package_dir = {'bloom': 'src/bloom'},
+      package_dir = {'': 'src'},
       scripts = ['bin/bloom-generate-debian',
                  'bin/bloom_util.sh',
                  'bin/git-bloom-generate-debian',
