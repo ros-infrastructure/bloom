@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
-from distutils.core import setup
+from setuptools import setup
 
 setup(name='bloom',
       version='0.0.12',
       packages=['bloom'],
-      package_dir = {'': 'src'},
+      package_dir = {'bloom': 'src'},
       scripts = ['bin/bloom-generate-debian',
                  'bin/bloom_util.sh',
                  'bin/git-bloom-generate-debian',
