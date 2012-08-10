@@ -3,9 +3,9 @@
 from setuptools import setup
 
 setup(name='bloom',
-      version='0.0.13',
+      version='0.0.15',
       packages=['bloom'],
-      package_dir = {'bloom': 'src'},
+      package_dir = {'': 'src'},
       scripts = ['bin/bloom-generate-debian',
                  'bin/bloom_util.sh',
                  'bin/git-bloom-generate-debian',
