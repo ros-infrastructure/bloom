@@ -39,8 +39,10 @@ fi
 (set -x && git checkout bloom)
 UPSTREAM_REPO=$(git config -f bloom.conf bloom.upstream)
 UPSTREAM_TYPE=$(git config -f bloom.conf bloom.upstreamtype)
+UPSTREAM_BRANCH=$(git config -f bloom.conf bloom.upstreambranch)
 status "upstream repo: ${boldon}$UPSTREAM_REPO${reset}"
 status "upstream type: ${boldon}$UPSTREAM_TYPE${reset}"
+status "upstream branch: ${boldon}$UPSTREAM_BRANCH${reset}"
 
 if [ $UPSTREAM_TYPE = "git" ] ; then
     status "Verifying a couple of things about the upstream git repo"
@@ -49,7 +51,7 @@ if [ $UPSTREAM_TYPE = "git" ] ; then
 fi
 
 UPSTREAM_CLONE=$TMPDIR/upstream
-repo_clone $UPSTREAM_TYPE $UPSTREAM_REPO $UPSTREAM_CLONE
+repo_clone $UPSTREAM_TYPE $UPSTREAM_REPO $UPSTREAM_CLONE $UPSTREAM_BRANCH
 if [ -f $UPSTREAM_CLONE/stack.xml ]; then
     read_stack_xml $UPSTREAM_CLONE/stack.xml
 else

@@ -164,15 +164,29 @@ repo_clone()
     TYPE=$1
     URL=$2
     DEST=$3
+    BRANCH=$4
+
+
 
     #set -x
     mkdir -p $DEST
     case $TYPE in
         git)
-            git clone $URL $DEST
+            if [ $BRANCH ]; then
+                git clone $URL $DEST -b $BRANCH
+            else
+                git clone $URL $DEST
+            fi
+
             ;;
         hg)
-            hg clone -q $URL $DEST
+            if [ $BRANCH ]; then
+                echo hg clone -q $URL $DEST -r $BRANCH
+                hg clone -q $URL $DEST -r $BRANCH
+            else
+                hg clone -q $URL $DEST
+            fi
+
             ;;
         svn)
             svn co -q $URL $DEST
@@ -203,6 +217,7 @@ repo_export()
             popd
             ;;
         hg)
+            echo hg archive -t tar -r $VERSION $BASEPATH.tar
             hg archive -t tar -r $VERSION $BASEPATH.tar
             gzip $BASEPATH.tar
             ;;
