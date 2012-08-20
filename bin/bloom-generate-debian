@@ -8,13 +8,8 @@ import dateutil.tz
 import em
 import os
 import re
-import optparse
 import rospkg
-import subprocess
 import sys
-import tarfile
-
-
 
 from pprint import pprint
 from subprocess import Popen, CalledProcessError
@@ -41,13 +36,15 @@ Version is the upstream version
 DebianInc is some number that is incremental for package maintenance
 Changes is a bulleted list of changes.
 '''
+
+
 def parse_options():
     import argparse
     parser = argparse.ArgumentParser(description='Creates/updates a gpb from a catkin project.')
     parser.add_argument('--working', help='A scratch build path. Default: %(default)s',
                         default='.tmp/%u/' % os.getpid())
     parser.add_argument('--debian-revision', dest='debian_revision',
-                        help='Bump the changelog debian number.'+
+                        help='Bump the changelog debian number.' +
                         ' Please enter a monotonically increasing number from the last upload.',
                         default=0)
     parser.add_argument('--install-prefix', dest='install_prefix',
@@ -60,6 +57,7 @@ def parse_options():
     parser.add_argument('rosdistro', help='The ros distro. electric, fuerte, groovy')
     return parser.parse_args()
 
+
 def call(working_dir, command, pipe=None):
     print('+ cd %s && ' % working_dir + ' '.join(command))
     process = Popen(command, stdout=pipe, stderr=pipe, cwd=working_dir)
@@ -70,8 +68,10 @@ def call(working_dir, command, pipe=None):
     if pipe:
         return output
 
+
 def check_local_repo_exists(repo_path):
     return os.path.exists(os.path.join(repo_path, '.git'))
+
 
 def update_repo(working_dir, repo_path, repo_uri, first_release):
     if check_local_repo_exists(repo_path):
@@ -82,7 +82,7 @@ def update_repo(working_dir, repo_path, repo_uri, first_release):
         call(repo_path, ['git', 'init'])
         call(repo_path, ['git', 'remote', 'add', 'origin', repo_uri])
     else:
-        command = ('gbp-clone', repo_uri);
+        command = ('gbp-clone', repo_uri)
         call(working_dir, command)
 
     command = ['git', 'config', '--add', 'remote.origin.push', '+refs/heads/*:refs/heads/*']
@@ -91,15 +91,19 @@ def update_repo(working_dir, repo_path, repo_uri, first_release):
     command = ['git', 'config', '--add', 'remote.origin.push', '+refs/tags/*:refs/tags/*']
     call(repo_path, command)
 
+
 def generate_rosdep_db(working_dir, rosdistro):
     return rosdep2.catkin_support.get_catkin_view(rosdistro)
+
 
 def make_working(working_dir):
     if not os.path.exists(working_dir):
         os.makedirs(working_dir)
 
+
 def sanitize_package_name(name):
     return name.replace('_', '-')
+
 
 def debianize_string(value):
     markup_remover = re.compile(r'<.*?>')
@@ -107,6 +111,7 @@ def debianize_string(value):
     value = re.sub('\s+', ' ', value)
     value = value.strip()
     return value
+
 
 def parse_stack_xml(args):
     xml_path = os.path.join('.', 'stack.xml')
@@ -126,9 +131,9 @@ def parse_stack_xml(args):
 
     data['DebianInc'] = args.debian_revision
     if args.rosdistro == 'backports':
-        data['Package'] = sanitize_package_name("%s"%(stack.name))
+        data['Package'] = sanitize_package_name("%s" % (stack.name))
     else:
-        data['Package'] = sanitize_package_name("ros-%s-%s"%(args.rosdistro, stack.name))
+        data['Package'] = sanitize_package_name("ros-%s-%s" % (args.rosdistro, stack.name))
 
     data['ROS_DISTRO'] = args.rosdistro
 
@@ -138,8 +143,8 @@ def parse_stack_xml(args):
     else:
         data['INSTALL_PREFIX'] = args.install_prefix if args.install_prefix != None else '/opt/ros/%s' % args.rosdistro
 
-    data['Depends'] = set([ d.name for d in stack.depends])
-    data['BuildDepends'] = set([ d.name for d in stack.build_depends])
+    data['Depends'] = set([d.name for d in stack.depends])
+    data['BuildDepends'] = set([d.name for d in stack.build_depends])
 
     maintainers = []
     for m in stack.maintainers:
@@ -153,7 +158,7 @@ def parse_stack_xml(args):
     package_descriptions = {}
 
     # search for manifest in current folder and direct subfolders
-    for dir_name in [ '.' ] + os.listdir('.'):
+    for dir_name in ['.'] + os.listdir('.'):
         if not os.path.isdir(dir_name):
             continue
         dir_path = os.path.join('.', dir_name)
@@ -178,8 +183,8 @@ def parse_stack_xml(args):
 
     return data
 
-def expand(fname, stack_data, dest_dir, filetype=''):
 
+def expand(fname, stack_data, dest_dir, filetype=''):
     # insert template type
     if fname == 'rules' and stack_data['Catkin-DebRulesType'] == 'custom':
         f = open(os.path.join(dest_dir, '..', stack_data['Catkin-DebRulesFile']))
@@ -201,6 +206,7 @@ def expand(fname, stack_data, dest_dir, filetype=''):
         print(s, file=ofilestr)
     if fname == 'rules':
         os.chmod(ofilename, 0755)
+
 
 def find_deps(stack_data, apt_installer, rosdistro, debian_distro):
     os_name = 'ubuntu'
@@ -227,6 +233,7 @@ def find_deps(stack_data, apt_installer, rosdistro, debian_distro):
     pprint(ubuntu_build_deps)
     return list(ubuntu_deps), list(ubuntu_build_deps)
 
+
 def generate_deb(stack_data, repo_path, stamp, rosdistro, debian_distro):
     apt_installer = rosdep2.catkin_support.get_installer(APT_INSTALLER)
     depends, build_depends = find_deps(stack_data, apt_installer, rosdistro, debian_distro)
@@ -236,8 +243,8 @@ def generate_deb(stack_data, repo_path, stamp, rosdistro, debian_distro):
     stack_data['Date'] = stamp.strftime('%a, %d %b %Y %T %z')
     stack_data['YYYY'] = stamp.strftime('%Y')
 
-    source_dir = '.' # repo_path
-    print("source_dir=%s"%source_dir)
+    source_dir = '.'  # repo_path
+    print("source_dir=%s" % source_dir)
     dest_dir = os.path.join(source_dir, 'debian')
     if not os.path.exists(dest_dir):
         os.makedirs(dest_dir)
@@ -266,11 +273,13 @@ def generate_deb(stack_data, repo_path, stamp, rosdistro, debian_distro):
     print("3.0 (quilt)", file=ofilestr)
     ofilestr.close()
 
+
 def commit_debian(stack_data, repo_path):
     call(repo_path, ['git', 'add', 'debian'])
     message = '''+ Creating debian mods for distro: %(Distribution)s, rosdistro: %(ROS_DISTRO)s, upstream version: %(Version)s
 ''' % stack_data
     call(repo_path, ['git', 'commit', '-m', message])
+
 
 def main(args):
     stamp = datetime.datetime.now(dateutil.tz.tzlocal())
@@ -281,7 +290,6 @@ def main(args):
     if not debian_distros:
         debian_distros = rosdep2.catkin_support.get_ubuntu_targets(args.rosdistro)
 
-    tags = []
     try:
         for debian_distro in debian_distros:
             data = copy.copy(stack_data)
@@ -294,9 +302,8 @@ def main(args):
         print(e.args[0], file=sys.stderr)
         sys.exit(1)
     except (KeyError, rosdep2.ResolutionError) as e:
-        if isinstance(e, KeyError):
-            rosdep_key = str(e)
-        else:
+        rosdep_key = str(e)
+        if not isinstance(e, KeyError):
             rosdep_key = e.rosdep_key
         print("""Cannot resolve dependency [%(rosdep_key)s].
 
@@ -304,7 +311,7 @@ If [%(rosdep_key)s] is catkin project, make sure it has been added to the gbpdis
 
 If [%(rosdep_key)s] is a system dependency, make sure there is a rosdep.yaml entry
 for it in your sources.
-"""%locals(), file=sys.stderr)
+""" % locals(), file=sys.stderr)
         sys.exit(1)
     sys.exit(0)
 
