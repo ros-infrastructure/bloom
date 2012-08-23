@@ -120,6 +120,21 @@ def execute_command(cmd, shell=True, autofail=True):
     """
     result, _, _ = run_shell_command(cmd, shell=True, cwd=os.getcwd())
     if result != 0 and autofail:
-        print("Failed to execute the command: {0}".format(cmd))
-        sys.exit(result)
+        raise RuntimeError("Failed to execute the command: {0}".format(cmd))
     return result
+
+
+def get_current_git_branch():
+    """
+    Returns the current git branch by parsing the output of `git branch`
+
+    This will raise a RuntimeError if the current working directory is not
+    a git repository.  If no branch could be determined it will return None.
+    """
+    output = execute_command('git branch --no-color')
+    output = output.split()
+    for index, token in enumerate(output):
+        if index != 0:
+            if output[index - 1] is '*':
+                return token
+    return None
