@@ -2,9 +2,8 @@
 Provides common utility functions for bloom.
 """
 import sys
-import os
 
-from vcstools.common import run_shell_command
+from subprocess import check_call, check_output, CalledProcessError, PIPE
 
 _ansi = {}
 
@@ -65,7 +64,7 @@ def maybe_continue(default='y'):
     """Prompts the user for continuation"""
     default = default.lower()
     msg = "{0}Continue ".format(ansi('boldon'))
-    if default is 'y':
+    if default == 'y':
         msg += "{0}[Y/n]? {1}".format(ansi('yellowf'), ansi('reset'))
     else:
         msg += "{0}[y/N]? {1}".format(ansi('yellowf'), ansi('reset'))
@@ -85,7 +84,8 @@ def maybe_continue(default='y'):
             break
 
     if response == 'n':
-        bailout("Exiting.")
+        return False
+    return True
 
 
 def get_version():
@@ -114,11 +114,17 @@ def read_stack_xml(file_path):
     pass  # TODO: implement this
 
 
-def execute_command(cmd, shell=True, autofail=True):
+def execute_command(cmd, shell=True, autofail=True, silent=True):
     """
     Executes a given command using vcstools' run_shell_command function.
     """
-    result, _, _ = run_shell_command(cmd, shell=True, cwd=os.getcwd())
+    io_type = None
+    if silent:
+        io_type = PIPE
+    try:
+        result = check_call(cmd, shell=True, stdout=io_type, stderr=io_type)
+    except CalledProcessError as cpe:
+        result = cpe.returncode
     if result != 0 and autofail:
         raise RuntimeError("Failed to execute the command: {0}".format(cmd))
     return result
@@ -131,10 +137,15 @@ def get_current_git_branch():
     This will raise a RuntimeError if the current working directory is not
     a git repository.  If no branch could be determined it will return None.
     """
-    output = execute_command('git branch --no-color')
+    cmd = 'git branch --no-color'
+    output = check_output(cmd, shell=True)
     output = output.split()
     for index, token in enumerate(output):
         if index != 0:
             if output[index - 1] is '*':
                 return token
     return None
+
+
+def error(msg):
+    print(ansi('redf') + ansi('boldon') + 'Error: ' + msg + ansi('reset'))
