@@ -8,6 +8,7 @@ import os
 from vcstools import VcsClient
 
 from bloom.util import ansi, maybe_continue, execute_command
+from bloom.util import get_current_git_branch
 
 
 def usage():
@@ -18,6 +19,43 @@ Creates (if necessary) an orphan branch "bloom" in the current gbp repo
 and sets the upstream repo and type in the bloom.conf.  The rest of the
 bloom utilities pivot off of these values.
 """)
+
+
+def set_upstream(bloom_repo, upstream_repo, upstream_repo_type):
+    # Check for freshly initialized repo
+    from subprocess import check_call
+    if check_call(['git', 'show-ref', '--heads']) != 0:
+        print("Freshly initialized git repository detected.")
+        print("An initial empty commit is going to be made.")
+        if not maybe_continue():
+            print("Exiting.")
+            sys.exit(1)
+        # Make an initial empty commit
+        execute_command('git commit -m "initial commit" --allow-empty')
+
+    # Check for a bloom branch
+    if execute_command('git show-branch origin/bloom', autofail=False) == 0:
+        # Found a bloom branch
+        print("Found a remote bloom branch, checking out.")
+        # Check out the bloom branch
+        bloom_repo.update('bloom')
+    else:
+        # No bloom branch found, create one
+        execute_command('git symbolic-ref HEAD refs/heads/bloom')
+        execute_command('rm -f .git/index')
+        execute_command('git clean -fdx')
+        execute_command('git commit --allow-empty -m "Initial bloom branch"')
+
+    # Now set the upstream using the bloom config
+    cmd = 'git config -f bloom.conf bloom.upstream "{0}"'.format(upstream_repo)
+    execute_command(cmd)
+    cmd = 'git config -f bloom.conf ' \
+        + 'bloom.upstreamtype "{0}"'.format(upstream_repo_type)
+    execute_command(cmd)
+
+    execute_command('git add bloom.conf')
+    cmd = 'git commit -m "bloom branch update by git-bloom-set-upstream"'
+    execute_command(cmd)
 
 
 def main():
@@ -49,40 +87,17 @@ def main():
         usage()
         sys.exit(1)
 
-    # Check for freshly initialized repo
-    from subprocess import check_call
-    if check_call(['git', 'show-ref', '--heads']) != 0:
-        print("Freshly initialized git repository detected.")
-        print("An initial empty commit is going to be made.")
-        if not maybe_continue():
-            print("Exiting.")
-            sys.exit(1)
-        # Make an initial empty commit
-        execute_command('git commit -m "initial commit" --allow-empty')
+    #### Past this point there are changes to the current repository
 
-    # Check for a bloom branch
-    if execute_command('git show-branch origin/bloom', autofail=False) == 0:
-        # Found a bloom branch
-        print("Found a remote bloom branch, checking out.")
-        # Check out the bloom branch
-        execute_command('git checkout bloom')
-    else:
-        # No bloom branch found, create one
-        execute_command('git symbolic-ref HEAD refs/heads/bloom')
-        execute_command('rm -f .git/index')
-        execute_command('git clean -fdx')
-        execute_command('git commit --allow-empty -m "Initial bloom branch"')
-
-    # Now set the upstream using the bloom config
-    cmd = 'git config -f bloom.conf bloom.upstream "{0}"'.format(upstream_repo)
-    execute_command(cmd)
-    cmd = 'git config -f bloom.conf ' \
-        + 'bloom.upstreamtype "{0}"'.format(upstream_repo_type)
-    execute_command(cmd)
-
-    execute_command('git add bloom.conf')
-    cmd = 'git commit -m "bloom branch update by git-bloom-set-upstream"'
-    execute_command(cmd)
+    # Store the current branch
+    current_branch = get_current_git_branch()
+    try:
+        set_upstream(bloom_repo, upstream_repo, upstream_repo_type)
+    finally:
+        # Try to roll back to the branch the user was on before
+        # this possibly failed.
+        if current_branch:
+            bloom_repo.update(current_branch)
 
     sys.exit(0)
 
