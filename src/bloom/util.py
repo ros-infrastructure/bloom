@@ -130,22 +130,27 @@ def execute_command(cmd, shell=True, autofail=True, silent=True):
     return result
 
 
-def get_current_git_branch():
+def get_current_git_branch(directory=None):
     """
     Returns the current git branch by parsing the output of `git branch`
 
     This will raise a RuntimeError if the current working directory is not
-    a git repository.  If no branch could be determined it will return None.
+    a git repository.  If no branch could be determined it will return None,
+    i.e. (no branch) will return None.
     """
     cmd = 'git branch --no-color'
-    output = check_output(cmd, shell=True)
-    output = output.split()
-    for index, token in enumerate(output):
-        if index != 0:
-            if output[index - 1] is '*':
-                return token
+    output = check_output(cmd, shell=True, cwd=directory)
+    output = output.splitlines()
+    for token in output:
+        if token.strip().startswith('*'):
+            token = token[2:]
+            if token == '(no branch)':
+                return None
+            return token
+
     return None
 
 
 def error(msg):
+    """Prints a message as an error"""
     print(ansi('redf') + ansi('boldon') + 'Error: ' + msg + ansi('reset'))

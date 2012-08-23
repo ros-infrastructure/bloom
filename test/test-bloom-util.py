@@ -38,3 +38,58 @@ def test_ANSI_colors():
              + 'Bold and Italic and Red ' + ansi('reset') + 'Plain'
     assert control_str == test_str, \
            '{0} == {1}'.format(control_str, test_str)
+
+
+def test_maybe_continue():
+    from subprocess import Popen, PIPE
+    this_dir = os.path.abspath(os.path.dirname(__file__))
+    cmd = '/usr/bin/env python maybe_continue_helper.py'
+
+    p = Popen(cmd, shell=True, cwd=this_dir, stdin=PIPE, stdout=PIPE)
+    p.communicate('y')
+    assert p.returncode == 0
+
+    p = Popen(cmd, shell=True, cwd=this_dir, stdin=PIPE, stdout=PIPE)
+    p.communicate('n')
+    assert p.returncode == 1
+
+
+def test_get_current_git_branch():
+    from tempfile import mkdtemp
+    # Create a temporary workfolder
+    tmp_dir = mkdtemp()
+    from subprocess import check_call, PIPE
+    # Create a test repo
+    check_call('git init .', shell=True, cwd=tmp_dir, stdout=PIPE)
+
+    from bloom.util import get_current_git_branch
+    assert get_current_git_branch(tmp_dir) == None, \
+           get_current_git_branch(tmp_dir) + ' == None'
+
+    # Make a commit
+    check_call('touch example.txt', shell=True, cwd=tmp_dir, stdout=PIPE)
+    check_call('git add *', shell=True, cwd=tmp_dir, stdout=PIPE)
+    check_call('git commit -a -m "Initial commit."', shell=True, cwd=tmp_dir,
+               stdout=PIPE)
+    # Make a branch
+    check_call('git branch bloom', shell=True, cwd=tmp_dir, stdout=PIPE)
+
+    assert get_current_git_branch(tmp_dir) == 'master'
+
+    # Change to the bloom branch
+    check_call('git checkout bloom', shell=True, cwd=tmp_dir, stdout=PIPE,
+                stderr=PIPE)
+
+    assert get_current_git_branch(tmp_dir) == 'bloom'
+
+    from vcstools import VcsClient
+    client = VcsClient('git', tmp_dir)
+    spec = client.get_version('master')
+    check_call('git checkout {0}'.format(spec), shell=True, cwd=tmp_dir,
+               stdout=PIPE, stderr=PIPE)
+
+    assert get_current_git_branch(tmp_dir) == None, \
+           get_current_git_branch(tmp_dir) + ' == None'
+
+    from shutil import rmtree
+    rmtree(tmp_dir)
