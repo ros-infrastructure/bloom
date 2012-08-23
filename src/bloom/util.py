@@ -2,20 +2,23 @@
 Provides common utility functions for bloom.
 """
 import sys
+import os
+
+from vcstools.common import run_shell_command
 
 _ansi = {}
-
-
-def ansi(key):
-    """Returns the escape sequence for a given ansi color key"""
-    global _ansi
-    return _ansi[key]
 
 
 def create_temporary_directory(prefix_dir=None):
     """Creates a temporary directory and returns its location"""
     from tempfile import mkdtemp
     return mkdtemp(prefix='bloom_', dir=prefix_dir)
+
+
+def ansi(key):
+    """Returns the escape sequence for a given ansi color key"""
+    global _ansi
+    return _ansi[key]
 
 
 def enable_ANSI_colors():
@@ -109,3 +112,14 @@ def read_stack_xml(file_path):
     :returns: dictionary representation of the stack xml file
     """
     pass  # TODO: implement this
+
+
+def execute_command(cmd, shell=True, autofail=True):
+    """
+    Executes a given command using vcstools' run_shell_command function.
+    """
+    result, _, _ = run_shell_command(cmd, shell=True, cwd=os.getcwd())
+    if result != 0 and autofail:
+        print("Failed to execute the command: {0}".format(cmd))
+        sys.exit(result)
+    return result
