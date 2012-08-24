@@ -114,19 +114,24 @@ def read_stack_xml(file_path):
     pass  # TODO: implement this
 
 
-def execute_command(cmd, shell=True, autofail=True, silent=True):
+def execute_command(cmd, shell=True, autofail=True, silent=True, cwd=None):
     """
     Executes a given command using vcstools' run_shell_command function.
     """
     io_type = None
+    result = 0
+    error = None
     if silent:
         io_type = PIPE
     try:
-        result = check_call(cmd, shell=True, stdout=io_type, stderr=io_type)
+        result = check_call(cmd, shell=True, cwd=cwd,
+                            stdout=io_type, stderr=io_type)
     except CalledProcessError as cpe:
         result = cpe.returncode
+        error = str(cpe)
     if result != 0 and autofail:
-        raise RuntimeError("Failed to execute the command: {0}".format(cmd))
+        raise RuntimeError("Failed to execute the command:" \
+                           " `{0}`: {1}".format(cmd, error))
     return result
 
 
@@ -154,3 +159,45 @@ def get_current_git_branch(directory=None):
 def error(msg):
     """Prints a message as an error"""
     print(ansi('redf') + ansi('boldon') + 'Error: ' + msg + ansi('reset'))
+
+
+def track_all_git_branches(branches=None, cwd=None):
+    """
+    Tracks all specified branches.
+
+    :param branches: a list of branches that are to be tracked if not already
+    tracked.  If this is set to None then all remote branches will be tracked.
+    """
+    # Save current branch
+    current_branch = get_current_git_branch(cwd)
+    from subprocess import check_output
+    # Get the local branches
+    local_branches = check_output('git branch', shell=True, cwd=cwd)
+    local_branches = local_branches.splitlines()
+    # Strip local_branches of white space
+    for index, local_branch in enumerate(local_branches):
+        local_branches[index] = local_branch.strip()
+    # Either get the remotes or use the given list of branches to track
+    if branches == None:
+        remotes = check_output('git branch -r', shell=True, cwd=cwd)
+        remotes = remotes.splitlines()
+    else:
+        remotes = branches
+    # Subtract the locals from the remotes
+    to_track = []
+    for remote in remotes:
+        remote = remote.strip()
+        if remote.count('master') != 0:
+            continue
+        if remote.count('/') > 0:
+            remote_branch = remote.split('/')[1]
+        else:
+            remote_branch = remote
+        if remote_branch not in local_branches:
+            to_track.append(remote_branch)
+    # Now track any remotes that are not local
+    for branch in to_track:
+        execute_command('git checkout --track -b {0}'.format(branch), cwd=cwd)
+    # Restore original branch
+    if current_branch:
+        execute_command('git checkout {0}'.format(current_branch), cwd=cwd)

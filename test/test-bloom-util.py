@@ -93,3 +93,33 @@ def test_get_current_git_branch():
 
     from shutil import rmtree
     rmtree(tmp_dir)
+
+
+def test_track_all_git_branches():
+    from tempfile import mkdtemp
+    tmp_dir = mkdtemp()
+    orig_dir = os.path.join(tmp_dir, 'orig')
+    clone_dir = os.path.join(tmp_dir, 'clone')
+    os.makedirs(orig_dir)
+    os.makedirs(clone_dir)
+    from subprocess import check_call, PIPE, check_output
+    check_call('git init .', shell=True, cwd=orig_dir, stdout=PIPE)
+    check_call('touch example.txt', shell=True, cwd=orig_dir, stdout=PIPE)
+    check_call('git add *', shell=True, cwd=orig_dir, stdout=PIPE)
+    check_call('git commit -m "Init"', shell=True, cwd=orig_dir, stdout=PIPE)
+    check_call('git branch bloom', shell=True, cwd=orig_dir, stdout=PIPE)
+    check_call('git branch upstream', shell=True, cwd=orig_dir, stdout=PIPE)
+    check_call('git branch refactor', shell=True, cwd=orig_dir, stdout=PIPE)
+    from vcstools import VcsClient
+    clone = VcsClient('git', clone_dir)
+    clone.checkout('file://{0}'.format(orig_dir), 'master')
+    output = check_output('git branch --no-color', shell=True, cwd=clone_dir)
+    assert output == '* master\n'
+    from bloom.util import track_all_git_branches
+    track_all_git_branches(['bloom', 'upstream'], clone_dir)
+    output = check_output('git branch --no-color', shell=True, cwd=clone_dir)
+    assert output == '  bloom\n* master\n  upstream\n'
+    track_all_git_branches(cwd=clone_dir)
+    output = check_output('git branch --no-color', shell=True, cwd=clone_dir)
+    assert output == '  bloom\n* master\n  refactor\n  upstream\n', \
+           output + ' == `  bloom\n* master\n  refactor\n  upstream\n`'
