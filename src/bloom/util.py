@@ -1,9 +1,12 @@
 """
 Provides common utility functions for bloom.
 """
+from __future__ import print_function
+
 import sys
 
 from subprocess import check_call, check_output, CalledProcessError, PIPE
+from subprocess import Popen
 
 _ansi = {}
 
@@ -88,30 +91,45 @@ def maybe_continue(default='y'):
     return True
 
 
-def get_version():
-    """Returns the version number from a given tag/branch"""
-    pass  # TODO: implement this
-
-
-def get_upstream_version():
-    """Returns the upstream version number from a given upstream tag/branch"""
-    pass  # TODO: implement this
-
-
 def bailout(reason='Exiting.'):
     """Exits bloom for a given reason"""
     print(ansi('redf') + ansi('boldon') + reason + ansi('reset'))
     sys.exit(1)
 
 
-def read_stack_xml(file_path):
+def extract_text(element):
+    node_list = element.childNodes
+    result = []
+    for node in node_list:
+        if node.nodeType == node.TEXT_NODE:
+            result.append(node.data)
+    return ''.join(result)
+
+
+def segment_version(full_version):
+    version_list = full_version.split('.')
+    if len(version_list) != 3:
+        bailout('Invalid version element in the stack.xml, expected: ' \
+                '<major>.<minor>.<patch>')
+    return version_list
+
+
+def parse_stack_xml(file_path):
     """
     Returns a dictionary representation of a stack xml file.
 
     :param file_path: path to stack xml file to be converted
     :returns: dictionary representation of the stack xml file
     """
-    pass  # TODO: implement this
+    from xml.dom.minidom import parse
+    dom = parse(file_path)
+    results = {}
+    results['full_version'] = \
+        extract_text(dom.getElementsByTagName('version')[0])
+    results['major'], results['minor'], results['patch'] = \
+        segment_version(results['full_version'])
+    results['package_name'] = extract_text(dom.getElementsByTagName('name')[0])
+    return results
 
 
 def execute_command(cmd, shell=True, autofail=True, silent=True, cwd=None):
@@ -178,14 +196,13 @@ def track_all_git_branches(branches=None, cwd=None):
     for index, local_branch in enumerate(local_branches):
         local_branches[index] = local_branch.strip()
     # Either get the remotes or use the given list of branches to track
+    remotes_out = check_output('git branch -r', shell=True, cwd=cwd)
+    remotes = remotes_out.splitlines()
     if branches == None:
-        remotes = check_output('git branch -r', shell=True, cwd=cwd)
-        remotes = remotes.splitlines()
-    else:
-        remotes = branches
+        branches = remotes
     # Subtract the locals from the remotes
     to_track = []
-    for remote in remotes:
+    for remote in branches:
         remote = remote.strip()
         if remote.count('master') != 0:
             continue
@@ -197,7 +214,53 @@ def track_all_git_branches(branches=None, cwd=None):
             to_track.append(remote_branch)
     # Now track any remotes that are not local
     for branch in to_track:
-        execute_command('git checkout --track -b {0}'.format(branch), cwd=cwd)
+        if remotes_out.count(branch) > 0:
+            cmd = 'git checkout --track -b {0}'.format(branch)
+            execute_command(cmd, cwd=cwd)
     # Restore original branch
     if current_branch:
         execute_command('git checkout {0}'.format(current_branch), cwd=cwd)
+
+
+def assert_is_remote_git_repo(repo):
+    """
+    Asserts that the specified repo url points to a valid git repository.
+    """
+    print('Verifying that {0} is a git repository...'.format(repo), end='')
+    cmd = 'git ls-remote --heads {0}'.format(repo)
+    p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+    output, _ = p.communicate()
+    if p.returncode != 0:
+        print(ansi('redf') + ' fail' + ansi('reset'))
+        bailout("Repository {0} is not a valid git repository.".format(repo))
+    else:
+        print(' pass')
+
+
+def assert_is_not_gbp_repo(repo):
+    """
+    Asserts that the specified repo url does not point to a gbp repo.
+    """
+    assert_is_remote_git_repo(repo)
+    print('Verifying that {0} is not a gbp repository...'.format(repo), end='')
+    cmd = 'git ls-remote --heads {0} upstream*'
+    p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+    output, _ = p.communicate()
+    if p.returncode != 0:
+        print(ansi('redf') + ' fail' + ansi('reset'))
+        bailout("Error: {0} appears to have an 'upstream' branch, " \
+                "indicating a gbp.")
+
+
+def get_last_git_tag(cwd=None):
+    """
+    Returns the latest git tag in the given git repo, but returns '' if
+    there are not tags.
+    """
+    cmd = "git for-each-ref --sort='*authordate' " \
+          "--format='%(refname:short)' refs/tags/upstream"
+    output = check_output(cmd, shell=True, cwd=cwd, stderr=PIPE)
+    output = output.splitlines()
+    if len(output) == 0:
+        return ''
+    return output[-1]
