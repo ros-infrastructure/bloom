@@ -36,7 +36,11 @@ from __future__ import print_function
 import sys
 import os
 
-from vcstools import VcsClient
+try:
+    from vcstools import VcsClient
+except ImportError:
+    print("vcstools was not detected, please install it.", file=sys.stderr)
+    sys.exit(1)
 
 from bloom.util import ansi, maybe_continue, execute_command
 from bloom.util import get_current_git_branch, error, bailout
