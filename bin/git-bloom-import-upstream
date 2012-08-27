@@ -38,12 +38,17 @@ import os
 
 from subprocess import check_output
 
-from vcstools import VcsClient
+try:
+    from vcstools import VcsClient
+except ImportError:
+    print("vcstools was not detected, please install it.", file=sys.stderr)
+    sys.exit(1)
 
 from bloom.util import get_current_git_branch, error, track_all_git_branches
 from bloom.util import bailout, execute_command, ansi, parse_stack_xml
 from bloom.util import assert_is_not_gbp_repo, create_temporary_directory
-from bloom.util import get_last_git_tag, segment_version
+from bloom.util import get_last_git_tag
+from bloom.util import get_versions_from_upstream_tag
 
 from distutils.version import StrictVersion
 
@@ -205,19 +210,17 @@ def import_upstream(bloom_repo):
         gbp_minor = stack['minor']
         gbp_patch = stack['patch']
     else:
-        last_tag_version = last_tag.split('/')
-        if len(last_tag_version) != 2:
-            bailout("Malformed tag {0}".format(last_tag))
-        last_tag_version = last_tag_version[1]
-        gbp_major, gbp_minor, gbp_patch = segment_version(last_tag_version)
+        gbp_major, gbp_minor, gbp_patch = \
+            get_versions_from_upstream_tag(last_tag)
         print("The latest upstream tag in the release repo is " \
             + ansi('boldon') + last_tag + ansi('reset'))
         # Ensure the new version is greater than the last tag
         full_version_strict = StrictVersion(stack['full_version'])
+        last_tag_version = '.'.join([gbp_major, gbp_minor, gbp_patch])
         last_tag_version_strict = StrictVersion(last_tag_version)
         if full_version_strict <= last_tag_version_strict:
             bailout("""\
-Version discrepency:
+Version discrepancy:
 The upstream version, {0}, must be greater than the previous
 release version, {1}.
 
