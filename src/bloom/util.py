@@ -243,13 +243,15 @@ def assert_is_not_gbp_repo(repo):
     """
     assert_is_remote_git_repo(repo)
     print('Verifying that {0} is not a gbp repository...'.format(repo), end='')
-    cmd = 'git ls-remote --heads {0} upstream*'
+    cmd = 'git ls-remote --heads {0} upstream*'.format(repo)
     p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
     output, _ = p.communicate()
-    if p.returncode != 0:
+    if p.returncode == 0 and len(output) > 0:
         print(ansi('redf') + ' fail' + ansi('reset'))
         bailout("Error: {0} appears to have an 'upstream' branch, " \
-                "indicating a gbp.")
+                "indicating a gbp.".format(repo))
+    else:
+        print(' pass')
 
 
 def get_last_git_tag(cwd=None):
@@ -264,3 +266,14 @@ def get_last_git_tag(cwd=None):
     if len(output) == 0:
         return ''
     return output[-1]
+
+
+def get_versions_from_upstream_tag(tag):
+    """
+    Returns the [major, minor, patch] version list given an upstream tag.
+    """
+    tag_version = tag.split('/')
+    if len(tag_version) != 2:
+        bailout("Malformed tag {0}".format(tag))
+    tag_version = tag_version[1]
+    return segment_version(tag_version)
