@@ -48,7 +48,8 @@ from bloom.util import get_current_git_branch, error, bailout
 
 def usage():
     """Prints usage message"""
-    print("""usage: git bloom set-upstream <upstream-repo> <upstream-repo-type>
+    print("""\
+usage: git bloom set-upstream <upstream-repo> <upstream-repo-type>
 
 Creates (if necessary) an orphan branch "bloom" in the current gbp repo
 and sets the upstream repo and type in the bloom.conf.  The rest of the
