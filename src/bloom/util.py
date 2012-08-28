@@ -128,7 +128,7 @@ def parse_stack_xml(file_path):
         extract_text(dom.getElementsByTagName('version')[0])
     results['major'], results['minor'], results['patch'] = \
         segment_version(results['full_version'])
-    results['package_name'] = extract_text(dom.getElementsByTagName('name')[0])
+    results['name'] = extract_text(dom.getElementsByTagName('name')[0])
     return results
 
 
