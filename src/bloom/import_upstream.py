@@ -35,7 +35,7 @@ from __future__ import print_function
 import os
 import sys
 
-from subprocess import check_output, CalledProcessError
+from subprocess import check_output, CalledProcessError, check_call
 
 from bloom.util import track_all_git_branches
 from bloom.util import bailout, execute_command, ansi, parse_stack_xml
@@ -150,7 +150,7 @@ def detect_git_import_orig():
         check_call('git-import-orig --help', shell=True, stdout=PIPE,
                    stderr=PIPE)
         return True
-    except OSError:
+    except (OSError, CalledProcessError):
         return False
     return False
 
@@ -193,12 +193,16 @@ def import_upstream(bloom_repo):
     # Checkout upstream
     tmp_dir = create_temporary_directory()
     upstream_dir = os.path.join(tmp_dir, 'upstream')
-    upstream_repo = VcsClient(upstream_type, upstream_dir)
-    upstream_repo.checkout(upstream_repo)
+    os.makedirs(upstream_dir)
+    upstream_client = VcsClient(upstream_type, upstream_dir)
+    branch = upstream_branch if upstream_branch != '(No branch set)' else ''
+    upstream_client.checkout(upstream_repo, branch)
 
     # Parse the stack.xml
     if os.path.exists(os.path.join(upstream_dir, 'stack.xml')):
         stack = parse_stack_xml(os.path.join(upstream_dir, 'stack.xml'))
+    else:
+        bailout("No stack.xml at {0}".format(upstream_dir))
 
     # Summarize the stack.xml contents
     print("Upstream's stack.xml has version " + ansi('boldon')
@@ -210,7 +214,7 @@ def import_upstream(bloom_repo):
     tarball_prefix = get_tarball_name(stack['name'], stack['full_version'])
     print('Exporting version {0}'.format(stack['full_version']))
     tarball_path = os.path.join(tmp_dir, tarball_prefix)
-    bloom_repo.export_repository(stack['full_version'], tarball_path)
+    upstream_client.export_repository(stack['full_version'], tarball_path)
 
     # Get the gbp version elements from either the last tag or the default
     last_tag = get_last_git_tag()
@@ -252,4 +256,9 @@ Upstream must rerelease or you must fix your release repo.
                 "git-buildpackage?")
 
     # Import the tarball
-    execute_command('git import-orig {0}'.format(tarball_path + '.tar.gz'))
+    cmd = 'git import-orig {0}'.format(tarball_path + '.tar.gz')
+    try:
+        if check_call(cmd, shell=True) != 0:
+            bailout("git-import-orig failed '{0}'".format(cmd))
+    except CalledProcessError:
+        bailout("git-import-orig failed '{0}'".format(cmd))
