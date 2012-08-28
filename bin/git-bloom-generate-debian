@@ -15,6 +15,30 @@ except ImportError:
     sys.exit(1)
 
 
+def parse_options():
+    import argparse
+    parser = argparse.ArgumentParser(description='Creates/updates a gpb from '
+                                                 'a catkin project.')
+    parser.add_argument('--working', help='A scratch build path. Default: '
+                                          '%(default)s',
+                        default='.tmp/%u/' % os.getpid())
+    parser.add_argument('--debian-revision', dest='debian_revision',
+                        help='Bump the changelog debian number.'
+                             ' Please enter a monotonically increasing number '
+                             'from the last upload.',
+                        default=0)
+    parser.add_argument('--install-prefix', dest='install_prefix',
+                        help='The full prefix ...')
+    parser.add_argument('--distros', nargs='+',
+                        help='A list of debian distros. Default: %(default)s',
+                        default=[])
+
+    #ros specific stuff.
+    parser.add_argument('rosdistro', help='The ros distro. electric, '
+                                          'fuerte, groovy')
+    return parser.parse_args()
+
+
 def execute_bloom_generate_debian(bloom_repo):
     bloom_repo.update('master')
 
@@ -30,7 +54,7 @@ def execute_bloom_generate_debian(bloom_repo):
     print("Upstream version is: {0}{1}{2}"
           "".format(ansi('boldon'), version_str, ansi('reset')))
 
-    from bloom.generate_debian import main, parse_options
+    from bloom.generate_debian import main
     main(parse_options())
 
 
