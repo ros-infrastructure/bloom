@@ -39,7 +39,9 @@ fi
 (set -x && git checkout bloom)
 UPSTREAM_REPO=$(git config -f bloom.conf bloom.upstream)
 UPSTREAM_TYPE=$(git config -f bloom.conf bloom.upstreamtype)
+set +e
 UPSTREAM_BRANCH=$(git config -f bloom.conf bloom.upstreambranch)
+set -e
 status "upstream repo: ${boldon}$UPSTREAM_REPO${reset}"
 status "upstream type: ${boldon}$UPSTREAM_TYPE${reset}"
 status "upstream branch: ${boldon}$UPSTREAM_BRANCH${reset}"
