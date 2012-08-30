@@ -25,6 +25,7 @@ override_dh_auto_configure:
 	# set things like CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
 	if [ -f "@(INSTALL_PREFIX)/setup.sh" ]; then . "@(INSTALL_PREFIX)/setup.sh"; fi && \
 	dh_auto_configure -- \
+		-DCATKIN_BUILD_BINARY_PACKAGE="1" \
 		-DCMAKE_INSTALL_PREFIX="@(INSTALL_PREFIX)" \
 		-DCMAKE_PREFIX_PATH="@(INSTALL_PREFIX)"
 
