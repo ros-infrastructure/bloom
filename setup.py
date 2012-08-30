@@ -3,7 +3,7 @@
 from setuptools import setup
 
 setup(name='bloom',
-      version='0.0.15',
+      version='0.0.16',
       packages=['bloom'],
       package_dir = {'': 'src'},
       scripts = ['bin/bloom-generate-debian',
