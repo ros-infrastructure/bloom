@@ -20,6 +20,7 @@ export PYTHONPATH=@(INSTALL_PREFIX)/lib/python@(pyversion)/dist-packages
 
 override_dh_auto_configure:
 	dh_auto_configure -Scmake -- \
+		-DCATKIN_BUILD_BINARY_PACKAGE="1" \
 		-DCMAKE_INSTALL_PREFIX="@(INSTALL_PREFIX)" \
 		-DCMAKE_PREFIX_PATH="@(INSTALL_PREFIX)"
 	dh_auto_configure -Spython_distutils
