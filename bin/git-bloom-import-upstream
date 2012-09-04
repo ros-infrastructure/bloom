@@ -86,11 +86,11 @@ else
     extract_gbp_upstream_version $LASTTAG
     if dpkg --compare-versions $VERSION_FULL le $GBP_MAJOR.$GBP_MINOR.$GBP_PATCH
     then
-      bailout "Version discrepency:
-    The upstream version, $VERSION_FULL, must be greater than the previous
+      checking "Version discrepency:
+    The upstream version, $VERSION_FULL, is lower or equal than the previous
     release version, $GBP_MAJOR.$GBP_MINOR.$GBP_PATCH.
 
-    Upstream must rerelease or you must fix your release repo.
+    Are you sure you want to release a lower version number?
 "
     fi
 fi
