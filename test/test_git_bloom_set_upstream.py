@@ -73,6 +73,8 @@ class BloomSetUpstreamTestSetups(unittest.TestCase):
 class BloomSetUpstreamTest(BloomSetUpstreamTestSetups):
 
     def test_check_git_init(self):
+        if not os.path.exists(self.git_repo):
+            os.makedirs(self.git_repo)
         # Initialize the git repo
         check_call("git init", shell=True, cwd=self.git_repo, stdout=PIPE)
 
