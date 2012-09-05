@@ -41,7 +41,7 @@ from bloom.util import track_all_git_branches
 from bloom.util import bailout, execute_command, ansi, parse_stack_xml
 from bloom.util import assert_is_not_gbp_repo, create_temporary_directory
 from bloom.util import get_last_git_tag, get_current_git_branch, error
-from bloom.util import get_versions_from_upstream_tag
+from bloom.util import get_versions_from_upstream_tag, segment_version
 
 from distutils.version import StrictVersion
 
@@ -206,29 +206,27 @@ def import_upstream(bloom_repo):
 
     # Summarize the stack.xml contents
     print("Upstream's stack.xml has version " + ansi('boldon')
-        + stack['full_version'] + ansi('reset'))
-    print("Upstream's name is " + ansi('boldon') + stack['name']
+        + stack.version + ansi('reset'))
+    print("Upstream's name is " + ansi('boldon') + stack.name
         + ansi('reset'))
 
     # Export the repository to a tar ball
-    tarball_prefix = get_tarball_name(stack['name'], stack['full_version'])
-    print('Exporting version {0}'.format(stack['full_version']))
+    tarball_prefix = get_tarball_name(stack.name, stack.version)
+    print('Exporting version {0}'.format(stack.version))
     tarball_path = os.path.join(tmp_dir, tarball_prefix)
-    upstream_client.export_repository(stack['full_version'], tarball_path)
+    upstream_client.export_repository(stack.version, tarball_path)
 
     # Get the gbp version elements from either the last tag or the default
     last_tag = get_last_git_tag()
     if last_tag == '':
-        gbp_major = stack['major']
-        gbp_minor = stack['minor']
-        gbp_patch = stack['patch']
+        gbp_major, gbp_minor, gbp_patch = segment_version(stack.version)
     else:
         gbp_major, gbp_minor, gbp_patch = \
             get_versions_from_upstream_tag(last_tag)
         print("The latest upstream tag in the release repo is " \
             + ansi('boldon') + last_tag + ansi('reset'))
         # Ensure the new version is greater than the last tag
-        full_version_strict = StrictVersion(stack['full_version'])
+        full_version_strict = StrictVersion(stack.version)
         last_tag_version = '.'.join([gbp_major, gbp_minor, gbp_patch])
         last_tag_version_strict = StrictVersion(last_tag_version)
         if full_version_strict <= last_tag_version_strict:
@@ -238,7 +236,7 @@ The upstream version, {0}, must be greater than the previous
 release version, {1}.
 
 Upstream must rerelease or you must fix your release repo.
-""".format(stack['full_version'], last_tag_version))
+""".format(stack.version, last_tag_version))
 
     # Look for upstream branch
     output = check_output('git branch', shell=True)

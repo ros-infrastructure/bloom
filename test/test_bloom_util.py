@@ -112,14 +112,8 @@ of messages.
     open(stack_file, 'w+').write(example_stack)
     from bloom.util import parse_stack_xml
     stack = parse_stack_xml(stack_file)
-    expected_stack = dict(
-        full_version='0.3.5',
-        major='0',
-        minor='3',
-        patch='5',
-        name='langs'
-    )
-    assert expected_stack == stack, str(expected_stack) + '\n\n' + str(stack)
+    assert stack.name == 'langs'
+    assert stack.version == '0.3.5'
     from shutil import rmtree
     rmtree(tmp_dir)
 

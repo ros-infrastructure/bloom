@@ -46,12 +46,6 @@ from pprint import pprint
 from subprocess import Popen, CalledProcessError
 
 try:
-    import rospkg.stack
-except ImportError:
-    print("rospkg was not detected, please install it.", file=sys.stderr)
-    sys.exit(1)
-
-try:
     import rosdep2.catkin_support
     from rosdep2.platforms.debian import APT_INSTALLER
 except ImportError:

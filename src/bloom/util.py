@@ -8,6 +8,12 @@ import sys
 from subprocess import check_call, check_output, CalledProcessError, PIPE
 from subprocess import Popen
 
+try:
+    import rospkg.stack
+except ImportError:
+    print("rospkg was not detected, please install it.", file=sys.stderr)
+    sys.exit(1)
+
 _ansi = {}
 
 
@@ -121,15 +127,7 @@ def parse_stack_xml(file_path):
     :param file_path: path to stack xml file to be converted
     :returns: dictionary representation of the stack xml file
     """
-    from xml.dom.minidom import parse
-    dom = parse(file_path)
-    results = {}
-    results['full_version'] = \
-        extract_text(dom.getElementsByTagName('version')[0])
-    results['major'], results['minor'], results['patch'] = \
-        segment_version(results['full_version'])
-    results['name'] = extract_text(dom.getElementsByTagName('name')[0])
-    return results
+    return rospkg.stack.parse_stack_file(file_path)
 
 
 def execute_command(cmd, shell=True, autofail=True, silent=True, cwd=None):
