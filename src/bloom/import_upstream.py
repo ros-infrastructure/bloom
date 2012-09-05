@@ -37,7 +37,7 @@ import sys
 
 from subprocess import check_output, CalledProcessError, check_call
 
-from bloom.util import track_all_git_branches
+from bloom.util import track_all_git_branches, warning
 from bloom.util import bailout, execute_command, ansi, parse_stack_xml
 from bloom.util import assert_is_not_gbp_repo, create_temporary_directory
 from bloom.util import get_last_git_tag, get_current_git_branch, error
@@ -229,14 +229,19 @@ def import_upstream(bloom_repo):
         full_version_strict = StrictVersion(stack.version)
         last_tag_version = '.'.join([gbp_major, gbp_minor, gbp_patch])
         last_tag_version_strict = StrictVersion(last_tag_version)
-        if full_version_strict <= last_tag_version_strict:
-            bailout("""\
+        if full_version_strict < last_tag_version_strict:
+            warning("""\
 Version discrepancy:
-The upstream version, {0}, must be greater than the previous
+The upstream version, {0}, should be greater than the previous
 release version, {1}.
 
-Upstream must rerelease or you must fix your release repo.
+Upstream should rerelease or you should fix the release repo.
 """.format(stack.version, last_tag_version))
+        if full_version_strict == last_tag_version_strict:
+            warning("""\
+Version discrepancy:
+The upstream version, {0}, is equal to a previous version.
+""".format(stack.verison))
 
     # Look for upstream branch
     output = check_output('git branch', shell=True)

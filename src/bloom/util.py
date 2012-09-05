@@ -177,6 +177,11 @@ def error(msg):
     print(ansi('redf') + ansi('boldon') + 'Error: ' + msg + ansi('reset'))
 
 
+def warning(msg):
+    """Prints a message as a warning"""
+    print(ansi('yellowf') + ansi('boldon') + 'Warning: ' + msg + ansi('reset'))
+
+
 def track_all_git_branches(branches=None, cwd=None):
     """
     Tracks all specified branches.
