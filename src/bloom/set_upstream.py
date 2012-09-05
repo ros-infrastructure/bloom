@@ -119,7 +119,16 @@ def validate_args(bloom_repo, upstream_repo_type):
     return True
 
 
-def setup_upstream_main(upstream_repo, upstream_repo_type):
+def main(upstream_repo, upstream_repo_type):
+    # Ensure we have the corrent number of arguments
+    if len(sys.argv) != 3:
+        usage()
+        return 1
+
+    # Gather command line arguments into variables
+    upstream_repo = sys.argv[1]
+    upstream_repo_type = sys.argv[2]
+
     # Create vcs client
     bloom_repo = VcsClient('git', os.getcwd())
 
@@ -135,11 +144,12 @@ def setup_upstream_main(upstream_repo, upstream_repo_type):
     current_branch = get_current_git_branch()
     try:
         set_upstream(bloom_repo, upstream_repo, upstream_repo_type)
+        print("Upstream successively set.")
+        return 0
     finally:
         # Try to roll back to the branch the user was on before
         # this possibly failed.
         if current_branch:
             bloom_repo.update(current_branch)
 
-    print("Upstream successively set.")
-    return 0
+    return 1

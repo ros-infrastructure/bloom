@@ -31,25 +31,9 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import print_function
-
 import sys
 
-from bloom.set_upstream import set_upstream_main, usage
-
-
-def main():
-    # Ensure we have the corrent number of arguments
-    if len(sys.argv) != 3:
-        usage()
-        return 1
-
-    # Gather command line arguments into variables
-    upstream_repo = sys.argv[1]
-    upstream_repo_type = sys.argv[2]
-
-    set_upstream_main(upstream_repo, upstream_repo_type)
-
+from bloom.set_upstream import main
 
 if __name__ == '__main__':
     sys.exit(main())
