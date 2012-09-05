@@ -119,7 +119,7 @@ def validate_args(bloom_repo, upstream_repo_type):
     return True
 
 
-def main(upstream_repo, upstream_repo_type):
+def main():
     # Ensure we have the corrent number of arguments
     if len(sys.argv) != 3:
         usage()
