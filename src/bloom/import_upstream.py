@@ -40,7 +40,7 @@ from subprocess import check_output, CalledProcessError, check_call
 from bloom.util import track_all_git_branches
 from bloom.util import bailout, execute_command, ansi, parse_stack_xml
 from bloom.util import assert_is_not_gbp_repo, create_temporary_directory
-from bloom.util import get_last_git_tag
+from bloom.util import get_last_git_tag, get_current_git_branch, error
 from bloom.util import get_versions_from_upstream_tag
 
 from distutils.version import StrictVersion
@@ -145,7 +145,7 @@ def detect_git_import_orig():
     """
     Returns True if git-import-orig is in the path, False otherwise
     """
-    from subprocess import check_call, PIPE
+    from subprocess import PIPE
     try:
         check_call('git-import-orig --help', shell=True, stdout=PIPE,
                    stderr=PIPE)
@@ -262,3 +262,26 @@ Upstream must rerelease or you must fix your release repo.
             bailout("git-import-orig failed '{0}'".format(cmd))
     except CalledProcessError:
         bailout("git-import-orig failed '{0}'".format(cmd))
+
+
+def main():
+    # Check that the current directory is a servicable git/bloom repo
+    bloom_repo = VcsClient('git', os.getcwd())
+    if not bloom_repo.detect_presence():
+        error("Not in a git repository.\n")
+        usage()
+        return 1
+
+    # Get the current git branch
+    current_branch = get_current_git_branch()
+
+    try:
+        import_upstream(bloom_repo)
+
+        # Done!
+        print("I'm happy.  You should be too.")
+    finally:
+        # Restore the original branch if it exists still
+        local_branches = check_output('git branch', shell=True)
+        if current_branch and current_branch in local_branches:
+            bloom_repo.update(current_branch)

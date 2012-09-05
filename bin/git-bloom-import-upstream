@@ -31,46 +31,9 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import print_function
-
 import sys
-import os
 
-from subprocess import check_output
-
-from bloom.util import get_current_git_branch, error
-
-try:
-    from vcstools import VcsClient
-except ImportError:
-    print("vcstools was not detected, please install it.", file=sys.stderr)
-    sys.exit(1)
-
-from bloom.import_upstream import usage, import_upstream
-
-
-def main():
-    # Check that the current directory is a servicable git/bloom repo
-    bloom_repo = VcsClient('git', os.getcwd())
-    if not bloom_repo.detect_presence():
-        error("Not in a git repository.\n")
-        usage()
-        sys.exit(1)
-
-    # Get the current git branch
-    current_branch = get_current_git_branch()
-
-    try:
-        import_upstream(bloom_repo)
-
-        # Done!
-        print("I'm happy.  You should be too.")
-    finally:
-        # Restore the original branch if it exists still
-        local_branches = check_output('git branch', shell=True)
-        if current_branch and current_branch in local_branches:
-            bloom_repo.update(current_branch)
+from bloom.import_upstream import main
 
 if __name__ == '__main__':
-    main()
-    sys.exit(0)
+    sys.exit(main())
