@@ -2,6 +2,12 @@ import os
 import sys
 import shutil
 
+from enable_bloom_src_testing import get_path_and_pythonpath
+# Setup environment for running commands
+path, ppath = get_path_and_pythonpath()
+os.putenv('PATH', path)
+os.putenv('PYTHONPATH', ppath)
+
 
 def test_create_temporary_directory():
     from bloom.util import create_temporary_directory
@@ -111,9 +117,9 @@ of messages.
         major='0',
         minor='3',
         patch='5',
-        package_name='langs'
+        name='langs'
     )
-    assert expected_stack == stack
+    assert expected_stack == stack, str(expected_stack) + '\n\n' + str(stack)
     from shutil import rmtree
     rmtree(tmp_dir)
 

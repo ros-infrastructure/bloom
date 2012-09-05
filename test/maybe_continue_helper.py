@@ -1,3 +1,10 @@
+import os
+from enable_bloom_src_testing import get_path_and_pythonpath
+# Setup environment for running commands
+path, ppath = get_path_and_pythonpath()
+os.putenv('PATH', path)
+os.putenv('PYTHONPATH', ppath)
+
 from bloom.util import maybe_continue
 import sys
 
