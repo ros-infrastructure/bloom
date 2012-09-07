@@ -35,6 +35,7 @@ from __future__ import print_function
 import os
 import sys
 import argparse
+import shutil
 
 from subprocess import check_output, CalledProcessError, check_call
 
@@ -168,8 +169,18 @@ def summarize_repo_info(upstream_repo, upstream_type, upstream_branch):
     print(msg)
 
 
-def import_upstream(bloom_repo, args):
-    # Ensure the bloom and upstream branches are tracked
+def import_upstream(cwd, tmp_dir, args):
+    # Ensure the bloom and upstream branches are tracked locally
+    track_all_git_branches(['bloom', 'upstream'])
+
+    # Create a clone of the bloom_repo to help isolate the activity
+    bloom_repo_clone_dir = os.path.join(tmp_dir, 'bloom_clone')
+    os.makedirs(bloom_repo_clone_dir)
+    os.chdir(bloom_repo_clone_dir)
+    bloom_repo = VcsClient('git', bloom_repo_clone_dir)
+    bloom_repo.checkout('file://{0}'.format(cwd))
+
+    # Ensure the bloom and upstream branches are tracked from the original
     track_all_git_branches(['bloom', 'upstream'])
 
     # Check for a bloom branch
@@ -188,7 +199,6 @@ def import_upstream(bloom_repo, args):
         assert_is_not_gbp_repo(upstream_repo)
 
     # Checkout upstream
-    tmp_dir = create_temporary_directory()
     upstream_dir = os.path.join(tmp_dir, 'upstream')
     os.makedirs(upstream_dir)
     upstream_client = VcsClient(upstream_type, upstream_dir)
@@ -244,6 +254,8 @@ Removing conflicting tag before continuing because the '--replace' \
 options was specified.
 """.format(stack.version))
                 execute_command('git tag -d {0}'.format(last_tag))
+                execute_command('git push origin :refs/tags/'
+                                '{0}'.format(last_tag))
             else:
                 warning("""\
 Version discrepancy:
@@ -279,6 +291,10 @@ upstream import use the '--replace' option.
     except CalledProcessError:
         bailout("git-import-orig failed '{0}'".format(cmd))
 
+    # Push changes back to the original bloom repo
+    execute_command('git push --all -f')
+    execute_command('git push --tags')
+
 
 def main():
     parser = argparse.ArgumentParser(description="""\
@@ -309,7 +325,8 @@ of the merge.
     args = parser.parse_args()
 
     # Check that the current directory is a serviceable git/bloom repo
-    bloom_repo = VcsClient('git', os.getcwd())
+    cwd = os.getcwd()
+    bloom_repo = VcsClient('git', cwd)
     if not bloom_repo.detect_presence():
         error("Not in a git repository.\n")
         parser.print_help()
@@ -318,12 +335,19 @@ of the merge.
     # Get the current git branch
     current_branch = get_current_git_branch()
 
+    # Create a working temp directory
+    tmp_dir = create_temporary_directory()
+
     try:
-        import_upstream(bloom_repo, args)
+        import_upstream(cwd, tmp_dir, args)
 
         # Done!
         print("I'm happy.  You should be too.")
     finally:
+        # Change back to the original cwd
+        os.chdir(cwd)
+        # Clean up
+        shutil.rmtree(tmp_dir)
         # Restore the original branch if it exists still
         local_branches = check_output('git branch', shell=True)
         if current_branch and current_branch in local_branches:
