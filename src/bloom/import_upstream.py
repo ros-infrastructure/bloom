@@ -34,6 +34,7 @@ from __future__ import print_function
 
 import os
 import sys
+import argparse
 
 from subprocess import check_output, CalledProcessError, check_call
 
@@ -50,14 +51,6 @@ try:
 except ImportError:
     print("vcstools was not detected, please install it.", file=sys.stderr)
     sys.exit(1)
-
-
-def usage():
-    print("""\
-usage: git bloom-import-upstream
-
-Must be in a valid git bloom release repository.
-""")
 
 
 def convert_catkin_to_bloom(cwd=None):
@@ -90,9 +83,10 @@ def not_a_bloom_release_repo():
             'bloom-set-upstream <UPSTREAM_VCS_URL> <VCS_TYPE>')
 
 
-def check_for_bloom(cwd=None):
+def check_for_bloom(cwd=None, bloom_repo=None):
     """
-    Checks for the bloom branch, else looks for and converts the catkin branch
+    Checks for the bloom branch, else looks for and converts the catkin branch.
+    Then it checks for the bloom branch and that it contains a bloom.conf file.
     """
     cmd = 'git branch'
     if check_output(cmd, shell=True, cwd=cwd).count('bloom') == 0:
@@ -104,6 +98,12 @@ def check_for_bloom(cwd=None):
             # Found catkin branch, migrate it to bloom
             print('catkin branch detected, up converting to the bloom branch')
             convert_catkin_to_bloom(cwd)
+    # Check for bloom.conf
+    if bloom_repo != None:
+        bloom_repo.update('bloom')
+        if not os.path.exists('bloom.conf'):
+            # The repository has not been bloom initialized
+            not_a_bloom_release_repo()
 
 
 def parse_bloom_conf(cwd=None):
@@ -168,25 +168,22 @@ def summarize_repo_info(upstream_repo, upstream_type, upstream_branch):
     print(msg)
 
 
-def import_upstream(bloom_repo):
+def import_upstream(bloom_repo, args):
     # Ensure the bloom and upstream branches are tracked
     track_all_git_branches(['bloom', 'upstream'])
 
     # Check for a bloom branch
-    check_for_bloom(os.getcwd())
+    check_for_bloom(os.getcwd(), bloom_repo)
 
-    # Check for bloom.conf
-    bloom_repo.update('bloom')
-    if not os.path.exists('bloom.conf'):
-        # The repository has not been bloom initialized
-        not_a_bloom_release_repo()
     # Parse the bloom config file
     upstream_repo, upstream_type, upstream_branch = parse_bloom_conf()
+
     # Summarize the config contents
     summarize_repo_info(upstream_repo, upstream_type, upstream_branch)
-    # If git make some checks
+
+    # If the upstream repo is git, then assert some things about the repo
     if upstream_type == 'git':
-        print("Verifying a couple of things about the upstream git repo")
+        print("Verifying a couple of things about the upstream git repo...")
         # Ensure the upstream repo is not setup as a gbp
         assert_is_not_gbp_repo(upstream_repo)
 
@@ -223,7 +220,7 @@ def import_upstream(bloom_repo):
     else:
         gbp_major, gbp_minor, gbp_patch = \
             get_versions_from_upstream_tag(last_tag)
-        print("The latest upstream tag in the release repo is " \
+        print("The latest upstream tag in the release repository is " \
             + ansi('boldon') + last_tag + ansi('reset'))
         # Ensure the new version is greater than the last tag
         full_version_strict = StrictVersion(stack.version)
@@ -235,13 +232,25 @@ Version discrepancy:
 The upstream version, {0}, should be greater than the previous
 release version, {1}.
 
-Upstream should rerelease or you should fix the release repo.
+Upstream should re-release or you should fix the release repository.
 """.format(stack.version, last_tag_version))
         if full_version_strict == last_tag_version_strict:
-            warning("""\
+            if args.replace:
+                # Remove the conflicting tag first
+                warning("""\
 Version discrepancy:
-The upstream version, {0}, is equal to a previous version.
-""".format(stack.verison))
+The upstream version, {0}, is equal to a previous import version. \
+Removing conflicting tag before continuing because the '--replace' \
+options was specified.
+""".format(stack.version))
+                execute_command('git tag -d {0}'.format(last_tag))
+            else:
+                warning("""\
+Version discrepancy:
+The upstream version, {0}, is equal to a previous import version. \
+git-buildpackage will fail, if you want to replace the existing \
+upstream import use the '--replace' option.
+""".format(stack.version))
 
     # Look for upstream branch
     output = check_output('git branch', shell=True)
@@ -260,6 +269,9 @@ The upstream version, {0}, is equal to a previous version.
 
     # Import the tarball
     cmd = 'git import-orig {0}'.format(tarball_path + '.tar.gz')
+    if not args.interactive:
+        cmd += ' --no-interactive'
+    cmd += ' --no-merge'
     try:
         if check_call(cmd, shell=True) != 0:
             bailout("git-import-orig failed '{0}'".format(cmd))
@@ -268,18 +280,42 @@ The upstream version, {0}, is equal to a previous version.
 
 
 def main():
-    # Check that the current directory is a servicable git/bloom repo
+    parser = argparse.ArgumentParser(description="""\
+Imports the upstream repository specified by bloom using git-buildpackage's
+git-import-orig function. This should be run in a git-buildpackage repository
+which has had its upstream repository set using git-bloom-set-upstream.
+""")
+    parser.add_argument('-i', '--interactive',
+                        help="""\
+Allows git-import-orig to be run interactively, otherwise questions \
+are prevented by passing the '--non-interactive' flag.\
+""",
+                        action="store_true")
+    parser.add_argument('-r', '--replace',
+                        help="""\
+Replaces an existing upstream import if the git-buildpackage repository \
+already has the upstream version being released.\
+""",
+                        action="store_true")
+    parser.add_argument('-t', '--upstream-tag',
+                        help="""\
+This specifies an upstream tag to use for the import, but if this is \
+not specified then the newest (by calendar date) tag is used.\
+""")
+    args = parser.parse_args()
+
+    # Check that the current directory is a serviceable git/bloom repo
     bloom_repo = VcsClient('git', os.getcwd())
     if not bloom_repo.detect_presence():
         error("Not in a git repository.\n")
-        usage()
+        parser.print_help()
         return 1
 
     # Get the current git branch
     current_branch = get_current_git_branch()
 
     try:
-        import_upstream(bloom_repo)
+        import_upstream(bloom_repo, args)
 
         # Done!
         print("I'm happy.  You should be too.")
