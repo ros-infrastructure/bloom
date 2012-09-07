@@ -271,7 +271,8 @@ upstream import use the '--replace' option.
     cmd = 'git import-orig {0}'.format(tarball_path + '.tar.gz')
     if not args.interactive:
         cmd += ' --no-interactive'
-    cmd += ' --no-merge'
+    if not args.merge:
+        cmd += ' --no-merge'
     try:
         if check_call(cmd, shell=True) != 0:
             bailout("git-import-orig failed '{0}'".format(cmd))
@@ -285,23 +286,26 @@ Imports the upstream repository specified by bloom using git-buildpackage's
 git-import-orig function. This should be run in a git-buildpackage repository
 which has had its upstream repository set using git-bloom-set-upstream.
 """)
-    parser.add_argument('-i', '--interactive',
-                        help="""\
+    parser.add_argument('-i', '--interactive', help="""\
 Allows git-import-orig to be run interactively, otherwise questions \
 are prevented by passing the '--non-interactive' flag.\
 """,
                         action="store_true")
-    parser.add_argument('-r', '--replace',
-                        help="""\
+    parser.add_argument('-r', '--replace', help="""\
 Replaces an existing upstream import if the git-buildpackage repository \
 already has the upstream version being released.\
 """,
                         action="store_true")
-    parser.add_argument('-t', '--upstream-tag',
-                        help="""\
+    parser.add_argument('-t', '--upstream-tag', help="""\
 This specifies an upstream tag to use for the import, but if this is \
 not specified then the newest (by calendar date) tag is used.\
 """)
+    parser.add_argument('-m', '--merge', help="""\
+Asks git-import-orig to merge the resulting import into the master branch. \
+This is disabled by defualt. This will cause an editor to open for sign-off \
+of the merge.
+""",
+                        action="store_true")
     args = parser.parse_args()
 
     # Check that the current directory is a serviceable git/bloom repo
