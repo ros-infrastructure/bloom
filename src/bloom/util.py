@@ -197,7 +197,7 @@ def track_all_git_branches(branches=None, cwd=None):
     local_branches = local_branches.splitlines()
     # Strip local_branches of white space
     for index, local_branch in enumerate(local_branches):
-        local_branches[index] = local_branch.strip()
+        local_branches[index] = local_branch.strip('*').strip()
     # Either get the remotes or use the given list of branches to track
     remotes_out = check_output('git branch -r', shell=True, cwd=cwd)
     remotes = remotes_out.splitlines()
