@@ -202,8 +202,12 @@ def import_upstream(cwd, tmp_dir, args):
     upstream_dir = os.path.join(tmp_dir, 'upstream')
     os.makedirs(upstream_dir)
     upstream_client = VcsClient(upstream_type, upstream_dir)
-    branch = upstream_branch if upstream_branch != '(No branch set)' else ''
-    upstream_client.checkout(upstream_repo, branch)
+    if args.upstream_branch != None:
+        ver = args.upstream_branch
+        warning("Overriding the bloom.conf branch with {0}".format(ver))
+    else:
+        ver = upstream_branch if upstream_branch != '(No branch set)' else ''
+    upstream_client.checkout(upstream_repo, ver)
 
     # Parse the stack.xml
     if os.path.exists(os.path.join(upstream_dir, 'stack.xml')):
@@ -230,8 +234,8 @@ def import_upstream(cwd, tmp_dir, args):
     else:
         gbp_major, gbp_minor, gbp_patch = \
             get_versions_from_upstream_tag(last_tag)
-        print("The latest upstream tag in the release repository is " \
-            + ansi('boldon') + last_tag + ansi('reset'))
+        print("The latest upstream tag in the release repository is "
+              + ansi('boldon') + last_tag + ansi('reset'))
         # Ensure the new version is greater than the last tag
         full_version_strict = StrictVersion(stack.version)
         last_tag_version = '.'.join([gbp_major, gbp_minor, gbp_patch])
@@ -239,10 +243,10 @@ def import_upstream(cwd, tmp_dir, args):
         if full_version_strict < last_tag_version_strict:
             warning("""\
 Version discrepancy:
-The upstream version, {0}, should be greater than the previous
+The upstream version, {0}, should be greater than the previous \
 release version, {1}.
 
-Upstream should re-release or you should fix the release repository.
+Upstream should re-release or you should fix the release repository.\
 """.format(stack.version, last_tag_version))
         if full_version_strict == last_tag_version_strict:
             if args.replace:
@@ -251,7 +255,7 @@ Upstream should re-release or you should fix the release repository.
 Version discrepancy:
 The upstream version, {0}, is equal to a previous import version. \
 Removing conflicting tag before continuing because the '--replace' \
-options was specified.
+options was specified.\
 """.format(stack.version))
                 execute_command('git tag -d {0}'.format(last_tag))
                 execute_command('git push origin :refs/tags/'
@@ -261,7 +265,7 @@ options was specified.
 Version discrepancy:
 The upstream version, {0}, is equal to a previous import version. \
 git-buildpackage will fail, if you want to replace the existing \
-upstream import use the '--replace' option.
+upstream import use the '--replace' option.\
 """.format(stack.version))
 
     # Look for upstream branch
@@ -298,9 +302,9 @@ upstream import use the '--replace' option.
 
 def main():
     parser = argparse.ArgumentParser(description="""\
-Imports the upstream repository specified by bloom using git-buildpackage's
-git-import-orig function. This should be run in a git-buildpackage repository
-which has had its upstream repository set using git-bloom-set-upstream.
+Imports the upstream repository specified by bloom using git-buildpackage's \
+git-import-orig function. This should be run in a git-buildpackage repository \
+which has had its upstream repository set using git-bloom-set-upstream.\
 """)
     parser.add_argument('-i', '--interactive', help="""\
 Allows git-import-orig to be run interactively, otherwise questions \
@@ -312,9 +316,9 @@ Replaces an existing upstream import if the git-buildpackage repository \
 already has the upstream version being released.\
 """,
                         action="store_true")
-    parser.add_argument('-t', '--upstream-tag', help="""\
-This specifies an upstream tag to use for the import, but if this is \
-not specified then the newest (by calendar date) tag is used.\
+    parser.add_argument('-b', '--upstream-branch', help="""\
+This specifies an upstream branch to use for the import, but if this is \
+not specified then the branch is used.\
 """)
     parser.add_argument('-m', '--merge', help="""\
 Asks git-import-orig to merge the resulting import into the master branch. \
