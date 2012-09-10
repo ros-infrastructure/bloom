@@ -40,7 +40,7 @@ import tempfile
 import shutil
 
 from bloom.util import execute_command
-from enable_bloom_src_testing import get_path_and_pythonpath
+from export_bloom_from_src import get_path_and_pythonpath
 
 
 class BloomImportUpstreamTestSetups(unittest.TestCase):

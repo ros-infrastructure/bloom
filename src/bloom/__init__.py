@@ -1,1 +1,1 @@
-# This file must not be empty to be installed correctly by the stdeb -> debian process. 
+pass # This file cannot be empty, less it gets skipped over in packaging.

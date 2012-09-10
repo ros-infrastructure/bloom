@@ -39,7 +39,7 @@ from subprocess import check_call, Popen, PIPE
 import tempfile
 import shutil
 
-from enable_bloom_src_testing import get_path_and_pythonpath
+from export_bloom_from_src import get_path_and_pythonpath
 
 from vcstools import VcsClient
 

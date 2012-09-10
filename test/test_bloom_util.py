@@ -2,7 +2,7 @@ import os
 import sys
 import shutil
 
-from enable_bloom_src_testing import get_path_and_pythonpath
+from export_bloom_from_src import get_path_and_pythonpath
 # Setup environment for running commands
 path, ppath = get_path_and_pythonpath()
 os.putenv('PATH', path)
