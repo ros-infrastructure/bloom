@@ -274,3 +274,10 @@ def test_get_last_git_tag():
     assert get_last_git_tag(git_dir) == 'upstream/0.3.5'
     from shutil import rmtree
     rmtree(tmp_dir)
+
+
+def test_get_versions_from_upstream_tag():
+    tag = 'upstream/0.4.0'
+    from bloom.util import get_versions_from_upstream_tag
+    result = get_versions_from_upstream_tag(tag)
+    assert ['0', '4', '0'] == result, result

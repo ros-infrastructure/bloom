@@ -41,6 +41,7 @@ import os
 import re
 import rospkg
 import sys
+import tempfile
 
 from pprint import pprint
 from subprocess import Popen, CalledProcessError
@@ -132,8 +133,11 @@ def debianize_string(value):
 
 
 def process_stack_xml(args, cwd=None):
-    cwd = cwd if cwd else ''
+    """Reads in a stack.xml file and does some post processing on it"""
+    cwd = cwd if cwd else '.'
     xml_path = os.path.join(cwd, 'stack.xml')
+    if not os.path.exists(xml_path):
+        bailout("No stack.xml file found at: {0}".format(xml_path))
     stack = rospkg.stack.parse_stack_file(xml_path)
 
     data = {}
@@ -145,7 +149,7 @@ def process_stack_xml(args, cwd=None):
     data['Catkin-ChangelogType'] = ''
     data['Catkin-DebRulesType'] = stack.build_type
     data['Catkin-DebRulesFile'] = stack.build_type_file
-    #data['Catkin-CopyrightType'] = stack.copyright
+    # data['Catkin-CopyrightType'] = stack.copyright
     data['copyright'] = stack.copyright
 
     data['DebianInc'] = args.debian_revision
@@ -318,38 +322,39 @@ def commit_debian(stack_data, repo_path):
     call(repo_path, ['git', 'commit', '-m', message])
 
 
-def parse_options(args=sys.argv):
+def get_argument_parser():
+    """Creates and returns the argument parser"""
     import argparse
-    parser = argparse.ArgumentParser(description='Creates/updates a gpb from '
-                                                 'a catkin project.')
-    parser.add_argument('--working', help='A scratch build path. Default: '
-                                          '%(default)s',
-                        default='.tmp/%u/' % os.getpid())
+    parser = argparse.ArgumentParser(description="""\
+Creates or updates a git-buildpackage repository using a catkin project.\
+""")
+    parser.add_argument('--working', help='A scratch build path. Defaults to '
+                                          'a temporary directory.')
     parser.add_argument('--debian-revision', dest='debian_revision',
                         help='Bump the changelog debian number.'
                              ' Please enter a monotonically increasing number '
                              'from the last upload.',
                         default=0)
     parser.add_argument('--install-prefix', dest='install_prefix',
-                        help='The full prefix ...')
+                        help='The installation prefix')
     parser.add_argument('--distros', nargs='+',
-                        help='A list of debian distros. Default: %(default)s',
+                        help='A list of debian distros.',
                         default=[])
 
     #ros specific stuff.
-    parser.add_argument('rosdistro', help='The ros distro. electric, '
-                                          'fuerte, groovy')
-    return parser.parse_args(args)
+    parser.add_argument('rosdistro',
+                        help="The ros distro. Like 'electric', 'fuerte', "
+                             "or 'groovy'")
+    return parser
 
 
-def execute_bloom_generate_debian(bloom_repo):
-    bloom_repo.update('master')
-
+def execute_bloom_generate_debian(args, bloom_repo):
+    """Executes the generation of the debian.  Assumes in bloom git repo."""
     last_tag = get_last_git_tag()
     if not last_tag:
         bailout("There are no upstream versions imported into this repo."
-                "Try:\n\ngit bloom-import-upstream")
-    print("The latest upstream tag in the release repo is"
+                "Run this first:\n\tgit bloom-import-upstream")
+    print("The latest upstream tag in the release repo is "
           "{0}{1}{2}".format(ansi('boldon'), last_tag, ansi('reset')))
 
     major, minor, patch = get_versions_from_upstream_tag(last_tag)
@@ -357,11 +362,10 @@ def execute_bloom_generate_debian(bloom_repo):
     print("Upstream version is: {0}{1}{2}"
           "".format(ansi('boldon'), version_str, ansi('reset')))
 
-    args = parse_options(sys.argv)
-
     stamp = datetime.datetime.now(dateutil.tz.tzlocal())
     stack_data = process_stack_xml(args)
-    make_working(args.working)
+    working = args.working if args.working else tempfile.mkdtemp()
+    make_working(working)
 
     debian_distros = args.distros
     if not debian_distros:
@@ -379,7 +383,7 @@ def execute_bloom_generate_debian(bloom_repo):
                  'Debian release %(Version)s' % data])
     except rosdep2.catkin_support.ValidationFailed as e:
         print(e.args[0], file=sys.stderr)
-        sys.exit(1)
+        return 1
     except (KeyError, rosdep2.ResolutionError) as e:
         rosdep_key = str(e)
         if not isinstance(e, KeyError):
@@ -396,7 +400,17 @@ rosdep.yaml entry for it in your sources.
     return 0
 
 
-def main(args):
+def main():
+    # Parse the commandline arguments
+    parser = get_argument_parser()
+    args = parser.parse_args()
+
+    # Ensure we are in a git repository
+    if execute_command('git status') != 0:
+        parser.print_help()
+        bailout("This is not a valid git repository.")
+
+    # Ensure all local branches are tracked
     track_all_git_branches()
 
     if execute_command('git show-ref refs/heads/bloom') != 0:
@@ -408,7 +422,7 @@ def main(args):
     bloom_repo = VcsClient('git', os.getcwd())
     result = 0
     try:
-        result = execute_bloom_generate_debian()
+        result = execute_bloom_generate_debian(args, bloom_repo)
     finally:
         if current_branch:
             bloom_repo.update(current_branch)
