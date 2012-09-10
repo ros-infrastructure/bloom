@@ -45,6 +45,16 @@ import sys
 from pprint import pprint
 from subprocess import Popen, CalledProcessError
 
+from bloom.util import track_all_git_branches, execute_command, bailout
+from bloom.util import get_current_git_branch, get_last_git_tag, ansi
+from bloom.util import get_versions_from_upstream_tag
+
+try:
+    from vcstools import VcsClient
+except ImportError:
+    print("vcstools was not detected, please install it.", file=sys.stderr)
+    sys.exit(1)
+
 try:
     import rosdep2.catkin_support
     from rosdep2.platforms.debian import APT_INSTALLER
@@ -121,8 +131,9 @@ def debianize_string(value):
     return value
 
 
-def parse_stack_xml(args):
-    xml_path = os.path.join('.', 'stack.xml')
+def process_stack_xml(args, cwd=None):
+    cwd = cwd if cwd else ''
+    xml_path = os.path.join(cwd, 'stack.xml')
     stack = rospkg.stack.parse_stack_file(xml_path)
 
     data = {}
@@ -307,9 +318,49 @@ def commit_debian(stack_data, repo_path):
     call(repo_path, ['git', 'commit', '-m', message])
 
 
-def main(args):
+def parse_options(args=sys.argv):
+    import argparse
+    parser = argparse.ArgumentParser(description='Creates/updates a gpb from '
+                                                 'a catkin project.')
+    parser.add_argument('--working', help='A scratch build path. Default: '
+                                          '%(default)s',
+                        default='.tmp/%u/' % os.getpid())
+    parser.add_argument('--debian-revision', dest='debian_revision',
+                        help='Bump the changelog debian number.'
+                             ' Please enter a monotonically increasing number '
+                             'from the last upload.',
+                        default=0)
+    parser.add_argument('--install-prefix', dest='install_prefix',
+                        help='The full prefix ...')
+    parser.add_argument('--distros', nargs='+',
+                        help='A list of debian distros. Default: %(default)s',
+                        default=[])
+
+    #ros specific stuff.
+    parser.add_argument('rosdistro', help='The ros distro. electric, '
+                                          'fuerte, groovy')
+    return parser.parse_args(args)
+
+
+def execute_bloom_generate_debian(bloom_repo):
+    bloom_repo.update('master')
+
+    last_tag = get_last_git_tag()
+    if not last_tag:
+        bailout("There are no upstream versions imported into this repo."
+                "Try:\n\ngit bloom-import-upstream")
+    print("The latest upstream tag in the release repo is"
+          "{0}{1}{2}".format(ansi('boldon'), last_tag, ansi('reset')))
+
+    major, minor, patch = get_versions_from_upstream_tag(last_tag)
+    version_str = '.'.join([major, minor, patch])
+    print("Upstream version is: {0}{1}{2}"
+          "".format(ansi('boldon'), version_str, ansi('reset')))
+
+    args = parse_options(sys.argv)
+
     stamp = datetime.datetime.now(dateutil.tz.tzlocal())
-    stack_data = parse_stack_xml(args)
+    stack_data = process_stack_xml(args)
     make_working(args.working)
 
     debian_distros = args.distros
@@ -341,5 +392,24 @@ If [{1}] is catkin project, make sure it has been added to the gbpdistro file.
 If [{2}] is a system dependency, make sure there is a \
 rosdep.yaml entry for it in your sources.
 """.format(rosdep_key), file=sys.stderr)
-        sys.exit(1)
-    sys.exit(0)
+        return 1
+    return 0
+
+
+def main(args):
+    track_all_git_branches()
+
+    if execute_command('git show-ref refs/heads/bloom') != 0:
+        bailout("This does not appear to be a bloom release repo. "
+                "Please initialize it first using:\n\n"
+                "git bloom-set-upstream <UPSTREAM_VCS_URL> <VCS_TYPE>")
+
+    current_branch = get_current_git_branch()
+    bloom_repo = VcsClient('git', os.getcwd())
+    result = 0
+    try:
+        result = execute_bloom_generate_debian()
+    finally:
+        if current_branch:
+            bloom_repo.update(current_branch)
+    return result
