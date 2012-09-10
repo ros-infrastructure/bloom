@@ -31,9 +31,34 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import sys
+from __future__ import print_function
 
-from bloom.import_upstream import main
+import os
+
+
+def get_path_and_pythonpath():
+    this_location = os.path.abspath(__file__)
+    this_location = os.path.dirname(this_location)
+
+    # print this_location
+
+    bin_location = os.path.join(this_location, '..', 'bin')
+    bin_location = os.path.abspath(bin_location)
+
+    # print bin_location
+
+    src_location = os.path.join(this_location, '..', 'src')
+    src_location = os.path.abspath(src_location)
+
+    path = bin_location + ':' + os.environ['PATH']
+    python_path = src_location + ':' + os.environ['PYTHONPATH']
+
+    return path, python_path
+
 
 if __name__ == '__main__':
-    sys.exit(main())
+    path, ppath = get_path_and_pythonpath()
+    path_export = 'export PATH=' + path
+    ppath_export = 'export PYTHONPATH=' + ppath
+
+    print('{0}; {1}'.format(path_export, ppath_export))

@@ -1,66 +1,39 @@
-#!/bin/bash -e
+#!/usr/bin/env python
+# Software License Agreement (BSD License)
+#
+# Copyright (c) 2012, Willow Garage, Inc.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+#  * Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#  * Redistributions in binary form must reproduce the above
+#    copyright notice, this list of conditions and the following
+#    disclaimer in the documentation and/or other materials provided
+#    with the distribution.
+#  * Neither the name of Willow Garage, Inc. nor the names of its
+#    contributors may be used to endorse or promote products derived
+#    from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
 
-TOP=$(cd `dirname $0` ; /bin/pwd)
-. $TOP/bloom_util.sh
+import sys
 
-LONG_USAGE=$(/bin/cat <<EOF
-usage: git bloom set-upstream <upstream-repo> <upstream-repo-type>
+from bloom.set_upstream import main
 
-Creates (if necessary) an orphan branch "bloom" in the current gbp repo and sets
-the upstream repo and type in the bloom.conf.  The rest of the bloom utilities
-pivot off of these values.
-
-EOF
-)
-USAGE=$LONG_USAGE
-# SUBDIRECTORY_OK=1
-
-. "$(git --exec-path)/git-sh-setup"
-
-UPSTREAM_REPO=$1
-if [ $# -lt 2 ] ; then
-    echo "${USAGE}"
-    exit 1
-fi
-
-UPSTREAM_TYPE=$2
-
-case $UPSTREAM_TYPE in
-    git) ;;
-    svn) ;;
-    hg) ;;
-    *)
-        /bin/echo "What kind of repo type is $UPSTREAM_TYPE?"
-        exit 1
-        ;;
-esac
-
-echo "Upstream ${boldon}$UPSTREAM_REPO${boldoff} type: ${boldon}$UPSTREAM_TYPE${boldoff}"
-require_work_tree
-
-if ! git show-ref --heads
-then
-    status "You're in a freshly initialized repo, no?"
-    maybe_continue y "Going to make an empty initial commit in $(pwd)"
-    git commit -m "initial commit" --allow-empty
-fi
-
-if git show-branch origin/bloom
-then
-    status "Found remote branch bloom, checking out."
-    git checkout bloom
-else
-    status "No bloom branch... initializing"
-    git symbolic-ref HEAD refs/heads/bloom
-    rm -f .git/index
-    git clean -fdx
-    git commit --allow-empty -m "Initial bloom branch"
-fi
-
-git config -f bloom.conf bloom.upstream "$UPSTREAM_REPO"
-git config -f bloom.conf bloom.upstreamtype "$UPSTREAM_TYPE"
-
-git add bloom.conf
-git commit -m "bloom branch update by git-bloom-set-upstream"
-
-exit 0
+if __name__ == '__main__':
+    sys.exit(main())
