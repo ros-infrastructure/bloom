@@ -131,5 +131,7 @@ class BloomSetUpstreamTest(BloomSetUpstreamTestSetups):
         bloom_conf_path = os.path.join(self.git_repo, 'bloom.conf')
         assert os.path.exists(bloom_conf_path)
         expected_contents = '[bloom]\n\tupstream = https://github.' \
-                            'com/ros/example.git\n\tupstreamtype = git\n'
-        assert expected_contents == open(bloom_conf_path, 'r').read()
+                            'com/ros/example.git\n\tupstreamtype = git' \
+                            '\n\tupstreambranch = \n'
+        assert expected_contents == open(bloom_conf_path, 'r').read(), \
+               open(bloom_conf_path, 'r').read()

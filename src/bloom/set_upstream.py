@@ -137,7 +137,7 @@ def main():
     if len(sys.argv) == 4:
         upstream_repo_branch = sys.argv[3]
     else:
-        upstream_repo_branch = None
+        upstream_repo_branch = ''
 
     # Create vcs client
     bloom_repo = VcsClient('git', os.getcwd())
