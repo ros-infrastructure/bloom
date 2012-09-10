@@ -48,7 +48,8 @@ from bloom.util import get_current_git_branch, error
 def usage():
     """Prints usage message"""
     print("""\
-usage: git bloom set-upstream <upstream-repo> <upstream-repo-type>
+usage: git bloom set-upstream <upstream-repo> <upstream-repo-type> \
+[<upstream-repo-branch>]
 
 Creates (if necessary) an orphan branch "bloom" in the current gbp repo
 and sets the upstream repo and type in the bloom.conf.  The rest of the
@@ -68,7 +69,8 @@ def check_git_init():
         execute_command('git commit -m "initial commit" --allow-empty')
 
 
-def set_upstream(bloom_repo, upstream_repo, upstream_repo_type):
+def set_upstream(bloom_repo, upstream_repo, upstream_repo_type,
+                 upstream_repo_branch):
     # Check for freshly initialized repo
     check_git_init()
 
@@ -91,13 +93,17 @@ def set_upstream(bloom_repo, upstream_repo, upstream_repo_type):
     cmd = 'git config -f bloom.conf ' \
         + 'bloom.upstreamtype "{0}"'.format(upstream_repo_type)
     execute_command(cmd)
+    cmd = 'git config -f bloom.conf ' \
+        + 'bloom.upstreambranch "{0}"'.format(upstream_repo_branch)
+    execute_command(cmd)
 
     execute_command('git add bloom.conf')
     cmd = 'git commit -m "bloom branch update by git-bloom-set-upstream"'
     execute_command(cmd)
 
 
-def summarize_arguments(upstream_repo, upstream_repo_type):
+def summarize_arguments(upstream_repo, upstream_repo_type,
+                        upstream_repo_branch):
     # Summarize the requested operation
     summary_msg = "Upstream " + ansi('boldon') + upstream_repo
     summary_msg += ansi('boldoff') + " type: " + ansi('boldon')
@@ -121,19 +127,24 @@ def validate_args(bloom_repo, upstream_repo_type):
 
 def main():
     # Ensure we have the corrent number of arguments
-    if len(sys.argv) != 3:
+    if len(sys.argv) not in [3, 4]:
         usage()
         return 1
 
     # Gather command line arguments into variables
     upstream_repo = sys.argv[1]
     upstream_repo_type = sys.argv[2]
+    if len(sys.argv) == 4:
+        upstream_repo_branch = sys.argv[3]
+    else:
+        upstream_repo_branch = None
 
     # Create vcs client
     bloom_repo = VcsClient('git', os.getcwd())
 
     # Summarize the requested operation
-    summarize_arguments(upstream_repo, upstream_repo_type)
+    summarize_arguments(upstream_repo, upstream_repo_type,
+                        upstream_repo_branch)
 
     # Validate the arguments and repository
     if not validate_args(bloom_repo, upstream_repo_type):
@@ -143,7 +154,8 @@ def main():
     # Store the current branch
     current_branch = get_current_git_branch()
     try:
-        set_upstream(bloom_repo, upstream_repo, upstream_repo_type)
+        set_upstream(bloom_repo, upstream_repo, upstream_repo_type,
+                     upstream_repo_branch)
         print("Upstream successively set.")
         return 0
     finally:

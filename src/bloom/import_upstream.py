@@ -207,6 +207,8 @@ def import_upstream(cwd, tmp_dir, args):
         warning("Overriding the bloom.conf branch with {0}".format(ver))
     else:
         ver = upstream_branch if upstream_branch != '(No branch set)' else ''
+    # XXX TODO: Need to validate if ver is valid for the upstream repo...
+    # see: https://github.com/vcstools/vcstools/issues/4
     upstream_client.checkout(upstream_repo, ver)
 
     # Parse the stack.xml
