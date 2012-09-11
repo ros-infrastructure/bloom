@@ -35,10 +35,11 @@ from __future__ import unicode_literals
 
 import os
 import unittest
-from subprocess import check_output, Popen, PIPE
+from subprocess import Popen, PIPE
 import tempfile
 import shutil
 
+from bloom.util import check_output
 from bloom.util import execute_command
 from export_bloom_from_src import get_path_and_pythonpath
 

@@ -37,7 +37,8 @@ import sys
 import argparse
 import shutil
 
-from subprocess import check_output, CalledProcessError, check_call
+from subprocess import CalledProcessError, check_call
+from bloom.util import check_output
 
 from bloom.util import track_all_git_branches, warning
 from bloom.util import bailout, execute_command, ansi, parse_stack_xml

@@ -5,7 +5,7 @@ from __future__ import print_function
 
 import sys
 
-from subprocess import check_call, check_output, CalledProcessError, PIPE
+from subprocess import check_call, CalledProcessError, PIPE
 from subprocess import Popen
 
 try:
@@ -15,6 +15,14 @@ except ImportError:
     sys.exit(1)
 
 _ansi = {}
+
+
+def check_output(cmd, cwd=None, stdin=None, stderr=None, shell=False):
+    """Backwards compatible check_output"""
+    p = Popen(cmd, cwd=cwd, stdin=stdin, stderr=stderr, shell=shell,
+              stdout=PIPE)
+    out, err = p.communicate()
+    return out
 
 
 def create_temporary_directory(prefix_dir=None):
@@ -191,7 +199,7 @@ def track_all_git_branches(branches=None, cwd=None):
     """
     # Save current branch
     current_branch = get_current_git_branch(cwd)
-    from subprocess import check_output
+    from bloom.util import check_output
     # Get the local branches
     local_branches = check_output('git branch', shell=True, cwd=cwd)
     local_branches = local_branches.splitlines()
