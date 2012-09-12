@@ -50,8 +50,16 @@ def get_path_and_pythonpath():
     src_location = os.path.join(this_location, '..', 'src')
     src_location = os.path.abspath(src_location)
 
-    path = bin_location + ':' + os.environ['PATH']
+    path = bin_location
+    try:
+        path += ":" + os.environ['PATH']
+    except KeyError:
+        pass
     python_path = src_location + ':' + os.environ['PYTHONPATH']
+    try:
+        python_path += ":" + os.environ['PYTHONPATH']
+    except KeyError:
+        pass
 
     return path, python_path
 
