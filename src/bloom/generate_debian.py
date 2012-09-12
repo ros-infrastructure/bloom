@@ -362,6 +362,9 @@ def execute_bloom_generate_debian(args, bloom_repo):
     print("Upstream version is: {0}{1}{2}"
           "".format(ansi('boldon'), version_str, ansi('reset')))
 
+    # Make sure we are on the correct upstream branch
+    bloom_repo.update(last_tag)
+
     stamp = datetime.datetime.now(dateutil.tz.tzlocal())
     stack_data = process_stack_xml(args)
     working = args.working if args.working else tempfile.mkdtemp()
