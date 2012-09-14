@@ -261,7 +261,7 @@ def track_all_git_branches(branches=None, cwd=None):
     # Now track any remotes that are not local
     for branch in to_track:
         if remotes_out.count(branch) > 0:
-            cmd = 'git checkout --track -b {0}'.format(branch)
+            cmd = 'git checkout {0}'.format(branch)
             execute_command(cmd, cwd=cwd)
     # Restore original branch
     if current_branch:
