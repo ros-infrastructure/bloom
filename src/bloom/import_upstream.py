@@ -90,10 +90,10 @@ def check_for_bloom(cwd=None, bloom_repo=None):
     Checks for the bloom branch, else looks for and converts the catkin branch.
     Then it checks for the bloom branch and that it contains a bloom.conf file.
     """
-    cmd = 'git branch'
-    if check_output(cmd, shell=True, cwd=cwd).count('bloom') == 0:
+    branches = check_output('git branch', shell=True, cwd=cwd)
+    if branches.count('bloom') == 0:
         # There is not bloom branch, check for the legacy catkin branch
-        if check_output(cmd, shell=True, cwd=cwd).count('catkin') == 0:
+        if branches.count('catkin') == 0:
             # Neither was found
             not_a_bloom_release_repo()
         else:
