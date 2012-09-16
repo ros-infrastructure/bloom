@@ -149,7 +149,7 @@ def process_stack_xml(args, cwd=None):
     data['Catkin-ChangelogType'] = ''
     data['Catkin-DebRulesType'] = stack.build_type
     data['Catkin-DebRulesFile'] = stack.build_type_file
-    # data['Catkin-CopyrightType'] = stack.copyright
+    data['Catkin-CopyrightType'] = stack.copyright
     data['copyright'] = stack.copyright
 
     data['DebianInc'] = args.debian_revision
@@ -161,7 +161,7 @@ def process_stack_xml(args, cwd=None):
 
     data['ROS_DISTRO'] = args.rosdistro
 
-    #allow override of these values
+    # allow override of these values
     if args.rosdistro == 'backports':
         data['INSTALL_PREFIX'] = \
             args.install_prefix if args.install_prefix != None else '/usr'
@@ -225,7 +225,11 @@ def expand(fname, stack_data, dest_dir, filetype=''):
             ifilename = fname + '.em'
         ifilename = os.path.join('resources', 'em', ifilename)
         print("Reading %s template from %s" % (fname, ifilename))
-        file_em = pkg_resources.resource_string('bloom', ifilename)
+        try:
+            file_em = pkg_resources.resource_string('bloom', ifilename)
+        except IOError:
+            warning("Could not find {0}, skipping...".format(ifilename))
+            return False
 
     s = em.expand(file_em, **stack_data)
 
@@ -234,6 +238,7 @@ def expand(fname, stack_data, dest_dir, filetype=''):
         print(s, file=ofilestr)
     if fname == 'rules':
         os.chmod(ofilename, 0755)
+    return True
 
 
 def find_deps(stack_data, apt_installer, rosdistro, debian_distro):
@@ -292,8 +297,8 @@ def generate_deb(stack_data, repo_path, stamp, rosdistro, debian_distro):
            filetype=stack_data['Catkin-ChangelogType'])
     expand('rules', stack_data, dest_dir,
            filetype=stack_data['Catkin-DebRulesType'])
-    # expand('copyright', stack_data, dest_dir,
-    #        filetype=stack_data['Catkin-CopyrightType'])
+    expand('copyright', stack_data, dest_dir,
+           filetype=stack_data['Catkin-CopyrightType'])
     ofilename = os.path.join(dest_dir, 'copyright')
     ofilestr = open(ofilename, "w")
     print(stack_data['copyright'], file=ofilestr)
@@ -377,6 +382,8 @@ def execute_bloom_generate_debian(args, bloom_repo):
 
     try:
         for debian_distro in debian_distros:
+            # XXX TODO: Why is this copy needed, should it be deepcopy,
+            # is it related to the lack of packages in deb descriptions?
             data = copy.copy(stack_data)
             generate_deb(data, ".", stamp, args.rosdistro, debian_distro)
             commit_debian(data, ".")
