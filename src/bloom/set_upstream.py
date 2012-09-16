@@ -42,7 +42,8 @@ except ImportError:
     sys.exit(1)
 
 from bloom.util import maybe_continue, execute_command, bailout, ansi
-from bloom.util import get_current_git_branch, error
+from bloom.util import error
+from bloom.git import get_current_branch
 
 
 def usage():
@@ -152,7 +153,7 @@ def main():
         return 1
 
     # Store the current branch
-    current_branch = get_current_git_branch()
+    current_branch = get_current_branch()
     try:
         set_upstream(bloom_repo, upstream_repo, upstream_repo_type,
                      upstream_repo_branch)

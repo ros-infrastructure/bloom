@@ -40,11 +40,14 @@ import shutil
 from subprocess import CalledProcessError, check_call
 from bloom.util import check_output
 
-from bloom.util import track_all_git_branches, warning
+from bloom.util import warning
 from bloom.util import bailout, execute_command, ansi, parse_stack_xml
 from bloom.util import assert_is_not_gbp_repo, create_temporary_directory
-from bloom.util import get_last_git_tag, get_current_git_branch, error
+from bloom.util import error
 from bloom.util import get_versions_from_upstream_tag, segment_version
+from bloom.git import get_current_branch
+from bloom.git import track_branches
+from bloom.git import get_last_tag_by_date
 
 from distutils.version import StrictVersion
 
@@ -82,7 +85,7 @@ def convert_catkin_to_bloom(cwd=None):
 def not_a_bloom_release_repo():
     bailout('This does not appear to be a bloom release repo. ' \
             'Please initialize it first using: git ' \
-            'bloom-set-upstream <UPSTREAM_VCS_URL> <VCS_TYPE>')
+            'bloom-set-upstream <UPSTREAM_VCS_URL> <VCS_TYPE> [<VCS_BRANCH>]')
 
 
 def check_for_bloom(cwd=None, bloom_repo=None):
@@ -172,7 +175,7 @@ def summarize_repo_info(upstream_repo, upstream_type, upstream_branch):
 
 def import_upstream(cwd, tmp_dir, args):
     # Ensure the bloom and upstream branches are tracked locally
-    track_all_git_branches(['bloom', 'upstream'])
+    track_branches(['bloom', 'upstream'])
 
     # Create a clone of the bloom_repo to help isolate the activity
     bloom_repo_clone_dir = os.path.join(tmp_dir, 'bloom_clone')
@@ -182,7 +185,7 @@ def import_upstream(cwd, tmp_dir, args):
     bloom_repo.checkout('file://{0}'.format(cwd))
 
     # Ensure the bloom and upstream branches are tracked from the original
-    track_all_git_branches(['bloom', 'upstream'])
+    track_branches(['bloom', 'upstream'])
 
     # Check for a bloom branch
     check_for_bloom(os.getcwd(), bloom_repo)
@@ -231,7 +234,7 @@ def import_upstream(cwd, tmp_dir, args):
     upstream_client.export_repository(stack.version, tarball_path)
 
     # Get the gbp version elements from either the last tag or the default
-    last_tag = get_last_git_tag()
+    last_tag = get_last_tag_by_date()
     if last_tag == '':
         gbp_major, gbp_minor, gbp_patch = segment_version(stack.version)
     else:
@@ -340,7 +343,7 @@ of the merge.
         return 1
 
     # Get the current git branch
-    current_branch = get_current_git_branch()
+    current_branch = get_current_branch()
 
     # Create a working temp directory
     tmp_dir = create_temporary_directory()

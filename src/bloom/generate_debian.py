@@ -46,9 +46,12 @@ import tempfile
 from pprint import pprint
 from subprocess import Popen, CalledProcessError
 
-from bloom.util import track_all_git_branches, execute_command, bailout
-from bloom.util import get_current_git_branch, get_last_git_tag, ansi
-from bloom.util import get_versions_from_upstream_tag
+from bloom.util import execute_command, bailout
+from bloom.util import get_last_tag_by_date, ansi
+from bloom.util import get_versions_from_upstream_tag, warning
+from bloom.git import get_current_branch
+from bloom.git import track_branches
+from bloom.git import get_last_tag_by_date
 
 try:
     from vcstools import VcsClient
@@ -349,13 +352,15 @@ Creates or updates a git-buildpackage repository using a catkin project.\
     #ros specific stuff.
     parser.add_argument('rosdistro',
                         help="The ros distro. Like 'electric', 'fuerte', "
-                             "or 'groovy'")
+                             "or 'groovy'. If this is set to backports then "
+                             "the resulting packages will not have the "
+                             "ros-<rosdistro>- prefix.")
     return parser
 
 
 def execute_bloom_generate_debian(args, bloom_repo):
     """Executes the generation of the debian.  Assumes in bloom git repo."""
-    last_tag = get_last_git_tag()
+    last_tag = get_last_tag_by_date()
     if not last_tag:
         bailout("There are no upstream versions imported into this repo."
                 "Run this first:\n\tgit bloom-import-upstream")
@@ -421,14 +426,15 @@ def main():
         bailout("This is not a valid git repository.")
 
     # Ensure all local branches are tracked
-    track_all_git_branches()
+    track_branches()
 
     if execute_command('git show-ref refs/heads/bloom') != 0:
         bailout("This does not appear to be a bloom release repo. "
                 "Please initialize it first using:\n\n"
-                "git bloom-set-upstream <UPSTREAM_VCS_URL> <VCS_TYPE>")
+                "git bloom-set-upstream <UPSTREAM_VCS_URL> <VCS_TYPE> "
+                "[<VCS_BRANCH>]")
 
-    current_branch = get_current_git_branch()
+    current_branch = get_current_branch()
     bloom_repo = VcsClient('git', os.getcwd())
     result = 0
     try:

@@ -194,27 +194,6 @@ def execute_command(cmd, shell=True, autofail=True, silent=True, cwd=None):
     return result
 
 
-def get_current_git_branch(directory=None):
-    """
-    Returns the current git branch by parsing the output of `git branch`
-
-    This will raise a RuntimeError if the current working directory is not
-    a git repository.  If no branch could be determined it will return None,
-    i.e. (no branch) will return None.
-    """
-    cmd = 'git branch --no-color'
-    output = check_output(cmd, shell=True, cwd=directory)
-    output = output.splitlines()
-    for token in output:
-        if token.strip().startswith('*'):
-            token = token[2:]
-            if token == '(no branch)':
-                return None
-            return token
-
-    return None
-
-
 def error(msg):
     """Prints a message as an error"""
     print(ansi('redf') + ansi('boldon') + 'Error: ' + msg + ansi('reset'))
@@ -223,49 +202,6 @@ def error(msg):
 def warning(msg):
     """Prints a message as a warning"""
     print(ansi('yellowf') + ansi('boldon') + 'Warning: ' + msg + ansi('reset'))
-
-
-def track_all_git_branches(branches=None, cwd=None):
-    """
-    Tracks all specified branches.
-
-    :param branches: a list of branches that are to be tracked if not already
-    tracked.  If this is set to None then all remote branches will be tracked.
-    """
-    # Save current branch
-    current_branch = get_current_git_branch(cwd)
-    from bloom.util import check_output
-    # Get the local branches
-    local_branches = check_output('git branch', shell=True, cwd=cwd)
-    local_branches = local_branches.splitlines()
-    # Strip local_branches of white space
-    for index, local_branch in enumerate(local_branches):
-        local_branches[index] = local_branch.strip('*').strip()
-    # Either get the remotes or use the given list of branches to track
-    remotes_out = check_output('git branch -r', shell=True, cwd=cwd)
-    remotes = remotes_out.splitlines()
-    if branches == None:
-        branches = remotes
-    # Subtract the locals from the remotes
-    to_track = []
-    for remote in branches:
-        remote = remote.strip()
-        if remote.count('master') != 0:
-            continue
-        if remote.count('/') > 0:
-            remote_branch = remote.split('/')[1]
-        else:
-            remote_branch = remote
-        if remote_branch not in local_branches:
-            to_track.append(remote_branch)
-    # Now track any remotes that are not local
-    for branch in to_track:
-        if remotes_out.count(branch) > 0:
-            cmd = 'git checkout {0}'.format(branch)
-            execute_command(cmd, cwd=cwd)
-    # Restore original branch
-    if current_branch:
-        execute_command('git checkout {0}'.format(current_branch), cwd=cwd)
 
 
 def assert_is_remote_git_repo(repo):
@@ -298,20 +234,6 @@ def assert_is_not_gbp_repo(repo):
                 "indicating a gbp.".format(repo))
     else:
         print(' pass')
-
-
-def get_last_git_tag(cwd=None):
-    """
-    Returns the latest git tag in the given git repo, but returns '' if
-    there are not tags.
-    """
-    cmd = "git for-each-ref --sort='*authordate' " \
-          "--format='%(refname:short)' refs/tags/upstream"
-    output = check_output(cmd, shell=True, cwd=cwd, stderr=PIPE)
-    output = output.splitlines()
-    if len(output) == 0:
-        return ''
-    return output[-1]
 
 
 def get_versions_from_upstream_tag(tag):
