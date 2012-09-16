@@ -21,3 +21,5 @@ pip-log.txt
 .tox
 
 MANIFEST
+
+*.DS_Store
