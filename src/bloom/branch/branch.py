@@ -46,6 +46,14 @@ def execute_branch(src, dst, patch, interactive, pretend):
         # If no
             # Exit
 
-    # Extract the source branch to temporary storage
-    # Orphan the the destination branch
+    # If create_destination_branch
+        # git branch 'source branch' 'destination_branch'
+    # If create_destination_patches_branch
+        # bloom.git.create_branch('source branch'+'/patches', orphaned=True)
+
+    # Attempt to merge source branch from destination branch
+    # Try:
+        # git merge -s theirs 'source branch'
+    # Except subprocess.CalledProcessError:
+        # drop out, there was a conflict
     pass
