@@ -88,7 +88,7 @@ def not_a_bloom_release_repo():
             'bloom-set-upstream <UPSTREAM_VCS_URL> <VCS_TYPE> [<VCS_BRANCH>]')
 
 
-def check_for_bloom(cwd=None, bloom_repo=None):
+def check_for_bloom(cwd=None):
     """
     Checks for the bloom branch, else looks for and converts the catkin branch.
     Then it checks for the bloom branch and that it contains a bloom.conf file.
@@ -104,11 +104,13 @@ def check_for_bloom(cwd=None, bloom_repo=None):
             print('catkin branch detected, up converting to the bloom branch')
             convert_catkin_to_bloom(cwd)
     # Check for bloom.conf
-    if bloom_repo != None:
-        bloom_repo.update('bloom')
-        if not os.path.exists('bloom.conf'):
-            # The repository has not been bloom initialized
-            not_a_bloom_release_repo()
+    try:
+        execute_command('git checkout bloom', cwd=cwd)
+    except CalledProcessError:
+        not_a_bloom_release_repo()
+    if not os.path.exists('bloom.conf'):
+        # The repository has not been bloom initialized
+        not_a_bloom_release_repo()
 
 
 def parse_bloom_conf(cwd=None):
