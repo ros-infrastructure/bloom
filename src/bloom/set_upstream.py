@@ -41,9 +41,10 @@ except ImportError:
     print("vcstools was not detected, please install it.", file=sys.stderr)
     sys.exit(1)
 
-from bloom.util import maybe_continue, execute_command, bailout, ansi
-from bloom.util import error
-from bloom.git import get_current_branch
+from . util import maybe_continue, execute_command, bailout, ansi
+from . util import error
+from . git import get_current_branch
+from . git import create_branch
 
 
 def usage():
@@ -83,10 +84,7 @@ def set_upstream(bloom_repo, upstream_repo, upstream_repo_type,
         bloom_repo.update('bloom')
     else:
         # No bloom branch found, create one
-        execute_command('git symbolic-ref HEAD refs/heads/bloom')
-        execute_command('rm -f .git/index')
-        execute_command('git clean -fdx')
-        execute_command('git commit --allow-empty -m "Initial bloom branch"')
+        create_branch('bloom')
 
     # Now set the upstream using the bloom config
     cmd = 'git config -f bloom.conf bloom.upstream "{0}"'.format(upstream_repo)
