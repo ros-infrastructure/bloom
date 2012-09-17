@@ -14,6 +14,8 @@ setup(name='bloom',
                         'vcstools'],
       author='Tully Foote, William Woodall',
       author_email='tfoote@willowgarage.com, wwoodall@willowgarage.com',
+      maintainer='William Woodall',
+      maintainer_email='wwoodall@gmail.com',
       url='http://www.ros.org/wiki/bloom',
       download_url='http://pr.willowgarage.com/downloads/bloom/',
       keywords=['ROS'],
@@ -21,7 +23,7 @@ setup(name='bloom',
                    'License :: OSI Approved :: BSD License'],
       description='A tool for facilitating git-buildpackage releases',
       long_description='''\
-A package to facilitate releasing into gitbuildpackage repositories.
+A package to facilitate releasing into gitbuildpackage repositories.\
 ''',
       license='BSD'
       )
