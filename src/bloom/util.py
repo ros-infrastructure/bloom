@@ -179,7 +179,6 @@ def execute_command(cmd, shell=True, autofail=True, silent=True, cwd=None):
     """
     io_type = None
     result = 0
-    error = None
     if silent:
         io_type = PIPE
     try:
@@ -187,10 +186,8 @@ def execute_command(cmd, shell=True, autofail=True, silent=True, cwd=None):
                             stdout=io_type, stderr=io_type)
     except CalledProcessError as cpe:
         result = cpe.returncode
-        error = str(cpe)
-    if result != 0 and autofail:
-        raise RuntimeError("Failed to execute the command:" \
-                           " `{0}`: {1}".format(cmd, error))
+        if autofail:
+            raise
     return result
 
 
