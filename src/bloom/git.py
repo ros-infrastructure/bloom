@@ -40,6 +40,44 @@ from bloom.util import execute_command
 from bloom.util import check_output
 
 
+def create_branch(branch, orphaned=False, changeto=False, directory=None):
+    """
+    Creates a new branch in the current, or given, git repository.
+
+    If the specified branch already exists git will fail and a
+    subprocess.CalledProcessError will be raised.
+
+    :param branch: name of the new branch
+    :param orphaned: if True creates an orphaned branch
+    :param changeto: if True changes to the new branch after creation
+    :param directory: directory in which to preform this action
+
+    :raises: subprocess.CalledProcessError if any git calls fail
+    """
+    current_branch = get_current_branch(directory)
+    try:
+        if orphaned:
+            execute_command('git symbolic-ref HEAD refs/heads/bloom',
+                            cwd=directory)
+            execute_command('rm -f .git/index', cwd=directory)
+            execute_command('git clean -fdx', cwd=directory)
+            cmd = 'git commit --allow-empty -m "Created orphaned branch '\
+                  '{0}"'.format(branch)
+            execute_command(cmd, cwd=directory)
+            if changeto:
+                current_branch = None
+        else:
+            execute_command('git branch {0}'.format(branch), cwd=directory)
+            if changeto:
+                execute_command('git checkout {0}'.format(branch),
+                                cwd=directory)
+            current_branch = None
+    finally:
+        if current_branch is not None:
+            execute_command('git checkout {0}'.format(current_branch),
+                            cwd=directory)
+
+
 def get_root(directory=None):
     """
     Returns the git root directory above the given dir.
@@ -67,6 +105,8 @@ def get_current_branch(directory=None):
 
     :param directory: directory in which to run the command
     :returns: current git branch or None if none can be determined, (no branch)
+
+    :raises: subprocess.CalledProcessError if git command fails
     """
     cmd = 'git branch --no-color'
     output = check_output(cmd, shell=True, cwd=directory)
@@ -80,24 +120,27 @@ def get_current_branch(directory=None):
     return None
 
 
-def track_branches(branches=None, cwd=None):
+def track_branches(branches=None, directory=None):
     """
     Tracks all specified branches.
 
     :param branches: a list of branches that are to be tracked if not already
     tracked.  If this is set to None then all remote branches will be tracked.
+    :param directory: directory in which to run all commands
+
+    :raises: subprocess.CalledProcessError if git command fails
     """
     # TODO: replace listing of branches with vcstool's get_branches
     # Save current branch
-    current_branch = get_current_branch(cwd)
+    current_branch = get_current_branch(directory)
     # Get the local branches
-    local_branches = check_output('git branch', shell=True, cwd=cwd)
+    local_branches = check_output('git branch', shell=True, cwd=directory)
     local_branches = local_branches.splitlines()
     # Strip local_branches of white space
     for index, local_branch in enumerate(local_branches):
         local_branches[index] = local_branch.strip('*').strip()
     # Either get the remotes or use the given list of branches to track
-    remotes_out = check_output('git branch -r', shell=True, cwd=cwd)
+    remotes_out = check_output('git branch -r', shell=True, cwd=directory)
     remotes = remotes_out.splitlines()
     if branches == None:
         branches = remotes
@@ -117,10 +160,11 @@ def track_branches(branches=None, cwd=None):
     for branch in to_track:
         if remotes_out.count(branch) > 0:
             cmd = 'git checkout --track -b {0}'.format(branch)
-            execute_command(cmd, cwd=cwd)
+            execute_command(cmd, cwd=directory)
     # Restore original branch
     if current_branch:
-        execute_command('git checkout {0}'.format(current_branch), cwd=cwd)
+        execute_command('git checkout {0}'.format(current_branch),
+                        cwd=directory)
 
 
 def get_last_tag_by_date(cwd=None):
@@ -129,6 +173,8 @@ def get_last_tag_by_date(cwd=None):
 
     :param cwd: the directory in which to run the query
     :returns: the most recent tag by date, else '' if there are no tags
+
+    :raises: subprocess.CalledProcessError if git command fails
     """
     cmd = "git for-each-ref --sort='*authordate' " \
           "--format='%(refname:short)' refs/tags/upstream"
