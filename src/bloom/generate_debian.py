@@ -188,7 +188,7 @@ def process_stack_xml(args, cwd=None):
     package_descriptions = {}
 
     # search for manifest in current folder and direct subfolders
-    for dir_name in ['.'] + os.listdir('.'):
+    for dir_name in [cwd] + os.listdir(cwd):
         if not os.path.isdir(dir_name):
             continue
         dir_path = os.path.join('.', dir_name)
@@ -392,9 +392,10 @@ def execute_bloom_generate_debian(args, bloom_repo):
             data = copy.copy(stack_data)
             generate_deb(data, ".", stamp, args.rosdistro, debian_distro)
             commit_debian(data, ".")
-            tag_name = 'debian/%(Package)s_%(Version)s_%(Distribution)s' % data
+            tag_name = 'debian/' \
+                '%(Package)s_%(Version)s-%(DebianInc)s_%(Distribution)s' % data
             print("tag: %s" % tag_name)
-            call(".", ['git', 'tag', '-f', tag_name, '-m',
+            call(".", ['git', 'tag', tag_name, '-m',
                  'Debian release %(Version)s' % data])
     except rosdep2.catkin_support.ValidationFailed as e:
         print(e.args[0], file=sys.stderr)
