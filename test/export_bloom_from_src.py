@@ -55,7 +55,7 @@ def get_path_and_pythonpath():
         path += ":" + os.environ['PATH']
     except KeyError:
         pass
-    python_path = src_location + ':' + os.environ['PYTHONPATH']
+    python_path = src_location
     try:
         python_path += ":" + os.environ['PYTHONPATH']
     except KeyError:
