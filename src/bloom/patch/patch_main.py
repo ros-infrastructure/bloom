@@ -60,12 +60,13 @@ def patchmain():
             usage(False)
             retcode = 1
     except CalledProcessError as err:
-        # No need for a trackback here, a git call probably failed
-        error(err)
+        # Problem calling out to git probably
+        traceback.print_exc()
+        error(str(err))
         retcode = 2
     except Exception as err:
         # Unhandled exception, print traceback
         traceback.print_exc()
-        error(err)
+        error(str(err))
         retcode = 3
     sys.exit(retcode)
