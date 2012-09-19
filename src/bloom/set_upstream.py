@@ -45,6 +45,8 @@ from . util import maybe_continue, execute_command, bailout, ansi
 from . util import error
 from . git import get_current_branch
 from . git import create_branch
+from . git import get_branches
+from . git import has_changes
 
 
 def usage():
@@ -77,9 +79,9 @@ def set_upstream(bloom_repo, upstream_repo, upstream_repo_type,
     check_git_init()
 
     # Check for a bloom branch
-    if execute_command('git show-branch origin/bloom', autofail=False) == 0:
+    if 'bloom' in get_branches():
         # Found a bloom branch
-        print("Found a remote bloom branch, checking out.")
+        print("Found a bloom branch, checking out.")
         # Check out the bloom branch
         bloom_repo.update('bloom')
     else:
@@ -97,8 +99,11 @@ def set_upstream(bloom_repo, upstream_repo, upstream_repo_type,
     execute_command(cmd)
 
     execute_command('git add bloom.conf')
-    cmd = 'git commit -m "bloom branch update by git-bloom-set-upstream"'
-    execute_command(cmd)
+    if has_changes():
+        cmd = 'git commit -m "bloom branch update by git-bloom-set-upstream"'
+        execute_command(cmd)
+    else:
+        print("No chages, nothing to commit.")
 
 
 def summarize_arguments(upstream_repo, upstream_repo_type,
