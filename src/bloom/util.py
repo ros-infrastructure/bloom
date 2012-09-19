@@ -50,6 +50,25 @@ except ImportError:
 _ansi = {}
 
 
+def inbranch(branch, directory=None):
+    """Decorator for doing things in a different branch safely"""
+    current_branch = 'master'
+
+    def decorator(fn):
+        def wrapper(*args, **kwargs):
+            execute_command('git checkout {0}'.format(branch), cwd=directory)
+            try:
+                result = fn(*args, **kwargs)
+            finally:
+                execute_command('git checkout {0}'.format(current_branch),
+                                cwd=directory)
+            return result
+
+        return wrapper
+
+    return decorator
+
+
 def check_output(cmd, cwd=None, stdin=None, stderr=None, shell=False):
     """Backwards compatible check_output"""
     p = Popen(cmd, cwd=cwd, stdin=stdin, stderr=stderr, shell=shell,
