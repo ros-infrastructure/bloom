@@ -5,23 +5,32 @@ from .. util import maybe_continue
 from .. logging import ansi
 from .. logging import error
 from .. logging import info
+from .. logging import warning
 from .. git import create_branch
 from .. git import get_branches
+from .. git import get_commit_hash
 from .. git import get_current_branch
 from .. git import track_branches
+
+from .. patch.common import set_patches_info
+from .. patch.common import get_patches_info
+from .. patch.rebase_cmd import main as rebase_main
 
 
 def execute_branch(src, dst, patch, interactive, pretend, directory=None):
     """
     executes bloom branch from src to dst and optionally will patch
 
-    Copies the current branch (or specified source branch) to a destination
-    branch. If the destination branch does not exist, then it is created
-    first. Additionally, if the DST_BRANCH/patches doesn't exist it is
-    created. If the DST_BRANCH/patches branch already exists, the patches in
-    the branch are applied to the new commit in the DST_BRANCH branch. If this
-    command is successful the working branch will be set to the DST_BRANCH,
-    otherwise the original working branch will be restored.
+    If the dst branch does not exist yet, then it is created by branching the
+    current working branch or the specified SRC_BRANCH.
+
+    If the patches/dst branch branch does not exist yet then it is created.
+
+    If the branches are created successful, then the working branch will be
+    set to the dst branch, otherwise the working branch will remain unchanged.
+
+    If the dst branch and patches/dst branch already existed, then a call to
+    `git-bloom-patch rebase` is attempted unless patch is False.
 
     :param src: source branch from which to copy
     :param dst: destination branch to copy to
@@ -47,14 +56,26 @@ def execute_branch(src, dst, patch, interactive, pretend, directory=None):
     else:
         create_dst_branch = True
 
+    create_dst_patches_branch = False
+    dst_patches = 'patches/' + dst
+    if dst_patches in branches:
+        if dst_patches not in local_branches:
+            track_branches(dst_patches, directory)
+    else:
+        create_dst_patches_branch = True
+
     if interactive or pretend:
         info("Summary of changes:")
         if create_dst_branch:
-            info("  The specified destination branch, " + ansi('boldon') + \
+            info("- The specified destination branch, " + ansi('boldon') + \
                  dst + ansi('reset') + ", does not exist, it will be " + \
                  "created from the source branch " + ansi('boldon') + src + \
                  ansi('reset'))
-        info("  The working branch will be set to " + ansi('boldon') + dst + \
+        if create_dst_patches_branch:
+            info("- The destination patches branch, " + ansi('boldon') + \
+                 dst_patches + ansi('reset') + " does not exist, it will be "
+                 "created")
+        info("- The working branch will be set to " + ansi('boldon') + dst + \
              ansi('reset'))
         if pretend:
             info("Exiting because this is pretend mode.")
@@ -72,7 +93,34 @@ def execute_branch(src, dst, patch, interactive, pretend, directory=None):
             create_branch(dst, changeto=True, directory=directory)
         else:
             execute_command('git checkout {0}'.format(dst), cwd=directory)
+        # Create the dst patches branch if needed
+        if create_dst_patches_branch:
+            create_branch(dst_patches, orphaned=True, directory=directory)
+        else:
+            # Get the patches info and compare it, warn of changing parent
+            parent, _ = get_patches_info(dst_patches, directory)
+            if parent != src:
+                warning("You are changing the parent branch to " + src + \
+                        " from " + parent + ". Are you sure you want to do "
+                        "this?")
+                if not maybe_continue():
+                    error("Answered no to continue, aborting.")
+                    return 1
+        # Get the current commit hash as a baseline
+        commit_hash = get_commit_hash(dst, directory=directory)
+        # Set the patch meta info
+        set_patches_info(dst_patches, src, commit_hash,
+                         directory=directory)
+        # Command is successful, even if applying patches fails
         current_branch = None
+        # Try to update if appropriate
+        if not create_dst_branch and not create_dst_patches_branch:
+            if patch:
+                # Execute git-bloom-patch rebase
+                rebase_main(directory=directory)
+            else:
+                info("Skipping call to 'git-bloom-patch rebase' because "
+                     "--no-patch was passed.")
     finally:
         if current_branch is not None:
             execute_command('git checkout {0}'.format(current_branch),

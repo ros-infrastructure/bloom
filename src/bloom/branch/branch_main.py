@@ -16,9 +16,15 @@ def get_parser():
     parser = ArgumentParser(
         description="""\
 If the DST_BRANCH does not exist yet, then it is created by branching the
-current working branch or the specified SRC_BRANCH. Either way, if the command
-is successful, then the working branch will be set to the DST_BRANCH,
-otherwise the working branch will remain unchanged.
+current working branch or the specified SRC_BRANCH.
+
+If the patches/DST_BRANCH branch does not exist yet then it is created.
+
+If the branches are created successful, then the working branch will be set to
+the DST_BRANCH, otherwise the working branch will remain unchanged.
+
+If the DST_BRANCH and patches/DST_BRANCH already existed, then a call to `git-
+bloom-patch rebase` is attempted unless '--no-patch' is passed.
 """
     )
     add = parser.add_argument
@@ -55,6 +61,7 @@ def branchmain():
                                  args.interactive, args.pretend)
     except CalledProcessError as err:
         # No need for a trackback here, a git call probably failed
+        traceback.print_exc()
         error(str(err))
         retcode = 1
     except Exception as err:
