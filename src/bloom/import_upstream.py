@@ -190,7 +190,7 @@ def import_upstream(cwd, tmp_dir, args):
     track_branches(['bloom', 'upstream'])
 
     # Check for a bloom branch
-    check_for_bloom(os.getcwd(), bloom_repo)
+    check_for_bloom(os.getcwd())
 
     # Parse the bloom config file
     upstream_repo, upstream_type, upstream_branch = parse_bloom_conf()
@@ -215,7 +215,8 @@ def import_upstream(cwd, tmp_dir, args):
         ver = upstream_branch if upstream_branch != '(No branch set)' else ''
     # XXX TODO: Need to validate if ver is valid for the upstream repo...
     # see: https://github.com/vcstools/vcstools/issues/4
-    upstream_client.checkout(upstream_repo, ver)
+    if not upstream_client.checkout(upstream_repo, ver):
+        bailout("Did not find upstream branch: {0}".format(ver))
 
     # Parse the stack.xml
     if os.path.exists(os.path.join(upstream_dir, 'stack.xml')):
