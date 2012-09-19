@@ -40,6 +40,20 @@ from . util import execute_command
 from . util import check_output
 
 
+def get_commit_hash(reference, directory=None):
+    """
+    Returns the SHA-1 commit hash for the given reference.
+
+    :param reference: any git reference (branch or tag) to resolve to SHA-1
+    :param directory: directory in which to preform this action
+    :returns: SHA-1 commit hash for the given reference
+
+    :raises: subprocess.CalledProcessError if any git calls fail
+    """
+    cmd = 'git show-ref -s ' + reference
+    return check_output(cmd, shell=True, cwd=directory)
+
+
 def has_changes(directory=None):
     """
     Returns True if the working branch has local changes, False otherwise.
@@ -97,7 +111,7 @@ def create_branch(branch, orphaned=False, changeto=False, directory=None):
     current_branch = get_current_branch(directory)
     try:
         if orphaned:
-            execute_command('git symbolic-ref HEAD refs/heads/bloom',
+            execute_command('git symbolic-ref HEAD refs/heads/' + branch,
                             cwd=directory)
             execute_command('rm -f .git/index', cwd=directory)
             execute_command('git clean -fdx', cwd=directory)
