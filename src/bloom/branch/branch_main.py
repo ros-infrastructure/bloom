@@ -14,15 +14,12 @@ from . branch import execute_branch
 def get_parser():
     """Returns a parser.ArgumentParser with all arguments defined"""
     parser = ArgumentParser(
-        description="Copies the current branch (or specified source branch) "
-                    "to a destination branch. If the destination branch does "
-                    "not exist, then it is created first. Additionally, if "
-                    "the DST_BRANCH/patches doesn't exist it is created. If "
-                    "the DST_BRANCH/patches branch already exists, the "
-                    "patches in the branch are applied to the new commit in "
-                    "the DST_BRANCH branch. If this command is successful the "
-                    "working branch will be set to the DST_BRANCH, otherwise "
-                    "the original working branch will be restored."
+        description="""\
+If the DST_BRANCH does not exist yet, then it is created by branching the
+current working branch or the specified SRC_BRANCH. Either way, if the command
+is successful, then the working branch will be set to the DST_BRANCH,
+otherwise the working branch will remain unchanged.
+"""
     )
     add = parser.add_argument
     add('--src', '-s', metavar='SRC_BRANCH',
@@ -31,6 +28,14 @@ def get_parser():
                         help="skips application of previous patches",
                         action='store_false',
                         default=True)
+    add('--interactive', '-i', dest='interactive',
+                        help="asks before committing any changes",
+                        action='store_true',
+                        default=False)
+    add('--pretend', '-p', dest='pretend',
+                        help="summarizes the changes and exits",
+                        action='store_true',
+                        default=False)
     add('dst', metavar="DST_BRANCH", help="name of destination branch")
     return parser
 
@@ -46,14 +51,15 @@ def branchmain():
         if args.src is None:
             args.src = get_current_branch()
         # Execute the branching
-        execute_branch(args.src, args.dst, args.patch)
+        retcode = execute_branch(args.src, args.dst, args.patch,
+                                 args.interactive, args.pretend)
     except CalledProcessError as err:
         # No need for a trackback here, a git call probably failed
-        error(err)
+        error(str(err))
         retcode = 1
     except Exception as err:
         # Unhandled exception, print traceback
         traceback.print_exc()
-        error(err)
+        error(str(err))
         retcode = 2
     sys.exit(retcode)

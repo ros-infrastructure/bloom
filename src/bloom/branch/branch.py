@@ -1,7 +1,17 @@
 from __future__ import print_function
 
+from .. util import execute_command
+from .. util import maybe_continue
+from .. logging import ansi
+from .. logging import error
+from .. logging import info
+from .. git import create_branch
+from .. git import get_branches
+from .. git import get_current_branch
+from .. git import track_branches
 
-def execute_branch(src, dst, patch, interactive, pretend):
+
+def execute_branch(src, dst, patch, interactive, pretend, directory=None):
     """
     executes bloom branch from src to dst and optionally will patch
 
@@ -17,43 +27,54 @@ def execute_branch(src, dst, patch, interactive, pretend):
     :param dst: destination branch to copy to
     :param patch: whether or not to apply previous patches to destination
     :param interactive: if True actions are summarized before committing
+    :param directory: directory in which to preform this action
+    :returns: return code to be passed to sys.exit
+
+    :raises: subprocess.CalledProcessError if any git calls fail
     """
-    # If source branch exists
-        # If source branch is remote, track it
-    # Else
-        # Error
+    branches = get_branches(directory)
+    local_branches = get_branches(local_only=True, directory=directory)
+    if src in branches:
+        if src not in local_branches:
+            track_branches(src, directory)
+    else:
+        error("Specified source branch does not exist: {0}".format(src))
 
-    # If destination branch exists
-        # If destination branch is remote
-            # Track it
-    # Else
-        # Set create_destination_branch = True
+    create_dst_branch = False
+    if dst in branches:
+        if dst not in local_branches:
+            track_branches(dst, directory)
+    else:
+        create_dst_branch = True
 
-    # If destination patches branch exists
-        # If create_destination_branch == True
-            # This shouldn't happen, Error
-        # Else
-            # If destination patches branch is remote
-                # Track it
-    # Else
-        # Set create_destination_patches_branch = True
+    if interactive or pretend:
+        info("Summary of changes:")
+        if create_dst_branch:
+            info("  The specified destination branch, " + ansi('boldon') + \
+                 dst + ansi('reset') + ", does not exist, it will be " + \
+                 "created from the source branch " + ansi('boldon') + src + \
+                 ansi('reset'))
+        info("  The working branch will be set to " + ansi('boldon') + dst + \
+             ansi('reset'))
+        if pretend:
+            info("Exiting because this is pretend mode.")
+            return 0
+        if not maybe_continue():
+            error("Answered no to continue, aborting.")
+            return 1
 
-    # If interactive or pretend
-        # Summarize changes
-        # If pretend
-            # Exit
-        # Ask use if they want to continue
-        # If no
-            # Exit
-
-    # If create_destination_branch
-        # git branch 'source branch' 'destination_branch'
-    # If create_destination_patches_branch
-        # bloom.git.create_branch('source branch'+'/patches', orphaned=True)
-
-    # Attempt to merge source branch from destination branch
-    # Try:
-        # git merge -s theirs 'source branch'
-    # Except subprocess.CalledProcessError:
-        # drop out, there was a conflict
-    pass
+    current_branch = get_current_branch(directory)
+    try:
+        # Change to the src branch
+        execute_command('git checkout {0}'.format(src), cwd=directory)
+        # Create the dst branch if needed
+        if create_dst_branch:
+            create_branch(dst, changeto=True, directory=directory)
+        else:
+            execute_command('git checkout {0}'.format(dst), cwd=directory)
+        current_branch = None
+    finally:
+        if current_branch is not None:
+            execute_command('git checkout {0}'.format(current_branch),
+                            cwd=directory)
+    return 0
