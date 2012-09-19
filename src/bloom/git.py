@@ -36,8 +36,48 @@ from __future__ import print_function
 
 from subprocess import PIPE, CalledProcessError
 
-from bloom.util import execute_command
-from bloom.util import check_output
+from . util import execute_command
+from . util import check_output
+
+
+def has_changes(directory=None):
+    """
+    Returns True if the working branch has local changes, False otherwise.
+
+    :param directory: directory in which to preform this action
+    :returns: True if there are local changes, otherwise False
+
+    :raises: subprocess.CalledProcessError if any git calls fail
+    """
+    out = check_output('git status', shell=True, cwd=directory)
+    if 'nothing to commit (working directory clean)' in out:
+        return False
+    return True
+
+
+def get_branches(local_only=False, directory=None):
+    """
+    Returns a list of branches in the git repository.
+
+    :param local_only: if True, do not return remote branches, False by default
+    :param directory: directory in which to preform this action
+    :returns: list of branches
+
+    :raises: subprocess.CalledProcessError if any git calls fail
+    """
+    cmd = 'git branch --no-color'
+    if not local_only:
+        cmd += ' -a'
+    out = check_output(cmd, shell=True, cwd=directory)
+    branches = []
+    for line in out.splitlines():
+        if line.count('HEAD -> ') > 0:
+            continue
+        if line.count('(no branch)') > 0:
+            continue
+        line = line.strip('*').strip()
+        branches.append(line)
+    return branches
 
 
 def create_branch(branch, orphaned=False, changeto=False, directory=None):
@@ -130,6 +170,8 @@ def track_branches(branches=None, directory=None):
 
     :raises: subprocess.CalledProcessError if git command fails
     """
+    if type(branches) == str:
+        branches = [branches]
     # TODO: replace listing of branches with vcstool's get_branches
     # Save current branch
     current_branch = get_current_branch(directory)
@@ -167,18 +209,18 @@ def track_branches(branches=None, directory=None):
                         cwd=directory)
 
 
-def get_last_tag_by_date(cwd=None):
+def get_last_tag_by_date(directory=None):
     """
     Returns the most recent, by date, tag in the given local git repository.
 
-    :param cwd: the directory in which to run the query
+    :param directory: the directory in which to run the query
     :returns: the most recent tag by date, else '' if there are no tags
 
     :raises: subprocess.CalledProcessError if git command fails
     """
     cmd = "git for-each-ref --sort='*authordate' " \
           "--format='%(refname:short)' refs/tags/upstream"
-    output = check_output(cmd, shell=True, cwd=cwd, stderr=PIPE)
+    output = check_output(cmd, shell=True, cwd=directory, stderr=PIPE)
     output = output.splitlines()
     if len(output) == 0:
         return ''
