@@ -395,9 +395,9 @@ def execute_bloom_generate_debian(args, bloom_repo):
         print("""\
 Cannot resolve dependency [{0}].
 
-If [{1}] is catkin project, make sure it has been added to the gbpdistro file.
+If [{0}] is catkin project, make sure it has been added to the gbpdistro file.
 
-If [{2}] is a system dependency, make sure there is a \
+If [{0}] is a system dependency, make sure there is a \
 rosdep.yaml entry for it in your sources.
 """.format(rosdep_key), file=sys.stderr)
         return 1
