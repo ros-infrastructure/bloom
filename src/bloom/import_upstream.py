@@ -39,14 +39,17 @@ import shutil
 import traceback
 
 from subprocess import CalledProcessError, check_call
-from bloom.util import check_output
 
-from bloom.util import bailout, execute_command, ansi, parse_stack_xml
-from bloom.util import assert_is_not_gbp_repo, create_temporary_directory
-from bloom.util import get_versions_from_upstream_tag, segment_version
-from bloom.git import get_current_branch
-from bloom.git import track_branches
-from bloom.git import get_last_tag_by_date
+from . util import check_output
+
+from . util import add_global_arguments
+from . util import handle_global_arguments
+from . util import bailout, execute_command, ansi, parse_stack_xml
+from . util import assert_is_not_gbp_repo, create_temporary_directory
+from . util import get_versions_from_upstream_tag, segment_version
+from . git import get_current_branch
+from . git import track_branches
+from . git import get_last_tag_by_date
 
 from . logging import error
 from . logging import info
@@ -352,8 +355,6 @@ upstream import use the '--replace' option.\
 
 
 def main():
-    from . logging import enable_debug
-    enable_debug(True)
     parser = argparse.ArgumentParser(description="""\
 Imports the upstream repository specified by bloom using git-buildpackage's \
 git-import-orig function. This should be run in a git-buildpackage repository \
@@ -379,7 +380,9 @@ This is disabled by defualt. This will cause an editor to open for sign-off \
 of the merge.
 """,
                         action="store_true")
+    parser = add_global_arguments(parser)
     args = parser.parse_args()
+    handle_global_arguments(args)
 
     # Check that the current directory is a serviceable git/bloom repo
     cwd = os.getcwd()
