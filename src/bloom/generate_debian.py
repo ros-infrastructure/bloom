@@ -244,7 +244,7 @@ def process_package_xml(args, directory=None):
     data['Homepage'] = homepage
 
     data['Catkin-ChangelogType'] = ''
-    data['Catkin-DebRulesType'] = ''
+    data['Catkin-DebRulesType'] = 'cmake'
     data['Catkin-DebRulesFile'] = ''
     # data['Catkin-CopyrightType'] = package.copyright
     # data['copyright'] = package.copyright
