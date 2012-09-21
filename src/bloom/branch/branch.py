@@ -1,9 +1,15 @@
 from __future__ import print_function
 
+import os
+import sys
+import traceback
+
 from .. util import execute_command
 from .. util import maybe_continue
+from .. util import parse_stack_xml
 from .. logging import ansi
 from .. logging import error
+from .. logging import log_prefix
 from .. logging import info
 from .. logging import warning
 from .. git import create_branch
@@ -26,8 +32,88 @@ except ImportError:
     sys.exit(1)
 
 
+def branch(src, prefix, patch, interactive, ignore_stack, directory=None):
+    """
+    Trys to find a old-style stack.xml, else passes to branch_packages.
 
-def execute_branch(src, dst, patch, interactive, trim_dir='', directory=None):
+    Most parameters passed through to execute_branch or branch_packages.
+    :param ignore_stack: if True, does not look for stack.xml
+    """
+    cwd = directory if directory else os.getcwd()
+    stack_path = os.path.join(cwd, 'stack.xml')
+    info("Checking for stack.xml in ({0})".format(cwd))
+    if not ignore_stack and os.path.exists(stack_path):
+        stack_name = parse_stack_xml(stack_path).name
+        return execute_command(src, stack_name, patch, interactive, directory)
+    else:
+        info("stack.xml not found, searching for package.xml(s)")
+        branch_packages(src, prefix, patch, interactive, directory)
+
+
+@log_prefix('[git-bloom-branch]: ')
+def branch_packages(src, prefix, patch, interactive, directory=None):
+    """
+    Handles source directories with one or more new style catkin packages.
+
+    All parameters are passes through to execute_branch.
+    """
+    current_branch = get_current_branch()
+    try:
+        _branch_packages(src, prefix, patch, interactive, directory)
+    finally:
+        if current_branch:
+            execute_command('git checkout ' + current_branch, cwd=directory)
+
+
+def _branch_packages(src, prefix, patch, interactive, directory=None):
+    # Ensure we are on the correct src branch
+    current_branch = get_current_branch()
+    if current_branch != src:
+        info("Changing to specified source branch " + src)
+        execute_command('git checkout ' + src, cwd=directory)
+    # Get packages
+    repo_dir = directory if directory else os.getcwd()
+    packages = find_packages(repo_dir)
+    if packages == []:
+        error("No package.xml(s) found in " + repo_dir)
+        return 1
+    # Verify that the packages all have the same version
+    version = verify_equal_package_versions(packages.values())
+    # Call git-bloom-branch on each package
+    info(
+      "Branching these packages: " + str([p.name for p in packages.values()])
+    )
+    if interactive:
+        if not maybe_continue():
+            error("Answered no to continue, exiting.")
+            return 1
+    retcode = 0
+    for path in packages:
+        package = packages[path]
+        branch = prefix + ('' if prefix and prefix.endswith('/') else '/') \
+               + package.name
+        print('')  # white space
+        info("Branching " + package.name + "_" + version + " to " + branch)
+        try:
+            ret = execute_branch(src, branch, patch, interactive, path,
+                directory=directory)
+            msg = "Branching " + package.name + "_" + version + " to " + \
+                branch + " returned " + str(ret)
+            if ret != 0:
+                warning(msg)
+                retcode = ret
+            else:
+                info(msg)
+        except Exception as err:
+            traceback.print_exc()
+            error("Error branching " + package.name + ": " + str(err))
+            retcode = ret
+        finally:
+            execute_command('git checkout ' + src, cwd=directory)
+    return retcode
+
+
+def execute_branch(src, dst, patch, interactive, trim_dir, directory=None):
     """
     executes bloom branch from src to dst and optionally will patch
 
@@ -43,7 +129,7 @@ def execute_branch(src, dst, patch, interactive, trim_dir='', directory=None):
     `git-bloom-patch rebase` is attempted unless patch is False.
 
     :param src: source branch from which to copy
-    :param dst: destination branch to copy to
+    :param dst: destination branch
     :param patch: whether or not to apply previous patches to destination
     :param interactive: if True actions are summarized before committing
     :param trim_dir: sub directory to move to the root of git dst branch
@@ -56,6 +142,7 @@ def execute_branch(src, dst, patch, interactive, trim_dir='', directory=None):
     local_branches = get_branches(local_only=True, directory=directory)
     if src in branches:
         if src not in local_branches:
+            info("Tracking source branch: {0}".format(src))
             track_branches(src, directory)
     else:
         error("Specified source branch does not exist: {0}".format(src))
@@ -63,6 +150,7 @@ def execute_branch(src, dst, patch, interactive, trim_dir='', directory=None):
     create_dst_branch = False
     if dst in branches:
         if dst not in local_branches:
+            info("Tracking destination branch: {0}".format(src))
             track_branches(dst, directory)
     else:
         create_dst_branch = True
@@ -128,10 +216,12 @@ def execute_branch(src, dst, patch, interactive, trim_dir='', directory=None):
         # Get the current commit hash as a baseline
         commit_hash = get_commit_hash(dst, directory=directory)
         # Set the patch config
-        config = {'parent': src,
-                  'base': commit_hash,
-                  'trim': config['trim'] if config is not None else '',
-                  'trimbase': config['trimbase'] if config is not None else ''}
+        config = {
+            'parent': src,
+            'base': commit_hash,
+            'trim': config['trim'] if config is not None else '',
+            'trimbase': config['trimbase'] if config is not None else ''
+        }
         set_patch_config(dst_patches, config, directory=directory)
         # Command is successful, even if applying patches fails
         current_branch = None
@@ -151,6 +241,4 @@ def execute_branch(src, dst, patch, interactive, trim_dir='', directory=None):
         if current_branch is not None:
             execute_command('git checkout {0}'.format(current_branch),
                             cwd=directory)
-    info("Working branch: " + ansi('boldon') + \
-         str(get_current_branch()) + ansi('reset'))
     return 0

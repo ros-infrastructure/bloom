@@ -7,10 +7,11 @@ from subprocess import CalledProcessError
 
 from .. git import get_current_branch, get_root
 from .. logging import error
+from .. logging import info
 from .. util import add_global_arguments
 from .. util import handle_global_arguments
 
-from . packages import branch_packages
+from . branch import branch_packages
 
 
 def get_parser():
@@ -33,21 +34,17 @@ bloom-patch rebase` is attempted unless '--no-patch' is passed.
     add('--src', '-s', metavar='SRC_BRANCH',
         help="(optional) specifies the branch to copy from")
     add('--no-patch', '-n', dest='patch',
-                        help="skips application of previous patches",
-                        action='store_false',
-                        default=True)
+        help="skips application of previous patches",
+        action='store_false',
+        default=True)
     add('--interactive', '-i', dest='interactive',
-                        help="asks before committing any changes",
-                        action='store_true',
-                        default=False)
+        help="asks before committing any changes",
+        action='store_true',
+        default=False)
     add('--pretend', '-p', dest='pretend',
-                        help="summarizes the changes and exits",
-                        action='store_true',
-                        default=False)
-    # add('--sub-directory', '-r', metavar='SUB_DIRECTORY',
-    #     help="(optional) specifies the sub directory to be the root of "
-    #          "the DST_BRANCH",
-    #     default='')
+        help="summarizes the changes and exits",
+        action='store_true',
+        default=False)
     add('prefix', metavar="DST_BRANCH_PREFIX",
         help="prefix of destination branch, i.e. DST_BRANCH becomes "
              "DST_BRANCH_PREFIX/<package_name>")
@@ -64,6 +61,7 @@ def branchmain():
         # Assert this is a git repository
         assert get_root() != None, "Not in a valid git repository."
         # If the src argument isn't set, use the current branch
+        print("(" + str(args.src) + ")")
         if args.src is None:
             args.src = get_current_branch()
         # Execute the branching
@@ -79,4 +77,7 @@ def branchmain():
         traceback.print_exc()
         error(str(err))
         retcode = 2
+    if retcode == 0:
+        info("Working branch: " + ansi('boldon') + \
+            str(get_current_branch()) + ansi('reset'))
     sys.exit(retcode)
