@@ -24,7 +24,7 @@ from . common import set_patch_config
 
 def _set_trim_sub_dir(sub_dir, force, config, directory):
     if sub_dir is not None:
-        if config['trim'] != '':
+        if config['trim'] != '' and config['trim'] != sub_dir:
             warning("You are trying to set the trim sub directory to " + \
                     sub_dir + ", but it is already set to " + \
                     config['trim'] + ".")
