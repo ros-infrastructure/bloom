@@ -308,11 +308,11 @@ def process_package_xml(args, directory=None):
 
 def get_stack_data(args, directory=None):
     path = directory if directory else '.'
-    if os.path.exists(os.path.join(path, 'stack.xml')):
-        return process_stack_xml(args, directory)
+    if os.path.exists(os.path.join(path, 'package.xml')):
+        return process_package_xml(args, directory)
     else:
-        if os.path.exists(os.path.join(path, 'package.xml')):
-            return process_package_xml(args, directory)
+        if os.path.exists(os.path.join(path, 'stack.xml')):
+            return process_stack_xml(args, directory)
         else:
             bailout("No stack.xml or package.xml found, exiting.")
 

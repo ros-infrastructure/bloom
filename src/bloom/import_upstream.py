@@ -181,13 +181,8 @@ def get_upstream_meta(upstream_dir):
     # Check for stack.xml
     stack_path = os.path.join(upstream_dir, 'stack.xml')
     info("Checking for stack.xml")
-    if os.path.exists(stack_path):  # Assumes you are at the top of the repo
-        stack = parse_stack_xml(stack_path)
-        meta = {}
-        meta['name'] = [stack.name]
-        meta['version'] = stack.version
-        meta['type'] = 'stack.xml'
-    else:
+    # Assumes you are at the top of the repo
+    if not os.path.exists(stack_path):
         info("stack.xml not found, checking for packages.")
         # Check for package.xml(s)
         try:
@@ -210,6 +205,12 @@ def get_upstream_meta(upstream_dir):
         meta['version'] = version
         meta['name'] = [p.name for p in packages.values()]
         meta['type'] = 'package.xml'
+    else:
+        stack = parse_stack_xml(stack_path)
+        meta = {}
+        meta['name'] = [stack.name]
+        meta['version'] = stack.version
+        meta['type'] = 'stack.xml'
     return meta
 
 
