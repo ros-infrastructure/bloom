@@ -36,6 +36,12 @@ that are very stable.
 Installation
 ============
 
-Bloom is available through pypi.python.org
+The recommended way to install bloom is using apt with the ROS repository [TODO LINK]
+
+    sudo apt-get install python-bloom
+
+For other platforms, or are not using the ROS repositories bloom is available through pypi.python.org
 
     sudo pip install -U bloom
+
+Note that pip will not notify you of new updates.  
