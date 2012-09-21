@@ -233,7 +233,7 @@ def track_branches(branches=None, directory=None):
         if remote.count('master') != 0:
             continue
         if remote.count('/') > 0:
-            remote_branch = remote.split('/')[1]
+            remote_branch = '/'.join(remote.split('/')[1:])
         else:
             remote_branch = remote
         if remote_branch not in local_branches:
