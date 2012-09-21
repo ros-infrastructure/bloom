@@ -51,6 +51,7 @@ from . git import get_current_branch
 from . git import track_branches
 from . git import get_last_tag_by_date
 
+from . logging import debug
 from . logging import error
 from . logging import info
 from . logging import log_prefix
@@ -250,10 +251,37 @@ def import_upstream(cwd, tmp_dir, args):
         warning("Overriding the bloom.conf branch with {0}".format(ver))
     else:
         ver = upstream_branch if upstream_branch != '(No branch set)' else ''
+
+    checkout_url = upstream_repo
+    checkout_ver = ver
+
+    # Handle svn
+    if upstream_type == 'svn':
+        if ver == '':
+            checkout_url = upstream_repo + '/trunk'
+        else:
+            checkout_url = upstream_repo + '/branches/' + ver
+        checkout_ver = ''
+        debug("Checking out from url {0}".format(checkout_url))
+    else:
+        debug("Checking out branch "
+          "({0}) from url {1}".format(checkout_ver, checkout_url))
+
     # XXX TODO: Need to validate if ver is valid for the upstream repo...
     # see: https://github.com/vcstools/vcstools/issues/4
-    if not upstream_client.checkout(upstream_repo, ver):
-        bailout("Did not find upstream branch: {0}".format(ver))
+    if not upstream_client.checkout(checkout_url, checkout_ver):
+        if upstream_type == 'svn':
+            error(
+                "Could not checkout upstream repostiory "
+                "({0})".format(checkout_url)
+            )
+        else:
+            error(
+                "Could not checkout upstream repostiory "
+                "({0})".format(checkout_url)
+              + " to branch ({0})".format(ver)
+            )
+        return 1
 
     # Get upstream meta data
     meta = get_upstream_meta(upstream_dir)
@@ -273,13 +301,29 @@ def import_upstream(cwd, tmp_dir, args):
            + ', '.join(meta['name']))
 
     # For convenience
+    name = meta['name'][0] if type(meta['name']) == list else meta['name']
     version = meta['version']
 
     # Export the repository to a tar ball
     tarball_prefix = 'upstream-' + str(version)
     info('Exporting version {0}'.format(version))
     tarball_path = os.path.join(tmp_dir, tarball_prefix)
-    upstream_client.export_repository(version, tarball_path)
+    # Change upstream_client for svn
+    export_version = version
+    if upstream_type == 'svn':
+        upstream_client = VcsClient('svn', os.path.join(tmp_dir, 'svn_tag'))
+        checkout_url = upstream_repo + '/tags/' + version
+        if not upstream_client.checkout(checkout_url):
+            warning("Didn't find the tagged version at " + checkout_url)
+            checkout_url = upstream_repo + '/tags/' + name + '-' + version
+            warning("Trying " + checkout_url)
+            if not upstream_client.checkout(checkout_url):
+                error("Could not checkout upstream version")
+                return 1
+        export_version = ''
+    if not upstream_client.export_repository(export_version, tarball_path):
+        error("Failed to export upstream repository.")
+        return 1
 
     # Get the gbp version elements from either the last tag or the default
     last_tag = get_last_tag_by_date()
@@ -399,7 +443,7 @@ of the merge.
     tmp_dir = create_temporary_directory()
 
     try:
-        import_upstream(cwd, tmp_dir, args)
+        return import_upstream(cwd, tmp_dir, args)
 
         # Done!
         info("I'm happy.  You should be too.")
