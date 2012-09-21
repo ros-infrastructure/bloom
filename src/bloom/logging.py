@@ -74,8 +74,8 @@ enable_debug(False)
 
 
 def enable_debug_indent(state=True):
-    global _debug_indent
-    _debug_indent = state
+    global _log_indent
+    _log_indent = state
 
 enable_debug_indent(True)
 
