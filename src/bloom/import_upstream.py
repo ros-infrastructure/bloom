@@ -190,10 +190,10 @@ def get_upstream_meta(upstream_dir):
         info("stack.xml not found, checking for packages.")
         # Check for package.xml(s)
         try:
-            from catkin.packages import find_packages
-            from catkin.packages import verify_equal_package_versions
+            from catkin_pkg.packages import find_packages
+            from catkin_pkg.packages import verify_equal_package_versions
         except ImportError:
-            error("catkin was not detected, please install it.",
+            error("catkin_pkg was not detected, please install it.",
                   file=sys.stderr)
             sys.exit(1)
         packages = find_packages(basepath=upstream_dir)

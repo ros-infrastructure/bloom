@@ -226,9 +226,9 @@ def process_package_xml(args, directory=None):
     if not os.path.exists(xml_path):
         bailout("No package.xml file found at: {0}".format(xml_path))
     try:
-        from catkin.package import parse_package
+        from catkin_pkg.package import parse_package
     except ImportError:
-        error("catkin was not detected, please install it.",
+        error("catkin_pkg was not detected, please install it.",
               file=sys.stderr)
         sys.exit(1)
     package = parse_package(xml_path)

@@ -17,6 +17,15 @@ from .. patch.common import get_patch_config
 from .. patch.rebase_cmd import rebase_patches
 from .. patch.trim_cmd import trim
 
+try:
+    from catkin_pkg.packages import find_packages
+    from catkin_pkg.packages import verify_equal_package_versions
+except ImportError:
+    error("catkin_pkg was not detected, please install it.",
+          file=sys.stderr)
+    sys.exit(1)
+
+
 
 def execute_branch(src, dst, patch, interactive, trim_dir='', directory=None):
     """

@@ -24,10 +24,10 @@ from .. logging import log_prefix
 from . branch import execute_branch
 
 try:
-    from catkin.packages import find_packages
-    from catkin.packages import verify_equal_package_versions
+    from catkin_pkg.packages import find_packages
+    from catkin_pkg.packages import verify_equal_package_versions
 except ImportError:
-    error("catkin was not detected, please install it.",
+    error("catkin_pkg was not detected, please install it.",
           file=sys.stderr)
     sys.exit(1)
 
