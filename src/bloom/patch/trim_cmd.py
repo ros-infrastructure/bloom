@@ -40,7 +40,7 @@ def _set_trim_sub_dir(sub_dir, force, config, directory):
         sub_dir_abs = os.path.join(git_root, sub_dir)
         # Make sure it is a directory
         if not os.path.isdir(sub_dir_abs):
-            error("The given sub directory, " + sub_dir + " does not "
+            error("The given sub directory, (" + sub_dir + ") does not "
                   "exist in the git repository at " + git_root)
             return None
         # Set the trim sub directory

@@ -128,7 +128,7 @@ def execute_branch(src, dst, patch, interactive, trim_dir='', directory=None):
         current_branch = None
         execute_command('git checkout ' + dst, cwd=directory)
         # If trim_dir is set, trim the resulting directory
-        if trim_dir != '':
+        if trim_dir not in ['', '.']:
             trim(trim_dir, False, False, directory)
         # Try to update if appropriate
         if not create_dst_branch and not create_dst_patches_branch:
