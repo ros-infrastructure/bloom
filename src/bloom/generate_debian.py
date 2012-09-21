@@ -536,9 +536,6 @@ def main(sysargs=None):
         parser.print_help()
         bailout("This is not a valid git repository.")
 
-    # Ensure all local branches are tracked
-    track_branches()
-
     if execute_command('git show-ref refs/heads/bloom') != 0:
         bailout("This does not appear to be a bloom release repo. "
                 "Please initialize it first using:\n\n"
