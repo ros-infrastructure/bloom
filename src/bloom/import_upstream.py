@@ -241,7 +241,6 @@ def import_upstream(cwd, tmp_dir, args):
 
     # Checkout upstream
     upstream_dir = os.path.join(tmp_dir, 'upstream')
-    os.makedirs(upstream_dir)
     upstream_client = VcsClient(upstream_type, upstream_dir)
     if args.upstream_branch != None:
         ver = args.upstream_branch
