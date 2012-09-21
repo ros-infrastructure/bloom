@@ -91,9 +91,9 @@ def convert_catkin_to_bloom(cwd=None):
 
 
 def not_a_bloom_release_repo():
-    bailout('This does not appear to be a bloom release repo. ' \
-            'Please initialize it first using: git ' \
-            'bloom-set-upstream <UPSTREAM_VCS_URL> <VCS_TYPE> [<VCS_BRANCH>]')
+    bailout("This does not appear to be a bloom release repo. "
+            "Please initialize it first using: git "
+            "bloom-set-upstream <UPSTREAM_VCS_URL> <VCS_TYPE> [<VCS_BRANCH>]")
 
 
 def check_for_bloom(cwd=None):
@@ -439,14 +439,21 @@ of the merge.
     # Get the current git branch
     current_branch = get_current_branch()
 
+    if current_branch == 'upstream':
+        error("You cannot run git-bloom-import-upstream while in the "
+              "upstream branch, because this branch is going to be modified.")
+        return 1
+
     # Create a working temp directory
     tmp_dir = create_temporary_directory()
 
     try:
-        return import_upstream(cwd, tmp_dir, args)
+        retcode = import_upstream(cwd, tmp_dir, args)
 
         # Done!
         info("I'm happy.  You should be too.")
+
+        return retcode
     finally:
         # Change back to the original cwd
         os.chdir(cwd)
