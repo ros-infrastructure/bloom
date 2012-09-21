@@ -40,6 +40,27 @@ from . util import execute_command
 from . util import check_output
 
 
+def inbranch(branch, directory=None):
+    """
+    Decorator for doing things in a different branch safely
+    """
+    current_branch = get_current_branch()
+
+    def decorator(fn):
+        def wrapper(*args, **kwargs):
+            execute_command('git checkout {0}'.format(branch), cwd=directory)
+            try:
+                result = fn(*args, **kwargs)
+            finally:
+                execute_command('git checkout {0}'.format(current_branch),
+                                cwd=directory)
+            return result
+
+        return wrapper
+
+    return decorator
+
+
 def get_commit_hash(reference, directory=None):
     """
     Returns the SHA-1 commit hash for the given reference.
@@ -50,8 +71,13 @@ def get_commit_hash(reference, directory=None):
 
     :raises: subprocess.CalledProcessError if any git calls fail
     """
-    cmd = 'git show-ref -s ' + reference
-    return check_output(cmd, shell=True, cwd=directory)
+    # Track remote branch
+    if reference in get_branches(directory):
+        if reference not in get_branches(local_only=True, directory=directory):
+            track_branches(reference, directory)
+    cmd = 'git show-branch --sha1-name ' + reference
+    out = check_output(cmd, shell=True, cwd=directory)
+    return out.split('[')[1].split(']')[0]
 
 
 def has_changes(directory=None):
@@ -146,7 +172,7 @@ def get_root(directory=None):
         output = check_output(cmd, shell=True, cwd=directory)
     except CalledProcessError:
         return None
-    return output
+    return output.strip()
 
 
 def get_current_branch(directory=None):
@@ -215,7 +241,7 @@ def track_branches(branches=None, directory=None):
     # Now track any remotes that are not local
     for branch in to_track:
         if remotes_out.count(branch) > 0:
-            cmd = 'git checkout --track -b {0}'.format(branch)
+            cmd = 'git checkout {0}'.format(branch)
             execute_command(cmd, cwd=directory)
     # Restore original branch
     if current_branch:

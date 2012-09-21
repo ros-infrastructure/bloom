@@ -12,6 +12,7 @@ from . import export_cmd
 from . import import_cmd
 from . import remove_cmd
 from . import rebase_cmd
+from . import trim_cmd
 
 
 def usage(exit=True):
@@ -31,6 +32,9 @@ Commands:
     git-bloom-patch rebase
         Rebases any applied patches after merging from upstream
 
+    git-bloom-patch trim
+        Moves a given sub directory into the root of the git repository
+
 For more information on individual commands type, git-bloom-patch <cmd> -h
 """)
     if exit:
@@ -44,6 +48,7 @@ def patchmain():
         error("You must specify a command, e.g. git-bloom-patch <command>")
         usage()
     if get_root() == None:
+
         error("This command must be run in a valid git repository.")
         usage()
     try:
@@ -55,6 +60,8 @@ def patchmain():
             retcode = remove_cmd.main()
         elif command == "rebase":
             retcode = rebase_cmd.main()
+        elif command == "trim":
+            retcode = trim_cmd.main()
         else:
             error("Invalid command specified: {0}".format(command))
             usage(False)

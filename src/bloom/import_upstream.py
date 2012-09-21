@@ -36,25 +36,29 @@ import os
 import sys
 import argparse
 import shutil
+import traceback
 
 from subprocess import CalledProcessError, check_call
 from bloom.util import check_output
 
-from bloom.util import warning
 from bloom.util import bailout, execute_command, ansi, parse_stack_xml
 from bloom.util import assert_is_not_gbp_repo, create_temporary_directory
-from bloom.util import error
 from bloom.util import get_versions_from_upstream_tag, segment_version
 from bloom.git import get_current_branch
 from bloom.git import track_branches
 from bloom.git import get_last_tag_by_date
+
+from . logging import error
+from . logging import info
+from . logging import log_prefix
+from . logging import warning
 
 from distutils.version import StrictVersion
 
 try:
     from vcstools import VcsClient
 except ImportError:
-    print("vcstools was not detected, please install it.", file=sys.stderr)
+    error("vcstools was not detected, please install it.", file=sys.stderr)
     sys.exit(1)
 
 
@@ -101,14 +105,15 @@ def check_for_bloom(cwd=None):
             not_a_bloom_release_repo()
         else:
             # Found catkin branch, migrate it to bloom
-            print('catkin branch detected, up converting to the bloom branch')
+            info('catkin branch detected, up converting to the bloom branch')
             convert_catkin_to_bloom(cwd)
     # Check for bloom.conf
     try:
         execute_command('git checkout bloom', cwd=cwd)
     except CalledProcessError:
         not_a_bloom_release_repo()
-    if not os.path.exists('bloom.conf'):
+    loc = os.path.join(cwd, 'bloom.conf') if cwd is not None else 'bloom.conf'
+    if not os.path.exists(loc):
         # The repository has not been bloom initialized
         not_a_bloom_release_repo()
 
@@ -127,14 +132,6 @@ def parse_bloom_conf(cwd=None):
     except CalledProcessError:
         upstream_branch = ''
     return upstream_repo, upstream_type, upstream_branch
-
-
-def get_tarball_name(pkg_name, full_version):
-    """
-    Creates a tarball name from a package name.
-    """
-    pkg_name = pkg_name.replace('_', '-')
-    return '{0}-{1}'.format(pkg_name, full_version)
 
 
 def create_initial_upstream_branch(cwd=None):
@@ -165,16 +162,54 @@ def detect_git_import_orig():
 def summarize_repo_info(upstream_repo, upstream_type, upstream_branch):
     msg = 'upstream repo: ' + ansi('boldon') + upstream_repo \
         + ansi('reset')
-    print(msg)
+    info(msg)
     msg = 'upstream type: ' + ansi('boldon') + upstream_type \
         + ansi('reset')
-    print(msg)
+    info(msg)
     upstream_branch = upstream_branch if upstream_branch else '(No branch set)'
     msg = 'upstream branch: ' + ansi('boldon') + upstream_branch \
         + ansi('reset')
-    print(msg)
+    info(msg)
 
 
+def get_upstream_meta(upstream_dir):
+    meta = None
+    # Check for stack.xml
+    stack_path = os.path.join(upstream_dir, 'stack.xml')
+    info("Checking for stack.xml")
+    if os.path.exists(stack_path):  # Assumes you are at the top of the repo
+        stack = parse_stack_xml(stack_path)
+        meta = {}
+        meta['name'] = [stack.name]
+        meta['version'] = stack.version
+        meta['type'] = 'stack.xml'
+    else:
+        info("stack.xml not found, checking for packages.")
+        # Check for package.xml(s)
+        try:
+            from catkin.packages import find_packages
+            from catkin.packages import verify_equal_package_versions
+        except ImportError:
+            error("catkin was not detected, please install it.",
+                  file=sys.stderr)
+            sys.exit(1)
+        packages = find_packages(basepath=upstream_dir)
+        if packages == {}:
+            bailout("Neither stack.xml, nor package.xml(s) were detected.")
+        try:
+            version = verify_equal_package_versions(packages.values())
+        except RuntimeError as err:
+            traceback.print_exec()
+            bailout("Releasing multiple packages with different versions is "
+                    "not supported: " + str(err))
+        meta = {}
+        meta['version'] = version
+        meta['name'] = [p.name for p in packages.values()]
+        meta['type'] = 'package.xml'
+    return meta
+
+
+@log_prefix('[git-bloom-import-upstream]: ')
 def import_upstream(cwd, tmp_dir, args):
     # Ensure the bloom and upstream branches are tracked locally
     track_branches(['bloom', 'upstream'])
@@ -200,7 +235,7 @@ def import_upstream(cwd, tmp_dir, args):
 
     # If the upstream repo is git, then assert some things about the repo
     if upstream_type == 'git':
-        print("Verifying a couple of things about the upstream git repo...")
+        info("Verifying a couple of things about the upstream git repo...")
         # Ensure the upstream repo is not setup as a gbp
         assert_is_not_gbp_repo(upstream_repo)
 
@@ -218,35 +253,43 @@ def import_upstream(cwd, tmp_dir, args):
     if not upstream_client.checkout(upstream_repo, ver):
         bailout("Did not find upstream branch: {0}".format(ver))
 
-    # Parse the stack.xml
-    if os.path.exists(os.path.join(upstream_dir, 'stack.xml')):
-        stack = parse_stack_xml(os.path.join(upstream_dir, 'stack.xml'))
-    else:
-        bailout("No stack.xml at {0}".format(upstream_dir))
+    # Get upstream meta data
+    meta = get_upstream_meta(upstream_dir)
+    if meta is None or None in meta.values():
+        print(meta)
+        bailout("Failed to get the upstream meta data.")
 
     # Summarize the stack.xml contents
-    print("Upstream's stack.xml has version " + ansi('boldon')
-        + stack.version + ansi('reset'))
-    print("Upstream's name is " + ansi('boldon') + stack.name
-        + ansi('reset'))
+    info("Upstream has version " + ansi('boldon')
+        + meta['version'] + ansi('reset'))
+    if meta['type'] == 'stack.xml':
+        info("Upstream contains a stack called " + ansi('boldon')
+           + meta['name'][0] + ansi('reset'))
+    else:
+        info("Upstream contains package" \
+           + ('s: ' if len(meta['name']) > 1 else ': ') \
+           + ', '.join(meta['name']))
+
+    # For convenience
+    version = meta['version']
 
     # Export the repository to a tar ball
-    tarball_prefix = get_tarball_name(stack.name, stack.version)
-    print('Exporting version {0}'.format(stack.version))
+    tarball_prefix = 'upstream-' + str(version)
+    info('Exporting version {0}'.format(version))
     tarball_path = os.path.join(tmp_dir, tarball_prefix)
-    upstream_client.export_repository(stack.version, tarball_path)
+    upstream_client.export_repository(version, tarball_path)
 
     # Get the gbp version elements from either the last tag or the default
     last_tag = get_last_tag_by_date()
     if last_tag == '':
-        gbp_major, gbp_minor, gbp_patch = segment_version(stack.version)
+        gbp_major, gbp_minor, gbp_patch = segment_version(version)
     else:
         gbp_major, gbp_minor, gbp_patch = \
             get_versions_from_upstream_tag(last_tag)
-        print("The latest upstream tag in the release repository is "
+        info("The latest upstream tag in the release repository is "
               + ansi('boldon') + last_tag + ansi('reset'))
         # Ensure the new version is greater than the last tag
-        full_version_strict = StrictVersion(stack.version)
+        full_version_strict = StrictVersion(version)
         last_tag_version = '.'.join([gbp_major, gbp_minor, gbp_patch])
         last_tag_version_strict = StrictVersion(last_tag_version)
         if full_version_strict < last_tag_version_strict:
@@ -256,7 +299,7 @@ The upstream version, {0}, should be greater than the previous \
 release version, {1}.
 
 Upstream should re-release or you should fix the release repository.\
-""".format(stack.version, last_tag_version))
+""".format(version, last_tag_version))
         if full_version_strict == last_tag_version_strict:
             if args.replace:
                 # Remove the conflicting tag first
@@ -265,7 +308,7 @@ Version discrepancy:
 The upstream version, {0}, is equal to a previous import version. \
 Removing conflicting tag before continuing because the '--replace' \
 options was specified.\
-""".format(stack.version))
+""".format(version))
                 execute_command('git tag -d {0}'.format(last_tag))
                 execute_command('git push origin :refs/tags/'
                                 '{0}'.format(last_tag))
@@ -275,12 +318,12 @@ Version discrepancy:
 The upstream version, {0}, is equal to a previous import version. \
 git-buildpackage will fail, if you want to replace the existing \
 upstream import use the '--replace' option.\
-""".format(stack.version))
+""".format(version))
 
     # Look for upstream branch
     output = check_output('git branch', shell=True)
     if output.count('upstream') == 0:
-        print(ansi('boldon') + "No upstream branch" + ansi('reset') \
+        info(ansi('boldon') + "No upstream branch" + ansi('reset') \
             + "... creating an initial upstream branch.")
         create_initial_upstream_branch()
 
@@ -310,6 +353,8 @@ upstream import use the '--replace' option.\
 
 
 def main():
+    from . logging import enable_debug
+    enable_debug(True)
     parser = argparse.ArgumentParser(description="""\
 Imports the upstream repository specified by bloom using git-buildpackage's \
 git-import-orig function. This should be run in a git-buildpackage repository \
@@ -342,7 +387,7 @@ of the merge.
     bloom_repo = VcsClient('git', cwd)
     if not bloom_repo.detect_presence():
         error("Not in a git repository.\n")
-        parser.print_help()
+        parser.info_help()
         return 1
 
     # Get the current git branch
@@ -355,7 +400,7 @@ of the merge.
         import_upstream(cwd, tmp_dir, args)
 
         # Done!
-        print("I'm happy.  You should be too.")
+        info("I'm happy.  You should be too.")
     finally:
         # Change back to the original cwd
         os.chdir(cwd)

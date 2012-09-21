@@ -5,6 +5,9 @@ import sys
 _ansi = {}
 _quiet = False
 _debug = False
+_log_prefix_stack = ['']
+_log_prefix = ''
+_log_indent = False
 
 
 def ansi(key):
@@ -62,39 +65,92 @@ def quiet(state=True):
 quiet(False)
 
 
-def print_debug(state=True):
+def enable_debug(state=True):
     global _debug
     _debug = state
 
 # Default to debug off
-print_debug(False)
+enable_debug(False)
 
 
-def debug(msg, file=sys.stdout):
-    global _quiet, _debug
-    msg = ansi('greenf') + "Debug: " + msg + ansi('reset')
+def enable_debug_indent(state=True):
+    global _debug_indent
+    _debug_indent = state
+
+enable_debug_indent(True)
+
+
+def _get_log_prefix():
+    global _log_prefix_stack, _log_indent
+    if _log_indent:
+        return (' ' * (len(_log_prefix_stack) - 2)) + _log_prefix_stack[-1]
+    else:
+        return _log_prefix_stack[-1]
+
+
+def push_log_prefix(prefix):
+    global _log_prefix, _log_prefix_stack
+    _log_prefix_stack.append(prefix)
+    _log_prefix = _get_log_prefix()
+
+
+def pop_log_prefix():
+    global _log_prefix, _log_prefix_stack
+    if len(_log_prefix_stack) > 1:
+        _log_prefix_stack.pop()
+    _log_prefix = _get_log_prefix()
+
+
+def log_prefix(prefix):
+    def decorator(fn):
+        def wrapper(*args, **kwargs):
+            push_log_prefix(prefix)
+            try:
+                result = fn(*args, **kwargs)
+            finally:
+                pop_log_prefix()
+            return result
+        return wrapper
+    return decorator
+
+
+def debug(msg, file=sys.stdout, end='\n', use_prefix=True):
+    global _quiet, _debug, _log_prefix
+    if use_prefix:
+        msg = ansi('greenf') + _log_prefix + msg + ansi('reset')
+    else:
+        msg = ansi('greenf') + msg + ansi('reset')
     if not _quiet and _debug:
-        print(msg, file=file)
+        print(msg, file=file, end=end)
 
 
-def info(msg, file=sys.stdout):
+def info(msg, file=sys.stdout, end='\n', use_prefix=True):
     global _quiet
+    if use_prefix:
+        msg = _log_prefix + msg
     if not _quiet:
-        print(msg, file=file)
+        print(msg, file=file, end=end)
     return msg
 
 
-def warning(msg, file=sys.stdout):
+def warning(msg, file=sys.stdout, end='\n', use_prefix=True):
     global _quiet
-    msg = ansi('yellowf') + ansi('boldon') + "Warning: " + msg + ansi('reset')
+    if use_prefix:
+        msg = ansi('yellowf') + ansi('boldon') + _log_prefix + msg \
+            + ansi('reset')
+    else:
+        msg = ansi('yellowf') + ansi('boldon') + msg + ansi('reset')
     if not _quiet:
-        print(msg, file=file)
+        print(msg, file=file, end=end)
     return msg
 
 
-def error(msg, file=sys.stderr):
+def error(msg, file=sys.stderr, end='\n', use_prefix=True):
     global _quiet
-    msg = ansi('redf') + ansi('boldon') + "Error: " + msg + ansi('reset')
+    if use_prefix:
+        msg = ansi('redf') + ansi('boldon') + _log_prefix + msg + ansi('reset')
+    else:
+        msg = ansi('redf') + ansi('boldon') + msg + ansi('reset')
     if not _quiet:
-        print(msg, file=file)
+        print(msg, file=file, end=end)
     return msg

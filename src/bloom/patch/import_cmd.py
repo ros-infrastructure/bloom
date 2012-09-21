@@ -6,19 +6,23 @@ import tempfile
 import shutil
 from argparse import ArgumentParser
 
+from .. util import add_global_arguments
 from .. util import execute_command
+from .. util import handle_global_arguments
 from .. logging import error
 from .. logging import info
+from .. logging import log_prefix
 from .. logging import warning
 from .. git import get_branches
 from .. git import get_commit_hash
 from .. git import get_current_branch
 from .. git import track_branches
 
-from . common import get_patches_info
+from . common import get_patch_config
 from . common import list_patches
 
 
+@log_prefix('[git-bloom-patch import]: ')
 def import_patches(directory=None):
     # Get current branch
     current_branch = get_current_branch(directory)
@@ -36,7 +40,8 @@ def import_patches(directory=None):
     tmp_dir = tempfile.mkdtemp()
     try:
         # Get parent branch and base commit from patches branch
-        parent_branch, commit = get_patches_info(patches_branch, directory)
+        config = get_patch_config(patches_branch, directory)
+        parent_branch, commit = config['parent'], config['base']
         if commit != get_commit_hash(current_branch, directory):
             warning("The current commit is not the same as the most recent "
                     "rebase commit. This might mean that you have committed "
@@ -84,6 +89,7 @@ def main():
     # Assumptions: in a git repo, this command verb was passed, argv has enough
     sysargs = sys.argv[2:]
     parser = get_parser()
+    parser = add_global_arguments(parser)
     args = parser.parse_args(sysargs)
-    args  # pylint
+    handle_global_arguments(args)
     return import_patches()

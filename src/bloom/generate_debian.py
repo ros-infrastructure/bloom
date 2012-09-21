@@ -46,12 +46,18 @@ import tempfile
 from pprint import pprint
 from subprocess import Popen, CalledProcessError
 
-from bloom.util import execute_command, bailout
-from bloom.util import get_last_tag_by_date, ansi
-from bloom.util import get_versions_from_upstream_tag, warning
-from bloom.git import get_current_branch
-from bloom.git import track_branches
-from bloom.git import get_last_tag_by_date
+from . util import add_global_arguments
+from . util import execute_command
+from . util import handle_global_arguments
+from . util import bailout
+from . util import ansi
+from . util import get_versions_from_upstream_tag
+from . git import get_current_branch
+from . git import track_branches
+from . git import get_last_tag_by_date
+
+from . logging import error
+from . logging import warning
 
 try:
     from vcstools import VcsClient
@@ -214,6 +220,103 @@ def process_stack_xml(args, cwd=None):
     return data
 
 
+def process_package_xml(args, directory=None):
+    cwd = directory if directory else '.'
+    xml_path = os.path.join(cwd, 'package.xml')
+    if not os.path.exists(xml_path):
+        bailout("No package.xml file found at: {0}".format(xml_path))
+    try:
+        from catkin.package import parse_package
+    except ImportError:
+        error("catkin was not detected, please install it.",
+              file=sys.stderr)
+        sys.exit(1)
+    package = parse_package(xml_path)
+
+    data = {}
+    data['Name'] = package.name
+    data['Version'] = package.version
+    data['Description'] = debianize_string(package.description)
+    websites = [str(url) for url in package.urls if url.type == 'website']
+    homepage = websites[0] if websites else ''
+    if homepage == '':
+        warning("No homepage set, defaulting to ''")
+    data['Homepage'] = homepage
+
+    data['Catkin-ChangelogType'] = ''
+    data['Catkin-DebRulesType'] = ''
+    data['Catkin-DebRulesFile'] = ''
+    # data['Catkin-CopyrightType'] = package.copyright
+    # data['copyright'] = package.copyright
+
+    data['DebianInc'] = args.debian_revision
+    if args.rosdistro == 'backports':
+        data['Package'] = sanitize_package_name("%s" % (package.name))
+    else:
+        data['Package'] = \
+            sanitize_package_name("ros-%s-%s" % (args.rosdistro, package.name))
+
+    data['ROS_DISTRO'] = args.rosdistro
+
+    # allow override of these values
+    if args.rosdistro == 'backports':
+        data['INSTALL_PREFIX'] = \
+            args.install_prefix if args.install_prefix != None else '/usr'
+    else:
+        data['INSTALL_PREFIX'] = \
+            args.install_prefix if args.install_prefix != None \
+                                else '/opt/ros/%s' % args.rosdistro
+
+    data['Depends'] = set([d.name for d in package.run_depends])
+    build_deps = (package.build_depends + package.buildtool_depends)
+    data['BuildDepends'] = set([d.name for d in build_deps])
+
+    maintainers = []
+    for m in package.maintainers:
+        maintainers.append(str(m))
+    data['Maintainer'] = ', '.join(maintainers)
+
+    # Go over the different subfolders and find all the packages
+    package_descriptions = {}
+
+    # search for manifest in current folder and direct subfolders
+    for dir_name in [cwd] + os.listdir(cwd):
+        if not os.path.isdir(dir_name):
+            continue
+        dir_path = os.path.join('.', dir_name)
+        for file_name in os.listdir(dir_path):
+            if file_name == 'manifest.xml':
+                # parse the manifest, in case it is not valid
+                manifest = rospkg.parse_manifest_file(dir_path, file_name)
+                # remove markups
+                if manifest.description is None:
+                    manifest.description = ''
+                description = debianize_string(manifest.description)
+                if dir_name == '.':
+                    dir_name = package.name
+                package_descriptions[dir_name] = description
+    # Enhance the description with the list of packages in the stack
+    if package_descriptions:
+        if data['Description']:
+            data['Description'] += '\n .\n'
+        data['Description'] += ' This stack contains the packages:'
+        for name, description in package_descriptions.items():
+            data['Description'] += '\n * %s: %s' % (name, description)
+
+    return data
+
+
+def get_stack_data(args, directory=None):
+    path = directory if directory else '.'
+    if os.path.exists(os.path.join(path, 'stack.xml')):
+        return process_stack_xml(args, directory)
+    else:
+        if os.path.exists(os.path.join(path, 'package.xml')):
+            return process_package_xml(args, directory)
+        else:
+            bailout("No stack.xml or package.xml found, exiting.")
+
+
 def expand(fname, stack_data, dest_dir, filetype=''):
     # insert template type
     if fname == 'rules' and stack_data['Catkin-DebRulesType'] == 'custom':
@@ -300,12 +403,12 @@ def generate_deb(stack_data, repo_path, stamp, rosdistro, debian_distro):
            filetype=stack_data['Catkin-ChangelogType'])
     expand('rules', stack_data, dest_dir,
            filetype=stack_data['Catkin-DebRulesType'])
-    expand('copyright', stack_data, dest_dir,
-           filetype=stack_data['Catkin-CopyrightType'])
-    ofilename = os.path.join(dest_dir, 'copyright')
-    ofilestr = open(ofilename, "w")
-    print(stack_data['copyright'], file=ofilestr)
-    ofilestr.close()
+    # expand('copyright', stack_data, dest_dir,
+           # filetype=stack_data['Catkin-CopyrightType'])
+    # ofilename = os.path.join(dest_dir, 'copyright')
+    # ofilestr = open(ofilename, "w")
+    # print(stack_data['copyright'], file=ofilestr)
+    # ofilestr.close()
 
     #compat to quiet warnings, 7 .. lucid
     ofilename = os.path.join(dest_dir, 'compat')
@@ -348,6 +451,8 @@ Creates or updates a git-buildpackage repository using a catkin project.\
     parser.add_argument('--distros', nargs='+',
                         help='A list of debian distros.',
                         default=[])
+    parser.add_argument('--upstream-tag', '-t',
+                        help='tag to create debians from', default=None)
 
     #ros specific stuff.
     parser.add_argument('rosdistro',
@@ -360,23 +465,26 @@ Creates or updates a git-buildpackage repository using a catkin project.\
 
 def execute_bloom_generate_debian(args, bloom_repo):
     """Executes the generation of the debian.  Assumes in bloom git repo."""
-    last_tag = get_last_tag_by_date()
-    if not last_tag:
-        bailout("There are no upstream versions imported into this repo."
-                "Run this first:\n\tgit bloom-import-upstream")
-    print("The latest upstream tag in the release repo is "
-          "{0}{1}{2}".format(ansi('boldon'), last_tag, ansi('reset')))
+    if args.upstream_tag is not None:
+        last_tag = args.upstream_tag
+    else:
+        last_tag = get_last_tag_by_date()
+        if not last_tag:
+            bailout("There are no upstream versions imported into this repo."
+                    "Run this first:\n\tgit bloom-import-upstream")
+        print("The latest upstream tag in the release repo is "
+              "{0}{1}{2}".format(ansi('boldon'), last_tag, ansi('reset')))
 
-    major, minor, patch = get_versions_from_upstream_tag(last_tag)
-    version_str = '.'.join([major, minor, patch])
-    print("Upstream version is: {0}{1}{2}"
-          "".format(ansi('boldon'), version_str, ansi('reset')))
+    # major, minor, patch = get_versions_from_upstream_tag(last_tag)
+    # version_str = '.'.join([major, minor, patch])
+    # print("Upstream version is: {0}{1}{2}"
+          # "".format(ansi('boldon'), version_str, ansi('reset')))
 
     # Make sure we are on the correct upstream branch
     bloom_repo.update(last_tag)
 
     stamp = datetime.datetime.now(dateutil.tz.tzlocal())
-    stack_data = process_stack_xml(args)
+    stack_data = get_stack_data(args)
     working = args.working if args.working else tempfile.mkdtemp()
     make_working(working)
 
@@ -395,7 +503,7 @@ def execute_bloom_generate_debian(args, bloom_repo):
             tag_name = 'debian/' \
                 '%(Package)s_%(Version)s-%(DebianInc)s_%(Distribution)s' % data
             print("tag: %s" % tag_name)
-            call(".", ['git', 'tag', tag_name, '-m',
+            call(".", ['git', 'tag', '-f', tag_name, '-m',
                  'Debian release %(Version)s' % data])
     except rosdep2.catkin_support.ValidationFailed as e:
         print(e.args[0], file=sys.stderr)
@@ -407,19 +515,21 @@ def execute_bloom_generate_debian(args, bloom_repo):
         print("""\
 Cannot resolve dependency [{0}].
 
-If [{1}] is catkin project, make sure it has been added to the gbpdistro file.
+If [{0}] is catkin project, make sure it has been added to the gbpdistro file.
 
-If [{2}] is a system dependency, make sure there is a \
+If [{0}] is a system dependency, make sure there is a \
 rosdep.yaml entry for it in your sources.
 """.format(rosdep_key), file=sys.stderr)
         return 1
     return 0
 
 
-def main():
+def main(sysargs=None):
     # Parse the commandline arguments
     parser = get_argument_parser()
-    args = parser.parse_args()
+    parser = add_global_arguments(parser)
+    args = parser.parse_args(sysargs if sysargs else None)
+    handle_global_arguments(args)
 
     # Ensure we are in a git repository
     if execute_command('git status') != 0:
@@ -432,7 +542,7 @@ def main():
     if execute_command('git show-ref refs/heads/bloom') != 0:
         bailout("This does not appear to be a bloom release repo. "
                 "Please initialize it first using:\n\n"
-                "git bloom-set-upstream <UPSTREAM_VCS_URL> <VCS_TYPE> "
+                "  git bloom-set-upstream <UPSTREAM_VCS_URL> <VCS_TYPE> "
                 "[<VCS_BRANCH>]")
 
     current_branch = get_current_branch()

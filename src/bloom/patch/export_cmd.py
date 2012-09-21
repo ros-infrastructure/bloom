@@ -6,13 +6,16 @@ from argparse import ArgumentParser
 from .. util import execute_command
 from .. logging import error
 from .. logging import info
+from .. logging import log_prefix
 from .. git import get_branches
 from .. git import get_current_branch
+from .. git import has_changes
 
-from . common import get_patches_info
+from . common import get_patch_config
 from . common import list_patches
 
 
+@log_prefix('[git-bloom-patch export]: ')
 def export_patches(directory=None):
     # Get current branch
     current_branch = get_current_branch(directory)
@@ -25,19 +28,33 @@ def export_patches(directory=None):
         return 1
     try:
         # Get parent branch and base commit from patches branch
-        parent_branch, _ = get_patches_info(patches_branch, directory)
+        config = get_patch_config(patches_branch, directory)
+        if config is None:
+            error("Failed to get patches information.")
+            return 1
         # Checkout to the patches branch
         execute_command('git checkout ' + patches_branch, cwd=directory)
         # Notify the user
         info("Exporting patches from "
-             "{0}...{1}".format(parent_branch, current_branch))
+             "{0}...{1}".format(config['base'], current_branch))
+        # Remove all the old patches
+        if len(list_patches(directory)) > 0:
+            cmd = 'git rm ./*.patch'
+            execute_command(cmd, cwd=directory)
         # Create the patches using git format-patch
         cmd = "git format-patch -M -B " \
-              "{0}...{1}".format(parent_branch, current_branch)
+              "{0}...{1}".format(config['base'], current_branch)
         execute_command(cmd, cwd=directory)
         # Report of the number of patches created
         patches_list = list_patches(directory)
         info("Created {0} patches".format(len(patches_list)))
+        # Clean up and commit
+        if len(patches_list) > 0:
+            cmd = 'git add ./*.patch'
+            execute_command(cmd, cwd=directory)
+        if has_changes(directory):
+            cmd = 'git commit -m "Updating patches."'
+            execute_command(cmd, cwd=directory)
     finally:
         if current_branch:
             execute_command('git checkout ' + current_branch, cwd=directory)

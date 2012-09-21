@@ -37,36 +37,34 @@ Provides common utility functions for bloom.
 from __future__ import print_function
 
 import sys
+import os
 
 from subprocess import check_call, CalledProcessError, PIPE
 from subprocess import Popen
 
+from . logging import enable_debug
+from . logging import error
+from . logging import debug
+from . logging import info
+
 try:
     import rospkg.stack
 except ImportError:
-    print("rospkg was not detected, please install it.", file=sys.stderr)
+    error("rospkg was not detected, please install it.", file=sys.stderr)
     sys.exit(1)
 
 _ansi = {}
 
 
-def inbranch(branch, directory=None):
-    """Decorator for doing things in a different branch safely"""
-    current_branch = 'master'
+def add_global_arguments(parser):
+    group = parser.add_argument_group('global')
+    group.add_argument('--debug', '-d', help='enable debug messages',
+                       action='store_true', default=False)
+    return parser
 
-    def decorator(fn):
-        def wrapper(*args, **kwargs):
-            execute_command('git checkout {0}'.format(branch), cwd=directory)
-            try:
-                result = fn(*args, **kwargs)
-            finally:
-                execute_command('git checkout {0}'.format(current_branch),
-                                cwd=directory)
-            return result
 
-        return wrapper
-
-    return decorator
+def handle_global_arguments(args):
+    enable_debug(args.debug)
 
 
 def check_output(cmd, cwd=None, stdin=None, stderr=None, shell=False):
@@ -147,10 +145,9 @@ def maybe_continue(default='y'):
 
         response = response.lower()
         if response not in ['y', 'n']:
-            error_msg = ansi('redf') + 'Reponse `' + response
-            error_msg += '` was not recognized, please use one of y, Y, n, N.'
-            error_msg += ansi('reset')
-            print(error_msg)
+            error_msg = 'Reponse `' + response + '` was not recognized, ' \
+                        'please use one of y, Y, n, N.'
+            error(error_msg)
         else:
             break
 
@@ -161,7 +158,7 @@ def maybe_continue(default='y'):
 
 def bailout(reason='Exiting.'):
     """Exits bloom for a given reason"""
-    print(ansi('redf') + ansi('boldon') + reason + ansi('reset'))
+    error(reason)
     sys.exit(1)
 
 
@@ -201,6 +198,7 @@ def execute_command(cmd, shell=True, autofail=True, silent=True, cwd=None):
     if silent:
         io_type = PIPE
     try:
+        debug(((cwd) if cwd else os.getcwd()) + ":$ " + str(cmd))
         result = check_call(cmd, shell=True, cwd=cwd,
                             stdout=io_type, stderr=io_type)
     except CalledProcessError as cpe:
@@ -210,29 +208,19 @@ def execute_command(cmd, shell=True, autofail=True, silent=True, cwd=None):
     return result
 
 
-def error(msg):
-    """Prints a message as an error"""
-    print(ansi('redf') + ansi('boldon') + 'Error: ' + msg + ansi('reset'))
-
-
-def warning(msg):
-    """Prints a message as a warning"""
-    print(ansi('yellowf') + ansi('boldon') + 'Warning: ' + msg + ansi('reset'))
-
-
 def assert_is_remote_git_repo(repo):
     """
     Asserts that the specified repo url points to a valid git repository.
     """
-    print('Verifying that {0} is a git repository...'.format(repo), end='')
+    info('Verifying that {0} is a git repository...'.format(repo), end='')
     cmd = 'git ls-remote --heads {0}'.format(repo)
     p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
     output, _ = p.communicate()
     if p.returncode != 0:
-        print(ansi('redf') + ' fail' + ansi('reset'))
+        info(ansi('redf') + ' fail' + ansi('reset'), use_prefix=False)
         bailout("Repository {0} is not a valid git repository.".format(repo))
     else:
-        print(' pass')
+        info(' pass', use_prefix=False)
 
 
 def assert_is_not_gbp_repo(repo):
@@ -240,16 +228,16 @@ def assert_is_not_gbp_repo(repo):
     Asserts that the specified repo url does not point to a gbp repo.
     """
     assert_is_remote_git_repo(repo)
-    print('Verifying that {0} is not a gbp repository...'.format(repo), end='')
+    info('Verifying that {0} is not a gbp repository...'.format(repo), end='')
     cmd = 'git ls-remote --heads {0} upstream*'.format(repo)
     p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
     output, _ = p.communicate()
     if p.returncode == 0 and len(output) > 0:
-        print(ansi('redf') + ' fail' + ansi('reset'))
+        info(ansi('redf') + ' fail' + ansi('reset'), use_prefix=False)
         bailout("Error: {0} appears to have an 'upstream' branch, " \
                 "indicating a gbp.".format(repo))
     else:
-        print(' pass')
+        info(' pass', use_prefix=False)
 
 
 def get_versions_from_upstream_tag(tag):

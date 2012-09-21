@@ -5,10 +5,12 @@ import traceback
 from argparse import ArgumentParser
 from subprocess import CalledProcessError
 
-from .. logging import error
 from .. git import get_current_branch, get_root
+from .. logging import error
+from .. util import add_global_arguments
+from .. util import handle_global_arguments
 
-from . branch import execute_branch
+from . packages import branch_packages
 
 
 def get_parser():
@@ -42,13 +44,21 @@ bloom-patch rebase` is attempted unless '--no-patch' is passed.
                         help="summarizes the changes and exits",
                         action='store_true',
                         default=False)
-    add('dst', metavar="DST_BRANCH", help="name of destination branch")
+    # add('--sub-directory', '-r', metavar='SUB_DIRECTORY',
+    #     help="(optional) specifies the sub directory to be the root of "
+    #          "the DST_BRANCH",
+    #     default='')
+    add('prefix', metavar="DST_BRANCH_PREFIX",
+        help="prefix of destination branch, i.e. DST_BRANCH becomes "
+             "DST_BRANCH_PREFIX/<package_name>")
     return parser
 
 
 def branchmain():
     parser = get_parser()
+    parser = add_global_arguments(parser)
     args = parser.parse_args()
+    handle_global_arguments(args)
     retcode = 0
     try:
         # Assert this is a git repository
@@ -57,8 +67,8 @@ def branchmain():
         if args.src is None:
             args.src = get_current_branch()
         # Execute the branching
-        retcode = execute_branch(args.src, args.dst, args.patch,
-                                 args.interactive, args.pretend)
+        retcode = branch_packages(args.src, args.prefix, args.patch,
+                                  args.interactive)
     except CalledProcessError as err:
         # No need for a trackback here, a git call probably failed
         traceback.print_exc()

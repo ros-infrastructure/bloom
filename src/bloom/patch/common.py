@@ -4,13 +4,18 @@ import os
 import subprocess
 import traceback
 
-from .. util import inbranch
 from .. util import check_output
 from .. util import execute_command
 from .. logging import error
+from .. git import has_changes
+from .. git import inbranch
+
+_patch_config_keys = ['parent', 'base', 'trim', 'trimbase']
+_patch_config_keys.sort()
 
 
 def list_patches(directory=None):
+    directory = directory if directory else '.'
     files = os.listdir(directory)
     patches = []
     for f in files:
@@ -19,39 +24,54 @@ def list_patches(directory=None):
     return patches
 
 
-def get_patches_info(patches_branch, directory=None):
+def get_patch_config(patches_branch, directory=None):
     @inbranch(patches_branch, directory=directory)
     def fn():
+        global _patch_config_keys
         conf_path = 'patches.conf'
         if directory is not None:
             conf_path = os.path.join(directory, conf_path)
         if not os.path.exists(conf_path):
-            return [None, None]
+            return None
         cmd = 'git config -f {0} patches.'.format(conf_path)
         try:
-            parent = check_output(cmd + 'parent', shell=True, cwd=directory)
-            spec = check_output(cmd + 'spec', shell=True, cwd=directory)
-            return [parent, spec]
+            config = {}
+            for key in _patch_config_keys:
+                config[key] = check_output(cmd + key, shell=True,
+                                           cwd=directory).strip()
+            return config
         except subprocess.CalledProcessError as err:
             traceback.print_exc()
             error("Failed to get patches info: " + str(err))
-            return [None, None]
+            return None
     return fn()
 
 
-def set_patches_info(patches_branch, parent, base_commit, directory=None):
+def set_patch_config(patches_branch, config, directory=None):
     @inbranch(patches_branch, directory=directory)
-    def fn(parent, base_commit):
+    def fn(config):
+        global _patch_config_keys
         conf_path = 'patches.conf'
         if directory is not None:
             conf_path = os.path.join(directory, conf_path)
+        config_keys = config.keys()
+        config_keys.sort()
+        if _patch_config_keys != config_keys:
+            raise RuntimeError("Invalid config passed to set_patch_config")
         cmd = 'git config -f {0} patches.'.format(conf_path)
         try:
-            parent_cmd = cmd + 'parent {0}'.format(parent)
-            execute_command(parent_cmd, cwd=directory)
-            spec_cmd = cmd + 'base {0}'.format(base_commit)
-            execute_command(spec_cmd, cwd=directory)
+            for key in config:
+                _cmd = cmd + key + ' "' + config[key] + '"'
+                execute_command(_cmd, cwd=directory)
+            # Stage the patches.conf file
+            cmd = 'git add ' + conf_path
+            execute_command(cmd, cwd=directory)
+            if has_changes(directory):
+                # Commit the changed config file
+                cmd = 'git commit -m "Updated patches.conf"'
+                execute_command(cmd, cwd=directory)
         except subprocess.CalledProcessError as err:
             traceback.print_exc()
             error("Failed to set patches info: " + str(err))
-    return fn(parent, base_commit)
+            raise
+    return fn(config)

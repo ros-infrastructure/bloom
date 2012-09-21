@@ -3,15 +3,20 @@ from __future__ import print_function
 import sys
 from argparse import ArgumentParser
 
+from .. util import add_global_arguments
 from .. util import execute_command
+from .. util import handle_global_arguments
+from .. logging import log_prefix
 from .. logging import error
+from .. logging import info
 from .. git import get_branches
 from .. git import get_current_branch
 from .. git import track_branches
 
-from . common import get_patches_info
+from . common import get_patch_config
 
 
+@log_prefix('[git-bloom-patch remove]: ')
 def remove_patches(directory=None):
     # Get the current branch
     current_branch = get_current_branch(directory)
@@ -21,22 +26,29 @@ def remove_patches(directory=None):
         return 1
     # Construct the patches branch
     patches_branch = 'patches/' + current_branch
-    # See if the patches branch exists
-    if patches_branch in get_branches():
-        # Make sure it is tracked
-        if patches_branch not in get_branches(local_only=True):
-            track_branches(current_branch)
-    else:
-        error("No patches branch (" + patches_branch + ") found, cannot "
-              "remove patches.")
-        return 1
-    # Get the parent branch from the patches branch
-    parent, spec = get_patches_info()
-    if None in [parent, spec]:
-        error("Could not retrieve patches configuration data.")
-        return 1
-    # Reset this branch using git reset --hard spec
-    execute_command('git reset --hard ' + spec, cwd=directory)
+    try:
+        # See if the patches branch exists
+        if patches_branch in get_branches():
+            # Make sure it is tracked
+            if patches_branch not in get_branches(local_only=True):
+                track_branches(current_branch)
+        else:
+            error("No patches branch (" + patches_branch + ") found, cannot "
+                  "remove patches.")
+            return 1
+        # Get the parent branch from the patches branch
+        config = get_patch_config(patches_branch, directory=directory)
+        parent, spec = config['parent'], config['base']
+        if None in [parent, spec]:
+            error("Could not retrieve patches info.")
+            return 1
+        info("Removing patches from " + current_branch + " back to base "
+             "commit " + spec)
+        # Reset this branch using git reset --hard spec
+        execute_command('git reset --hard ' + spec, cwd=directory)
+    finally:
+        if current_branch:
+            execute_command('git checkout ' + current_branch, cwd=directory)
     return 0
 
 
@@ -52,6 +64,7 @@ def main():
     # Assumptions: in a git repo, this command verb was passed, argv has enough
     sysargs = sys.argv[2:]
     parser = get_parser()
+    parser = add_global_arguments(parser)
     args = parser.parse_args(sysargs)
-    args  # shutup pylint
+    handle_global_arguments(args)
     return remove_patches()
