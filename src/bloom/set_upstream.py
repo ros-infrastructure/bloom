@@ -83,7 +83,7 @@ def set_upstream(bloom_repo, upstream_repo, upstream_repo_type,
         # Found a bloom branch
         print("Found a bloom branch, checking out.")
         # Check out the bloom branch
-        bloom_repo.update('bloom')
+        execute_command('git checkout bloom')
     else:
         # No bloom branch found, create one
         create_branch('bloom')
