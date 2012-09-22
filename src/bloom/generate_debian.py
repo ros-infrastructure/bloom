@@ -307,7 +307,7 @@ def process_package_xml(args, directory=None):
 
 
 def get_stack_data(args, directory=None):
-    path = directory if directory else '.'
+    path = directory if directory else ''
     if os.path.exists(os.path.join(path, 'package.xml')):
         return process_package_xml(args, directory)
     else:
@@ -535,6 +535,9 @@ def main(sysargs=None):
     if execute_command('git status') != 0:
         parser.print_help()
         bailout("This is not a valid git repository.")
+
+    # Track all the branches
+    track_branches()
 
     if execute_command('git show-ref refs/heads/bloom') != 0:
         bailout("This does not appear to be a bloom release repo. "
