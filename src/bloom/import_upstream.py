@@ -180,37 +180,40 @@ def get_upstream_meta(upstream_dir):
     meta = None
     # Check for stack.xml
     stack_path = os.path.join(upstream_dir, 'stack.xml')
-    info("Checking for stack.xml")
-    # Assumes you are at the top of the repo
-    if not os.path.exists(stack_path):
-        info("stack.xml not found, checking for packages.")
-        # Check for package.xml(s)
-        try:
-            from catkin_pkg.packages import find_packages
-            from catkin_pkg.packages import verify_equal_package_versions
-        except ImportError:
-            error("catkin_pkg was not detected, please install it.",
-                  file=sys.stderr)
-            sys.exit(1)
-        packages = find_packages(basepath=upstream_dir)
-        if packages == {}:
+    info("Checking for package.xml(s)")
+    # Check for package.xml(s)
+    try:
+        from catkin_pkg.packages import find_packages
+        from catkin_pkg.packages import verify_equal_package_versions
+    except ImportError:
+        error("catkin_pkg was not detected, please install it.",
+              file=sys.stderr)
+        sys.exit(1)
+    packages = find_packages(basepath=upstream_dir)
+    if packages == {}:
+        info("package.xml(s) not found, looking for stack.xml")
+        if os.path.exists(stack_path):
+            info("stack.xml found")
+            # Assumes you are at the top of the repo
+            stack = parse_stack_xml(stack_path)
+            meta = {}
+            meta['name'] = [stack.name]
+            meta['version'] = stack.version
+            meta['type'] = 'stack.xml'
+        else:
             bailout("Neither stack.xml, nor package.xml(s) were detected.")
-        try:
-            version = verify_equal_package_versions(packages.values())
-        except RuntimeError as err:
-            traceback.print_exec()
-            bailout("Releasing multiple packages with different versions is "
-                    "not supported: " + str(err))
-        meta = {}
-        meta['version'] = version
-        meta['name'] = [p.name for p in packages.values()]
-        meta['type'] = 'package.xml'
     else:
-        stack = parse_stack_xml(stack_path)
-        meta = {}
-        meta['name'] = [stack.name]
-        meta['version'] = stack.version
-        meta['type'] = 'stack.xml'
+        info("package.xml(s) found")
+    try:
+        version = verify_equal_package_versions(packages.values())
+    except RuntimeError as err:
+        traceback.print_exec()
+        bailout("Releasing multiple packages with different versions is "
+                "not supported: " + str(err))
+    meta = {}
+    meta['version'] = version
+    meta['name'] = [p.name for p in packages.values()]
+    meta['type'] = 'package.xml'
     return meta
 
 
@@ -452,7 +455,8 @@ of the merge.
         retcode = import_upstream(cwd, tmp_dir, args)
 
         # Done!
-        info("I'm happy.  You should be too.")
+        if retcode is None or retcode == 0:
+            info("I'm happy.  You should be too.")
 
         return retcode
     finally:
