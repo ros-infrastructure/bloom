@@ -48,6 +48,9 @@ from . git import create_branch
 from . git import get_branches
 from . git import has_changes
 
+# from . logging import enable_debug
+# enable_debug(True)
+
 
 def usage():
     """Prints usage message"""
@@ -86,7 +89,7 @@ def set_upstream(bloom_repo, upstream_repo, upstream_repo_type,
         execute_command('git checkout bloom')
     else:
         # No bloom branch found, create one
-        create_branch('bloom')
+        create_branch('bloom', changeto=True)
 
     # Now set the upstream using the bloom config
     cmd = 'git config -f bloom.conf bloom.upstream "{0}"'.format(upstream_repo)
@@ -166,6 +169,6 @@ def main():
         # Try to roll back to the branch the user was on before
         # this possibly failed.
         if current_branch:
-            bloom_repo.update(current_branch)
+            execute_command('git checkout ' + current_branch)
 
     return 1
