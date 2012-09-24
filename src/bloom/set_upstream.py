@@ -45,7 +45,7 @@ from . util import maybe_continue, execute_command, bailout, ansi
 from . util import error
 from . git import get_current_branch
 from . git import create_branch
-from . git import get_branches
+from . git import branch_exists
 from . git import has_changes
 
 # from . logging import enable_debug
@@ -82,7 +82,7 @@ def set_upstream(bloom_repo, upstream_repo, upstream_repo_type,
     check_git_init()
 
     # Check for a bloom branch
-    if 'bloom' in get_branches():
+    if branch_exists('bloom', False):
         # Found a bloom branch
         print("Found a bloom branch, checking out.")
         # Check out the bloom branch
