@@ -6,6 +6,7 @@ from argparse import ArgumentParser
 from subprocess import CalledProcessError
 
 from .. git import get_current_branch, get_root
+from .. logging import ansi
 from .. logging import error
 from .. logging import info
 from .. util import add_global_arguments
@@ -26,8 +27,8 @@ If the patches/DST_BRANCH branch does not exist yet then it is created.
 If the branches are created successful, then the working branch will be set to
 the DST_BRANCH, otherwise the working branch will remain unchanged.
 
-If the DST_BRANCH and patches/DST_BRANCH already existed, then a call to `git-
-bloom-patch rebase` is attempted unless '--no-patch' is passed.
+If the DST_BRANCH and patches/DST_BRANCH already existed, then a call to
+`git-bloom-patch rebase` is attempted unless '--no-patch' is passed.
 """
     )
     add = parser.add_argument

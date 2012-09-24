@@ -13,7 +13,7 @@ from .. logging import log_prefix
 from .. logging import info
 from .. logging import warning
 from .. git import create_branch
-from .. git import get_branches
+from .. git import branch_exists
 from .. git import get_commit_hash
 from .. git import get_current_branch
 from .. git import track_branches
@@ -94,8 +94,9 @@ def _branch_packages(src, prefix, patch, interactive, directory=None):
                + package.name
         print('')  # white space
         info("Branching " + package.name + "_" + version + " to " + branch)
+        ret = -1
         try:
-            ret = execute_branch(src, branch, patch, interactive, path,
+            ret = execute_branch(src, branch, patch, False, path,
                 directory=directory)
             msg = "Branching " + package.name + "_" + version + " to " + \
                 branch + " returned " + str(ret)
@@ -138,27 +139,25 @@ def execute_branch(src, dst, patch, interactive, trim_dir, directory=None):
 
     :raises: subprocess.CalledProcessError if any git calls fail
     """
-    branches = get_branches(directory)
-    local_branches = get_branches(local_only=True, directory=directory)
-    if src in branches:
-        if src not in local_branches:
+    if branch_exists(src, local_only=False, directory=directory):
+        if not branch_exists(src, local_only=True, directory=directory):
             info("Tracking source branch: {0}".format(src))
             track_branches(src, directory)
     else:
         error("Specified source branch does not exist: {0}".format(src))
 
     create_dst_branch = False
-    if dst in branches:
-        if dst not in local_branches:
-            info("Tracking destination branch: {0}".format(src))
+    if branch_exists(dst, local_only=False, directory=directory):
+        if not branch_exists(dst, local_only=True, directory=directory):
+            info("Tracking destination branch: {0}".format(dst))
             track_branches(dst, directory)
     else:
         create_dst_branch = True
 
     create_dst_patches_branch = False
     dst_patches = 'patches/' + dst
-    if dst_patches in branches:
-        if dst_patches not in local_branches:
+    if branch_exists(dst_patches, False, directory=directory):
+        if not branch_exists(dst_patches, True, directory=directory):
             track_branches(dst_patches, directory)
     else:
         create_dst_patches_branch = True
@@ -227,7 +226,7 @@ def execute_branch(src, dst, patch, interactive, trim_dir, directory=None):
         current_branch = None
         execute_command('git checkout ' + dst, cwd=directory)
         # If trim_dir is set, trim the resulting directory
-        if trim_dir not in ['', '.']:
+        if trim_dir not in ['', '.'] and create_dst_branch:
             trim(trim_dir, False, False, directory)
         # Try to update if appropriate
         if not create_dst_branch and not create_dst_patches_branch:
