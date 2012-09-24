@@ -46,18 +46,18 @@ import tempfile
 from pprint import pprint
 from subprocess import Popen, CalledProcessError
 
-from . util import add_global_arguments
-from . util import execute_command
-from . util import handle_global_arguments
-from . util import bailout
-from . util import ansi
-from . util import get_versions_from_upstream_tag
-from . git import get_current_branch
-from . git import track_branches
-from . git import get_last_tag_by_date
+from ... util import add_global_arguments
+from ... util import execute_command
+from ... util import handle_global_arguments
+from ... util import bailout
+from ... util import ansi
+# from . util import get_versions_from_upstream_tag
+from ... git import get_current_branch
+from ... git import track_branches
+from ... git import get_last_tag_by_date
 
-from . logging import error
-from . logging import warning
+from ... logging import error
+from ... logging import warning
 
 try:
     from vcstools import VcsClient
@@ -528,7 +528,7 @@ def main(sysargs=None):
     # Parse the commandline arguments
     parser = get_argument_parser()
     parser = add_global_arguments(parser)
-    args = parser.parse_args(sysargs if sysargs else None)
+    args = parser.parse_args(sysargs)
     handle_global_arguments(args)
 
     # Ensure we are in a git repository

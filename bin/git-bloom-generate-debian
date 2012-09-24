@@ -33,7 +33,7 @@
 
 import sys
 
-from bloom.generate_debian import main
+from bloom.generators.debian import main
 
 if __name__ == '__main__':
     sys.exit(main())

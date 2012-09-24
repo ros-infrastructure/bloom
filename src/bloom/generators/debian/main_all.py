@@ -33,7 +33,50 @@
 
 import sys
 
-from bloom.generators.debian.main_all import main
+from argparse import ArgumentParser
 
-if __name__ == '__main__':
-    sys.exit(main())
+from . import main as gendeb_main
+
+from ... git import get_branches
+from ... git import track_branches
+from ... util import maybe_continue
+from ... logging import info, error
+
+
+def get_argument_parser():
+    parser = ArgumentParser(description="""\
+Batch call to git-bloom-generate-debian.
+
+Example: 'git-bloom-generate-debian-all groovy release'
+""")
+    parser.add_argument('rosdistro',
+                        help="The ros distro")
+    parser.add_argument('prefix',
+                        help="Something like release will match release/a and "
+                             "release/b (must be branches)")
+    parser.add_argument('--debian-revision', '-r', dest='debian_revision',
+                        help='Bump the changelog debian number.'
+                             ' Please enter a monotonically increasing number '
+                             'from the last upload.',
+                        default=0)
+    return parser
+
+
+def main(sysargs=None):
+    parser = get_argument_parser()
+    args = parser.parse_args(sysargs)
+    track_branches()
+    branches = get_branches(local_only=True)
+    targets = []
+    for branch in branches:
+        if branch.startswith(args.prefix):
+            targets.append(branch)
+    info("This will run git-bloom-generate-debian on these "
+         "pacakges: " + str(targets))
+    if not maybe_continue():
+        error("Answered no to continue, exiting.")
+        sys.exit(1)
+    for target in targets:
+        gendeb_main(['-t', target,
+                     args.rosdistro,
+                     '--debian-revision', args.debian_revision])
