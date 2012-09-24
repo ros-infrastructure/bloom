@@ -13,7 +13,7 @@ from .. logging import error
 from .. logging import info
 from .. logging import log_prefix
 from .. logging import warning
-from .. git import get_branches
+from .. git import branch_exists
 from .. git import get_commit_hash
 from .. git import get_current_branch
 from .. git import track_branches
@@ -29,9 +29,9 @@ def import_patches(directory=None):
     # Construct the patches branch name
     patches_branch = 'patches/' + current_branch
     # Ensure the patches branch exists and is tracked
-    if patches_branch in get_branches():
-        if patches_branch not in get_branches(local_only=True):
-            track_branches(patches_branch)
+    if branch_exists(patches_branch, False, directory=directory):
+        if not branch_exists(patches_branch, True, directory=directory):
+            track_branches(patches_branch, directory)
     else:
         error("The patches branch ({0}) does not ".format(patches_branch) + \
               "exist, did you use git-bloom-branch?")

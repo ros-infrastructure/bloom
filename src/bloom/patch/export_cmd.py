@@ -7,7 +7,7 @@ from .. util import execute_command
 from .. logging import error
 from .. logging import info
 from .. logging import log_prefix
-from .. git import get_branches
+from .. git import branch_exists
 from .. git import get_current_branch
 from .. git import has_changes
 
@@ -22,7 +22,7 @@ def export_patches(directory=None):
     # Construct the patches branch name
     patches_branch = 'patches/' + current_branch
     # Ensure the patches branch exists
-    if patches_branch not in get_branches():
+    if not branch_exists(patches_branch, False, directory=directory):
         error("The patches branch ({0}) does not ".format(patches_branch) + \
               "exist, did you use git-bloom-branch?")
         return 1
