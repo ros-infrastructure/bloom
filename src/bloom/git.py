@@ -36,13 +36,51 @@ from __future__ import print_function
 
 from subprocess import PIPE, CalledProcessError
 
+from . logging import debug
+
 from . util import execute_command
 from . util import check_output
 
 
+def branch_exists(branch_name, local_only=False, directory=None):
+    """
+    Returns true if a given branch exists locally or remotelly
+
+    :param branch_name: name of the branch to look for
+    :param local_only: if True, only look at the local branches
+    :param directory: directory in which to run this command
+
+    :returns: True if the branch is in the list of branches from git
+
+    :raises: subprocess.CalledProcessError if any git calls fail
+    """
+    for branch in get_branches(local_only, directory):
+        if branch.startswith('remotes/'):
+            branch = branch.split('/')
+            if len(branch) > 2:
+                branch = '/'.join(branch[2:])
+                if branch_name == branch:
+                    return True
+        else:
+            if branch_name == branch:
+                return True
+    return False
+
+
 def inbranch(branch, directory=None):
     """
-    Decorator for doing things in a different branch safely
+    Decorator for doing things in a different branch safely.
+
+    Functions decorated with ``@inbranch('<target branch>')`` will switch to
+    the target branch and back to the current branch no matter what the
+    decorated function does (unless it deletes the current branch).
+
+    :param branch: branch to switch to before executing the decorated function
+    :param directory: directory in which to run this decorator.
+
+    :returns: a decorated function
+
+    :raises: subprocess.CalledProcessError if either git checkout call fails
     """
     current_branch = get_current_branch()
 
@@ -72,8 +110,8 @@ def get_commit_hash(reference, directory=None):
     :raises: subprocess.CalledProcessError if any git calls fail
     """
     # Track remote branch
-    if reference in get_branches(directory):
-        if reference not in get_branches(local_only=True, directory=directory):
+    if branch_exists(reference, local_only=False, directory=directory):
+        if not branch_exists(reference, local_only=True, directory=directory):
             track_branches(reference, directory)
     cmd = 'git show-branch --sha1-name ' + reference
     out = check_output(cmd, shell=True, cwd=directory)
@@ -210,43 +248,41 @@ def track_branches(branches=None, directory=None):
 
     :raises: subprocess.CalledProcessError if git command fails
     """
+    debug("track_branches(" + str(branches) + ", " + str(directory) + ")")
     if type(branches) == str:
         branches = [branches]
-    # TODO: replace listing of branches with vcstool's get_branches
-    # Save current branch
+    if branches == []:
+        return
+    # Save the current branch
     current_branch = get_current_branch(directory)
-    # Get the local branches
-    local_branches = check_output('git branch', shell=True, cwd=directory)
-    local_branches = local_branches.splitlines()
-    # Strip local_branches of white space
-    for index, local_branch in enumerate(local_branches):
-        local_branches[index] = local_branch.strip('*').strip()
-    # Either get the remotes or use the given list of branches to track
-    remotes_out = check_output('git branch -r', shell=True, cwd=directory)
-    remotes = remotes_out.splitlines()
-    if branches == None:
-        branches = remotes
-    # Subtract the locals from the remotes
-    to_track = []
-    for remote in branches:
-        remote = remote.strip()
-        if remote.count('master') != 0:
-            continue
-        if remote.count('/') > 0:
-            remote_branch = '/'.join(remote.split('/')[1:])
+    try:
+        # Get the local branches
+        local_branches = get_branches(local_only=True, directory=directory)
+        # Get the remote and local branches
+        all_branches = get_branches(local_only=False, directory=directory)
+        # Calculate the untracked branches
+        untracked_branches = []
+        for branch in all_branches:
+            if branch.startswith('remotes/'):
+                if branch.count('/') >= 2:
+                    branch = '/'.join(branch.split('/')[2:])
+            if branch not in local_branches:
+                untracked_branches.append(branch)
+        # Prune any untracked branches by specified branches
+        if branches is not None:
+            branches_to_track = []
+            for untracked in untracked_branches:
+                if untracked in branches:
+                    branches_to_track.append(untracked)
         else:
-            remote_branch = remote
-        if remote_branch not in local_branches:
-            to_track.append(remote_branch)
-    # Now track any remotes that are not local
-    for branch in to_track:
-        if remotes_out.count(branch) > 0:
-            cmd = 'git checkout {0}'.format(branch)
-            execute_command(cmd, cwd=directory)
-    # Restore original branch
-    if current_branch:
-        execute_command('git checkout {0}'.format(current_branch),
-                        cwd=directory)
+            branches_to_track = untracked_branches
+        # Track branches
+        debug("Tracking branches: " + str(branches_to_track))
+        for branch in branches_to_track:
+            execute_command('git checkout ' + branch, cwd=directory)
+    finally:
+        if current_branch:
+            execute_command('git checkout ' + current_branch, cwd=directory)
 
 
 def get_last_tag_by_date(directory=None):
