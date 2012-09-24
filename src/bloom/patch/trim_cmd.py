@@ -12,7 +12,7 @@ from .. util import handle_global_arguments
 from .. logging import log_prefix
 from .. logging import error
 from .. logging import warning
-from .. git import get_branches
+from .. git import branch_exists
 from .. git import get_commit_hash
 from .. git import get_current_branch
 from .. git import get_root
@@ -114,10 +114,9 @@ def trim(sub_dir=None, force=False, undo=False, directory=None):
     patches_branch = 'patches/' + current_branch
     try:
         # See if the patches branch exists
-        if patches_branch in get_branches():
-            # Make sure it is tracked
-            if patches_branch not in get_branches(local_only=True):
-                track_branches(current_branch)
+        if branch_exists(patches_branch, False, directory=directory):
+            if not branch_exists(patches_branch, True, directory=directory):
+                track_branches(patches_branch, directory)
         else:
             error("No patches branch (" + patches_branch + ") found, cannot "
                   "perform trim.")
