@@ -5,6 +5,12 @@ VERSION=`./setup.py --version`
 
 OUTPUT_DIR=deb_dist
 
+USERNAME := $(shell whoami)
+# If william, use my WG login wwoodall
+ifeq ($(USERNAME),william)
+	USERNAME := wwoodall
+endif
+
 
 all:
 	echo "noop for debbuild"
@@ -22,7 +28,7 @@ distro: setup clean_dist
 
 push: distro
 	python setup.py sdist register upload
-	scp dist/${NAME}-${VERSION}.tar.gz ipr:/var/www/pr.willowgarage.com/html/downloads/${NAME}
+	scp dist/${NAME}-${VERSION}.tar.gz ${USERNAME}@ipr:/var/www/pr.willowgarage.com/html/downloads/${NAME}
 
 clean: clean_dist
 	echo "clean"
