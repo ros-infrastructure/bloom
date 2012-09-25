@@ -96,4 +96,7 @@ if __name__ == '__main__':
         error("Command git-bloom-branch failed with return code: " + str(ret))
         sys.exit(ret)
     pop_log_prefix()
+    info("Everything went as expected, you should check that the new tags "
+         "match you expectations, and then you can push to the gbp repo with:")
+    info("  git push --force --all && git push --tags")
     sys.exit(0)
