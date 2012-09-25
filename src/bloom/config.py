@@ -32,11 +32,14 @@
 
 from __future__ import print_function
 
+import os
+import sys
 import argparse
 
 from . util import add_global_arguments
 from . util import handle_global_arguments
 from . util import maybe_continue, execute_command, ansi
+from . logging import debug
 from . logging import info
 from . logging import error
 from . git import branch_exists
@@ -44,6 +47,7 @@ from . git import create_branch
 from . git import get_current_branch
 from . git import get_root
 from . git import has_changes
+from . git import inbranch
 
 
 def check_git_init():
@@ -68,7 +72,7 @@ def set_upstream(upstream_repo, upstream_repo_type, upstream_repo_branch):
     # Check for a bloom branch
     if branch_exists('bloom', False):
         # Found a bloom branch
-        info("Found a bloom branch, checking out.")
+        debug("Found a bloom branch, checking out.")
         # Check out the bloom branch
         execute_command('git checkout bloom')
     else:
@@ -90,7 +94,7 @@ def set_upstream(upstream_repo, upstream_repo_type, upstream_repo_branch):
         cmd = 'git commit -m "bloom branch update by git-bloom-set-upstream"'
         execute_command(cmd)
     else:
-        info("No chages, nothing to commit.")
+        debug("No chages, nothing to commit.")
 
 
 def summarize_arguments(upstream_repo, upstream_repo_type,
@@ -116,6 +120,14 @@ def validate_args(upstream_repo_type):
     return True
 
 
+@inbranch('bloom')
+def show_current():
+    if os.path.exists('bloom.conf'):
+        info("Current bloom configuration:")
+        f = open('bloom.conf', 'r')
+        info(f.read(), end='')
+
+
 def get_argument_parser():
     parser = argparse.ArgumentParser(description="""\
 Configures the bloom repository with information about the upstream repository.
@@ -123,17 +135,22 @@ Configures the bloom repository with information about the upstream repository.
 Example: `git-bloom-config https://github.com/ros/bloom.git git groovy-devel`
 """)
     add = parser.add_argument
-    add('upstream_repository', help="URI of the upstream repository")
+    add('upstream_repository', help="URI of the upstream repository",
+        default='')
     add('upstream_vcs_type',
-        help="type of upstream repository (git, svn, hg, or bzr)")
+        help="type of upstream repository (git, svn, hg, or bzr)",
+        default='')
     add('upstream_branch',
         help="(optional) upstream branch name from which to pull version "
              "information",
-        default='')
+        default='', nargs="?")
     return parser
 
 
 def main(sysargs=None):
+    if len(sysargs if sysargs is not None else sys.argv) == 1:
+        if branch_exists('bloom', True):
+            show_current()
     parser = get_argument_parser()
     parser = add_global_arguments(parser)
     args = parser.parse_args(sysargs)
