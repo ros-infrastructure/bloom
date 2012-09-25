@@ -47,9 +47,11 @@ from . util import handle_global_arguments
 from . util import bailout, execute_command, ansi, parse_stack_xml
 from . util import assert_is_not_gbp_repo, create_temporary_directory
 from . util import get_versions_from_upstream_tag, segment_version
+from . git import branch_exists
 from . git import get_current_branch
-from . git import track_branches
 from . git import get_last_tag_by_date
+from . git import get_root
+from . git import track_branches
 
 from . logging import debug
 from . logging import error
@@ -402,7 +404,7 @@ upstream import use the '--replace' option.\
     execute_command('git push --tags')
 
 
-def main():
+def get_argument_parser():
     parser = argparse.ArgumentParser(description="""\
 Imports the upstream repository specified by bloom using git-buildpackage's \
 git-import-orig function. This should be run in a git-buildpackage repository \
@@ -428,16 +430,19 @@ This is disabled by defualt. This will cause an editor to open for sign-off \
 of the merge.
 """,
                         action="store_true")
+    return parser
+
+
+def main(sysargs=None):
+    parser = get_argument_parser()
     parser = add_global_arguments(parser)
-    args = parser.parse_args()
+    args = parser.parse_args(sysargs)
     handle_global_arguments(args)
 
     # Check that the current directory is a serviceable git/bloom repo
-    cwd = os.getcwd()
-    bloom_repo = VcsClient('git', cwd)
-    if not bloom_repo.detect_presence():
-        error("Not in a git repository.\n")
-        parser.info_help()
+    if get_root == None:
+        error("This command has to be run in a git repository.")
+        parser.print_usage()
         return 1
 
     # Get the current git branch
@@ -450,6 +455,8 @@ of the merge.
 
     # Create a working temp directory
     tmp_dir = create_temporary_directory()
+
+    cwd = os.getcwd()
 
     try:
         retcode = import_upstream(cwd, tmp_dir, args)
@@ -464,7 +471,5 @@ of the merge.
         os.chdir(cwd)
         # Clean up
         shutil.rmtree(tmp_dir)
-        # Restore the original branch if it exists still
-        local_branches = check_output('git branch', shell=True)
-        if current_branch and current_branch in local_branches:
-            bloom_repo.update(current_branch)
+        if current_branch and branch_exists(current_branch, True, cwd):
+            execute_command('git checkout ' + current_branch, cwd)
