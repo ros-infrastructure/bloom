@@ -9,6 +9,7 @@ from argparse import ArgumentParser
 from .. util import add_global_arguments
 from .. util import execute_command
 from .. util import handle_global_arguments
+from .. logging import debug
 from .. logging import log_prefix
 from .. logging import error
 from .. logging import warning
@@ -23,6 +24,8 @@ from . common import set_patch_config
 
 
 def _set_trim_sub_dir(sub_dir, force, config, directory):
+    debug("_set_trim_sub_dir(" + str(sub_dir) + ", " + str(force) + ", " + \
+          str(config) + ", " + str(directory) + ")")
     if sub_dir is not None:
         if config['trim'] != '' and config['trim'] != sub_dir:
             warning("You are trying to set the trim sub directory to " + \
@@ -49,6 +52,7 @@ def _set_trim_sub_dir(sub_dir, force, config, directory):
 
 
 def _undo(config, directory):
+    debug("_undo(" + str(config) + ", " + str(directory) + ")")
     # TODO: handle repo with changes
     # TODO: handle repo with patches applied
     if config['trimbase'] == '':
@@ -62,6 +66,8 @@ def _undo(config, directory):
 
 
 def _trim(config, force, directory):
+    debug("_trim(" + str(config) + ", " + str(force) + ", " + \
+          str(directory) + ")")
     if config['trimbase'] != '':
         warning("It looks like the trim operation has already been done, "
                 "nested trimming is not supported.")
