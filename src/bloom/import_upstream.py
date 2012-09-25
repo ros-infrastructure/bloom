@@ -206,16 +206,16 @@ def get_upstream_meta(upstream_dir):
             bailout("Neither stack.xml, nor package.xml(s) were detected.")
     else:
         info("package.xml(s) found")
-    try:
-        version = verify_equal_package_versions(packages.values())
-    except RuntimeError as err:
-        traceback.print_exec()
-        bailout("Releasing multiple packages with different versions is "
-                "not supported: " + str(err))
-    meta = {}
-    meta['version'] = version
-    meta['name'] = [p.name for p in packages.values()]
-    meta['type'] = 'package.xml'
+        try:
+            version = verify_equal_package_versions(packages.values())
+        except RuntimeError as err:
+            traceback.print_exec()
+            bailout("Releasing multiple packages with different versions is "
+                    "not supported: " + str(err))
+        meta = {}
+        meta['version'] = version
+        meta['name'] = [p.name for p in packages.values()]
+        meta['type'] = 'package.xml'
     return meta
 
 
