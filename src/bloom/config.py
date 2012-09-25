@@ -32,59 +32,43 @@
 
 from __future__ import print_function
 
-import sys
-import os
+import argparse
 
-try:
-    from vcstools import VcsClient
-except ImportError:
-    print("vcstools was not detected, please install it.", file=sys.stderr)
-    sys.exit(1)
-
-from . util import maybe_continue, execute_command, bailout, ansi
-from . util import error
-from . git import get_current_branch
-from . git import create_branch
+from . util import add_global_arguments
+from . util import handle_global_arguments
+from . util import maybe_continue, execute_command, ansi
+from . logging import info
+from . logging import error
 from . git import branch_exists
+from . git import create_branch
+from . git import get_current_branch
+from . git import get_root
 from . git import has_changes
-
-# from . logging import enable_debug
-# enable_debug(True)
-
-
-def usage():
-    """Prints usage message"""
-    print("""\
-usage: git bloom set-upstream <upstream-repo> <upstream-repo-type> \
-[<upstream-repo-branch>]
-
-Creates (if necessary) an orphan branch "bloom" in the current gbp repo
-and sets the upstream repo and type in the bloom.conf.  The rest of the
-bloom utilities pivot off of these values.
-""")
 
 
 def check_git_init():
     cmd = 'git show-ref --heads'
     result = execute_command(cmd, shell=True, autofail=False)
     if result != 0:
-        print("Freshly initialized git repository detected.")
-        print("An initial empty commit is going to be made.")
+        info("Freshly initialized git repository detected.")
+        info("An initial empty commit is going to be made.")
         if not maybe_continue():
-            bailout("Exiting.")
+            error("Answered no to continue, exiting.")
+            return 1
         # Make an initial empty commit
         execute_command('git commit -m "initial commit" --allow-empty')
+    return 0
 
 
-def set_upstream(bloom_repo, upstream_repo, upstream_repo_type,
-                 upstream_repo_branch):
+def set_upstream(upstream_repo, upstream_repo_type, upstream_repo_branch):
     # Check for freshly initialized repo
-    check_git_init()
+    if check_git_init() != 0:
+        return 1
 
     # Check for a bloom branch
     if branch_exists('bloom', False):
         # Found a bloom branch
-        print("Found a bloom branch, checking out.")
+        info("Found a bloom branch, checking out.")
         # Check out the bloom branch
         execute_command('git checkout bloom')
     else:
@@ -106,7 +90,7 @@ def set_upstream(bloom_repo, upstream_repo, upstream_repo_type,
         cmd = 'git commit -m "bloom branch update by git-bloom-set-upstream"'
         execute_command(cmd)
     else:
-        print("No chages, nothing to commit.")
+        info("No chages, nothing to commit.")
 
 
 def summarize_arguments(upstream_repo, upstream_repo_type,
@@ -115,12 +99,12 @@ def summarize_arguments(upstream_repo, upstream_repo_type,
     summary_msg = "Upstream " + ansi('boldon') + upstream_repo
     summary_msg += ansi('boldoff') + " type: " + ansi('boldon')
     summary_msg += upstream_repo_type + ansi('boldoff')
-    print(summary_msg)
+    info(summary_msg)
 
 
-def validate_args(bloom_repo, upstream_repo_type):
+def validate_args(upstream_repo_type):
     # Check that the current directory is a servicable git/bloom repo
-    if not bloom_repo.detect_presence():
+    if get_root() is None:
         error("Not in a git repository.\n")
         return False
 
@@ -132,38 +116,43 @@ def validate_args(bloom_repo, upstream_repo_type):
     return True
 
 
-def main():
-    # Ensure we have the corrent number of arguments
-    if len(sys.argv) not in [3, 4]:
-        usage()
-        return 1
+def get_argument_parser():
+    parser = argparse.ArgumentParser(description="""\
+Configures the bloom repository with information about the upstream repository.
 
-    # Gather command line arguments into variables
-    upstream_repo = sys.argv[1]
-    upstream_repo_type = sys.argv[2]
-    if len(sys.argv) == 4:
-        upstream_repo_branch = sys.argv[3]
-    else:
-        upstream_repo_branch = ''
+Example: `git-bloom-config https://github.com/ros/bloom.git git groovy-devel`
+""")
+    add = parser.add_argument
+    add('upstream_repository', help="URI of the upstream repository")
+    add('upstream_vcs_type',
+        help="type of upstream repository (git, svn, hg, or bzr)")
+    add('upstream_branch',
+        help="(optional) upstream branch name from which to pull version "
+             "information",
+        default='')
+    return parser
 
-    # Create vcs client
-    bloom_repo = VcsClient('git', os.getcwd())
+
+def main(sysargs=None):
+    parser = get_argument_parser()
+    parser = add_global_arguments(parser)
+    args = parser.parse_args(sysargs)
+    handle_global_arguments(args)
 
     # Summarize the requested operation
-    summarize_arguments(upstream_repo, upstream_repo_type,
-                        upstream_repo_branch)
+    summarize_arguments(args.upstream_repository, args.upstream_vcs_type,
+                        args.upstream_branch)
 
     # Validate the arguments and repository
-    if not validate_args(bloom_repo, upstream_repo_type):
-        usage()
+    if not validate_args(args.upstream_vcs_type):
         return 1
 
     # Store the current branch
     current_branch = get_current_branch()
     try:
-        set_upstream(bloom_repo, upstream_repo, upstream_repo_type,
-                     upstream_repo_branch)
-        print("Upstream successively set.")
+        set_upstream(args.upstream_repository, args.upstream_vcs_type,
+                     args.upstream_branch)
+        info("Upstream successively set.")
         return 0
     finally:
         # Try to roll back to the branch the user was on before

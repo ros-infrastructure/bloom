@@ -58,7 +58,7 @@ _ansi = {}
 
 def add_global_arguments(parser):
     group = parser.add_argument_group('global')
-    group.add_argument('--debug', '-d', help='enable debug messages',
+    group.add_argument('-d', '--debug', help='enable debug messages',
                        action='store_true', default=False)
     return parser
 

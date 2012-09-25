@@ -33,7 +33,7 @@
 
 import sys
 
+from bloom.config import main
+
 if __name__ == '__main__':
-    print("git-bloom-set-upstream has been replaced by the "
-          "git-bloom-config command.")
-    sys.exit(1)
+    sys.exit(main())
