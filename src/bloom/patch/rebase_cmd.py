@@ -59,7 +59,7 @@ upstream branch.\
     set_patch_config(patches_branch, config, directory)
     # Reapply the trimming
     try:
-        if config['trimbase'] != '':
+        if config['trim'] != '':
             trim(directory=directory)
     except Exception as err:
         traceback.print_exc()
