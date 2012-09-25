@@ -83,7 +83,7 @@ if __name__ == '__main__':
         gda_args = []
         if args.debian_revision is not None:
             gda_args.append('--debian-revision')
-            gda_args.append(args.debian_revision)
+            gda_args.append(str(args.debian_revision))
         gda_args.extend([args.rosdistro, 'release'])
         info("Running git-bloom-generate-debian-all " + " ".join(gda_args))
         ret = gendeb_all_main(gda_args)
