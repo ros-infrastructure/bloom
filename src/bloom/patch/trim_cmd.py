@@ -21,6 +21,7 @@ from .. git import track_branches
 
 from . common import get_patch_config
 from . common import set_patch_config
+from . common import update_tag
 
 
 def _set_trim_sub_dir(sub_dir, force, config, directory):
@@ -145,6 +146,8 @@ def trim(sub_dir=None, force=False, undo=False, directory=None):
             return 1
         # Commit the new config
         set_patch_config(patches_branch, new_config, directory)
+        # Update the tag
+        update_tag()
     finally:
         if current_branch:
             execute_command('git checkout ' + current_branch, cwd=directory)

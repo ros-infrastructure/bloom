@@ -20,6 +20,7 @@ from .. git import track_branches
 
 from . common import get_patch_config
 from . common import list_patches
+from . common import update_tag
 
 
 @log_prefix('[git-bloom-patch import]: ')
@@ -66,6 +67,8 @@ def import_patches(directory=None):
         execute_command(cmd, cwd=directory)
         # Notify the user
         info("Applied {0} patches".format(len(patches)))
+        # Update the tag
+        update_tag()
     finally:
         if current_branch:
             execute_command('git checkout ' + current_branch, cwd=directory)

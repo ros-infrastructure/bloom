@@ -1,17 +1,51 @@
 from __future__ import print_function
 
 import os
+import sys
 import subprocess
 import traceback
 
 from .. util import check_output
 from .. util import execute_command
 from .. logging import error
+from .. logging import debug
+from .. git import get_current_branch
 from .. git import has_changes
 from .. git import inbranch
 
+try:
+    from catkin_pkg.packages import find_packages
+    from catkin_pkg.packages import verify_equal_package_versions
+except ImportError:
+    error("catkin_pkg was not detected, please install it.", file=sys.stderr)
+    sys.exit(1)
+
 _patch_config_keys = ['parent', 'base', 'trim', 'trimbase']
 _patch_config_keys.sort()
+
+
+def get_version(directory=None):
+    packages = find_packages(basepath=directory if directory else os.getcwd())
+    try:
+        version = verify_equal_package_versions(packages.values())
+    except RuntimeError as err:
+        traceback.print_exec()
+        error("Releasing multiple packages with different versions is "
+                "not supported: " + str(err))
+        sys.exit(1)
+    return version
+
+
+def update_tag(version=None, force=True, directory=None):
+    if version is None:
+        version = get_version(directory)
+    current_branch = get_current_branch(directory)
+    tag_name = current_branch + "/" + version
+    debug("Updating tag " + tag_name + " to point to " + current_branch)
+    cmd = 'git tag ' + tag_name
+    if force:
+        cmd += ' -f'
+    execute_command(cmd, cwd=directory)
 
 
 def list_patches(directory=None):

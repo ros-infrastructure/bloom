@@ -18,6 +18,7 @@ from . import_cmd import import_patches
 from . trim_cmd import trim
 from . common import get_patch_config
 from . common import set_patch_config
+from . common import update_tag
 
 
 @log_prefix('[git-bloom-patch rebase]: ')
@@ -72,6 +73,8 @@ upstream branch.\
         traceback.print_exc()
         error(str(err))
         return 5
+    # Update the tag
+    update_tag()
     return 0
 
 

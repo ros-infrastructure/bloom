@@ -14,6 +14,7 @@ from .. git import get_current_branch
 from .. git import track_branches
 
 from . common import get_patch_config
+from . common import update_tag
 
 
 @log_prefix('[git-bloom-patch remove]: ')
@@ -45,6 +46,8 @@ def remove_patches(directory=None):
              "commit " + spec)
         # Reset this branch using git reset --hard spec
         execute_command('git reset --hard ' + spec, cwd=directory)
+        # reset the tag
+        update_tag()
     finally:
         if current_branch:
             execute_command('git checkout ' + current_branch, cwd=directory)
