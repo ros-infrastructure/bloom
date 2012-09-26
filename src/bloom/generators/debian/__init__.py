@@ -57,6 +57,7 @@ from ... git import track_branches
 from ... git import get_last_tag_by_date
 
 from ... logging import error
+from ... logging import info
 from ... logging import warning
 
 try:
@@ -354,7 +355,8 @@ def find_deps(stack_data, apt_installer, rosdistro, debian_distro):
     build_deps = stack_data['BuildDepends']
 
     rosdep_view = rosdep2.catkin_support.get_catkin_view(rosdistro, os_name,
-                                                         debian_distro)
+                                                         debian_distro,
+                                                         update=False)
 
     ubuntu_deps = set()
     for dep in deps:
@@ -427,8 +429,8 @@ def generate_deb(stack_data, repo_path, stamp, rosdistro, debian_distro):
 
 def commit_debian(stack_data, repo_path):
     call(repo_path, ['git', 'add', 'debian'])
-    message = "+ Creating debian mods for distro: %(Distribution)s, " + \
-              "rosdistro: %(ROS_DISTRO)s, upstream version: " + \
+    message = "+ Creating debian mods for distro: %(Distribution)s, " \
+              "rosdistro: %(ROS_DISTRO)s, upstream version: " \
               "%(Version)s" % stack_data
     call(repo_path, ['git', 'commit', '-m', message])
 
@@ -451,6 +453,10 @@ Creates or updates a git-buildpackage repository using a catkin project.\
     parser.add_argument('--distros', nargs='+',
                         help='A list of debian distros.',
                         default=[])
+    parser.add_argument('--do-not-update-rosdep',
+                        help="If specified, rosdep will not be updated before "
+                             "generating the debian stuff",
+                        action='store_false', default=True)
     parser.add_argument('--upstream-tag', '-t',
                         help='tag to create debians from', default=None)
 
@@ -549,6 +555,11 @@ def main(sysargs=None):
     bloom_repo = VcsClient('git', os.getcwd())
     result = 0
     try:
+        # update rosdep is needed
+        if args.do_not_update_rosdep:
+            info("Updating rosdep")
+            rosdep2.catkin_support.update_rosdep()
+        # do it
         result = execute_bloom_generate_debian(args, bloom_repo)
     finally:
         if current_branch:

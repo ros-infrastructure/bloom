@@ -76,7 +76,11 @@ def main(sysargs=None):
     if not maybe_continue():
         error("Answered no to continue, exiting.")
         sys.exit(1)
-    for target in targets:
-        gendeb_main(['-t', target,
-                     args.rosdistro,
-                     '--debian-revision', args.debian_revision])
+    for index, target in enumerate(targets):
+        gen_args = ['-t', target,
+                       args.rosdistro, '--debian-revision',
+                       str(args.debian_revision)]
+        if index != 0:
+            gen_args.append('--do-not-update-rosdep')
+        info("Calling git-bloom-generate-debian-all " + " ".join(gen_args))
+        gendeb_main(gen_args)
