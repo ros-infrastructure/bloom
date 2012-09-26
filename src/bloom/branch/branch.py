@@ -205,6 +205,7 @@ def execute_branch(src, dst, patch, interactive, trim_dir, directory=None):
                 if not maybe_continue():
                     error("Answered no to continue, aborting.")
                     return 1
+            trim_dir = '' if trim_dir == '.' else trim_dir
             if trim_dir != '' and config['trim'] != trim_dir:
                 warning("You are changing the sub directory for the "
                         "destination branch to " + trim_dir + " from " + \
