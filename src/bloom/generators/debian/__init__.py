@@ -563,5 +563,5 @@ def main(sysargs=None):
         result = execute_bloom_generate_debian(args, bloom_repo)
     finally:
         if current_branch:
-            bloom_repo.update(current_branch)
+            execute_command('git checkout ' + current_branch)
     return result
