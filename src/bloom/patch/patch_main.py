@@ -21,16 +21,16 @@ git-bloom-patch is a patch management tool.
 
 Commands:
     git-bloom-patch export
-        Exports the current changesets to a patch branch
+        Exports the current changesets to the patches branch
 
     git-bloom-patch import
-        Imports and applys the patches from a patch branch
+        Imports and applys the patches from the patches branch
 
     git-bloom-patch remove
-        Removes any patches that have been applied
+        Removes any patches that have been applied (even non-exported ones)
 
     git-bloom-patch rebase
-        Rebases any applied patches after merging from upstream
+        Rebases any applied patches after merging from the source branch
 
     git-bloom-patch trim
         Moves a given sub directory into the root of the git repository

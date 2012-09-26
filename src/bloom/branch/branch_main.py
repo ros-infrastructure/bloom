@@ -2,7 +2,7 @@ from __future__ import print_function
 
 import sys
 import traceback
-from argparse import ArgumentParser
+import argparse
 from subprocess import CalledProcessError
 
 from .. git import get_current_branch, get_root
@@ -17,8 +17,7 @@ from . branch import branch_packages
 
 def get_parser():
     """Returns a parser.ArgumentParser with all arguments defined"""
-    parser = ArgumentParser(
-        description="""\
+    parser = argparse.ArgumentParser(description="""\
 If the DST_BRANCH does not exist yet, then it is created by branching the
 current working branch or the specified SRC_BRANCH.
 
@@ -29,8 +28,7 @@ the DST_BRANCH, otherwise the working branch will remain unchanged.
 
 If the DST_BRANCH and patches/DST_BRANCH already existed, then a call to
 `git-bloom-patch rebase` is attempted unless '--no-patch' is passed.
-"""
-    )
+""", formatter_class=argparse.RawTextHelpFormatter)
     add = parser.add_argument
     add('--src', '-s', metavar='SRC_BRANCH',
         help="(optional) specifies the branch to copy from")
@@ -47,7 +45,7 @@ If the DST_BRANCH and patches/DST_BRANCH already existed, then a call to
         action='store_true',
         default=False)
     add('prefix', metavar="DST_BRANCH_PREFIX",
-        help="prefix of destination branch, i.e. DST_BRANCH becomes "
+        help="prefix of destination branch\ni.e. DST_BRANCH becomes\n"
              "DST_BRANCH_PREFIX/<package_name>")
     return parser
 

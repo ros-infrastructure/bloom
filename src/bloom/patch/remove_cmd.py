@@ -56,9 +56,10 @@ def remove_patches(directory=None):
 
 def get_parser():
     """Returns a parser.ArgumentParser with all arguments defined"""
-    parser = ArgumentParser(
-        description="""Removes any applied patches from the working branch."""
-    )
+    parser = ArgumentParser(description="""
+Removes any applied patches from the working branch, including any un-exported
+patches, so use with caution.
+""")
     return parser
 
 

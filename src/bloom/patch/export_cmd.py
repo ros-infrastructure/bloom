@@ -66,7 +66,7 @@ def get_parser():
     parser = ArgumentParser(
         description="""\
 Exports the commits that have been made on the current branch since the
-original parent branch (source branch from git-bloom-branch) to a patches
+original source branch (source branch from git-bloom-branch) to a patches
 branch, which is named 'patches/<current branch name>', using git format-patch.
 """
     )

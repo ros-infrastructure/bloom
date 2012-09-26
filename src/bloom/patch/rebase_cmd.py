@@ -2,7 +2,7 @@ from __future__ import print_function
 
 import sys
 import traceback
-from argparse import ArgumentParser
+import argparse
 
 from .. util import add_global_arguments
 from .. util import execute_command
@@ -80,11 +80,25 @@ upstream branch.\
 
 def get_parser():
     """Returns a parser.ArgumentParser with all arguments defined"""
-    parser = ArgumentParser(
-        description="""Removes any applied patches from the working branch,
-attempts to merge changes from the parent branch, and then attempts to reapply
-the patches."""
-    )
+    parser = argparse.ArgumentParser(description="""\
+This command attempts to remove any trimming and patching from the working
+branch, then merge from this branch's source branch, and finally reapplying
+the trimming and patches.
+
+It does this by following these steps:
+
+    - Remove any changes (including uncommited and un-exported changes)
+        - git-bloom-patch remove
+    - Undo any trimming of the source branch
+        - git-bloom-patch trim --undo
+    - Merge changes from the source branch
+        - git -Xtheirs merge <source branch>
+    - Redo any trimming
+        - git-bloom-patch trim
+    - Reapply any patches
+        - git-bloom-patch import
+
+""", formatter_class=argparse.RawTextHelpFormatter)
     return parser
 
 
