@@ -9,7 +9,8 @@ setup(name='bloom',
          'bloom.branch',
          'bloom.generators',
          'bloom.generators.debian',
-         'bloom.patch'
+         'bloom.patch',
+         'bloom.release'
       ],
       package_dir={'': 'src'},
       scripts=[

@@ -31,75 +31,18 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+"""
+Runs through the standard release cycle, automating many of the tedious steps.
+
+Specifically, this program runs git-bloom-branch and
+git-bloom-generate-debian-all, which will handle multi-package repositories
+and all branching needed for releasing debian, and in the future other
+platform targets.
+"""
+
 import sys
 
-from argparse import ArgumentParser
-
-from bloom.branch.branch import branch_packages
-from bloom.generators.debian.main_all import main as gendeb_all_main
-
-from bloom.util import add_global_arguments
-from bloom.util import handle_global_arguments
-from bloom.logging import ansi
-from bloom.logging import info
-from bloom.logging import error
-from bloom.logging import push_log_prefix
-from bloom.logging import pop_log_prefix
-
-
-def get_argument_parser():
-    parser = ArgumentParser(description="""\
-Preforms the standard release procedure after a call to bloom-import-upstream.
-
-This script makes a few assumptions about your release repository, such that
-the commands you would call would be:
-
-  git-bloom-branch --interactive --src upstream release
-  git-bloom-generate-debian-all <rosdistro> release \
---debian-revision <debian_revision>
-
-You will be prompted at the beginning of each of those commands.
-
-Example: 'git-bloom-release groovy --debian-revision 1'
-""")
-    parser.add_argument('rosdistro',
-                        help="The ros distro")
-    parser.add_argument('--debian-revision', '-r', dest='debian_revision',
-                        help='Bump the changelog debian number.'
-                             ' Please enter a monotonically increasing number '
-                             'from the last upload.',
-                        default=0)
-    return parser
+from bloom.release.main import release_main
 
 if __name__ == '__main__':
-    parser = get_argument_parser()
-    parser = add_global_arguments(parser)
-    args = parser.parse_args()
-    handle_global_arguments(args)
-    push_log_prefix('[git-bloom-release]: ')
-    info("Running git-bloom-branch --src upstream release --interactive")
-    ret = branch_packages('upstream', 'release', True, True)
-    ret = ret if ret is not None else 0
-    if ret == 0:
-        gda_args = []
-        if args.debian_revision is not None:
-            gda_args.append('--debian-revision')
-            gda_args.append(str(args.debian_revision))
-        gda_args.extend([args.rosdistro, 'release'])
-        info("Running git-bloom-generate-debian-all " + " ".join(gda_args))
-        ret = gendeb_all_main(gda_args)
-        ret = ret if ret is not None else 0
-        if ret != 0:
-            error("Command git-bloom-generate-debian-all failed with "
-                  "retcode: " + str(ret))
-            sys.exit(ret)
-    else:
-        error("Command git-bloom-branch failed with return code: " + str(ret))
-        sys.exit(ret)
-    pop_log_prefix()
-    print('\n\n')
-    info(ansi('greenf') + ansi('boldon') + "Everything went as expected, "
-         "you should check that the new tags match your expectations, and "
-         "then push to the gbp repo with:" + ansi('reset'))
-    info("  git push --force --all && git push --tags")
-    sys.exit(0)
+    sys.exit(release_main())
