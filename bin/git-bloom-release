@@ -40,6 +40,7 @@ from bloom.generators.debian.main_all import main as gendeb_all_main
 
 from bloom.util import add_global_arguments
 from bloom.util import handle_global_arguments
+from bloom.logging import ansi
 from bloom.logging import info
 from bloom.logging import error
 from bloom.logging import push_log_prefix
@@ -97,7 +98,8 @@ if __name__ == '__main__':
         sys.exit(ret)
     pop_log_prefix()
     print('\n\n')
-    info("Everything went as expected, you should check that the new tags "
-         "match your expectations, and then push to the gbp repo with:")
+    info(ansi('greenf') + ansi('boldon') + "Everything went as expected, "
+         "you should check that the new tags match your expectations, and "
+         "then push to the gbp repo with:" + ansi('reset'))
     info("  git push --force --all && git push --tags")
     sys.exit(0)

@@ -36,6 +36,7 @@ import sys
 from argparse import ArgumentParser
 
 from . import main as gendeb_main
+from ... branch.branch import branch_packages
 
 from ... git import get_branches
 from ... git import track_branches
@@ -77,9 +78,21 @@ def main(sysargs=None):
         error("Answered no to continue, exiting.")
         sys.exit(1)
     for index, target in enumerate(targets):
-        gen_args = ['-t', target,
-                       args.rosdistro, '--debian-revision',
-                       str(args.debian_revision)]
+        # Branch first
+        package = target[len('release/'):]
+        new_target = 'debian/' + args.rosdistro
+        info("Branching to debian prefix with: git-bloom-branch --src " + \
+             target + " " + new_target + '/' + package)
+        ret = branch_packages(target, new_target, True, False)
+        ret = ret if ret is not None else 0
+        if ret != 0:
+            error("Command git-bloom-branch failed with return code: " + \
+                  str(ret))
+            sys.exit(ret)
+        # Then generate
+        gen_args = ['-t', new_target + '/' + package,
+                    args.rosdistro, '--debian-revision',
+                    str(args.debian_revision)]
         if index != 0:
             gen_args.append('--do-not-update-rosdep')
         info("Calling git-bloom-generate-debian-all " + " ".join(gen_args))
