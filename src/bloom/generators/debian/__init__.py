@@ -221,6 +221,14 @@ def process_stack_xml(args, cwd=None):
     return data
 
 
+def is_meta_package(package):
+    metapack = [True for e in package.exports if e.tagname == 'metapackage']
+    if len(metapack) > 0:
+        return True
+    else:
+        return False
+
+
 def process_package_xml(args, directory=None):
     cwd = directory if directory else '.'
     xml_path = os.path.join(cwd, 'package.xml')
@@ -245,7 +253,11 @@ def process_package_xml(args, directory=None):
     data['Homepage'] = homepage
 
     data['Catkin-ChangelogType'] = ''
-    data['Catkin-DebRulesType'] = 'cmake'
+    if is_meta_package(package):
+        info("Metapackage detected: " + package.name)
+        data['Catkin-DebRulesType'] = 'metapackage'
+    else:
+        data['Catkin-DebRulesType'] = 'cmake'
     data['Catkin-DebRulesFile'] = ''
     # data['Catkin-CopyrightType'] = package.copyright
     # data['copyright'] = package.copyright
@@ -322,9 +334,8 @@ def expand(fname, stack_data, dest_dir, filetype=''):
     # insert template type
     if fname == 'rules' and stack_data['Catkin-DebRulesType'] == 'custom':
         path = os.path.join(dest_dir, '..', stack_data['Catkin-DebRulesFile'])
-        f = open(path)
-        file_em = f.read()
-        f.close()
+        with open(path, 'r') as f:
+            file_em = f.read()
     else:
         if filetype != '':
             ifilename = (fname + '.' + filetype + '.em')
