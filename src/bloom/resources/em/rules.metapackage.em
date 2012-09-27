@@ -11,16 +11,16 @@ export DH_VERBOSE=1
 export DH_OPTIONS=-v
 
 %:
-  dh  $@@
+	dh  $@@
 
 override_dh_auto_configure:
-  # Do Nothing (metapackage)
+	# Do Nothing (metapackage)
 
 override_dh_auto_build:
-  # Do Nothing (metapackage)
+	# Do Nothing (metapackage)
 
 override_dh_auto_test:
-  # Do Nothing (metapackage)
+	# Do Nothing (metapackage)
 
 override_dh_shlibdeps:
-  # Do Nothing (metapackage)
+	# Do Nothing (metapackage)
