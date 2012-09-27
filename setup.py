@@ -3,7 +3,7 @@
 from setuptools import setup
 
 setup(name='bloom',
-      version='0.1.1',
+      version='0.1.2',
       packages=[
          'bloom',
          'bloom.branch',
