@@ -284,6 +284,8 @@ def process_package_xml(args, directory=None):
     build_deps = (package.build_depends + package.buildtool_depends)
     data['BuildDepends'] = set([d.name for d in build_deps])
 
+    print("BuildDepends is %s for %s, from %s" % (data['BuildDepends'], package.name, xml_path))
+
     maintainers = []
     for m in package.maintainers:
         maintainers.append(str(m))
@@ -365,6 +367,7 @@ def find_deps(stack_data, apt_installer, rosdistro, debian_distro):
     deps = stack_data['Depends']
     build_deps = stack_data['BuildDepends']
 
+
     rosdep_view = rosdep2.catkin_support.get_catkin_view(rosdistro, os_name,
                                                          debian_distro,
                                                          update=False)
@@ -383,6 +386,9 @@ def find_deps(stack_data, apt_installer, rosdistro, debian_distro):
             rosdep2.catkin_support.resolve_for_os(dep, rosdep_view,
                                                   apt_installer, os_name,
                                                   debian_distro)
+
+        print("BuildDepends in is %s out is %s" % (dep, resolved))
+
         ubuntu_build_deps.update(resolved)
 
     print(stack_data['Name'], "has the following dependencies for ubuntu "
