@@ -34,12 +34,114 @@
 
 from __future__ import print_function
 
+import os
+
 from subprocess import PIPE, CalledProcessError
 
 from . logging import debug
+from . logging import error
+from . logging import warning
 
 from . util import execute_command
 from . util import check_output
+from . util import pdb_hook
+
+
+def ensure_clean_working_env(force=False, git_status=True, directory=None):
+    """
+    Returns 0 if the working environment is clean, otherwise 1.
+
+    Clean is defined as:
+        - In a git repository
+        - In a valid branch (force overrides)
+        - Does not have local changes (force overrides)
+        - Does not have untracked files (force overrides)
+
+    :param force: If True, overrides a few of the fail conditions
+    :param directory: directory in which to run this command
+
+    :returns: 0 if the env is clean, otherwise 1
+
+    :raises: subprocess.CalledProcessError if any git calls fail
+    """
+    def ecwe_fail(show_git_status):
+        if show_git_status:
+            print('\n++ git status:\n')
+            os.system('git status')
+        return 1
+    # Is it a git repo
+    if get_root(directory) is None:
+        error("Not is a valid git repository")
+        return 1
+    # Are we on a branch?
+    current_branch = get_current_branch(directory)
+    if current_branch is None:
+        msg = warning if force else error
+        msg("Could not determine current branch")
+        if not force:
+            return ecwe_fail(git_status)
+    # Are there local changes?
+    if has_changes(directory):
+        msg = warning if force else error
+        msg("Current git working branch has local changes")
+        if not force:
+            return ecwe_fail(git_status)
+    # Are there untracked files or directories?
+    if has_untracked_files(directory):
+        msg = warning if force else error
+        msg("Current git working branch has untracked files/directories")
+        if not force:
+            return ecwe_fail(git_status)
+    return 0
+
+
+def checkout(reference, raise_exc=False, directory=None):
+    """
+    Returns True if the checkout to a the reference was successful, else False
+
+    :param reference: branch, tag, or commit hash to checkout to
+    :param directory: directory in which to run this command
+
+    :returns: True if the checkout was successful, else False
+    """
+    def checkout_summarize(fail_msg, branch, directory):
+        branch = '(no branch)' if branch is None else branch
+        directory = os.getcwd() if directory is None else directory
+        error("Failed to checkout to '{0}'".format(str(reference)) + \
+              " because the working directory {0}".format(str(fail_msg)))
+        debug("  Working directory:   '{0}'".format(str(directory)))
+        debug("  Working branch:      '{0}'".format(str(branch)))
+        debug("  Has local changes:   '{0}'".format(str(changes)))
+        debug("  Has untrakced files: '{0}'".format(str(untracked)))
+        pdb_hook()
+        return 1
+    debug("Checking out to " + str(reference))
+    fail_msg = ''
+    git_root = get_root(directory)
+    if git_root is not None:
+        changes = has_changes(directory)
+        untracked = has_untracked_files(directory)
+        branch = get_current_branch(directory)
+    else:
+        fail_msg = "is not a git repository"
+    if fail_msg == '' and changes:
+        fail_msg = "has local changes"
+    if fail_msg == '' and untracked:
+        fail_msg = "has untracked files"
+    try:
+        if not changes and not untracked:
+            execute_command('git checkout "{0}"'.format(str(reference)),
+                            cwd=directory)
+
+    except CalledProcessError as err:
+        fail_msg = "CalledProcessError: " + str(err)
+        if raise_exc:
+            checkout_summarize(fail_msg)
+            raise
+    if fail_msg != '':
+        return checkout_summarize(fail_msg, branch, directory)
+    else:
+        return 0
 
 
 def branch_exists(branch_name, local_only=False, directory=None):
@@ -86,12 +188,11 @@ def inbranch(branch, directory=None):
 
     def decorator(fn):
         def wrapper(*args, **kwargs):
-            execute_command('git checkout {0}'.format(branch), cwd=directory)
+            checkout(branch, raise_exc=True, directory=directory)
             try:
                 result = fn(*args, **kwargs)
             finally:
-                execute_command('git checkout {0}'.format(current_branch),
-                                cwd=directory)
+                checkout(current_branch, raise_exc=True, directory=directory)
             return result
 
         return wrapper
@@ -118,6 +219,21 @@ def get_commit_hash(reference, directory=None):
     return out.split('[')[1].split(']')[0]
 
 
+def has_untracked_files(directory=None):
+    """
+    Returns True is the working branch has untracked files, False otherwise.
+
+    :param directory: directory in which to preform this action
+    :returns: True if there are untracked files (or dirs), otherwise False
+
+    :raises: subprocess.CalledProcessError if any git calls fail
+    """
+    out = check_output('git status', shell=True, cwd=directory)
+    if '# Untracked files:' in out:
+        return True
+    return False
+
+
 def has_changes(directory=None):
     """
     Returns True if the working branch has local changes, False otherwise.
@@ -129,6 +245,8 @@ def has_changes(directory=None):
     """
     out = check_output('git status', shell=True, cwd=directory)
     if 'nothing to commit (working directory clean)' in out:
+        return False
+    if 'nothing added to commit' in out:
         return False
     return True
 
@@ -187,13 +305,11 @@ def create_branch(branch, orphaned=False, changeto=False, directory=None):
         else:
             execute_command('git branch {0}'.format(branch), cwd=directory)
             if changeto:
-                execute_command('git checkout {0}'.format(branch),
-                                cwd=directory)
+                checkout(branch, directory=directory)
             current_branch = None
     finally:
         if current_branch is not None:
-            execute_command('git checkout {0}'.format(current_branch),
-                            cwd=directory)
+            checkout(current_branch, directory=directory)
 
 
 def get_root(directory=None):
@@ -207,7 +323,7 @@ def get_root(directory=None):
     """
     cmd = 'git rev-parse --show-toplevel'
     try:
-        output = check_output(cmd, shell=True, cwd=directory)
+        output = check_output(cmd, shell=True, cwd=directory, stderr=PIPE)
     except CalledProcessError:
         return None
     return output.strip()
@@ -279,10 +395,10 @@ def track_branches(branches=None, directory=None):
         # Track branches
         debug("Tracking branches: " + str(branches_to_track))
         for branch in branches_to_track:
-            execute_command('git checkout ' + branch, cwd=directory)
+            checkout(branch, directory=directory)
     finally:
         if current_branch:
-            execute_command('git checkout ' + current_branch, cwd=directory)
+            checkout(current_branch, directory=directory)
 
 
 def get_last_tag_by_date(directory=None):
