@@ -53,8 +53,10 @@ from ... util import bailout
 from ... util import ansi
 from ... util import print_exc
 # from . util import get_versions_from_upstream_tag
+from ... git import branch_exists
 from ... git import checkout
 from ... git import get_current_branch
+from ... git import get_root
 from ... git import track_branches
 from ... git import get_last_tag_by_date
 from ... git import show
@@ -472,59 +474,10 @@ def commit_debian(stack_data, repo_path):
     call(repo_path, ['git', 'commit', '-m', message])
 
 
-def get_argument_parser():
-    """Creates and returns the argument parser"""
-    import argparse
-    parser = argparse.ArgumentParser(description="""\
-Creates or updates a git-buildpackage repository using a catkin project.\
-""")
-    parser.add_argument('--working', help='A scratch build path. Defaults to '
-                                          'a temporary directory.')
-    parser.add_argument('--debian-revision', dest='debian_revision',
-                        help='Bump the changelog debian number.'
-                             ' Please enter a monotonically increasing number '
-                             'from the last upload.',
-                        default=0)
-    parser.add_argument('--install-prefix', dest='install_prefix',
-                        help='The installation prefix')
-    parser.add_argument('--distros', nargs='+',
-                        help='A list of debian distros.',
-                        default=[])
-    parser.add_argument('--do-not-update-rosdep',
-                        help="If specified, rosdep will not be updated before "
-                             "generating the debian stuff",
-                        action='store_false', default=True)
-    parser.add_argument('--upstream-tag', '-t',
-                        help='tag to create debians from', default=None)
-
-    #ros specific stuff.
-    parser.add_argument('rosdistro',
-                        help="The ros distro. Like 'electric', 'fuerte', "
-                             "or 'groovy'. If this is set to backports then "
-                             "the resulting packages will not have the "
-                             "ros-<rosdistro>- prefix.")
-    return parser
-
-
-def execute_bloom_generate_debian(args, bloom_repo):
+def execute_bloom_generate_debian(args):
     """Executes the generation of the debian.  Assumes in bloom git repo."""
-    if args.upstream_tag is not None:
-        last_tag = args.upstream_tag
-    else:
-        last_tag = get_last_tag_by_date()
-        if not last_tag:
-            bailout("There are no upstream versions imported into this repo."
-                    "Run this first:\n\tgit bloom-import-upstream")
-        print("The latest upstream tag in the release repo is "
-              "{0}{1}{2}".format(ansi('boldon'), last_tag, ansi('reset')))
-
-    # major, minor, patch = get_versions_from_upstream_tag(last_tag)
-    # version_str = '.'.join([major, minor, patch])
-    # print("Upstream version is: {0}{1}{2}"
-          # "".format(ansi('boldon'), version_str, ansi('reset')))
-
     # Make sure we are on the correct upstream branch
-    bloom_repo.update(last_tag)
+    checkout(args.src)
 
     stamp = datetime.datetime.now(dateutil.tz.tzlocal())
     stack_data = get_stack_data(args)
@@ -567,6 +520,39 @@ rosdep.yaml entry for it in your sources.
     return 0
 
 
+def get_argument_parser():
+    """Creates and returns the argument parser"""
+    import argparse
+    parser = argparse.ArgumentParser(description="""\
+Generates a debian source deb from a given branch or tag and tags it.\
+""")
+    add = parser.add_argument
+    add('--debian-inc', '--debian-revision', dest='debian_inc',
+        metavar='DEB_INC',
+        help="Bump the changelog debian number. Please enter a monotonically increasing number from the last upload.",
+        default='0')
+    add('--install-prefix', dest='install_prefix',
+        help='The installation prefix')
+    add('--distros', nargs='+',
+        help='A list of debian distros.',
+        default=[])
+    add('--do-not-update-rosdep',
+                        help="If specified, rosdep will not be updated before "
+                             "generating the debian stuff",
+                        action='store_false', default=True)
+    add('--src', '-s',
+                        help="local reference (branch or tag) from which to "
+                             " generate debians")
+
+    #ros specific stuff.
+    add('rosdistro',
+                        help="The ros distro. Like 'fuerte', "
+                             "or 'groovy'. If this is set to backports then "
+                             "the resulting packages will not have the "
+                             "ros-<rosdistro>- prefix.")
+    return parser
+
+
 def main(sysargs=None):
     # Parse the commandline arguments
     parser = get_argument_parser()
@@ -575,21 +561,18 @@ def main(sysargs=None):
     handle_global_arguments(args)
 
     # Ensure we are in a git repository
-    if execute_command('git status') != 0:
-        parser.print_help()
-        bailout("This is not a valid git repository.")
+    if get_root() is None:
+        error("Not in a valid git repository.")
+        return 1
 
-    # Track all the branches
+    # Track all untracked branches
     track_branches()
 
-    if execute_command('git show-ref refs/heads/bloom') != 0:
-        bailout("This does not appear to be a bloom release repo. "
-                "Please initialize it first using:\n\n"
-                "  git bloom-set-upstream <UPSTREAM_VCS_URL> <VCS_TYPE> "
-                "[<VCS_BRANCH>]")
+    if not branch_exists('bloom', local_only=True):
+        error("No local bloom branch found, not a valid bloom repository")
+        return 1
 
     current_branch = get_current_branch()
-    bloom_repo = VcsClient('git', os.getcwd())
     result = 0
     try:
         # update rosdep is needed
@@ -603,7 +586,7 @@ def main(sysargs=None):
                       "'rosdep init' first?")
                 return 1
         # do it
-        result = execute_bloom_generate_debian(args, bloom_repo)
+        result = execute_bloom_generate_debian(args)
     finally:
         if current_branch:
             checkout(current_branch)
