@@ -22,7 +22,13 @@ except ImportError:
     error("catkin_pkg was not detected, please install it.", file=sys.stderr)
     sys.exit(1)
 
-_patch_config_keys = ['parent', 'base', 'trim', 'trimbase']
+_patch_config_keys = [
+    'parent',    # The name of the parent reference
+    'previous',  # Parent commit hash, used to check if rebase is needed
+    'base',      # Commit hash before patches
+    'trim',      # Trim sub folder name
+    'trimbase'   # Commit hash before trimming
+]
 _patch_config_keys.sort()
 
 
@@ -70,16 +76,19 @@ def get_patch_config(patches_branch, directory=None):
         if not os.path.exists(conf_path):
             return None
         cmd = 'git config -f {0} patches.'.format(conf_path)
-        try:
-            config = {}
-            for key in _patch_config_keys:
+        config = {}
+        for key in _patch_config_keys:
+            try:
                 config[key] = check_output(cmd + key, shell=True,
                                            cwd=directory).strip()
-            return config
-        except subprocess.CalledProcessError as err:
-            traceback.print_exc()
-            error("Failed to get patches info: " + str(err))
-            return None
+            except subprocess.CalledProcessError as err:
+                if key == 'previous':
+                    config[key] = ''
+                else:
+                    print_exc(traceback.format_exc())
+                    error("Failed to get patches info: " + str(err))
+                    return None
+        return config
     return fn()
 
 
