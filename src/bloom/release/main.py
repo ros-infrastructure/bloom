@@ -83,7 +83,7 @@ def release_main(sysargs=None):
 
     # Run git-bloom-branch
     info("Running git-bloom-branch --src upstream release --interactive")
-    ret = branch_packages('upstream', 'release', True, True)
+    ret = branch_packages('upstream', 'release', True, True, False)
     ret = ret if ret is not None else 0
     # If successful, run git-bloom-generate-debian-all
     if ret == 0:

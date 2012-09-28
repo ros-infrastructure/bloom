@@ -48,6 +48,9 @@ If the DST_BRANCH and patches/DST_BRANCH already existed, then a call to
     add('prefix', metavar="DST_BRANCH_PREFIX",
         help="prefix of destination branch\ni.e. DST_BRANCH becomes\n"
              "DST_BRANCH_PREFIX/<package_name>")
+    add('--continue-on-error', '-c',
+        help="continues branching packages even on errors",
+        action='store_true', default=False)
     return parser
 
 
@@ -59,22 +62,26 @@ def branchmain():
     retcode = 0
     try:
         # Assert this is a git repository
-        assert get_root() != None, "Not in a valid git repository."
+        if get_root() == None:
+            error("Not in a valid git repository.")
+            return 127
         # If the src argument isn't set, use the current branch
-        print("(" + str(args.src) + ")")
         if args.src is None:
             args.src = get_current_branch()
         # Execute the branching
         retcode = branch_packages(args.src, args.prefix, args.patch,
-                                  args.interactive)
+                                  args.interactive, args.continue_on_error)
+        if retcode != 0 and not args.continue_on_error:
+            print('')
+            info("Stopping branching, to continue pass '--continue-on-error'")
     except CalledProcessError as err:
         # No need for a trackback here, a git call probably failed
-        traceback.print_exc()
+        print_exc(traceback.format_exc())
         error(str(err))
         retcode = 1
     except Exception as err:
         # Unhandled exception, print traceback
-        traceback.print_exc()
+        print_exc(traceback.format_exc())
         error(str(err))
         retcode = 2
     if retcode == 0:
