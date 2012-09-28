@@ -5,6 +5,7 @@ import os
 import traceback
 from subprocess import CalledProcessError
 
+from .. util import print_exc
 from .. logging import error
 from .. git import get_root
 
@@ -68,12 +69,12 @@ def patchmain():
             retcode = 1
     except CalledProcessError as err:
         # Problem calling out to git probably
-        traceback.print_exc()
+        print_exc(traceback.format_exc())
         error(str(err))
         retcode = 2
     except Exception as err:
         # Unhandled exception, print traceback
-        traceback.print_exc()
+        print_exc(traceback.format_exc())
         error(str(err))
         retcode = 3
     sys.exit(retcode)

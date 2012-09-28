@@ -14,6 +14,7 @@ from .. logging import info
 from .. logging import log_prefix
 from .. logging import warning
 from .. git import branch_exists
+from .. git import checkout
 from .. git import get_commit_hash
 from .. git import get_current_branch
 from .. git import track_branches
@@ -49,11 +50,11 @@ def import_patches(directory=None):
                     "since the last time you did 'git-bloom-patch export'.")
             return 1
         # Checkout to the patches branch
-        execute_command('git checkout ' + patches_branch, cwd=directory)
+        checkout(patches_branch, directory=directory)
         # Copy the patches to a temp location
         patches = list_patches(directory)
         if len(patches) == 0:
-            warning("No patches in the patches branch, nothing has changed.")
+            warning("No patches in the patches branch, nothing to do")
             return 1
         tmp_dir_patches = []
         for patch in patches:
@@ -62,7 +63,7 @@ def import_patches(directory=None):
                 patch = os.path.join(directory, patch)
             shutil.copy(patch, tmp_dir)
         # Now checkout back to the original branch and import them
-        execute_command('git checkout ' + current_branch, cwd=directory)
+        checkout(current_branch, directory=directory)
         cmd = 'git am {0}*.patch'.format(tmp_dir + os.sep)
         execute_command(cmd, cwd=directory)
         # Notify the user
@@ -71,7 +72,7 @@ def import_patches(directory=None):
         update_tag()
     finally:
         if current_branch:
-            execute_command('git checkout ' + current_branch, cwd=directory)
+            checkout(current_branch, directory=directory)
         if os.path.exists(tmp_dir):
             shutil.rmtree(tmp_dir)
     return 0

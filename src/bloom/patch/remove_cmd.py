@@ -10,6 +10,7 @@ from .. logging import log_prefix
 from .. logging import error
 from .. logging import info
 from .. git import branch_exists
+from .. git import checkout
 from .. git import get_current_branch
 from .. git import track_branches
 
@@ -50,7 +51,7 @@ def remove_patches(directory=None):
         update_tag()
     finally:
         if current_branch:
-            execute_command('git checkout ' + current_branch, cwd=directory)
+            checkout(current_branch, directory=directory)
     return 0
 
 

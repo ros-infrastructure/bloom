@@ -43,6 +43,7 @@ from . logging import debug
 from . logging import info
 from . logging import error
 from . git import branch_exists
+from . git import checkout
 from . git import create_branch
 from . git import get_current_branch
 from . git import get_root
@@ -74,7 +75,7 @@ def set_upstream(upstream_repo, upstream_repo_type, upstream_repo_branch):
         # Found a bloom branch
         debug("Found a bloom branch, checking out.")
         # Check out the bloom branch
-        execute_command('git checkout bloom')
+        checkout('bloom')
     else:
         # No bloom branch found, create one
         create_branch('bloom', changeto=True)
@@ -175,6 +176,6 @@ def main(sysargs=None):
         # Try to roll back to the branch the user was on before
         # this possibly failed.
         if current_branch:
-            execute_command('git checkout ' + current_branch)
+            checkout(current_branch)
 
     return 1

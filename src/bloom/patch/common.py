@@ -7,8 +7,10 @@ import traceback
 
 from .. util import check_output
 from .. util import execute_command
+from .. util import print_exc
 from .. logging import error
 from .. logging import debug
+from .. git import get_commit_hash
 from .. git import get_current_branch
 from .. git import has_changes
 from .. git import inbranch
@@ -29,7 +31,7 @@ def get_version(directory=None):
     try:
         version = verify_equal_package_versions(packages.values())
     except RuntimeError as err:
-        traceback.print_exec()
+        print_exc(traceback.format_exc())
         error("Releasing multiple packages with different versions is "
                 "not supported: " + str(err))
         sys.exit(1)
@@ -105,7 +107,7 @@ def set_patch_config(patches_branch, config, directory=None):
                 cmd = 'git commit -m "Updated patches.conf"'
                 execute_command(cmd, cwd=directory)
         except subprocess.CalledProcessError as err:
-            traceback.print_exc()
+            print_exc(traceback.format_exc())
             error("Failed to set patches info: " + str(err))
             raise
     return fn(config)

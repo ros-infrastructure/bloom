@@ -52,6 +52,7 @@ from ... util import handle_global_arguments
 from ... util import bailout
 from ... util import ansi
 # from . util import get_versions_from_upstream_tag
+from ... git import checkout
 from ... git import get_current_branch
 from ... git import track_branches
 from ... git import get_last_tag_by_date
@@ -580,5 +581,5 @@ def main(sysargs=None):
         result = execute_bloom_generate_debian(args, bloom_repo)
     finally:
         if current_branch:
-            execute_command('git checkout ' + current_branch)
+            checkout(current_branch)
     return result

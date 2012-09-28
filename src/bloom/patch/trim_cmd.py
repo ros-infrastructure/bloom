@@ -14,6 +14,7 @@ from .. logging import log_prefix
 from .. logging import error
 from .. logging import warning
 from .. git import branch_exists
+from .. git import checkout
 from .. git import get_commit_hash
 from .. git import get_current_branch
 from .. git import get_root
@@ -150,7 +151,7 @@ def trim(sub_dir=None, force=False, undo=False, directory=None):
         update_tag()
     finally:
         if current_branch:
-            execute_command('git checkout ' + current_branch, cwd=directory)
+            checkout(current_branch, directory=directory)
     return 0
 
 

@@ -8,6 +8,7 @@ from .. logging import error
 from .. logging import info
 from .. logging import log_prefix
 from .. git import branch_exists
+from .. git import checkout
 from .. git import get_current_branch
 from .. git import has_changes
 
@@ -33,7 +34,7 @@ def export_patches(directory=None):
             error("Failed to get patches information.")
             return 1
         # Checkout to the patches branch
-        execute_command('git checkout ' + patches_branch, cwd=directory)
+        checkout(patches_branch, directory=directory)
         # Notify the user
         info("Exporting patches from "
              "{0}...{1}".format(config['base'], current_branch))
@@ -57,7 +58,7 @@ def export_patches(directory=None):
             execute_command(cmd, cwd=directory)
     finally:
         if current_branch:
-            execute_command('git checkout ' + current_branch, cwd=directory)
+            checkout(current_branch, directory=directory)
     return 0
 
 

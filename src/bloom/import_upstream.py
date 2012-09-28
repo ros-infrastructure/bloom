@@ -47,7 +47,9 @@ from . util import handle_global_arguments
 from . util import bailout, execute_command, ansi, parse_stack_xml
 from . util import assert_is_not_gbp_repo, create_temporary_directory
 from . util import get_versions_from_upstream_tag, segment_version
+from . util import print_exc
 from . git import branch_exists
+from . git import checkout
 from . git import get_current_branch
 from . git import get_last_tag_by_date
 from . git import get_root
@@ -75,7 +77,7 @@ def convert_catkin_to_bloom(cwd=None):
     # Rename the branch to bloom from catkin
     execute_command('git branch -m catkin bloom', cwd=cwd)
     # Change to the bloom branch
-    execute_command('git checkout bloom', cwd=cwd)
+    checkout('bloom', directory=cwd)
     # Rename the config cwd
     if os.path.exists(os.path.join(cwd, 'catkin.conf')):
         execute_command('git mv catkin.conf bloom.conf', cwd=cwd)
@@ -115,7 +117,7 @@ def check_for_bloom(cwd=None):
             convert_catkin_to_bloom(cwd)
     # Check for bloom.conf
     try:
-        execute_command('git checkout bloom', cwd=cwd)
+        checkout('bloom', directory=cwd)
     except CalledProcessError:
         not_a_bloom_release_repo()
     loc = os.path.join(cwd, 'bloom.conf') if cwd is not None else 'bloom.conf'
@@ -209,7 +211,7 @@ def get_upstream_meta(upstream_dir):
         try:
             version = verify_equal_package_versions(packages.values())
         except RuntimeError as err:
-            traceback.print_exec()
+            print_exc(traceback.format_exc())
             bailout("Releasing multiple packages with different versions is "
                     "not supported: " + str(err))
         meta = {}
@@ -347,7 +349,7 @@ def import_upstream(cwd, tmp_dir, args):
         if full_version_strict < last_tag_version_strict:
             warning("""\
 Version discrepancy:
-The upstream version, {0}, should be greater than the previous \
+    The upstream version, {0}, should be greater than the previous \
 release version, {1}.
 
 Upstream should re-release or you should fix the release repository.\
@@ -357,7 +359,7 @@ Upstream should re-release or you should fix the release repository.\
                 # Remove the conflicting tag first
                 warning("""\
 Version discrepancy:
-The upstream version, {0}, is equal to a previous import version. \
+    The upstream version, {0}, is equal to a previous import version. \
 Removing conflicting tag before continuing because the '--replace' \
 options was specified.\
 """.format(version))
@@ -367,7 +369,7 @@ options was specified.\
             else:
                 warning("""\
 Version discrepancy:
-The upstream version, {0}, is equal to a previous import version. \
+    The upstream version, {0}, is equal to a previous import version. \
 git-buildpackage will fail, if you want to replace the existing \
 upstream import use the '--replace' option.\
 """.format(version))
@@ -472,4 +474,4 @@ def main(sysargs=None):
         # Clean up
         shutil.rmtree(tmp_dir)
         if current_branch and branch_exists(current_branch, True, cwd):
-            execute_command('git checkout ' + current_branch, cwd)
+            checkout(current_branch, directory=cwd)
