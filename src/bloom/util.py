@@ -39,12 +39,14 @@ from __future__ import print_function
 import sys
 import os
 
-from subprocess import check_call, CalledProcessError, PIPE
+from subprocess import CalledProcessError
+from subprocess import PIPE
 from subprocess import Popen
 
+from . logging import ansi
+from . logging import debug
 from . logging import enable_debug
 from . logging import error
-from . logging import debug
 from . logging import info
 
 try:
@@ -53,18 +55,59 @@ except ImportError:
     error("rospkg was not detected, please install it.", file=sys.stderr)
     sys.exit(1)
 
-_ansi = {}
-
 
 def add_global_arguments(parser):
     group = parser.add_argument_group('global')
     group.add_argument('-d', '--debug', help='enable debug messages',
                        action='store_true', default=False)
+    group.add_argument('--pdb', help='enable debugging post mortem with pdb',
+                       action='store_true', default=False)
     return parser
+
+_pdb = False
 
 
 def handle_global_arguments(args):
+    global _pdb
     enable_debug(args.debug)
+    _pdb = args.pdb
+
+
+def print_exc(exc):
+    exc_str = ''.join(exc)
+    try:
+        from pygments import highlight
+        from pygments.lexers import PythonTracebackLexer
+        from pygments.formatters import TerminalFormatter
+
+        exc_str = highlight(exc_str, PythonTracebackLexer(),
+                            TerminalFormatter())
+    except ImportError:
+        pass
+    print(exc_str, file=sys.stderr)
+
+
+def custom_exception_handler(type, value, tb):
+    global _pdb
+    # Print traceback
+    import traceback
+    print_exc(traceback.format_exception(type, value, tb))
+    if not _pdb or hasattr(sys, 'ps1') or not sys.stderr.isatty():
+        pass
+    else:
+        # ...then start the debugger in post-mortem mode.
+        import pdb
+        pdb.set_trace()
+
+
+sys.excepthook = custom_exception_handler
+
+
+def pdb_hook():
+    global _pdb
+    if _pdb:
+        import pdb
+        pdb.set_trace()
 
 
 def check_output(cmd, cwd=None, stdin=None, stderr=None, shell=False):
@@ -81,52 +124,6 @@ def create_temporary_directory(prefix_dir=None):
     """Creates a temporary directory and returns its location"""
     from tempfile import mkdtemp
     return mkdtemp(prefix='bloom_', dir=prefix_dir)
-
-
-def ansi(key):
-    """Returns the escape sequence for a given ansi color key"""
-    global _ansi
-    return _ansi[key]
-
-
-def enable_ANSI_colors():
-    """
-    Populates the global module dictionary `ansi` with ANSI escape sequences.
-    """
-    global _ansi
-    colors = [
-        'black', 'red', 'green', 'yellow', 'blue', 'purple', 'cyan', 'white'
-    ]
-    _ansi = {
-        'escape': '\033', 'reset': 0,
-        'boldon': 1, 'italicson': 3, 'ulon': 4, 'invon': 7,
-        'boldoff': 22, 'italicsoff': 23, 'uloff': 24, 'invoff': 27,
-    }
-
-    # Convert plain numbers to escapes
-    for key in _ansi:
-        if key != 'escape':
-            _ansi[key] = '{0}[{1}m'.format(_ansi['escape'], _ansi[key])
-
-    # Foreground
-    for index, color in enumerate(colors):
-        _ansi[color + 'f'] = '{0}[{1}m'.format(_ansi['escape'], 30 + index)
-
-    # Background
-    for index, color in enumerate(colors):
-        _ansi[color + 'b'] = '{0}[{1}m'.format(_ansi['escape'], 40 + index)
-
-
-def disable_ANSI_colors():
-    """
-    Sets all the ANSI escape sequences to empty strings, effectively disabling
-    console colors.
-    """
-    global _ansi
-    for key in _ansi:
-        _ansi[key] = ''
-
-enable_ANSI_colors()
 
 
 def maybe_continue(default='y'):
@@ -189,7 +186,8 @@ def parse_stack_xml(file_path):
     return rospkg.stack.parse_stack_file(file_path)
 
 
-def execute_command(cmd, shell=True, autofail=True, silent=True, cwd=None):
+def execute_command(cmd, shell=True, autofail=True, silent=True,
+                    silent_error=False, cwd=None):
     """
     Executes a given command using vcstools' run_shell_command function.
     """
@@ -197,14 +195,22 @@ def execute_command(cmd, shell=True, autofail=True, silent=True, cwd=None):
     result = 0
     if silent:
         io_type = PIPE
-    try:
-        debug(((cwd) if cwd else os.getcwd()) + ":$ " + str(cmd))
-        result = check_call(cmd, shell=True, cwd=cwd,
-                            stdout=io_type, stderr=io_type)
-    except CalledProcessError as cpe:
-        result = cpe.returncode
+    debug(((cwd) if cwd else os.getcwd()) + ":$ " + str(cmd))
+    p = Popen(cmd, shell=True, cwd=cwd, stdout=io_type, stderr=io_type)
+    out, err = p.communicate()
+    result = p.returncode
+    if result != 0:
+        if not silent_error:
+            error("'execute_command' failed to call '{0}'".format(cmd) + \
+                  " which had a return code ({0}):".format(result))
+            if out:
+                error("    stdout:\n" + ansi('reset') + str(out))
+                error("end stdout")
+            if err:
+                error("    stderr:\n" + ansi('reset') + str(err))
+                error("end stderr")
         if autofail:
-            raise
+            raise CalledProcessError(cmd=cmd, output=out, returncode=result)
     return result
 
 
