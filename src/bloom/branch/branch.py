@@ -229,7 +229,7 @@ def execute_branch(src, dst, patch, interactive, trim_dir, directory=None):
         # Get the current commit hash as a baseline
         commit_hash = get_commit_hash(dst, directory=directory)
         # Set the patch config
-        previous = config['previous']
+        previous = config['previous'] if config is not None else ''
         if previous == '':
             previous = get_commit_hash(src, directory=directory)
         config = {

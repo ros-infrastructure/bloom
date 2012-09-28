@@ -83,7 +83,7 @@ def main(sysargs=None):
         new_target = 'debian/' + args.rosdistro
         info("Branching to debian prefix with: git-bloom-branch --src " + \
              target + " " + new_target + '/' + package)
-        ret = branch_packages(target, new_target, True, False)
+        ret = branch_packages(target, new_target, True, False, False)
         ret = ret if ret is not None else 0
         if ret != 0:
             error("Command git-bloom-branch failed with return code: " + \
