@@ -437,6 +437,7 @@ def generate_deb(stack_data, repo_path, stamp, rosdistro, debian_distro):
     # ofilestr = open(ofilename, "w")
     # print(stack_data['copyright'], file=ofilestr)
     # ofilestr.close()
+    expand('gbp.conf', stack_data, dest_dir)
 
     #compat to quiet warnings, 7 .. lucid
     ofilename = os.path.join(dest_dir, 'compat')
