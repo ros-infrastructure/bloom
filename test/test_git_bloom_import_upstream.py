@@ -36,12 +36,12 @@ from __future__ import unicode_literals
 import os
 import unittest
 from subprocess import Popen, PIPE
+from script_runner import popen_bloom_script
 import tempfile
 import shutil
 
 from bloom.util import check_output
 from bloom.util import execute_command
-from export_bloom_from_src import get_path_and_pythonpath
 
 
 class BloomImportUpstreamTestSetups(unittest.TestCase):
@@ -53,11 +53,6 @@ class BloomImportUpstreamTestSetups(unittest.TestCase):
         # helpful when setting tearDown to pass
         self.directories = dict(setUp=self.root_directory)
         self.git_repo = os.path.join(self.root_directory, "git_repo")
-
-        # Setup environment for running commands
-        path, ppath = get_path_and_pythonpath()
-        os.putenv('PATH', path)
-        os.putenv('PYTHONPATH', ppath)
 
     @classmethod
     def tearDownClass(self):
@@ -163,12 +158,13 @@ class BloomImportUpstreamTest(BloomImportUpstreamTestSetups):
         from shutil import rmtree
         rmtree(self.git_repo)
 
-    def test_get_tarball_name(self):
-        pkg_name = 'cpp_common'
-        full_version = '1.2.3'
-        from bloom.import_upstream import get_tarball_name
-        tarball_name = get_tarball_name(pkg_name, full_version)
-        assert tarball_name == 'cpp-common-1.2.3', tarball_name
+    # test seems obsolete since hackathron, function does not exist in bloom
+    # def test_get_tarball_name(self):
+    #     pkg_name = 'cpp_common'
+    #     full_version = '1.2.3'
+    #     from bloom.import_upstream import get_tarball_name
+    #     tarball_name = get_tarball_name(pkg_name, full_version)
+    #     assert tarball_name == 'cpp-common-1.2.3', tarball_name
 
     def test_create_initial_upstream_branch(self):
         os.makedirs(self.git_repo)
@@ -222,26 +218,26 @@ class BloomImportUpstreamTest(BloomImportUpstreamTestSetups):
             # Setup the gbp repo
             execute_command('git init .', cwd=self.git_repo)
             cmd = 'git-bloom-set-upstream file://{0} git'.format(src)
-            p = Popen(cmd, shell=True, cwd=self.git_repo,
-                      stdin=PIPE, stdout=PIPE, stderr=PIPE)
+            p = popen_bloom_script(cmd, shell=True, cwd=self.git_repo,
+                                   stdin=PIPE, stdout=PIPE, stderr=PIPE)
             out, err = p.communicate('y')
             # Test the import of upstream
             cmd = 'git-bloom-import-upstream'
-            p = Popen(cmd, shell=True, cwd=self.git_repo,
-                      stdin=PIPE, stdout=PIPE, stderr=PIPE)
+            p = popen_bloom_script(cmd, shell=True, cwd=self.git_repo,
+                                   stdin=PIPE, stdout=PIPE, stderr=PIPE)
             out, err = p.communicate()
-            assert p.returncode == 0
+            assert p.returncode == 0, out + '' + err
             assert out.count("I'm happy") > 0
-            p = Popen(cmd, shell=True, cwd=self.git_repo,
-                      stdin=PIPE, stdout=PIPE, stderr=PIPE)
+            p = popen_bloom_script(cmd, shell=True, cwd=self.git_repo,
+                                   stdin=PIPE, stdout=PIPE, stderr=PIPE)
             out, err = p.communicate()
             assert p.returncode == 1
             assert out.count("if you want to replace") > 0
             cmd += ' --replace'
-            p = Popen(cmd, shell=True, cwd=self.git_repo,
-                      stdin=PIPE, stdout=PIPE, stderr=PIPE)
+            p = popen_bloom_script(cmd, shell=True, cwd=self.git_repo,
+                                   stdin=PIPE, stdout=PIPE, stderr=PIPE)
             out, err = p.communicate()
-            assert p.returncode == 0
+            assert p.returncode == 0, out
             assert out.count("Removing conflicting tag before continuing") > 0
         finally:
             # Clean up

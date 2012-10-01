@@ -39,8 +39,7 @@ import tempfile
 import argparse
 import shutil
 
-from export_bloom_from_src import get_path_and_pythonpath
-
+from mock import Mock
 
 class BloomSetUpstreamTestSetups(unittest.TestCase):
 
@@ -53,10 +52,6 @@ class BloomSetUpstreamTestSetups(unittest.TestCase):
         self.git_repo = os.path.join(self.root_directory, "git_repo")
         os.makedirs(self.git_repo)
 
-        # Setup environment for running commands
-        path, ppath = get_path_and_pythonpath()
-        os.putenv('PATH', path)
-        os.putenv('PYTHONPATH', ppath)
 
     @classmethod
     def tearDownClass(self):
@@ -71,26 +66,31 @@ class BloomSetUpstreamTestSetups(unittest.TestCase):
 class BloomSetUpstreamTest(BloomSetUpstreamTestSetups):
 
     def test_get_argument_parser(self):
-        from bloom.generate_debian import get_argument_parser
+        from bloom.generators.debian.main_all import get_argument_parser
         parser = get_argument_parser()
         assert type(parser) == argparse.ArgumentParser, type(parser)
-        args = parser.parse_args(['groovy'])
+        args = parser.parse_args(['groovy', 'release'])
         assert args.rosdistro == 'groovy', args.rosdistro
-        assert args.working == None, args.working
-        assert args.debian_revision == 0, args.debian_revision
-        assert args.install_prefix == None, args.install_prefix
-        assert args.distros == [], args.distros
-        test = ['--working', '.tmp/somedir',
-                '--debian-revision', '3',
-                '--install-prefix', '/opt/ros/groovy',
-                '--distros', 'lucid', 'precise', '--',
-                'groovy']
-        args = parser.parse_args(test)
+        assert args.prefix == 'release', args.prefix
+        args = parser.parse_args(['groovy', 'release', '--debian-revision', '3',])
         assert args.rosdistro == 'groovy', args.rosdistro
-        assert args.working == '.tmp/somedir', args.working
+        assert args.prefix == 'release', args.prefix
         assert args.debian_revision == '3', args.debian_revision
-        assert args.install_prefix == '/opt/ros/groovy', args.install_prefix
-        assert args.distros == ['lucid', 'precise'], args.distros
+        # assert args.working == None, args.working
+        # assert args.debian_revision == 0, args.debian_revision
+        # assert args.install_prefix == None, args.install_prefix
+        # assert args.distros == [], args.distros
+        # test = ['--working', '.tmp/somedir',
+        #         '--debian-revision', '3',
+        #         '--install-prefix', '/opt/ros/groovy',
+        #         '--distros', 'lucid', 'precise', '--',
+        #         'groovy', 'release']
+        # args = parser.parse_args(test)
+        # assert args.rosdistro == 'groovy', args.rosdistro
+        # assert args.working == '.tmp/somedir', args.working
+        # assert args.debian_revision == '3', args.debian_revision
+        # assert args.install_prefix == '/opt/ros/groovy', args.install_prefix
+        # assert args.distros == ['lucid', 'precise'], args.distros
 
     def test_process_stack_xml(self):
         # Create a demo stack
@@ -118,5 +118,6 @@ bindings of messages.</description>
         fh = open(os.path.join(self.git_repo, 'stack.xml'), 'w+')
         fh.write(stack)
         fh.close()
-        from bloom.generate_debian import process_stack_xml
-        process_stack_xml(None, self.git_repo)
+        from bloom.generators.debian import process_stack_xml
+        argsmock = Mock()
+        process_stack_xml(argsmock, self.git_repo)
