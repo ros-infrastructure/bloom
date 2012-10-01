@@ -56,6 +56,7 @@ from ... git import checkout
 from ... git import get_current_branch
 from ... git import track_branches
 from ... git import get_last_tag_by_date
+from ... git import show
 
 from ... logging import error
 from ... logging import info
@@ -333,12 +334,14 @@ def get_stack_data(args, directory=None):
             bailout("No stack.xml or package.xml found, exiting.")
 
 
-def expand(fname, stack_data, dest_dir, filetype=''):
+def expand(fname, stack_data, dest_dir, filetype='', custom=None):
     # insert template type
     if fname == 'rules' and stack_data['Catkin-DebRulesType'] == 'custom':
         path = os.path.join(dest_dir, '..', stack_data['Catkin-DebRulesFile'])
         with open(path, 'r') as f:
             file_em = f.read()
+    elif custom is not None:
+        file_em = custom
     else:
         if filetype != '':
             ifilename = (fname + '.' + filetype + '.em')
@@ -367,7 +370,6 @@ def find_deps(stack_data, apt_installer, rosdistro, debian_distro):
 
     deps = stack_data['Depends']
     build_deps = stack_data['BuildDepends']
-
 
     rosdep_view = rosdep2.catkin_support.get_catkin_view(rosdistro, os_name,
                                                          debian_distro,
@@ -421,8 +423,14 @@ def generate_deb(stack_data, repo_path, stamp, rosdistro, debian_distro):
     expand('control', stack_data, dest_dir)
     expand('changelog', stack_data, dest_dir,
            filetype=stack_data['Catkin-ChangelogType'])
-    expand('rules', stack_data, dest_dir,
-           filetype=stack_data['Catkin-DebRulesType'])
+    override_rules = show('bloom', 'rules')
+    if override_rules is not None:
+        expand('rules', stack_data, dest_dir,
+               filetype=stack_data['Catkin-ChangelogType'],
+               custom=override_rules)
+    else:
+        expand('rules', stack_data, dest_dir,
+               filetype=stack_data['Catkin-DebRulesType'])
     # expand('copyright', stack_data, dest_dir,
            # filetype=stack_data['Catkin-CopyrightType'])
     # ofilename = os.path.join(dest_dir, 'copyright')
