@@ -187,7 +187,7 @@ def parse_stack_xml(file_path):
 
 
 def execute_command(cmd, shell=True, autofail=True, silent=True,
-                    silent_error=False, cwd=None):
+                    silent_error=False, cwd=None, return_io=False):
     """
     Executes a given command using vcstools' run_shell_command function.
     """
@@ -211,7 +211,10 @@ def execute_command(cmd, shell=True, autofail=True, silent=True,
                 error("end stderr")
         if autofail:
             raise CalledProcessError(cmd=cmd, output=out, returncode=result)
-    return result
+    if return_io:
+        return result, out, err
+    else:
+        return result
 
 
 def assert_is_remote_git_repo(repo):
