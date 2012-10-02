@@ -62,6 +62,8 @@ def add_global_arguments(parser):
                        action='store_true', default=False)
     group.add_argument('--pdb', help='enable debugging post mortem with pdb',
                        action='store_true', default=False)
+    group.add_argument('-v', '--version', action='store_true', default=False,
+                       help="prints the bloom version")
     return parser
 
 _pdb = False
@@ -71,6 +73,10 @@ def handle_global_arguments(args):
     global _pdb
     enable_debug(args.debug)
     _pdb = args.pdb
+    if args.version:
+        from bloom import __version__
+        print(__version__)
+        sys.exit(0)
 
 
 def print_exc(exc):
