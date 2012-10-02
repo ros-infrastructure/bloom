@@ -234,7 +234,7 @@ def import_upstream(cwd, tmp_dir, args):
     upstream_repo, upstream_type, upstream_branch = parse_bloom_conf()
 
     if args.upstream_devel != None:
-        ver = args.upstream_branch
+        ver = args.upstream_devel
         warning("Overriding the bloom.conf upstream branch with " + ver)
     else:
         ver = upstream_branch
@@ -354,7 +354,7 @@ release version, {1}.
 
 Upstream should re-release or you should fix the release repository.\
 """.format(version, last_tag_version))
-        if full_version_strict == last_tag_version_strict:
+        if full_version_strict <= last_tag_version_strict:
             if args.replace:
                 if not gbp.has_replace():
                     error("The '--replace' flag is not supported on this "
@@ -363,9 +363,10 @@ Upstream should re-release or you should fix the release repository.\
                 # Remove the conflicting tag first
                 warning("""\
 Version discrepancy:
-    The upstream version, {0}, is equal to a previous import version. \
-Removing conflicting tag before continuing because the '--replace' \
-options was specified.\
+    The upstream version, {0}, is equal to or less than a previous \
+import version.
+    Removing conflicting tag before continuing \
+because the '--replace' options was specified.\
 """.format(version))
                 execute_command('git tag -d {0}'.format(last_tag))
                 execute_command('git push origin :refs/tags/'
