@@ -38,7 +38,7 @@ import argparse
 import shutil
 import traceback
 
-from subprocess import CalledProcessError, check_call
+from subprocess import CalledProcessError
 
 from . util import check_output
 
@@ -60,6 +60,8 @@ from . logging import error
 from . logging import info
 from . logging import log_prefix
 from . logging import warning
+
+from bloom import gbp
 
 from distutils.version import StrictVersion
 
@@ -151,20 +153,6 @@ def create_initial_upstream_branch(cwd=None):
     execute_command('git clean -dfx', cwd=cwd)
     execute_command('git commit --allow-empty -m "Initial upstream branch"',
                     cwd=cwd)
-
-
-def detect_git_import_orig():
-    """
-    Returns True if git-import-orig is in the path, False otherwise
-    """
-    from subprocess import PIPE
-    try:
-        check_call('git-import-orig --help', shell=True, stdout=PIPE,
-                   stderr=PIPE)
-        return True
-    except (OSError, CalledProcessError):
-        return False
-    return False
 
 
 def summarize_repo_info(upstream_repo, upstream_type, upstream_branch):
@@ -356,6 +344,10 @@ Upstream should re-release or you should fix the release repository.\
 """.format(version, last_tag_version))
         if full_version_strict == last_tag_version_strict:
             if args.replace:
+                if not gbp.has_replace():
+                    error("The '--replace' flag is not supported on this "
+                          "version of git-buildpackage.")
+                    return 1
                 # Remove the conflicting tag first
                 warning("""\
 Version discrepancy:
@@ -385,21 +377,8 @@ upstream import use the '--replace' option.\
     bloom_repo.update('master')
 
     # Detect if git-import-orig is installed
-    if not detect_git_import_orig():
-        bailout("git-import-orig not detected, did you install "
-                "git-buildpackage?")
-
-    # Import the tarball
-    cmd = 'git import-orig {0}'.format(tarball_path + '.tar.gz')
-    if not args.interactive:
-        cmd += ' --no-interactive'
-    if not args.merge:
-        cmd += ' --no-merge'
-    try:
-        if check_call(cmd, shell=True) != 0:
-            bailout("git-import-orig failed '{0}'".format(cmd))
-    except CalledProcessError:
-        bailout("git-import-orig failed '{0}'".format(cmd))
+    if gbp.import_orig(tarball_path + '.tar.gz', args.interactive, args.merge):
+        return 1
 
     # Push changes back to the original bloom repo
     execute_command('git push --all -f')
