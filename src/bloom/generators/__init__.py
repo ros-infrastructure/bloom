@@ -38,43 +38,48 @@ class BloomGenerator(object):
     Abstract generator class, from which all bloom generators inherit.
     """
     def __init__(self, title, description):
-        self.title = title
-        self.description = description
-        self.arguments = {}
+        self.__title = title
+        self.__description = description
+        self.__arguments = {}
 
     def add_argument(self, *args, **kwargs):
         """
-        Adds argparse arguments to the generator.
-        """
-        self._arguments[args] = kwargs
+        Adds argparse arguments to the generator
 
-    def function(self):
+        See http://docs.python.org/dev/library/argparse.html#the-add-argument-method
+        """
+        self.__arguments[args] = kwargs
+
+    def get_arguments(self):
+        """
+        Returns the accumulated argparse arguments
+        """
         pass
 
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
+# P
+# a
+# d
+# d
+# i
+# n
+# g
+# .
+# .
+# .
+# .
+# .
+# .
+# .
+# .
+# .
+# .
+# .
+# .
+# .
+# .
+# .
+# .
+# .
+# .
+# .
 pass
