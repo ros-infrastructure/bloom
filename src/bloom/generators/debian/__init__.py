@@ -42,6 +42,7 @@ import re
 import rospkg
 import sys
 import tempfile
+import traceback
 
 from pprint import pprint
 from subprocess import Popen, CalledProcessError
@@ -51,6 +52,7 @@ from ... util import execute_command
 from ... util import handle_global_arguments
 from ... util import bailout
 from ... util import ansi
+from ... util import print_exc
 # from . util import get_versions_from_upstream_tag
 from ... git import checkout
 from ... git import get_current_branch
@@ -286,7 +288,10 @@ def process_package_xml(args, directory=None):
     build_deps = (package.build_depends + package.buildtool_depends)
     data['BuildDepends'] = set([d.name for d in build_deps])
 
-    print("BuildDepends is %s for %s, from %s" % (data['BuildDepends'], package.name, xml_path))
+    print(
+        "BuildDepends is "
+        "%s for %s, from %s" % (data['BuildDepends'], package.name, xml_path)
+    )
 
     maintainers = []
     for m in package.maintainers:
@@ -585,7 +590,13 @@ def main(sysargs=None):
         # update rosdep is needed
         if args.do_not_update_rosdep:
             info("Updating rosdep")
-            rosdep2.catkin_support.update_rosdep()
+            try:
+                rosdep2.catkin_support.update_rosdep()
+            except:
+                print_exc(traceback.format_exc())
+                error("Failed to update rosdep, did you run "
+                      "'rosdep init' first?")
+                return 1
         # do it
         result = execute_bloom_generate_debian(args, bloom_repo)
     finally:

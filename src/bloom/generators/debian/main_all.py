@@ -96,4 +96,4 @@ def main(sysargs=None):
         if index != 0:
             gen_args.append('--do-not-update-rosdep')
         info("Calling git-bloom-generate-debian-all " + " ".join(gen_args))
-        gendeb_main(gen_args)
+        return gendeb_main(gen_args)
