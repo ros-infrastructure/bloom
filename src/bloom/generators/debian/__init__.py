@@ -39,7 +39,6 @@ import dateutil.tz
 import em
 import os
 import re
-import rospkg
 import sys
 import tempfile
 import traceback
@@ -76,6 +75,12 @@ try:
 except ImportError:
     print("rosdep was not detected, please install it.", file=sys.stderr)
     sys.exit(2)
+
+try:
+    import rospkg
+except ImportError:
+    print("rospkg was not detected, please install it.", file=sys.stderr)
+    sys.exit(3)
 
 '''
 The Debian binary package file names conform to the following convention:
