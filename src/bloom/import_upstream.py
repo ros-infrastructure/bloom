@@ -44,12 +44,15 @@ from . util import check_output
 
 from . util import add_global_arguments
 from . util import handle_global_arguments
-from . util import bailout, execute_command, ansi, parse_stack_xml
-from . util import assert_is_not_gbp_repo, create_temporary_directory
-from . util import get_versions_from_upstream_tag, segment_version
+from . util import execute_command
+from bloom.util import parse_stack_xml
+from . util import create_temporary_directory
+from . util import get_versions_from_upstream_tag
+from bloom.util import segment_version
 from . util import print_exc
 from . git import branch_exists
 from . git import checkout
+from bloom.git import create_branch
 from . git import get_current_branch
 from . git import get_last_tag_by_date
 from . git import get_root
@@ -60,6 +63,7 @@ from . logging import error
 from . logging import info
 from . logging import log_prefix
 from . logging import warning
+from logging import ansi
 
 from bloom import gbp
 
@@ -97,9 +101,10 @@ def convert_catkin_to_bloom(cwd=None):
 
 
 def not_a_bloom_release_repo():
-    bailout("This does not appear to be a bloom release repo. "
-            "Please initialize it first using: git "
-            "bloom-set-upstream <UPSTREAM_VCS_URL> <VCS_TYPE> [<VCS_BRANCH>]")
+    error("This does not appear to be a bloom release repo. "
+          "Please initialize it first using: git "
+          "bloom-set-upstream <UPSTREAM_VCS_URL> <VCS_TYPE> [<VCS_BRANCH>]")
+    sys.exit(1)
 
 
 def check_for_bloom(cwd=None):
@@ -148,11 +153,7 @@ def create_initial_upstream_branch(cwd=None):
     """
     Creates an empty, initial upstream branch in the given git repository.
     """
-    execute_command('git symbolic-ref HEAD refs/heads/upstream', cwd=cwd)
-    execute_command('rm -f .git/index', cwd=cwd)
-    execute_command('git clean -dfx', cwd=cwd)
-    execute_command('git commit --allow-empty -m "Initial upstream branch"',
-                    cwd=cwd)
+    create_branch('upstream', orphaned=True, changeto=True)
 
 
 def summarize_repo_info(upstream_repo, upstream_type, upstream_branch):
@@ -193,15 +194,17 @@ def get_upstream_meta(upstream_dir):
             meta['version'] = stack.version
             meta['type'] = 'stack.xml'
         else:
-            bailout("Neither stack.xml, nor package.xml(s) were detected.")
+            error("Neither stack.xml, nor package.xml(s) were detected.")
+            sys.exit(1)
     else:
         info("package.xml(s) found")
         try:
             version = verify_equal_package_versions(packages.values())
         except RuntimeError as err:
             print_exc(traceback.format_exc())
-            bailout("Releasing multiple packages with different versions is "
-                    "not supported: " + str(err))
+            error("Releasing multiple packages with different versions is "
+                  "not supported: " + str(err))
+            sys.exit(1)
         meta = {}
         meta['version'] = version
         meta['name'] = [p.name for p in packages.values()]
@@ -230,23 +233,19 @@ def import_upstream(cwd, tmp_dir, args):
     # Parse the bloom config file
     upstream_repo, upstream_type, upstream_branch = parse_bloom_conf()
 
-    # Summarize the config contents
-    summarize_repo_info(upstream_repo, upstream_type, upstream_branch)
+    if args.upstream_devel != None:
+        ver = args.upstream_branch
+        warning("Overriding the bloom.conf upstream branch with " + ver)
+    else:
+        ver = upstream_branch
 
-    # If the upstream repo is git, then assert some things about the repo
-    if upstream_type == 'git':
-        info("Verifying a couple of things about the upstream git repo...")
-        # Ensure the upstream repo is not setup as a gbp
-        assert_is_not_gbp_repo(upstream_repo)
+    # Summarize the config contents
+    summarize_repo_info(upstream_repo, upstream_type, ver)
 
     # Checkout upstream
     upstream_dir = os.path.join(tmp_dir, 'upstream')
     upstream_client = VcsClient(upstream_type, upstream_dir)
-    if args.upstream_branch != None:
-        ver = args.upstream_branch
-        warning("Overriding the bloom.conf branch with {0}".format(ver))
-    else:
-        ver = upstream_branch if upstream_branch != '(No branch set)' else ''
+    ver = ver if ver != '(No branch set)' else ''
 
     checkout_url = upstream_repo
     checkout_ver = ver
@@ -280,10 +279,20 @@ def import_upstream(cwd, tmp_dir, args):
         return 1
 
     # Get upstream meta data
-    meta = get_upstream_meta(upstream_dir)
-    if meta is None or None in meta.values():
-        print(meta)
-        bailout("Failed to get the upstream meta data.")
+    if args.not_catkin:
+        meta = {}
+        if None in [args.name, args.tag]:
+            error("If '--not-catkin' is specified, then '--upstream-name' and "
+                  "'--upstream-tag' must also be specified.")
+            return 1
+        meta['name'] = args.name
+        meta['version'] = args.tag
+        meta['type'] = 'not_catkin'
+    else:
+        meta = get_upstream_meta(upstream_dir)
+        if meta is None or None in meta.values():
+            error("Failed to get the upstream meta data.")
+            sys.exit(1)
 
     # Summarize the stack.xml contents
     info("Upstream has version " + ansi('boldon')
@@ -291,6 +300,9 @@ def import_upstream(cwd, tmp_dir, args):
     if meta['type'] == 'stack.xml':
         info("Upstream contains a stack called " + ansi('boldon')
            + meta['name'][0] + ansi('reset'))
+    elif meta['type'] == 'not_catkin':
+        info("Upstream manually specified as " + ansi('boldon') + \
+             meta['name'] + ansi('reset'))
     else:
         info("Upstream contains package" \
            + ('s: ' if len(meta['name']) > 1 else ': ') \
@@ -387,30 +399,82 @@ upstream import use the '--replace' option.\
 
 def get_argument_parser():
     parser = argparse.ArgumentParser(description="""\
-Imports the upstream repository specified by bloom using git-buildpackage's \
-git-import-orig function. This should be run in a git-buildpackage repository \
-which has had its upstream repository set using git-bloom-set-upstream.\
+Imports the upstream repository using git-buildpackage's git-import-orig.
+
+This should be run in a git-buildpackage repository which has had its
+upstream repository set using 'git-bloom-config'.
+
+The upstream repository is imported from a release tag. The
+'git-bloom-config' command specifies the upstream uri and vcs type, as
+well as an optional development upstream branch.  By default, the
+upstream version being imported is determined by looking at the source
+tree of the upstream repository at the specified upstream development
+branch (defaults to trunk/tip/master/etc...) and finding any
+package.xml(s) or stack.xml files.  If either of these files are found
+then they are parsed for the package name(s) and version.
+
+If no package.xml(s) or a stack.xml can be found the command will fail.
+For importing upstream projects that do not contain package.xml(s) or
+stack.xml, the '--not-catkin' flag may be passed, but the
+'--upstream-name' and '--upstream-tag' flags must be passed.
+
+To import the upstream repository into the upstream branch of the local
+release repository, this command expects the upstream repository to have
+a release tag that matches the version string exactly. For example, if
+the discovered package.xml file has the version as 0.1.0 then there is
+expected to be an upstream tag called '0.1.0', and the imported source
+tree will be pulled from that tag.
+
+The upstream tag is imported into the local repository's upstream branch.
+
+If the upstream branch does not exist locally, then it is created.
+
+If the local git repository has not been initilized (no first commit),
+then the user is prompted and it is optionally initialized.
+""", formatter_class=argparse.RawTextHelpFormatter)
+    add = parser.add_argument
+    add('-u', '--upstream-devel', help="""\
+Upstream repository development branch
+(or tag) on which to search for package.xml(s)
+or a stack.xml.
+
 """)
-    parser.add_argument('-i', '--interactive', help="""\
-Allows git-import-orig to be run interactively, otherwise questions \
-are prevented by passing the '--non-interactive' flag.\
+    add('-i', '--interactive', help="""\
+Allows git-import-orig to be run interactively,
+otherwise questions are prevented by passing the
+'--non-interactive' flag. (not supported on Lucid)
+
 """,
-                        action="store_true")
-    parser.add_argument('-r', '--replace', help="""\
-Replaces an existing upstream import if the git-buildpackage repository \
-already has the upstream version being released.\
-""",
-                        action="store_true")
-    parser.add_argument('-b', '--upstream-branch', help="""\
-This specifies an upstream branch to use for the import, but if this is \
-not specified then the branch is used.\
+    action="store_true")
+    add('-m', '--merge', action="store_true", help="""\
+Asks git-import-orig to merge the resulting
+import into the master branch. This is disabled
+by defualt. This will cause an editor to open for
+sign-off of the merge.
+
 """)
-    parser.add_argument('-m', '--merge', help="""\
-Asks git-import-orig to merge the resulting import into the master branch. \
-This is disabled by defualt. This will cause an editor to open for sign-off \
-of the merge.
+    add('-r', '--replace', help="""\
+Replaces an existing upstream import if the
+git-buildpackage repository already has the
+upstream version being released.
+
 """,
                         action="store_true")
+    add('--not-catkin', default=False, action='store_true',
+        help="""\
+If specified the automatic version discovery
+is disabled. If used, the '--upstream-name' and
+'--upstream-tag' flags must be specified.
+
+Use this if importing a non-catkin project,
+i.e. upstream repository that does not contain
+package.xml(s) or a stack.xml.
+
+""")
+    add('--upstream-name', metavar="UPSTREAM_NAME", dest='name',
+        help="name of the upstream project\n\n")
+    add('--upstream-tag', metavar="UPSTREAM_VERSION", dest='tag',
+        help="tag of the upstream repository to import from\n\n")
     return parser
 
 
@@ -421,7 +485,7 @@ def main(sysargs=None):
     handle_global_arguments(args)
 
     # Check that the current directory is a serviceable git/bloom repo
-    if get_root == None:
+    if get_root() == None:
         error("This command has to be run in a git repository.")
         parser.print_usage()
         return 1
