@@ -42,6 +42,7 @@ from .. logging import info
 from .. logging import error
 from .. logging import push_log_prefix
 from .. logging import pop_log_prefix
+from .. logging import warning
 
 
 def get_argument_parser():
@@ -61,13 +62,16 @@ Example:
 
     git-bloom-release groovy --debian-revision 1
 """, formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument('rosdistro',
-                        help="The ros distro")
-    parser.add_argument('--debian-revision', '-r', dest='debian_revision',
-                        help='Bump the changelog debian number.\n'
-                             'Please enter a monotonically increasing \n'
-                             'number from the last upload.',
-                        default=0)
+    add = parser.add_argument
+    add('rosdistro',
+        help="The ros distro")
+    add('--debian-revision', '-r', dest='debian_revision', default=0,
+        help="""\
+Bump the changelog debian number.
+Please enter a monotonically increasing
+number from the last upload.
+
+""")
     return parser
 
 
@@ -111,6 +115,8 @@ def release_main(sysargs=None):
 
     # Notify the user of success and next action suggestions
     print('\n\n')
+    warning("Tip: Check to ensure that the debian tags created have the same "
+            "version as the upstream version you are releasing.")
     info(ansi('greenf') + ansi('boldon') + "Everything went as expected, "
          "you should check that the new tags match your expectations, and "
          "then push to the gbp repo with:" + ansi('reset'))

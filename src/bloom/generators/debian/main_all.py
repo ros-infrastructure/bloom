@@ -41,7 +41,7 @@ from ... branch.branch import branch_packages
 from ... git import get_branches
 from ... git import track_branches
 from ... util import maybe_continue
-from ... logging import info, error
+from ... logging import info, error, warning
 
 
 def get_argument_parser():
@@ -77,6 +77,7 @@ def main(sysargs=None):
     if not maybe_continue():
         error("Answered no to continue, exiting.")
         sys.exit(1)
+    retcode = 0
     for index, target in enumerate(targets):
         # Branch first
         package = target[len('release/'):]
@@ -95,5 +96,14 @@ def main(sysargs=None):
                     str(args.debian_revision)]
         if index != 0:
             gen_args.append('--do-not-update-rosdep')
-        info("Calling git-bloom-generate-debian-all " + " ".join(gen_args))
-        gendeb_main(gen_args)
+        info("Calling 'git-bloom-generate-debian " + " ".join(gen_args) + "'")
+        ret = gendeb_main(gen_args)
+        ret = ret if ret is not None else 0
+        msg = "Calling 'git-bloom-generate-debian " + " ".join(gen_args) + \
+              "' returned exit code " + str(ret)
+        if ret != 0:
+            warning(msg)
+            retcode = ret
+        else:
+            info(msg)
+    return retcode

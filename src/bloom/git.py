@@ -47,6 +47,78 @@ from . util import check_output
 from . util import pdb_hook
 
 
+def ls_tree(reference, path=None, directory=None):
+    """
+    Returns a dictionary of files and folders for a given reference and path.
+
+    Implemented using ``git ls-tree``. If an invalid reference and/or path
+    None is returned.
+
+    :param reference: git reference to pull from (branch, tag, or commit)
+    :param path: tree to list
+    :param directory: directory in which to run this command
+
+    :returns: dict if a directory (or a reference) or None if it does not exist
+
+    :raises: subprocess.CalledProcessError if any git calls fail
+    :raises: RuntimeError if the output from git is not what we expected
+    """
+    # Try to track the reference as a branch
+    track_branches(reference, directory=directory)
+    cmd = 'git ls-tree ' + reference
+    if path is not None and path != '':
+        cmd += ':' + path
+    retcode, out, err = execute_command(cmd, autofail=False, silent_error=True,
+                                        cwd=directory, return_io=True)
+    if retcode != 0:
+        return None
+    items = {}
+    for line in out.splitlines():
+        tokens = line.split()
+        if len(tokens) != 4:
+            return None
+        if tokens[1] not in ['blob', 'tree']:
+            raise RuntimeError("item not a blob or tree")
+        if tokens[3] in items:
+            raise RuntimeError("duplicate name in ls tree")
+        items[tokens[3]] = 'file' if tokens[1] == 'blob' else 'directory'
+    return items
+
+
+def show(reference, path, directory=None):
+    """
+    Interface to the git show command.
+
+    If path is a file that exists, a string will be returned which is the
+    contents of that file. If the path is a directory that exists, then a
+    dictionary is returned where the keys are items in the folder and the
+    value is either the string 'file' or 'directory'. If the path does not
+    exist then this returns None.
+
+    :param reference: git reference to pull from (branch, tag, or commit)
+    :param path: path to show or list
+    :param directory: directory in which to run this command
+
+    :returns: string if a file, dict if a directory, None if it does not exist
+
+    :raises: subprocess.CalledProcessError if any git calls fail
+    """
+    # Check to see if this is a directory
+    dirs = ls_tree(reference, path, directory)
+    if dirs is not None:
+        return dirs
+    # Otherwise a file or does not exist, check for the file
+    cmd = 'git show {0}:{1}'.format(reference, path)
+    # Check to see if it is a directory
+    retcode, out, err = execute_command(cmd, autofail=False, silent_error=True,
+                                        cwd=directory, return_io=True)
+    if retcode != 0:
+        # Does not exist
+        return None
+    # It is a file that exists, return the output
+    return out
+
+
 def ensure_clean_working_env(force=False, git_status=True, directory=None):
     """
     Returns 0 if the working environment is clean, otherwise 1.
@@ -116,6 +188,9 @@ def checkout(reference, raise_exc=False, directory=None):
         pdb_hook()
         return 1
     debug("Checking out to " + str(reference))
+    if reference == get_current_branch(directory):
+        debug("Requested checkout reference is the same as the current branch")
+        return 0
     fail_msg = ''
     git_root = get_root(directory)
     if git_root is not None:
@@ -364,9 +439,9 @@ def track_branches(branches=None, directory=None):
 
     :raises: subprocess.CalledProcessError if git command fails
     """
-    debug("track_branches(" + str(branches) + ", " + str(directory) + ")")
     if type(branches) == str:
         branches = [branches]
+    debug("track_branches(" + str(branches) + ", " + str(directory) + ")")
     if branches == []:
         return
     # Save the current branch

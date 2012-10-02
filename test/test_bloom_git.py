@@ -1,12 +1,13 @@
 import os
-from shutil import rmtree
+from shutil import rmtree, copy
 from tempfile import mkdtemp
+
+from subprocess import check_call, PIPE
 
 
 def test_get_current_branch():
     # Create a temporary workfolder
     tmp_dir = mkdtemp()
-    from subprocess import check_call, PIPE
     # Create a test repo
     check_call('git init .', shell=True, cwd=tmp_dir, stdout=PIPE)
 
@@ -48,7 +49,8 @@ def test_track_branches():
     clone_dir = os.path.join(tmp_dir, 'clone')
     os.makedirs(orig_dir)
     os.makedirs(clone_dir)
-    from subprocess import check_call, PIPE, check_output
+    from subprocess import check_call, PIPE
+    from bloom.util import check_output
     check_call('git init .', shell=True, cwd=orig_dir, stdout=PIPE)
     check_call('touch example.txt', shell=True, cwd=orig_dir, stdout=PIPE)
     check_call('git add *', shell=True, cwd=orig_dir, stdout=PIPE)
@@ -64,8 +66,9 @@ def test_track_branches():
     from bloom.git import track_branches
     track_branches(['bloom', 'upstream'], clone_dir)
     output = check_output('git branch --no-color', shell=True, cwd=clone_dir)
-    assert output == '  bloom\n* master\n  upstream\n'
-    track_branches(cwd=clone_dir)
+    assert output == '  bloom\n* master\n  upstream\n', \
+           '\n' + str(output) + '\n == \n' + '  bloom\n* master\n  upstream\n'
+    track_branches(directory=clone_dir)
     output = check_output('git branch --no-color', shell=True, cwd=clone_dir)
     assert output == '  bloom\n* master\n  refactor\n  upstream\n', \
            output + ' == `  bloom\n* master\n  refactor\n  upstream\n`'
@@ -75,16 +78,20 @@ def test_track_branches():
     rmtree(tmp_dir)
 
 
-def test_get_last_tag_by_date():
+def create_git_repo():
     from tempfile import mkdtemp
     tmp_dir = mkdtemp()
     git_dir = os.path.join(tmp_dir, 'repo')
     os.makedirs(git_dir)
-    from subprocess import check_call, PIPE
     check_call('git init .', shell=True, cwd=git_dir, stdout=PIPE)
     check_call('touch example.txt', shell=True, cwd=git_dir, stdout=PIPE)
     check_call('git add *', shell=True, cwd=git_dir, stdout=PIPE)
     check_call('git commit -m "Init"', shell=True, cwd=git_dir, stdout=PIPE)
+    return tmp_dir, git_dir
+
+
+def test_get_last_tag_by_date():
+    tmp_dir, git_dir = create_git_repo()
     from bloom.git import get_last_tag_by_date
     assert get_last_tag_by_date(git_dir) == ''
     check_call('git tag upstream/0.3.2', shell=True, cwd=git_dir, stdout=PIPE)
@@ -92,5 +99,29 @@ def test_get_last_tag_by_date():
     check_call('git tag upstream/0.3.4', shell=True, cwd=git_dir, stdout=PIPE)
     check_call('git tag upstream/0.3.5', shell=True, cwd=git_dir, stdout=PIPE)
     assert get_last_tag_by_date(git_dir) == 'upstream/0.3.5'
-    from shutil import rmtree
+    rmtree(tmp_dir)
+
+
+def test_show():
+    tmp_dir, git_dir = create_git_repo()
+    from bloom.git import show
+    assert show('master', 'something.txt') == None
+    with open(os.path.join(git_dir, 'something.txt'), 'w+') as f:
+        f.write('v1\n')
+    assert show('master', 'something.txt') == None
+    check_call('git add something.txt', shell=True, cwd=git_dir,
+               stdout=PIPE)
+    check_call('git commit -am "added something.txt"', shell=True, cwd=git_dir,
+               stdout=PIPE)
+    assert show('master', 'something.txt', git_dir) == 'v1\n', \
+           str(show('master', 'something.txt', git_dir)) + ' == v1'
+    os.makedirs(os.path.join(git_dir, 'adir'))
+    copy(os.path.join(git_dir, 'something.txt'), os.path.join(git_dir, 'adir'))
+    with open(os.path.join(git_dir, 'adir', 'something.txt'), 'a') as f:
+        f.write('v2\n')
+    check_call('git add adir', shell=True, cwd=git_dir,
+               stdout=PIPE)
+    check_call('git commit -am "made a subfolder"', shell=True, cwd=git_dir,
+               stdout=PIPE)
+    assert show('master', os.path.join('adir', 'something.txt'), git_dir) == 'v1\nv2\n'
     rmtree(tmp_dir)
