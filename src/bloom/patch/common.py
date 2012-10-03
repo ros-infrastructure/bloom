@@ -102,6 +102,7 @@ def get_patch_config(patches_branch, directory=None):
                     print_exc(traceback.format_exc())
                     error("Failed to get patches info: " + str(err))
                     return None
+        debug("get_patch_config: config -> " + str(config))
         return config
     return fn()
 

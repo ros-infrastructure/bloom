@@ -9,6 +9,7 @@ from .. util import maybe_continue
 from .. util import parse_stack_xml
 from .. util import print_exc
 from .. logging import ansi
+from .. logging import debug
 from .. logging import error
 from .. logging import log_prefix
 from .. logging import info
@@ -302,9 +303,12 @@ def execute_branch(src, dst, patch, interactive, trim_dir, directory=None):
         # Get the current commit hash as a baseline
         commit_hash = get_commit_hash(dst, directory=directory)
         # Set the patch config
-        previous = config['previous'] if config is not None else ''
-        if previous == '':
+        if config is None:
+            # Then it is a new repository
             previous = get_commit_hash(src, directory=directory)
+        else:
+            # Else it is an old one
+            previous = config['previous']
         config = {
             'parent': src,
             'previous': previous,
@@ -312,6 +316,7 @@ def execute_branch(src, dst, patch, interactive, trim_dir, directory=None):
             'trim': config['trim'] if config is not None else '',
             'trimbase': config['trimbase'] if config is not None else ''
         }
+        debug("branch: setting config -> " + str(config))
         set_patch_config(dst_patches, config, directory=directory)
         # Command is successful, even if applying patches fails
         current_branch = None
