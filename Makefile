@@ -38,7 +38,7 @@ install: distro
 
 deb_dist:
 	# need to convert unstable to each distro and repeat
-	python setup.py --command-packages=stdeb.command bdist_deb 
+	python setup.py --command-packages=stdeb.command sdist_dsc --workaround-548392=False bdist_deb
 
 upload-packages: deb_dist
 	dput -u -c dput.cf all-shadow ${OUTPUT_DIR}/${NAME}_${VERSION}-1_amd64.changes 
