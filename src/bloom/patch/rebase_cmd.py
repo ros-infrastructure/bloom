@@ -53,13 +53,14 @@ def rebase_patches(force=False, directory=None):
               config['previous'] + ": " + \
               str(upstream_commit_hash == config['previous']))
     ### Execute the rebase
-    # Get the new source into a temporary directory
 
+    # Copy the new source into a temporary directory
     @inbranch(config['parent'])
     def duplicate_source(tmp_direct, direct):
         root = get_root(direct)
+        ignores = ('.git', '.gitignore', '.svn', '.hgignore', '.hg', 'CVS')
         dst = os.path.join(tmp_direct, 'parent_source')
-        shutil.copytree(root, dst)
+        shutil.copytree(root, dst, ignore=shutil.ignore_patterns(*ignores))
         return dst
 
     from tempfile import mkdtemp
@@ -82,8 +83,6 @@ def rebase_patches(force=False, directory=None):
 
         # Copy the parent source into the newly cleaned directory
         for item in os.listdir(parent_source):
-            if item == '.git':  # Ignore .git folder
-                continue
             src = os.path.join(parent_source, item)
             dst = os.path.join(git_root, item)
             if os.path.isdir(src):
