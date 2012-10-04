@@ -51,6 +51,7 @@ If the DST_BRANCH and patches/DST_BRANCH already existed, then a call to
     add('--continue-on-error', '-c',
         help="continues branching packages even on errors",
         action='store_true', default=False)
+    add('--package-name', dest='name', help="overrides <package_name>")
     return parser
 
 
@@ -70,7 +71,8 @@ def branchmain():
             args.src = get_current_branch()
         # Execute the branching
         retcode = branch_packages(args.src, args.prefix, args.patch,
-                                  args.interactive, args.continue_on_error)
+                                  args.interactive, args.continue_on_error,
+                                  name=args.name)
         if retcode != 0 and not args.continue_on_error:
             print('')
             info("Stopping branching, to continue pass '--continue-on-error'")

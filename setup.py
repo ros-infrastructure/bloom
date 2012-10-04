@@ -3,7 +3,7 @@
 from setuptools import setup
 
 setup(name='bloom',
-      version='0.1.4',
+      version='0.1.7',
       packages=[
          'bloom',
          'bloom.branch',
@@ -19,6 +19,7 @@ setup(name='bloom',
          'bin/git-bloom-generate-debian',
          'bin/git-bloom-generate-debian-all',
          'bin/git-bloom-import-upstream',
+         'bin/git-bloom-packageme',
          'bin/git-bloom-patch',
          'bin/git-bloom-release',
          'bin/git-bloom-set-upstream',

@@ -41,12 +41,12 @@ deb_dist:
 	python setup.py --command-packages=stdeb.command bdist_deb 
 
 upload-packages: deb_dist
-	dput -u -c dput.cf all-shadow ${OUTPUT_DIR}/${NAME}_${VERSION}-0_amd64.changes 
-	dput -u -c dput.cf all-shadow-fixed ${OUTPUT_DIR}/${NAME}_${VERSION}-0_amd64.changes 
-	dput -u -c dput.cf all-ros ${OUTPUT_DIR}/${NAME}_${VERSION}-0_amd64.changes 
+	dput -u -c dput.cf all-shadow ${OUTPUT_DIR}/${NAME}_${VERSION}-1_amd64.changes 
+	dput -u -c dput.cf all-shadow-fixed ${OUTPUT_DIR}/${NAME}_${VERSION}-1_amd64.changes 
+	dput -u -c dput.cf all-ros ${OUTPUT_DIR}/${NAME}_${VERSION}-1_amd64.changes 
 
 upload-building: deb_dist
-	dput -u -c dput.cf all-building ${OUTPUT_DIR}/${NAME}_${VERSION}-0_amd64.changes 
+	dput -u -c dput.cf all-building ${OUTPUT_DIR}/${NAME}_${VERSION}-1_amd64.changes 
 
 upload: upload-building upload-packages
 

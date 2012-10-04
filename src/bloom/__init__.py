@@ -1,1 +1,5 @@
-pass # This file cannot be empty, less it gets skipped over in packaging.
+try:
+    import pkg_resources
+    __version__ = pkg_resources.require("bloom")[0].version
+except ImportError:
+    __version__ = 'unset'

@@ -9,6 +9,7 @@ from .. util import maybe_continue
 from .. util import parse_stack_xml
 from .. util import print_exc
 from .. logging import ansi
+from .. logging import debug
 from .. logging import error
 from .. logging import log_prefix
 from .. logging import info
@@ -34,6 +35,12 @@ except ImportError:
           file=sys.stderr)
     sys.exit(1)
 
+try:
+    import rospkg
+except ImportError:
+    print("rospkg was not detected, please install it.", file=sys.stderr)
+    sys.exit(2)
+
 
 def branch(src, prefix, patch, interactive, ignore_stack, directory=None):
     """
@@ -55,7 +62,7 @@ def branch(src, prefix, patch, interactive, ignore_stack, directory=None):
 
 @log_prefix('[git-bloom-branch]: ')
 def branch_packages(src, prefix, patch, interactive, continue_on_error,
-                    directory=None):
+                    directory=None, name=None):
     """
     Handles source directories with one or more new style catkin packages.
 
@@ -65,29 +72,96 @@ def branch_packages(src, prefix, patch, interactive, continue_on_error,
     if ret != 0:
         return ret
     current_branch = get_current_branch()
-    try:
-        return _branch_packages(src, prefix, patch, interactive,
-                                continue_on_error, directory)
-    finally:
-        if current_branch:
-            checkout(current_branch, directory=directory)
 
+    def subroutine():
+        # Ensure we are on the correct src branch
+        current_branch = get_current_branch(directory)
+        if current_branch != src:
+            info("Changing to specified source branch " + src)
+            ret = checkout(src, directory=directory)
+            if ret != 0:
+                return ret
 
-def _branch_packages(src, prefix, patch, interactive, continue_on_error,
-                     directory=None):
-    # Ensure we are on the correct src branch
-    current_branch = get_current_branch()
-    if current_branch != src:
-        info("Changing to specified source branch " + src)
-        ret = checkout(src, directory=directory)
-        if ret != 0:
-            return ret
-    # Get packages
-    repo_dir = directory if directory else os.getcwd()
-    packages = find_packages(repo_dir)
-    if packages == []:
-        error("No package.xml(s) found in " + repo_dir)
+        ## Determine the branching method
+        # First check for arguments
+        if name is not None:
+            info("Using specified name " + ansi('boldon') + name + \
+                 ansi('reset'))
+            return _branch_manual(name, src, prefix, patch,
+                                  interactive, continue_on_error, directory)
+        # Check for package.xml(s)
+        repo_dir = directory if directory else os.getcwd()
+        packages = find_packages(repo_dir)
+        if type(packages) == dict and packages != {}:
+            info("Found " + str(len(packages)) + " packages.")
+            return _branch_packages(packages, src, prefix, patch, interactive,
+                                    continue_on_error, directory)
+        # Check for stack.xml
+        stack_path = os.path.join(repo_dir, 'stack.xml')
+        if os.path.exists(stack_path):
+            info("Found stack.xml.")
+            return _branch_stack(stack_path, src, prefix, patch, interactive,
+                                 continue_on_error, directory)
+        # Otherwise we have a problem
+        error("No package.xml(s) or stack.xml found, and not name "
+              "specified with '--package-name', aborting.")
         return 1
+    ret = 0
+    try:
+        ret = subroutine()
+    finally:
+        if current_branch and ret != 0:
+            checkout(current_branch, directory=directory)
+    return ret
+
+
+def _branch_manual(name, src, prefix, patch, interactive,
+                   continue_on_error, directory=None):
+    branch = prefix + ('' if prefix and prefix.endswith('/') else '/') + name
+    info("Branching " + name + " to " + branch)
+    ret = -1
+    try:
+        ret = execute_branch(src, branch, patch, False, '',
+                             directory=directory)
+        msg = "Branching " + name + " to " + \
+                branch + " returned " + str(ret)
+        if ret != 0:
+            warning(msg)
+        else:
+            info(msg)
+    except Exception as err:
+        print_exc(traceback.format_exc())
+        error("Error branching " + name + ": " + str(err))
+        ret = 1
+    return ret
+
+
+def _branch_stack(xml_path, src, prefix, patch, interactive, continue_on_error,
+                  directory=None):
+    stack = rospkg.stack.parse_stack_file(xml_path)
+    name = stack.name
+    version = stack.version
+    branch = prefix + ('' if prefix and prefix.endswith('/') else '/') + name
+    info("Branching " + name + "_" + version + " to " + branch)
+    ret = -1
+    try:
+        ret = execute_branch(src, branch, patch, False, '',
+                             directory=directory)
+        msg = "Branching " + name + "_" + version + " to " + \
+                branch + " returned " + str(ret)
+        if ret != 0:
+            warning(msg)
+        else:
+            info(msg)
+    except Exception as err:
+        print_exc(traceback.format_exc())
+        error("Error branching " + name + ": " + str(err))
+        ret = 1
+    return ret
+
+
+def _branch_packages(packages, src, prefix, patch, interactive,
+                     continue_on_error, directory=None):
     # Verify that the packages all have the same version
     version = verify_equal_package_versions(packages.values())
     # Call git-bloom-branch on each package
@@ -229,9 +303,12 @@ def execute_branch(src, dst, patch, interactive, trim_dir, directory=None):
         # Get the current commit hash as a baseline
         commit_hash = get_commit_hash(dst, directory=directory)
         # Set the patch config
-        previous = config['previous'] if config is not None else ''
-        if previous == '':
+        if config is None:
+            # Then it is a new repository
             previous = get_commit_hash(src, directory=directory)
+        else:
+            # Else it is an old one
+            previous = config['previous']
         config = {
             'parent': src,
             'previous': previous,
@@ -239,6 +316,7 @@ def execute_branch(src, dst, patch, interactive, trim_dir, directory=None):
             'trim': config['trim'] if config is not None else '',
             'trimbase': config['trimbase'] if config is not None else ''
         }
+        debug("branch: setting config -> " + str(config))
         set_patch_config(dst_patches, config, directory=directory)
         # Command is successful, even if applying patches fails
         current_branch = None

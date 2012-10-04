@@ -12,7 +12,6 @@ from .. util import handle_global_arguments
 from .. util import print_exc
 from .. logging import debug
 from .. logging import error
-from .. logging import info
 from .. logging import log_prefix
 from .. logging import warning
 from .. git import ensure_clean_working_env

@@ -62,6 +62,8 @@ def add_global_arguments(parser):
                        action='store_true', default=False)
     group.add_argument('--pdb', help='enable debugging post mortem with pdb',
                        action='store_true', default=False)
+    group.add_argument('-v', '--version', action='store_true', default=False,
+                       help="prints the bloom version")
     return parser
 
 _pdb = False
@@ -71,6 +73,10 @@ def handle_global_arguments(args):
     global _pdb
     enable_debug(args.debug)
     _pdb = args.pdb
+    if args.version:
+        from bloom import __version__
+        print(__version__)
+        sys.exit(0)
 
 
 def print_exc(exc):
@@ -215,38 +221,6 @@ def execute_command(cmd, shell=True, autofail=True, silent=True,
         return result, out, err
     else:
         return result
-
-
-def assert_is_remote_git_repo(repo):
-    """
-    Asserts that the specified repo url points to a valid git repository.
-    """
-    info('Verifying that {0} is a git repository...'.format(repo), end='')
-    cmd = 'git ls-remote --heads {0}'.format(repo)
-    p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
-    output, _ = p.communicate()
-    if p.returncode != 0:
-        info(ansi('redf') + ' fail' + ansi('reset'), use_prefix=False)
-        bailout("Repository {0} is not a valid git repository.".format(repo))
-    else:
-        info(' pass', use_prefix=False)
-
-
-def assert_is_not_gbp_repo(repo):
-    """
-    Asserts that the specified repo url does not point to a gbp repo.
-    """
-    assert_is_remote_git_repo(repo)
-    info('Verifying that {0} is not a gbp repository...'.format(repo), end='')
-    cmd = 'git ls-remote --heads {0} upstream*'.format(repo)
-    p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
-    output, _ = p.communicate()
-    if p.returncode == 0 and len(output) > 0:
-        info(ansi('redf') + ' fail' + ansi('reset'), use_prefix=False)
-        bailout("Error: {0} appears to have an 'upstream' branch, " \
-                "indicating a gbp.".format(repo))
-    else:
-        info(' pass', use_prefix=False)
 
 
 def get_versions_from_upstream_tag(tag):

@@ -10,7 +10,6 @@ from .. util import execute_command
 from .. util import print_exc
 from .. logging import error
 from .. logging import debug
-from .. git import get_commit_hash
 from .. git import get_current_branch
 from .. git import has_changes
 from .. git import inbranch
@@ -21,6 +20,12 @@ try:
 except ImportError:
     error("catkin_pkg was not detected, please install it.", file=sys.stderr)
     sys.exit(1)
+
+try:
+    import rospkg
+except ImportError:
+    print("rospkg was not detected, please install it.", file=sys.stderr)
+    sys.exit(2)
 
 _patch_config_keys = [
     'parent',    # The name of the parent reference
@@ -33,15 +38,24 @@ _patch_config_keys.sort()
 
 
 def get_version(directory=None):
-    packages = find_packages(basepath=directory if directory else os.getcwd())
+    basepath = directory if directory else os.getcwd()
+    packages = find_packages(basepath=basepath)
+    if type(packages) != dict or packages == {}:
+        debug("get_version: didn't find packages, looking for stacks")
+        stack_path = os.path.join(basepath, 'stack.xml')
+        if os.path.exists(stack_path):
+            stack = rospkg.stack.parse_stack_file(stack_path)
+            return stack.version
+        else:
+            error("Version could not be determined.")
+            sys.exit(1)
     try:
-        version = verify_equal_package_versions(packages.values())
+        return verify_equal_package_versions(packages.values())
     except RuntimeError as err:
         print_exc(traceback.format_exc())
         error("Releasing multiple packages with different versions is "
                 "not supported: " + str(err))
         sys.exit(1)
-    return version
 
 
 def update_tag(version=None, force=True, directory=None):
@@ -88,6 +102,7 @@ def get_patch_config(patches_branch, directory=None):
                     print_exc(traceback.format_exc())
                     error("Failed to get patches info: " + str(err))
                     return None
+        debug("get_patch_config: config -> " + str(config))
         return config
     return fn()
 

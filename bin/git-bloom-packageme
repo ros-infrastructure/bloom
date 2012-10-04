@@ -1,0 +1,78 @@
+#!/usr/bin/env python
+# Software License Agreement (BSD License)
+#
+# Copyright (c) 2012, Willow Garage, Inc.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+#  * Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#  * Redistributions in binary form must reproduce the above
+#    copyright notice, this list of conditions and the following
+#    disclaimer in the documentation and/or other materials provided
+#    with the distribution.
+#  * Neither the name of Willow Garage, Inc. nor the names of its
+#    contributors may be used to endorse or promote products derived
+#    from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+"""
+Generates a package.xml file for non-catkin packages getting released
+"""
+
+import os
+import sys
+import argparse
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="""\
+Generates a package.xml file for non-catkin packages getting released\
+""")
+    parser.add_argument('name', help="name of the package")
+    parser.add_argument('version', help="version of the package")
+    args = parser.parse_args()
+    template = """\
+<?xml version="1.0"?>
+<package>
+  <name>{name}</name>
+  <version>{version}</version>
+  <description></description>
+  <maintainer email="______FILL_ME_OUT______">\
+______FILL_ME_OUT______</maintainer>
+  <license>______FILL_ME_OUT______</license>
+
+  <url type="website">______FILL_ME_OUT______</url>
+  <url type="bugtracker">______FILL_ME_OUT______</url>
+  <url type="repository">______FILL_ME_OUT______</url>
+
+  <author>______FILL_ME_OUT______</author>
+
+  <build_depend>______FILL_ME_OUT______</build_depend>
+
+  <buildtool_depend>cmake</buildtool_depend>
+
+  <run_depend>______FILL_ME_OUT______</run_depend>
+</package>
+"""
+    template = template.format(**{'name': args.name, 'version': args.version})
+    if os.path.exists('package.xml'):
+        print("package.xml exists, exiting.")
+        sys.exit(1)
+    with open('package.xml', 'w+') as f:
+        f.write(template)
+    print("Ok, package.xml created, now fill out the missing bits.")

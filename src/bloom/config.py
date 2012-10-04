@@ -53,7 +53,8 @@ from . git import inbranch
 
 def check_git_init():
     cmd = 'git show-ref --heads'
-    result = execute_command(cmd, shell=True, autofail=False)
+    result = execute_command(cmd, shell=True, autofail=False,
+                             silent_error=True)
     if result != 0:
         info("Freshly initialized git repository detected.")
         info("An initial empty commit is going to be made.")
