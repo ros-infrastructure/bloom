@@ -286,7 +286,8 @@ def process_package_xml(args, directory=None):
     build_deps = (package.build_depends + package.buildtool_depends)
     data['BuildDepends'] = set([d.name for d in build_deps])
 
-    print("BuildDepends is %s for %s, from %s" % (data['BuildDepends'], package.name, xml_path))
+    print("BuildDepends is %s for %s, from %s" % \
+          (data['BuildDepends'], package.name, xml_path))
 
     maintainers = []
     for m in package.maintainers:
