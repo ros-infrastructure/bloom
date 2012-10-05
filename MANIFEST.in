@@ -1,1 +1,1 @@
-recursive-include src/bloom/resources *.em
+recursive-include bloom/resources *.em
