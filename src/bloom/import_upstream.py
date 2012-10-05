@@ -250,33 +250,34 @@ def import_upstream(cwd, tmp_dir, args):
     checkout_url = upstream_repo
     checkout_ver = ver
 
-    # Handle svn
-    if upstream_type == 'svn':
-        if ver == '':
-            checkout_url = upstream_repo + '/trunk'
-        else:
-            checkout_url = upstream_repo + '/branches/' + ver
-        checkout_ver = ''
-        debug("Checking out from url {0}".format(checkout_url))
-    else:
-        debug("Checking out branch "
-          "({0}) from url {1}".format(checkout_ver, checkout_url))
-
-    # XXX TODO: Need to validate if ver is valid for the upstream repo...
-    # see: https://github.com/vcstools/vcstools/issues/4
-    if not upstream_client.checkout(checkout_url, checkout_ver):
+    if not args.not_catkin:
+        # Handle svn
         if upstream_type == 'svn':
-            error(
-                "Could not checkout upstream repostiory "
-                "({0})".format(checkout_url)
-            )
+            if ver == '':
+                checkout_url = upstream_repo + '/trunk'
+            else:
+                checkout_url = upstream_repo + '/branches/' + ver
+            checkout_ver = ''
+            debug("Checking out from url {0}".format(checkout_url))
         else:
-            error(
-                "Could not checkout upstream repostiory "
-                "({0})".format(checkout_url)
-              + " to branch ({0})".format(ver)
-            )
-        return 1
+            debug("Checking out branch "
+              "({0}) from url {1}".format(checkout_ver, checkout_url))
+
+        # XXX TODO: Need to validate if ver is valid for the upstream repo...
+        # see: https://github.com/vcstools/vcstools/issues/4
+        if not upstream_client.checkout(checkout_url, checkout_ver):
+            if upstream_type == 'svn':
+                error(
+                    "Could not checkout upstream repostiory "
+                    "({0})".format(checkout_url)
+                )
+            else:
+                error(
+                    "Could not checkout upstream repostiory "
+                    "({0})".format(checkout_url)
+                  + " to branch ({0})".format(ver)
+                )
+            return 1
 
     # Get upstream meta data
     if args.not_catkin:
