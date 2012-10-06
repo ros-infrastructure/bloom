@@ -32,7 +32,8 @@
 
 from __future__ import print_function
 
-import os
+from bloom.logging import debug
+from bloom.logging import info
 
 
 class BloomGenerator(object):
@@ -40,35 +41,49 @@ class BloomGenerator(object):
     Abstract generator class, from which all bloom generators inherit.
     """
     generator_type = None
+    title = 'no title'
+    description = None
+    help = None
 
-    def __init__(self, title, description):
-        self.__title = title
-        self.__description = description
-        self.__arguments = {}
+    def __init__(self, title=None, description=None, help=None):
+        self.title = title if title is not None else self.generator_type
+        desc = description
+        self.description = desc if desc is not None else self.description
+        self.help = help if help is not None else self.help
 
-    def add_argument(self, *args, **kwargs):
+    def prepare_arguments(self, parser):
         """
-        Adds argparse arguments to the generator
+        Argument preparation hook, should be implemented in child class
 
-        See: http://docs.python.org/dev/library/argparse.html#the-\
-        add-argument-method
-        """
-        self.__arguments[args] = kwargs
+        Default arguments are added by this built-in base class method.
+        The child class should call prepare_arguments of the base class
+        for the default arguments after adding its own.
 
-    def get_arguments(self):
+        :param parser: argparse.ArgumentParser on which to call add_argument()
         """
-        Returns the accumulated argparse arguments
+        group = parser.add_argument_group('common')
+        add = group.add_argument
+        add('-y', '--non-interactive', default=False, action='store_true',
+            help="runs without user interaction")
 
-        :returns: a dict of args and kwargs for argparse's add_argument
+    def handle_arguments(self, args):
         """
-        return self.__arguments
+        Hook to handle parsed arguments from argparse
+        """
+        debug("BloomGenerator.handle_arguments: got args -> " + str(args))
+
+    def summarize(self):
+        """
+        Summarize the command, consider listing configurations here
+        """
+        info("Running " + self.title + " generator")
 
     def branches(self):
         """
         Return True to cause a branching (and patching) step, default is True
 
-        OVerride this to return False if this generator only runs on top of an
-        existing branch and does not required separate patches.
+        Override this to return False if this generator only runs on top of an
+        existing branch and does not require separate patches.
 
         :returns: True to cause branching (and patching), False to skip it
         """
@@ -100,13 +115,15 @@ class BloomGenerator(object):
 
 
 def list_generators(this_file=None):
+    import os
     if this_file is None:
         try:
             this_file = __file__
         except NameError:
             return []
-    if not this_file.endswith('__init__.py'):
-        raise RuntimeError("list_generators must be called in a package")
+    if this_file.split('/')[-1] not in ['__init__.py', '__init__.pyc']:
+        raise RuntimeError("list_generators must be called in a package: " + \
+                           this_file)
     this_location = os.path.dirname(os.path.abspath(this_file))
     modules = []  # Actually any modules or sub-pacakges in this package
     for item in os.listdir(this_location):
@@ -129,10 +146,18 @@ def load_generator_module(generator_name):
 
 
 def load_generator(load_module, generator_name):
+    # Load the module
     module = load_module(generator_name)
     if module is None:
         return None
-    generator_class = generator_name.capitalize() + 'Generator'
+    # Find the generator class
+    generator_class = None
+    for item in dir(module):
+        if item.lower() == (generator_name + 'generator').lower():
+            generator_class = item
+    if generator_class is None:
+        raise RuntimeError("Could not find a generator class for the " + \
+                           generator_name + " generator.")
     exec('generator = module.' + generator_class)
     locals()['generator'].generator_type = generator_name
     return locals()['generator']
@@ -143,31 +168,3 @@ if __name__ == '__main__':
     for b in a:
         g = load_generator(load_generator_module, b)
         print('  ' + str(g.generator_type))
-
-# P
-# a
-# d
-# d
-# i
-# n
-# g
-# .
-# .
-# .
-# .
-# .
-# .
-# .
-# .
-# .
-# .
-# .
-# .
-# .
-# .
-# .
-# .
-# .
-# .
-# .
-pass
