@@ -36,18 +36,17 @@ Provides common utility functions for bloom.
 
 from __future__ import print_function
 
-import sys
 import os
+import sys
 
 from subprocess import CalledProcessError
 from subprocess import PIPE
 from subprocess import Popen
 
-from . logging import ansi
-from . logging import debug
-from . logging import enable_debug
-from . logging import error
-from . logging import info
+from bloom.logging import ansi
+from bloom.logging import debug
+from bloom.logging import enable_debug
+from bloom.logging import error
 
 try:
     import rospkg.stack
