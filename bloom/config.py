@@ -36,19 +36,19 @@ import os
 import sys
 import argparse
 
-from . util import add_global_arguments
-from . util import handle_global_arguments
-from . util import maybe_continue, execute_command, ansi
-from . logging import debug
-from . logging import info
-from . logging import error
-from . git import branch_exists
-from . git import checkout
-from . git import create_branch
-from . git import get_current_branch
-from . git import get_root
-from . git import has_changes
-from . git import inbranch
+from bloom.util import add_global_arguments
+from bloom.util import handle_global_arguments
+from bloom.util import maybe_continue, execute_command, ansi
+from bloom.logging import debug
+from bloom.logging import info
+from bloom.logging import error
+from bloom.git import branch_exists
+from bloom.git import checkout
+from bloom.git import create_branch
+from bloom.git import get_current_branch
+from bloom.git import get_root
+from bloom.git import has_changes
+from bloom.git import inbranch
 
 
 def check_git_init():

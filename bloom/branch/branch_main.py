@@ -5,15 +5,16 @@ import traceback
 import argparse
 from subprocess import CalledProcessError
 
-from .. git import get_current_branch, get_root
-from .. logging import ansi
-from .. logging import error
-from .. logging import info
-from .. util import add_global_arguments
-from .. util import handle_global_arguments
-from .. util import print_exc
+from bloom.git import get_current_branch
+from bloom.git import get_root
+from bloom.logging import ansi
+from bloom.logging import error
+from bloom.logging import info
+from bloom.util import add_global_arguments
+from bloom.util import handle_global_arguments
+from bloom.util import print_exc
 
-from . branch import branch_packages
+from bloom.branch import branch_packages
 
 
 def get_parser():

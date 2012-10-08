@@ -32,17 +32,17 @@
 
 import argparse
 
-from .. branch.branch import branch_packages
-from .. generators.debian.main_all import main as gendeb_all_main
+from bloom.branch.branch import branch_packages
+from bloom.generators.debian.main_all import main as gendeb_all_main
 
-from .. util import add_global_arguments
-from .. util import handle_global_arguments
-from .. logging import ansi
-from .. logging import info
-from .. logging import error
-from .. logging import push_log_prefix
-from .. logging import pop_log_prefix
-from .. logging import warning
+from bloom.util import add_global_arguments
+from bloom.util import handle_global_arguments
+from bloom.logging import ansi
+from bloom.logging import info
+from bloom.logging import error
+from bloom.logging import push_log_prefix
+from bloom.logging import pop_log_prefix
+from bloom.logging import warning
 
 
 def get_argument_parser():

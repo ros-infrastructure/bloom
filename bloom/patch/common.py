@@ -5,14 +5,16 @@ import sys
 import subprocess
 import traceback
 
-from .. util import check_output
-from .. util import execute_command
-from .. util import print_exc
-from .. logging import error
-from .. logging import debug
-from .. git import get_current_branch
-from .. git import has_changes
-from .. git import inbranch
+from bloom.git import get_current_branch
+from bloom.git import has_changes
+from bloom.git import inbranch
+
+from bloom.logging import error
+from bloom.logging import debug
+
+from bloom.util import check_output
+from bloom.util import execute_command
+from bloom.util import print_exc
 
 try:
     from catkin_pkg.packages import find_packages

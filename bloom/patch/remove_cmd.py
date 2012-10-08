@@ -3,19 +3,19 @@ from __future__ import print_function
 import sys
 from argparse import ArgumentParser
 
-from .. util import add_global_arguments
-from .. util import execute_command
-from .. util import handle_global_arguments
-from .. logging import log_prefix
-from .. logging import error
-from .. logging import info
-from .. git import branch_exists
-from .. git import checkout
-from .. git import get_current_branch
-from .. git import track_branches
+from bloom.util import add_global_arguments
+from bloom.util import execute_command
+from bloom.util import handle_global_arguments
+from bloom.logging import log_prefix
+from bloom.logging import error
+from bloom.logging import info
+from bloom.git import branch_exists
+from bloom.git import checkout
+from bloom.git import get_current_branch
+from bloom.git import track_branches
 
-from . common import get_patch_config
-from . common import update_tag
+from bloom.patch.common import get_patch_config
+from bloom.patch.common import update_tag
 
 
 @log_prefix('[git-bloom-patch remove]: ')

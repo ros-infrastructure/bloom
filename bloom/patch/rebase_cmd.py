@@ -6,27 +6,26 @@ import traceback
 import argparse
 import shutil
 
-from .. util import add_global_arguments
-from .. util import execute_command
-from .. util import handle_global_arguments
-from .. util import print_exc
-from .. logging import debug
-from .. logging import error
-from .. logging import info
-from .. logging import log_prefix
-from .. logging import warning
-from .. git import ensure_clean_working_env
-from .. git import get_commit_hash
-from .. git import get_current_branch
-from .. git import get_root
-from .. git import has_changes
-from .. git import inbranch
+from bloom.util import add_global_arguments
+from bloom.util import execute_command
+from bloom.util import handle_global_arguments
+from bloom.util import print_exc
+from bloom.logging import debug
+from bloom.logging import error
+from bloom.logging import log_prefix
+from bloom.logging import warning
+from bloom.git import ensure_clean_working_env
+from bloom.git import get_commit_hash
+from bloom.git import get_current_branch
+from bloom.git import get_root
+from bloom.git import has_changes
+from bloom.git import inbranch
 
-from . import_cmd import import_patches
-from . trim_cmd import trim
-from . common import get_patch_config
-from . common import set_patch_config
-from . common import update_tag
+from bloom.patch.import_cmd import import_patches
+from bloom.patch.trim_cmd import trim
+from bloom.patch.common import get_patch_config
+from bloom.patch.common import set_patch_config
+from bloom.patch.common import update_tag
 
 
 @log_prefix('[git-bloom-patch rebase]: ')

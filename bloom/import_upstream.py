@@ -40,30 +40,30 @@ import traceback
 
 from subprocess import CalledProcessError
 
-from . util import check_output
+from bloom.util import check_output
 
-from . util import add_global_arguments
-from . util import handle_global_arguments
-from . util import execute_command
+from bloom.util import add_global_arguments
+from bloom.util import handle_global_arguments
+from bloom.util import execute_command
 from bloom.util import parse_stack_xml
-from . util import create_temporary_directory
-from . util import get_versions_from_upstream_tag
+from bloom.util import create_temporary_directory
+from bloom.util import get_versions_from_upstream_tag
 from bloom.util import segment_version
-from . util import print_exc
-from . git import branch_exists
-from . git import checkout
+from bloom.util import print_exc
+from bloom.git import branch_exists
+from bloom.git import checkout
 from bloom.git import create_branch
-from . git import get_current_branch
-from . git import get_last_tag_by_date
-from . git import get_root
-from . git import track_branches
+from bloom.git import get_current_branch
+from bloom.git import get_last_tag_by_date
+from bloom.git import get_root
+from bloom.git import track_branches
 
-from . logging import debug
-from . logging import error
-from . logging import info
-from . logging import log_prefix
-from . logging import warning
-from logging import ansi
+from bloom.logging import debug
+from bloom.logging import error
+from bloom.logging import info
+from bloom.logging import log_prefix
+from bloom.logging import warning
+from bloom.logging import ansi
 
 from bloom import gbp
 

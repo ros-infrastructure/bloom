@@ -5,15 +5,15 @@ import os
 import traceback
 from subprocess import CalledProcessError
 
-from .. util import print_exc
-from .. logging import error
-from .. git import get_root
+from bloom.util import print_exc
+from bloom.logging import error
+from bloom.git import get_root
 
-from . import export_cmd
-from . import import_cmd
-from . import remove_cmd
-from . import rebase_cmd
-from . import trim_cmd
+from bloom.patch import export_cmd
+from bloom.patch import import_cmd
+from bloom.patch import remove_cmd
+from bloom.patch import rebase_cmd
+from bloom.patch import trim_cmd
 
 
 def usage(exit=True):

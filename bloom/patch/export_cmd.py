@@ -3,17 +3,19 @@ from __future__ import print_function
 import sys
 from argparse import ArgumentParser
 
-from .. util import execute_command
-from .. logging import error
-from .. logging import info
-from .. logging import log_prefix
-from .. git import branch_exists
-from .. git import checkout
-from .. git import get_current_branch
-from .. git import has_changes
+from bloom.git import branch_exists
+from bloom.git import checkout
+from bloom.git import get_current_branch
+from bloom.git import has_changes
 
-from . common import get_patch_config
-from . common import list_patches
+from bloom.logging import error
+from bloom.logging import info
+from bloom.logging import log_prefix
+
+from bloom.util import execute_command
+
+from bloom.patch.common import get_patch_config
+from bloom.patch.common import list_patches
 
 
 @log_prefix('[git-bloom-patch export]: ')

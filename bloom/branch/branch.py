@@ -4,27 +4,27 @@ import os
 import sys
 import traceback
 
-from .. util import execute_command
-from .. util import maybe_continue
-from .. util import parse_stack_xml
-from .. util import print_exc
-from .. logging import ansi
-from .. logging import error
-from .. logging import log_prefix
-from .. logging import info
-from .. logging import warning
-from .. git import checkout
-from .. git import create_branch
-from .. git import branch_exists
-from .. git import ensure_clean_working_env
-from .. git import get_commit_hash
-from .. git import get_current_branch
-from .. git import track_branches
+from bloom.util import execute_command
+from bloom.util import maybe_continue
+from bloom.util import parse_stack_xml
+from bloom.util import print_exc
+from bloom.logging import ansi
+from bloom.logging import error
+from bloom.logging import log_prefix
+from bloom.logging import info
+from bloom.logging import warning
+from bloom.git import checkout
+from bloom.git import create_branch
+from bloom.git import branch_exists
+from bloom.git import ensure_clean_working_env
+from bloom.git import get_commit_hash
+from bloom.git import get_current_branch
+from bloom.git import track_branches
 
-from .. patch.common import set_patch_config
-from .. patch.common import get_patch_config
-from .. patch.rebase_cmd import rebase_patches
-from .. patch.trim_cmd import trim
+from bloom.patch.common import set_patch_config
+from bloom.patch.common import get_patch_config
+from bloom.patch.rebase_cmd import rebase_patches
+from bloom.patch.trim_cmd import trim
 
 try:
     from catkin_pkg.packages import find_packages
