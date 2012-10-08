@@ -80,36 +80,38 @@ class BloomGenerator(object):
 
     def branches(self):
         """
-        Return True to cause a branching (and patching) step, default is True
+        Return a list of tuples, each representing parameters for branching.
 
-        Override this to return False if this generator only runs on top of an
-        existing branch and does not require separate patches.
+        Override this to return something other than [] if this generator needs to produce branches.
 
-        :returns: True to cause branching (and patching), False to skip it
+        The tuples can either be singular (prefix,), contain two elements
+        (source, prefix), or contain three elements (source, prefix, name)
+
+        :returns: list of tuples containing arguments for git-bloom-branch
         """
-        return True
+        return []
 
     def pre_branch(self):
         """
-        Pre-branching hook, does not get called if branches() returns False
+        Pre-branching hook, does not get called if branches() returns []
         """
         pass
 
     def post_branch(self):
         """
-        Post-branching hook, does not get called if branches() returns False
+        Post-branching hook, does not get called if branches() returns []
         """
         pass
 
     def pre_patch(self):
         """
-        Pre-patching hook, does not get called if branches() returns False
+        Pre-patching hook, does not get called if branches() returns []
         """
         pass
 
     def post_patch(self):
         """
-        Post-patching hook, does not get called if branches() returns False
+        Post-patching hook, does not get called if branches() returns []
         """
         pass
 
