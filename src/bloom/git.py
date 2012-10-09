@@ -41,6 +41,7 @@ from subprocess import PIPE, CalledProcessError
 from . logging import debug
 from . logging import error
 from . logging import warning
+import functools
 
 from . util import execute_command
 from . util import check_output
@@ -244,35 +245,49 @@ def branch_exists(branch_name, local_only=False, directory=None):
     return False
 
 
-def inbranch(branch, directory=None):
+class ContextDecorator(object):
+    def __call__(self, f):
+        @functools.wraps(f)
+        def decorated(*args, **kwds):
+            with self:
+                return f(*args, **kwds)
+        return decorated
+
+
+class inbranch(ContextDecorator):
     """
-    Decorator for doing things in a different branch safely.
+    Safely switches to a given branch on entry and switches back on exit.
 
-    Functions decorated with ``@inbranch('<target branch>')`` will switch to
-    the target branch and back to the current branch no matter what the
-    decorated function does (unless it deletes the current branch).
+    Combination decorator/context manager, therefore it can be used like:
 
-    :param branch: branch to switch to before executing the decorated function
-    :param directory: directory in which to run this decorator.
+        @branch('some_git_branch')
+        def foo():
+            pass
 
-    :returns: a decorated function
+    Or in conjunction with the 'with' statement:
 
-    :raises: subprocess.CalledProcessError if either git checkout call fails
+        with branch('some_git_branch'):
+            foo()
+
+    Example:
+        with branch('my_branch'):
+            do_stuff_in_branch()
+
+    :param branch_name: name of the branch to switch to
+    :param directory: directory in which to run the branch change
+
+    :raises: subprocess.CalledProcessError if either 'git checkout' call fails
     """
-    current_branch = get_current_branch()
+    def __init__(self, branch, directory=None):
+        self.branch = branch
+        self.directory = directory
 
-    def decorator(fn):
-        def wrapper(*args, **kwargs):
-            checkout(branch, raise_exc=True, directory=directory)
-            try:
-                result = fn(*args, **kwargs)
-            finally:
-                checkout(current_branch, raise_exc=True, directory=directory)
-            return result
+    def __enter__(self):
+        self.current_branch = get_current_branch(self.directory)
+        checkout(self.branch, raise_exc=True, directory=self.directory)
 
-        return wrapper
-
-    return decorator
+    def __exit__(self):
+        checkout(self.current_branch, raise_exc=True, directory=self.directory)
 
 
 def get_commit_hash(reference, directory=None):
