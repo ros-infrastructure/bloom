@@ -39,7 +39,7 @@ import os
 from subprocess import PIPE
 from subprocess import CalledProcessError
 
-from contextlib import contextmanager
+import functools
 
 from bloom.logging import debug
 from bloom.logging import error
@@ -247,12 +247,29 @@ def branch_exists(branch_name, local_only=False, directory=None):
     return False
 
 
-@contextmanager
-def branch(branch_name, directory=None):
+class ContextDecorator(object):
+    def __call__(self, f):
+        @functools.wraps(f)
+        def decorated(*args, **kwds):
+            with self:
+                return f(*args, **kwds)
+        return decorated
+
+
+class inbranch(ContextDecorator):
     """
     Safely switches to a given branch on entry and switches back on exit.
 
-    Context managed function to be used in along side the 'with' statement.
+    Combination decorator/context manager, therefore it can be used like:
+
+        @branch('some_git_branch')
+        def foo():
+            pass
+
+    Or in conjunction with the 'with' statement:
+
+        with branch('some_git_branch'):
+            foo()
 
     Example:
         with branch('my_branch'):
@@ -263,35 +280,16 @@ def branch(branch_name, directory=None):
 
     :raises: subprocess.CalledProcessError if either 'git checkout' call fails
     """
-    current_branch = get_current_branch(directory)
-    checkout(branch_name, raise_exc=True, directory=directory)
-    try:
-        yield
-    finally:
-        checkout(current_branch, raise_exc=True, directory=directory)
+    def __init__(self, branch, directory=None):
+        self.branch = branch
+        self.directory = directory
 
+    def __enter__(self):
+        self.current_branch = get_current_branch(self.directory)
+        checkout(self.branch, raise_exc=True, directory=self.directory)
 
-def inbranch(branch_name, directory=None):
-    """
-    Decorator for doing things in a different branch safely.
-
-    Functions decorated with ``@inbranch('<target branch>')`` will switch to
-    the target branch and back to the current branch no matter what the
-    decorated function does (unless it deletes the current branch).
-
-    :param branch_name: branch to switch to before executing the function
-    :param directory: directory in which to run this decorator.
-
-    :returns: a decorated function
-
-    :raises: subprocess.CalledProcessError if either git checkout call fails
-    """
-    def decorator(fn):
-        def wrapper(*args, **kwargs):
-            with branch(branch_name):
-                return fn(*args, **kwargs)
-        return wrapper
-    return decorator
+    def __exit__(self):
+        checkout(self.current_branch, raise_exc=True, directory=self.directory)
 
 
 def get_commit_hash(reference, directory=None):
