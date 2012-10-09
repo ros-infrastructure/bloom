@@ -49,6 +49,7 @@ from bloom.logging import log_prefix
 from bloom.logging import warning
 
 from bloom.commands.patch.export_cmd import export_patches
+from bloom.commands.patch.import_cmd import import_patches
 from bloom.commands.patch.rebase_cmd import rebase_patches
 
 from bloom.util import add_global_arguments
@@ -118,31 +119,35 @@ def run_generator(generator, args):
             try_execute('generator post_branch', msg,
                         generator.post_branch, (destination, source))
 
-            ### Run pre - export patches - rebase - post
-            destination_patch_branch = 'patches/' + destination
+            ### Run pre - export patches - post
             # Pre patch
-            try_execute('generator pre_patch', msg,
-                        generator.pre_patch, (destination_patch_branch,))
+            try_execute('generator pre_export_patches', msg,
+                        generator.pre_export_patches, (destination,))
             # Export patches
             try_execute('git-bloom-patch export', msg, export_patches)
+            # Post branch
+            try_execute('generator post_export_patches', msg,
+                        generator.post_export_patches, (destination,))
+
+            ### Run pre - rebase - post
+            # Pre patch
+            try_execute('generator pre_patch', msg,
+                        generator.pre_patch, (destination,))
             # Rebase
             try_execute('git-bloom-patch rebase', msg, rebase_patches)
             # Post branch
             try_execute('generator post_patch', msg,
-                        generator.post_patch, (destination_patch_branch,))
+                        generator.post_patch, (destination,))
 
             ### Run pre - patch - post
-            destination_patch_branch = 'patches/' + destination
             # Pre patch
             try_execute('generator pre_patch', msg,
-                        generator.pre_patch, (destination_patch_branch,))
-            # Export patches
-            try_execute('git-bloom-patch export', msg, export_patches)
-            # Rebase
-            try_execute('git-bloom-patch rebase', msg, rebase_patches)
+                        generator.pre_patch, (destination,))
+            # Import patches
+            try_execute('git-bloom-patch import', msg, import_patches)
             # Post branch
             try_execute('generator post_patch', msg,
-                        generator.post_patch, (destination_patch_branch,))
+                        generator.post_patch, (destination,))
         except CommandFailed as err:
             return err.returncode
 

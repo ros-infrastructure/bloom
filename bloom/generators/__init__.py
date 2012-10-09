@@ -107,6 +107,26 @@ class BloomGenerator(object):
         """
         return 0
 
+    def pre_export_patches(self, branch_name):
+        """
+        Pre-patch-export hook, does not get called if branches() returns []
+
+        :param branch_name: name of the branch patches are being exported from
+
+        :returns: return code, return 0 or None for OK, anythign else on error
+        """
+        return 0
+
+    def post_export_patches(self, branch_name):
+        """
+        Post-patch-export hook, does not get called if branches() returns []
+
+        :param branch_name: name of the branch patches are being exported from
+
+        :returns: return code, return 0 or None for OK, anythign else on error
+        """
+        return 0
+
     def pre_rebase(self, branch_name):
         """
         Pre-rebase hook, does not get called it branches() return []
@@ -127,21 +147,21 @@ class BloomGenerator(object):
         """
         return 0
 
-    def pre_patch(self, patches_branch_name):
+    def pre_patch(self, branch_name):
         """
         Pre-patching hook, does not get called if branches() returns []
 
-        :param patches_branch_name: name of the patches branch being used
+        :param branch_name: name of the branch being patched
 
         :returns: return code, return 0 or None for OK, anythign else on error
         """
         return 0
 
-    def post_patch(self, patches_branch_name):
+    def post_patch(self, branch_name):
         """
         Post-patching hook, does not get called if branches() returns []
 
-        :param patches_branch_name: name of the patches branch being used
+        :param branch_name: name of the branch being patched
 
         :returns: return code, return 0 or None for OK, anythign else on error
         """

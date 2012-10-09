@@ -1,11 +1,72 @@
 from __future__ import print_function
 
+import os
+import sys
+
 from bloom.generators import BloomGenerator
 
+from bloom.git import checkout
 from bloom.git import inbranch
 from bloom.git import get_current_branch
 
+from bloom.logging import ansi
+from bloom.logging import error
 from bloom.logging import info
+from bloom.logging import warning
+
+try:
+    from catkin_pkg.packages import find_packages
+    from catkin_pkg.packages import verify_equal_package_versions
+except ImportError:
+    error("catkin_pkg was not detected, please install it.",
+          file=sys.stderr)
+    sys.exit(1)
+
+has_rospkg = False
+try:
+    import rospkg
+    has_rospkg = True
+except ImportError:
+    warning("rospkg was not detected, stack.xml discovery is disabled",
+            file=sys.stderr)
+
+
+def get_meta_data(source_branch, name=None, directory=None):
+    # Ensure we are on the correct src branch
+    current_branch = get_current_branch(directory)
+    if current_branch != source_branch:
+        info("Changing to specified source branch " + source_branch)
+        ret = checkout(source_branch, directory=directory)
+        if ret != 0:
+            return ret
+
+    ## Determine the branching method
+    # First check for arguments
+    if name is not None:
+        info("Using specified name " + ansi('boldon') + name + \
+             ansi('reset'))
+        return name, None, 'name'
+    # Check for package.xml(s)
+    repo_dir = directory if directory else os.getcwd()
+    packages = find_packages(repo_dir)
+    if type(packages) == dict and packages != {}:
+        info("Found " + str(len(packages)) + " packages.")
+        version = verify_equal_package_versions(packages.values())
+        return [p.name for p in packages.values()], version, 'package.xml'
+    # Check for stack.xml
+    if not has_rospkg:
+        error("No package.xml(s) found, and no name specified with "
+              "'--package-name', aborting.")
+        return 1
+    stack_path = os.path.join(repo_dir, 'stack.xml')
+    if os.path.exists(stack_path):
+        info("Found stack.xml.")
+        stack = rospkg.stack.parse_stack_file(stack_path)
+        return stack.name, stack.version, 'stack.xml'
+    # Otherwise we have a problem
+    error("No package.xml(s) or stack.xml found, and not name "
+          "specified with '--package-name', aborting.")
+    return 1
 
 
 class ReleaseGenerator(BloomGenerator):
@@ -20,14 +81,17 @@ each package in the upstream repository, so the source branch should be set to
     def prepare_arguments(self, parser):
         # Add command line arguments for this generator
         add = parser.add_argument
-        add('-s', '--src-branch', default=None,
+        add('-s', '--source-branch', default=None, dest='src',
             help="git branch to branch from (defaults to 'upstream')")
+        add('-n', '--package-name', default=None, dest='name',
+            help="name of package being released (use if non catkin project)")
         add('prefix', help="prefix for target branch name(s)")
         BloomGenerator.prepare_arguments(self, parser)
 
     def handle_arguments(self, args):
         self.interactive = not args.non_interactive
         self.src = args.src if args.src is not None else get_current_branch()
+        self.name = args.name
 
     def summarize(self):
         info("Generating release branches")
@@ -35,7 +99,13 @@ each package in the upstream repository, so the source branch should be set to
 
     def detect_branches(self):
         with inbranch(self.src):
-            pass
+            meta_data = get_meta_data(self.src, self.name)
+            if type(meta_data) not in [list, tuple]:
+                return meta_data
+            name, version, package_type = meta_data
+            self.version = version
+            self.package_type = package_type
+            return name if type(name) is list else list(name)
 
     def branches(self):
         self.branches = self.detect_branches()
