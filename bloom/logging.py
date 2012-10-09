@@ -2,6 +2,8 @@ from __future__ import print_function
 
 import sys
 
+import functools
+
 _ansi = {}
 _quiet = False
 _debug = False
@@ -101,17 +103,24 @@ def pop_log_prefix():
     _log_prefix = _get_log_prefix()
 
 
-def log_prefix(prefix):
-    def decorator(fn):
-        def wrapper(*args, **kwargs):
-            push_log_prefix(prefix)
-            try:
-                result = fn(*args, **kwargs)
-            finally:
-                pop_log_prefix()
-            return result
-        return wrapper
-    return decorator
+class ContextDecorator(object):
+    def __call__(self, f):
+        @functools.wraps(f)
+        def decorated(*args, **kwds):
+            with self:
+                return f(*args, **kwds)
+        return decorated
+
+
+class log_prefix(ContextDecorator):
+    def __init__(self, prefix):
+        self.prefix = prefix
+
+    def __enter__(self):
+        push_log_prefix(self.prefix)
+
+    def __exit__(self):
+        pop_log_prefix()
 
 
 def debug(msg, file=sys.stdout, end='\n', use_prefix=True):
