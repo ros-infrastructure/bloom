@@ -55,16 +55,9 @@ class BloomGenerator(object):
         """
         Argument preparation hook, should be implemented in child class
 
-        Default arguments are added by this built-in base class method.
-        The child class should call prepare_arguments of the base class
-        for the default arguments after adding its own.
-
         :param parser: argparse.ArgumentParser on which to call add_argument()
         """
-        group = parser.add_argument_group('common')
-        add = group.add_argument
-        add('-y', '--non-interactive', default=False, action='store_true',
-            help="runs without user interaction")
+        pass
 
     def handle_arguments(self, args):
         """
@@ -82,38 +75,77 @@ class BloomGenerator(object):
         """
         Return a list of tuples, each representing parameters for branching.
 
-        Override this to return something other than [] if this generator needs to produce branches.
+        Override this to return something other than [] if this generator
+        needs to produce branches.
 
-        The tuples can either be singular (prefix,), contain two elements
-        (source, prefix), or contain three elements (source, prefix, name)
+        The tuples can either be singular (destination,), or contain two
+        elements (destination, source).
 
         :returns: list of tuples containing arguments for git-bloom-branch
         """
         return []
 
-    def pre_branch(self):
+    def pre_branch(self, destination, source):
         """
         Pre-branching hook, does not get called if branches() returns []
-        """
-        pass
 
-    def post_branch(self):
+        :param destination: destination branch name
+        :param source: source branch name
+
+        :returns: return code, return 0 or None for OK, anythign else on error
+        """
+        return 0
+
+    def post_branch(self, destination, source):
         """
         Post-branching hook, does not get called if branches() returns []
-        """
-        pass
 
-    def pre_patch(self):
+        :param destination: destination branch name
+        :param source: source branch name
+
+        :returns: return code, return 0 or None for OK, anythign else on error
+        """
+        return 0
+
+    def pre_rebase(self, branch_name):
+        """
+        Pre-rebase hook, does not get called it branches() return []
+
+        :param branch_name: name of the branch rebase is being done on
+
+        :returns: return code, return 0 or None for OK, anythign else on error
+        """
+        return 0
+
+    def post_rebase(self, branch_name):
+        """
+        Post-rebase hook, does not get called it branches() return []
+
+        :param branch_name: name of the branch rebase is being done on
+
+        :returns: return code, return 0 or None for OK, anythign else on error
+        """
+        return 0
+
+    def pre_patch(self, patches_branch_name):
         """
         Pre-patching hook, does not get called if branches() returns []
-        """
-        pass
 
-    def post_patch(self):
+        :param patches_branch_name: name of the patches branch being used
+
+        :returns: return code, return 0 or None for OK, anythign else on error
+        """
+        return 0
+
+    def post_patch(self, patches_branch_name):
         """
         Post-patching hook, does not get called if branches() returns []
+
+        :param patches_branch_name: name of the patches branch being used
+
+        :returns: return code, return 0 or None for OK, anythign else on error
         """
-        pass
+        return 0
 
 
 def list_generators(this_file=None):
