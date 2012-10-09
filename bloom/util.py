@@ -48,11 +48,13 @@ from bloom.logging import debug
 from bloom.logging import enable_debug
 from bloom.logging import error
 
+has_rospkg = False
 try:
     import rospkg.stack
+    has_rospkg = True
 except ImportError:
-    error("rospkg was not detected, please install it.", file=sys.stderr)
-    sys.exit(1)
+    warning("rospkg was not detected, stack.xml discovery is disabled",
+            file=sys.stderr)
 
 
 def add_global_arguments(parser):
@@ -179,16 +181,6 @@ def segment_version(full_version):
         bailout('Invalid version element in the stack.xml, expected: ' \
                 '<major>.<minor>.<patch>')
     return version_list
-
-
-def parse_stack_xml(file_path):
-    """
-    Returns a dictionary representation of a stack xml file.
-
-    :param file_path: path to stack xml file to be converted
-    :returns: dictionary representation of the stack xml file
-    """
-    return rospkg.stack.parse_stack_file(file_path)
 
 
 def execute_command(cmd, shell=True, autofail=True, silent=True,

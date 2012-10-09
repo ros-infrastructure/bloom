@@ -45,7 +45,6 @@ from bloom.util import check_output
 from bloom.util import add_global_arguments
 from bloom.util import handle_global_arguments
 from bloom.util import execute_command
-from bloom.util import parse_stack_xml
 from bloom.util import create_temporary_directory
 from bloom.util import get_versions_from_upstream_tag
 from bloom.util import segment_version
@@ -74,6 +73,14 @@ try:
 except ImportError:
     error("vcstools was not detected, please install it.", file=sys.stderr)
     sys.exit(1)
+
+has_rospkg = False
+try:
+    import rospkg
+    has_rospkg = True
+except ImportError:
+    warning("rospkg was not detected, stack.xml discovery is disabled",
+            file=sys.stderr)
 
 
 def convert_catkin_to_bloom(cwd=None):
@@ -184,17 +191,21 @@ def get_upstream_meta(upstream_dir):
         sys.exit(1)
     packages = find_packages(basepath=upstream_dir)
     if packages == {}:
-        info("package.xml(s) not found, looking for stack.xml")
-        if os.path.exists(stack_path):
-            info("stack.xml found")
-            # Assumes you are at the top of the repo
-            stack = parse_stack_xml(stack_path)
-            meta = {}
-            meta['name'] = [stack.name]
-            meta['version'] = stack.version
-            meta['type'] = 'stack.xml'
+        if has_rospkg:
+            info("package.xml(s) not found, looking for stack.xml")
+            if os.path.exists(stack_path):
+                info("stack.xml found")
+                # Assumes you are at the top of the repo
+                stack = rospkg.stack.parse_stack_file(stack_path)
+                meta = {}
+                meta['name'] = [stack.name]
+                meta['version'] = stack.version
+                meta['type'] = 'stack.xml'
+            else:
+                error("Neither stack.xml, nor package.xml(s) were detected.")
+                sys.exit(1)
         else:
-            error("Neither stack.xml, nor package.xml(s) were detected.")
+            error("Package.xml(s) were not detected.")
             sys.exit(1)
     else:
         info("package.xml(s) found")
