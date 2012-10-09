@@ -17,7 +17,6 @@ class DebianGenerator(BloomGenerator):
         add('-i', '--debian-inc', help="debian increment number", default='0')
         add('-s', '--src-branch', default=None,
             help="branch to branch from and create debian")
-        BloomGenerator.prepare_arguments(self, parser)
 
     def handle_arguments(self, args):
         self.interactive = not args.non_interactive
