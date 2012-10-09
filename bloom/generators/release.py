@@ -2,7 +2,7 @@ from __future__ import print_function
 
 from bloom.generators import BloomGenerator
 
-from bloom.git import branch
+from bloom.git import inbranch
 from bloom.git import get_current_branch
 
 from bloom.logging import info
@@ -34,7 +34,7 @@ each package in the upstream repository, so the source branch should be set to
         info("")
 
     def detect_branches(self):
-        with branch(self.src):
+        with inbranch(self.src):
             pass
 
     def branches(self):
