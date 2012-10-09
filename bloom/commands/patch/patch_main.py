@@ -5,9 +5,11 @@ import os
 import traceback
 from subprocess import CalledProcessError
 
-from bloom.util import print_exc
-from bloom.logging import error
 from bloom.git import get_root
+
+from bloom.logging import error
+
+from bloom.util import print_exc
 
 from bloom.patch import export_cmd
 from bloom.patch import import_cmd
