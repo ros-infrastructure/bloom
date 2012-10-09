@@ -5,6 +5,7 @@ from argparse import ArgumentParser
 
 from bloom.git import branch_exists
 from bloom.git import checkout
+from bloom.git import ensure_clean_working_env
 from bloom.git import get_current_branch
 from bloom.git import has_changes
 
@@ -20,6 +21,10 @@ from bloom.patch.common import list_patches
 
 @log_prefix('[git-bloom-patch export]: ')
 def export_patches(directory=None):
+    ### Ensure a clean/valid working environment
+    ret = ensure_clean_working_env(git_status=True, directory=directory)
+    if ret != 0:
+        return ret
     # Get current branch
     current_branch = get_current_branch(directory)
     # Construct the patches branch name
