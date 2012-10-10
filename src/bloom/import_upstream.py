@@ -40,34 +40,36 @@ import traceback
 
 from subprocess import CalledProcessError
 
-from . util import check_output
-
-from . util import add_global_arguments
-from . util import handle_global_arguments
-from . util import execute_command
-from bloom.util import parse_stack_xml
-from . util import create_temporary_directory
-from . util import get_versions_from_upstream_tag
-from bloom.util import segment_version
-from . util import print_exc
-from . git import branch_exists
-from . git import checkout
-from bloom.git import create_branch
-from . git import get_current_branch
-from . git import get_last_tag_by_date
-from . git import get_root
-from . git import track_branches
-
-from . logging import debug
-from . logging import error
-from . logging import info
-from . logging import log_prefix
-from . logging import warning
-from logging import ansi
+from pkg_resources import parse_version
 
 from bloom import gbp
 
-from distutils.version import StrictVersion
+from bloom.git import branch_exists
+from bloom.git import checkout
+from bloom.git import create_branch
+from bloom.git import ensure_clean_working_env
+from bloom.git import get_commit_hash
+from bloom.git import get_current_branch
+from bloom.git import get_last_tag_by_date
+from bloom.git import inbranch
+from bloom.git import show
+from bloom.git import track_branches
+
+from bloom.logging import ansi
+from bloom.logging import error
+from bloom.logging import info
+from bloom.logging import log_prefix
+from bloom.logging import warning
+
+from bloom.util import add_global_arguments
+from bloom.util import check_output
+from bloom.util import create_temporary_directory
+from bloom.util import execute_command
+from bloom.util import get_versions_from_upstream_tag
+from bloom.util import handle_global_arguments
+from bloom.util import parse_stack_xml
+from bloom.util import print_exc
+from bloom.util import segment_version
 
 try:
     from vcstools import VcsClient
@@ -107,12 +109,12 @@ def not_a_bloom_release_repo():
     sys.exit(1)
 
 
-def check_for_bloom(cwd=None):
+def check_for_bloom():
     """
     Checks for the bloom branch, else looks for and converts the catkin branch.
     Then it checks for the bloom branch and that it contains a bloom.conf file.
     """
-    branches = check_output('git branch', shell=True, cwd=cwd)
+    branches = check_output('git branch', shell=True)
     if branches.count('bloom') == 0:
         # There is not bloom branch, check for the legacy catkin branch
         if branches.count('catkin') == 0:
@@ -121,15 +123,13 @@ def check_for_bloom(cwd=None):
         else:
             # Found catkin branch, migrate it to bloom
             info('catkin branch detected, up converting to the bloom branch')
-            convert_catkin_to_bloom(cwd)
+            convert_catkin_to_bloom()
     # Check for bloom.conf
     try:
-        checkout('bloom', directory=cwd)
+        with inbranch('bloom'):
+            if not os.path.exists(os.path.join(os.getcwd(), 'bloom.conf')):
+                not_a_bloom_release_repo()
     except CalledProcessError:
-        not_a_bloom_release_repo()
-    loc = os.path.join(cwd, 'bloom.conf') if cwd is not None else 'bloom.conf'
-    if not os.path.exists(loc):
-        # The repository has not been bloom initialized
         not_a_bloom_release_repo()
 
 
@@ -137,36 +137,20 @@ def parse_bloom_conf(cwd=None):
     """
     Parses the bloom.conf file in the current directory and returns info in it.
     """
-    cmd = 'git config -f bloom.conf bloom.upstream'
+    bloom_conf = show('bloom', 'bloom.conf', directory=cwd)
+    with open('.bloom.conf', 'w+') as f:
+        f.write(bloom_conf)
+    cmd = 'git config -f .bloom.conf bloom.upstream'
     upstream_repo = check_output(cmd, shell=True, cwd=cwd).strip()
-    cmd = 'git config -f bloom.conf bloom.upstreamtype'
+    cmd = 'git config -f .bloom.conf bloom.upstreamtype'
     upstream_type = check_output(cmd, shell=True, cwd=cwd).strip()
     try:
-        cmd = 'git config -f bloom.conf bloom.upstreambranch'
+        cmd = 'git config -f .bloom.conf bloom.upstreambranch'
         upstream_branch = check_output(cmd, shell=True, cwd=cwd).strip()
     except CalledProcessError:
         upstream_branch = ''
+    os.remove('.bloom.conf')
     return upstream_repo, upstream_type, upstream_branch
-
-
-def create_initial_upstream_branch(cwd=None):
-    """
-    Creates an empty, initial upstream branch in the given git repository.
-    """
-    create_branch('upstream', orphaned=True, changeto=True)
-
-
-def summarize_repo_info(upstream_repo, upstream_type, upstream_branch):
-    msg = 'upstream repo: ' + ansi('boldon') + upstream_repo \
-        + ansi('reset')
-    info(msg)
-    msg = 'upstream type: ' + ansi('boldon') + upstream_type \
-        + ansi('reset')
-    info(msg)
-    upstream_branch = upstream_branch if upstream_branch else '(No branch set)'
-    msg = 'upstream branch: ' + ansi('boldon') + upstream_branch \
-        + ansi('reset')
-    info(msg)
 
 
 def get_upstream_meta(upstream_dir):
@@ -212,6 +196,80 @@ def get_upstream_meta(upstream_dir):
     return meta
 
 
+def try_vcstools_checkout(repo, checkout_url, version=''):
+    if not repo.checkout(checkout_url, version):
+        if repo.get_vcs_type_name() == 'svn':
+            error(
+                "Could not checkout upstream repostiory "
+                "({0})".format(checkout_url)
+            )
+        else:
+            error(
+                "Could not checkout upstream repostiory "
+                "({0})".format(checkout_url)
+              + " to branch ({0})".format(version)
+            )
+        return 1
+    return 0
+
+
+def auto_upstream_checkout(upstream_repo, upstream_url, devel_branch):
+    info("Searching in upstream development branch for the name and version")
+    info("  Upstream url: " + upstream_url)
+    info("  Upstream type: " + upstream_repo.get_vcs_type_name())
+    if devel_branch:
+        info("  Upstream branch: " + str(devel_branch))
+    # Handle special svn cases
+    if upstream_repo.get_vcs_type_name() == 'svn':
+        if devel_branch == '':
+            upstream_url += '/trunk'
+        else:
+            upstream_url += '/branches/' + str(devel_branch)
+        devel_branch = ''
+    # Checkout to the upstream development branch
+    retcode = try_vcstools_checkout(upstream_repo, upstream_url, devel_branch)
+    if retcode != 0:
+        return retcode
+    # Look into the upstream devel branch for the version
+    meta = get_upstream_meta(upstream_repo.get_path())
+    if meta is None or None in meta.values():
+        error("Failed to get the upstream meta data.")
+        return 1
+    # Summarize the package.xml/stack.xml contents
+    info("Found upstream with version: " + ansi('boldon') + meta['version'] + \
+         ansi('reset'))
+    if meta['type'] == 'stack.xml':
+        info("Upstream contains a stack called: " + ansi('boldon') + \
+             meta['name'][0] + ansi('reset'))
+    else:
+        info("Upstream contains package" + \
+             ('s: ' if len(meta['name']) > 1 else ': ') + ansi('boldon') + \
+             ', '.join(meta['name']) + ansi('reset'))
+    # If svn recreate upstream_repo and checkout to the tag
+    if upstream_repo.get_vcs_type_name() == 'svn':
+        # Remove the /trunk from the url
+        upstream_url = '/'.join(upstream_url.split('/')[:-1])
+        upstream_dir = upstream_repo.get_path()
+        shutil.rmtree(upstream_dir)  # Delete old upstream
+        upstream_repo = VcsClient('svn', upstream_dir)
+        checkout_url = upstream_url + '/tags/' + meta['version']
+        if not upstream_repo.checkout(checkout_url):
+            got_it = False
+            for name in meta['name']:
+                warning("Didn't find the tagged version at " + checkout_url)
+                checkout_url = upstream_url + '/tags/' + name + \
+                               '-' + meta['version']
+                warning("Trying " + checkout_url)
+                if upstream_repo.checkout(checkout_url):
+                    got_it = True
+                    break
+            if not got_it:
+                error("Could not checkout upstream version")
+                return 1
+    # Return the meta data
+    return meta
+
+
 @log_prefix('[git-bloom-import-upstream]: ')
 def import_upstream(cwd, tmp_dir, args):
     # Ensure the bloom and upstream branches are tracked locally
@@ -227,112 +285,73 @@ def import_upstream(cwd, tmp_dir, args):
     # Ensure the bloom and upstream branches are tracked from the original
     track_branches(['bloom', 'upstream'])
 
-    # Check for a bloom branch
-    check_for_bloom(os.getcwd())
-
-    # Parse the bloom config file
-    upstream_repo, upstream_type, upstream_branch = parse_bloom_conf()
-
-    if args.upstream_devel != None:
-        ver = args.upstream_devel
-        warning("Overriding the bloom.conf upstream branch with " + ver)
+    ### Fetch the upstream tag
+    upstream_repo = None
+    upstream_repo_dir = os.path.join(tmp_dir, 'upstream_repo')
+    # If explicit svn url just export and git-import-orig
+    if args.explicit_svn_url is not None:
+        if args.explicit_svn_version is None:
+            error("'--explicit-svn-version' must be specified with "
+                  "'--explicit-svn-url'")
+            return 1
+        info("Checking out upstream at version " + ansi('boldon') + \
+             str(args.explicit_svn_version) + ansi('reset') + \
+             " from repository at " + ansi('boldon') + \
+             str(args.explicit_svn_url) + ansi('reset'))
+        upstream_repo = VcsClient('svn', upstream_repo_dir)
+        retcode = try_vcstools_checkout(upstream_repo, args.explicit_svn_url)
+        if retcode != 0:
+            return retcode
+        meta = {
+            'name': None,
+            'version': args.explicit_svn_version,
+            'type': 'manual'
+        }
+    # Else fetching from bloom configs
     else:
-        ver = upstream_branch
-
-    # Summarize the config contents
-    summarize_repo_info(upstream_repo, upstream_type, ver)
-
-    # Checkout upstream
-    upstream_dir = os.path.join(tmp_dir, 'upstream')
-    upstream_client = VcsClient(upstream_type, upstream_dir)
-    ver = ver if ver != '(No branch set)' else ''
-
-    checkout_url = upstream_repo
-    checkout_ver = ver
-
-    if not args.not_catkin:
-        # Handle svn
-        if upstream_type == 'svn':
-            if ver == '':
-                checkout_url = upstream_repo + '/trunk'
-            else:
-                checkout_url = upstream_repo + '/branches/' + ver
-            checkout_ver = ''
-            debug("Checking out from url {0}".format(checkout_url))
+        # Check for a bloom branch
+        check_for_bloom()
+        # Parse the bloom config file
+        upstream_url, upstream_type, upstream_branch = parse_bloom_conf()
+        # If the upstream_tag is specified, don't search just fetch
+        upstream_repo = VcsClient(upstream_type, upstream_repo_dir)
+        if args.upstream_tag is not None:
+            warning("Using specified upstream tag '" + args.upstream_tag + "'")
+            retcode = try_vcstools_checkout(upstream_repo,
+                                            upstream_url,
+                                            args.upstream_tag)
+            if retcode != 0:
+                return retcode
+            meta = {
+                'name': None,
+                'version': args.upstream_tag,
+                'type': 'manual'
+            }
+        # We have to search for the upstream tag
         else:
-            debug("Checking out branch "
-              "({0}) from url {1}".format(checkout_ver, checkout_url))
-
-        # XXX TODO: Need to validate if ver is valid for the upstream repo...
-        # see: https://github.com/vcstools/vcstools/issues/4
-        if not upstream_client.checkout(checkout_url, checkout_ver):
-            if upstream_type == 'svn':
-                error(
-                    "Could not checkout upstream repostiory "
-                    "({0})".format(checkout_url)
-                )
+            if args.upstream_devel is not None:
+                warning("Overriding the bloom.conf upstream branch with " + \
+                        args.upstream_devel)
+                devel_branch = args.upstream_devel
             else:
-                error(
-                    "Could not checkout upstream repostiory "
-                    "({0})".format(checkout_url)
-                  + " to branch ({0})".format(ver)
-                )
-            return 1
+                devel_branch = upstream_branch
+            meta = auto_upstream_checkout(upstream_repo,
+                                             upstream_url, devel_branch)
+            if type(meta) not in [dict] and meta != 0:
+                return meta
 
-    # Get upstream meta data
-    if args.not_catkin:
-        meta = {}
-        if None in [args.name, args.tag]:
-            error("If '--not-catkin' is specified, then '--upstream-name' and "
-                  "'--upstream-tag' must also be specified.")
-            return 1
-        meta['name'] = args.name
-        meta['version'] = args.tag
-        meta['type'] = 'not_catkin'
-    else:
-        meta = get_upstream_meta(upstream_dir)
-        if meta is None or None in meta.values():
-            error("Failed to get the upstream meta data.")
-            sys.exit(1)
-
-    # Summarize the stack.xml contents
-    info("Upstream has version " + ansi('boldon')
-        + meta['version'] + ansi('reset'))
-    if meta['type'] == 'stack.xml':
-        info("Upstream contains a stack called " + ansi('boldon')
-           + meta['name'][0] + ansi('reset'))
-    elif meta['type'] == 'not_catkin':
-        info("Upstream manually specified as " + ansi('boldon') + \
-             meta['name'] + ansi('reset'))
-    else:
-        info("Upstream contains package" \
-           + ('s: ' if len(meta['name']) > 1 else ': ') \
-           + ', '.join(meta['name']))
-
+    ### Export the repository
     # For convenience
-    name = meta['name'][0] if type(meta['name']) == list else meta['name']
     version = meta['version']
 
     # Export the repository to a tar ball
     tarball_prefix = 'upstream-' + str(version)
     info('Exporting version {0}'.format(version))
     tarball_path = os.path.join(tmp_dir, tarball_prefix)
-    # Change upstream_client for svn
-    export_version = version
-    if upstream_type == 'svn':
-        upstream_client = VcsClient('svn', os.path.join(tmp_dir, 'svn_tag'))
-        checkout_url = upstream_repo + '/tags/' + version
-        if not upstream_client.checkout(checkout_url):
-            warning("Didn't find the tagged version at " + checkout_url)
-            checkout_url = upstream_repo + '/tags/' + name + '-' + version
-            warning("Trying " + checkout_url)
-            if not upstream_client.checkout(checkout_url):
-                error("Could not checkout upstream version")
-                return 1
-        export_version = ''
-    if not upstream_client.export_repository(export_version, tarball_path):
-        error("Failed to export upstream repository.")
-        return 1
+    if upstream_repo.get_vcs_type_name() == 'svn':
+        upstream_repo.export_repository('', tarball_path)
+    else:
+        upstream_repo.export_repository(version, tarball_path)
 
     # Get the gbp version elements from either the last tag or the default
     last_tag = get_last_tag_by_date()
@@ -344,18 +363,14 @@ def import_upstream(cwd, tmp_dir, args):
         info("The latest upstream tag in the release repository is "
               + ansi('boldon') + last_tag + ansi('reset'))
         # Ensure the new version is greater than the last tag
-        full_version_strict = StrictVersion(version)
         last_tag_version = '.'.join([gbp_major, gbp_minor, gbp_patch])
-        last_tag_version_strict = StrictVersion(last_tag_version)
-        if full_version_strict < last_tag_version_strict:
+        if parse_version(version) < parse_version(last_tag_version):
             warning("""\
 Version discrepancy:
-    The upstream version, {0}, should be greater than the previous \
+    The upstream version, {0}, is not newer than the previous \
 release version, {1}.
-
-Upstream should re-release or you should fix the release repository.\
 """.format(version, last_tag_version))
-        if full_version_strict <= last_tag_version_strict:
+        if parse_version(version) <= parse_version(last_tag_version):
             if args.replace:
                 if not gbp.has_replace():
                     error("The '--replace' flag is not supported on this "
@@ -363,35 +378,31 @@ Upstream should re-release or you should fix the release repository.\
                     return 1
                 # Remove the conflicting tag first
                 warning("""\
-Version discrepancy:
-    The upstream version, {0}, is equal to or less than a previous \
+The upstream version, {0}, is equal to or less than a previous \
 import version.
     Removing conflicting tag before continuing \
 because the '--replace' options was specified.\
 """.format(version))
-                execute_command('git tag -d {0}'.format(last_tag))
+                execute_command('git tag -d {0}'.format('upstream/' + version))
                 execute_command('git push origin :refs/tags/'
-                                '{0}'.format(last_tag))
+                                '{0}'.format('upstream/' + version))
             else:
                 warning("""\
-Version discrepancy:
-    The upstream version, {0}, is equal to a previous import version. \
+The upstream version, {0}, is equal to a previous import version. \
 git-buildpackage will fail, if you want to replace the existing \
 upstream import use the '--replace' option.\
 """.format(version))
 
     # Look for upstream branch
-    output = check_output('git branch', shell=True)
-    if output.count('upstream') == 0:
-        info(ansi('boldon') + "No upstream branch" + ansi('reset') \
-            + "... creating an initial upstream branch.")
-        create_initial_upstream_branch()
+    if not branch_exists('upstream', local_only=True):
+        create_branch('upstream', orphaned=True, changeto=True)
 
     # Go to the master branch
-    bloom_repo.update('master')
+    bloom_repo.update(get_commit_hash('upstream'))
 
     # Detect if git-import-orig is installed
-    if gbp.import_orig(tarball_path + '.tar.gz', args.interactive, args.merge):
+    tarball_path += '.tar.gz'
+    if gbp.import_orig(tarball_path, args.interactive) != 0:
         return 1
 
     # Push changes back to the original bloom repo
@@ -404,79 +415,63 @@ def get_argument_parser():
 Imports the upstream repository using git-buildpackage's git-import-orig.
 
 This should be run in a git-buildpackage repository which has had its
-upstream repository set using 'git-bloom-config'.
+upstream repository and upstream type set using the 'git-bloom-config'
+tool. Optionally, the upstream branch can also be set by 'git-bloom-
+config' as the place for git-bloom-import-upstream to search for a valid
+package.xml (or stack.xml).
 
-The upstream repository is imported from a release tag. The
-'git-bloom-config' command specifies the upstream uri and vcs type, as
-well as an optional development upstream branch.  By default, the
-upstream version being imported is determined by looking at the source
-tree of the upstream repository at the specified upstream development
-branch (defaults to trunk/tip/master/etc...) and finding any
-package.xml(s) or stack.xml files.  If either of these files are found
-then they are parsed for the package name(s) and version.
+The default behaviour for git-bloom-import-upstream is to look at the
+development branch (upstream branch or master/tip/trunk/etc...) for
+package.xml(s) or a stack.xml. If found, the version is extracted from
+the package.xml(s)/stack.xml and used as the upstream tag name from
+which to import the upstream.
 
-If no package.xml(s) or a stack.xml can be found the command will fail.
-For importing upstream projects that do not contain package.xml(s) or
-stack.xml, the '--not-catkin' flag may be passed, but the
-'--upstream-name' and '--upstream-tag' flags must be passed.
+Which branch is searched for package.xml(s)/stack.xml can be overridden
+using the '--upstream-devel' argument.  For example, if by default your
+normal development branch is 'master', but you have a branch for an
+older version, say '1.1.x', and need to release from it then
+'--upstream-devel 1.1.x' will search that branch instead for the version.
 
-To import the upstream repository into the upstream branch of the local
-release repository, this command expects the upstream repository to have
-a release tag that matches the version string exactly. For example, if
-the discovered package.xml file has the version as 0.1.0 then there is
-expected to be an upstream tag called '0.1.0', and the imported source
-tree will be pulled from that tag.
+For non-standard version tags (v1.1, 1.1-pre1) or if upstream projects
+that do not contain a package.xml/stack.xml then the '--upstream-tag'
+argument will prevent searching for the version in package.xml/stack.xml
+and just try to import the given tag from the upstream repository. For
+example, specifying '--upstream-tag foo-1.18' on an upstream repository,
+'svn.example.com/svn/foo', would cause git-bloom-import-upstream to
+import 'svn.example.com/svn/foo/tags/foo-1.18'.
 
-The upstream tag is imported into the local repository's upstream branch.
+For non standard svn layouts, the '--explicit-svn-url' argument can be
+used. Specifying this argument will cause git-bloom-import-upstream to
+import directly from this url, without trying to do anything
+intelligent. Because theversion is not auto detected with this method,
+the '--explicit-svn-version' argument must also be passed.
 
-If the upstream branch does not exist locally, then it is created.
-
-If the local git repository has not been initilized (no first commit),
-then the user is prompted and it is optionally initialized.
 """, formatter_class=argparse.RawTextHelpFormatter)
     add = parser.add_argument
-    add('-u', '--upstream-devel', help="""\
-Upstream repository development branch
-(or tag) on which to search for package.xml(s)
-or a stack.xml.
-
-""")
-    add('-i', '--interactive', help="""\
+    add('-i', '--interactive', action="store_true",
+        help="""\
 Allows git-import-orig to be run interactively,
 otherwise questions are prevented by passing the
 '--non-interactive' flag. (not supported on Lucid)
 
-""",
-    action="store_true")
-    add('-m', '--merge', action="store_true", help="""\
-Asks git-import-orig to merge the resulting
-import into the master branch. This is disabled
-by defualt. This will cause an editor to open for
-sign-off of the merge.
-
 """)
-    add('-r', '--replace', help="""\
+    add('-r', '--replace', action="store_true",
+        help="""\
 Replaces an existing upstream import if the
 git-buildpackage repository already has the
 upstream version being released.
 
-""",
-                        action="store_true")
-    add('--not-catkin', default=False, action='store_true',
-        help="""\
-If specified the automatic version discovery
-is disabled. If used, the '--upstream-name' and
-'--upstream-tag' flags must be specified.
-
-Use this if importing a non-catkin project,
-i.e. upstream repository that does not contain
-package.xml(s) or a stack.xml.
-
 """)
-    add('--upstream-name', metavar="UPSTREAM_NAME", dest='name',
-        help="name of the upstream project\n\n")
-    add('--upstream-tag', metavar="UPSTREAM_VERSION", dest='tag',
+    add('--upstream-devel', dest='upstream_devel', default=None,
+        help="development branch on which to search for\n"
+             "package.xml(s)/stack.xml\n\n")
+    add('--upstream-tag', default=None,
         help="tag of the upstream repository to import from\n\n")
+    add('--explicit-svn-url', default=None,
+        help="explicit url for svn upstream (overrides upstream url)\n\n")
+    add('--explicit-svn-version', default=None,
+        help="explicit version for svn upstream\n"
+             "(must be used with '--explicit-svn-url')\n\n")
     return parser
 
 
@@ -487,18 +482,12 @@ def main(sysargs=None):
     handle_global_arguments(args)
 
     # Check that the current directory is a serviceable git/bloom repo
-    if get_root() == None:
-        error("This command has to be run in a git repository.")
+    if ensure_clean_working_env() != 0:
         parser.print_usage()
         return 1
 
     # Get the current git branch
     current_branch = get_current_branch()
-
-    if current_branch == 'upstream':
-        error("You cannot run git-bloom-import-upstream while in the "
-              "upstream branch, because this branch is going to be modified.")
-        return 1
 
     # Create a working temp directory
     tmp_dir = create_temporary_directory()
@@ -506,6 +495,10 @@ def main(sysargs=None):
     cwd = os.getcwd()
 
     try:
+        # Get off upstream branch
+        if current_branch == 'upstream':
+            checkout(get_commit_hash('upstream'), directory=cwd)
+
         retcode = import_upstream(cwd, tmp_dir, args)
 
         # Done!
