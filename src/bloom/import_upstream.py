@@ -56,6 +56,7 @@ from bloom.git import show
 from bloom.git import track_branches
 
 from bloom.logging import ansi
+from bloom.logging import debug
 from bloom.logging import error
 from bloom.logging import info
 from bloom.logging import log_prefix
@@ -114,23 +115,23 @@ def check_for_bloom():
     Checks for the bloom branch, else looks for and converts the catkin branch.
     Then it checks for the bloom branch and that it contains a bloom.conf file.
     """
-    branches = check_output('git branch', shell=True)
-    if branches.count('bloom') == 0:
-        # There is not bloom branch, check for the legacy catkin branch
-        if branches.count('catkin') == 0:
-            # Neither was found
-            not_a_bloom_release_repo()
-        else:
-            # Found catkin branch, migrate it to bloom
-            info('catkin branch detected, up converting to the bloom branch')
-            convert_catkin_to_bloom()
+    if branch_exists('catkin') and not branch_exists('bloom'):
+        # Found catkin branch, migrate it to bloom
+        info('catkin branch detected, up converting to the bloom branch')
+        convert_catkin_to_bloom()
+        return
     # Check for bloom.conf
-    try:
-        with inbranch('bloom'):
-            if not os.path.exists(os.path.join(os.getcwd(), 'bloom.conf')):
-                not_a_bloom_release_repo()
-    except CalledProcessError:
+    if os.path.exists('bloom'):
+        error("File or directory bloom prevents checking out to the bloom "
+              "branch, remove it.")
+        sys.exit(1)
+    if not branch_exists('bloom'):
+        debug('no bloom branch')
         not_a_bloom_release_repo()
+    with inbranch('bloom'):
+        if not os.path.exists(os.path.join(os.getcwd(), 'bloom.conf')):
+            debug('no bloom.conf file')
+            not_a_bloom_release_repo()
 
 
 def parse_bloom_conf(cwd=None):
@@ -290,12 +291,12 @@ def import_upstream(cwd, tmp_dir, args):
     upstream_repo_dir = os.path.join(tmp_dir, 'upstream_repo')
     # If explicit svn url just export and git-import-orig
     if args.explicit_svn_url is not None:
-        if args.explicit_svn_version is None:
+        if args.upstream_version is None:
             error("'--explicit-svn-version' must be specified with "
                   "'--explicit-svn-url'")
             return 1
         info("Checking out upstream at version " + ansi('boldon') + \
-             str(args.explicit_svn_version) + ansi('reset') + \
+             str(args.upstream_version) + ansi('reset') + \
              " from repository at " + ansi('boldon') + \
              str(args.explicit_svn_url) + ansi('reset'))
         upstream_repo = VcsClient('svn', upstream_repo_dir)
@@ -304,7 +305,7 @@ def import_upstream(cwd, tmp_dir, args):
             return retcode
         meta = {
             'name': None,
-            'version': args.explicit_svn_version,
+            'version': args.upstream_version,
             'type': 'manual'
         }
     # Else fetching from bloom configs
@@ -317,9 +318,14 @@ def import_upstream(cwd, tmp_dir, args):
         upstream_repo = VcsClient(upstream_type, upstream_repo_dir)
         if args.upstream_tag is not None:
             warning("Using specified upstream tag '" + args.upstream_tag + "'")
+            if upstream_type == 'svn':
+                upstream_url += '/tags/' + args.upstream_tag
+                upstream_tag = ''
+            else:
+                upstream_tag = args.upstream_tag
             retcode = try_vcstools_checkout(upstream_repo,
                                             upstream_url,
-                                            args.upstream_tag)
+                                            upstream_tag)
             if retcode != 0:
                 return retcode
             meta = {
@@ -341,8 +347,7 @@ def import_upstream(cwd, tmp_dir, args):
                 return meta
 
     ### Export the repository
-    # For convenience
-    version = meta['version']
+    version = args.upstream_version if args.upstream_version is not None else meta['version']
 
     # Export the repository to a tar ball
     tarball_prefix = 'upstream-' + str(version)
@@ -443,8 +448,13 @@ import 'svn.example.com/svn/foo/tags/foo-1.18'.
 For non standard svn layouts, the '--explicit-svn-url' argument can be
 used. Specifying this argument will cause git-bloom-import-upstream to
 import directly from this url, without trying to do anything
-intelligent. Because theversion is not auto detected with this method,
-the '--explicit-svn-version' argument must also be passed.
+intelligent. Using this requires setting the version using
+'--upstream-version'.
+
+When importing non catkin projects use the '--upstream-version' argument
+to specify the incoming version of the upstream project. This will
+prevent automatic detection of the version and therefore will not fail
+when neither a package.xml nor a stack.xml is not found.
 
 """, formatter_class=argparse.RawTextHelpFormatter)
     add = parser.add_argument
@@ -469,8 +479,8 @@ upstream version being released.
         help="tag of the upstream repository to import from\n\n")
     add('--explicit-svn-url', default=None,
         help="explicit url for svn upstream (overrides upstream url)\n\n")
-    add('--explicit-svn-version', default=None,
-        help="explicit version for svn upstream\n"
+    add('--upstream-version', dest='upstream_version', default=None,
+        help="explicitly specify the version\n"
              "(must be used with '--explicit-svn-url')\n\n")
     return parser
 

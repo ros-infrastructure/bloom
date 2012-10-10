@@ -157,6 +157,8 @@ def main(sysargs=None):
     if len(sysargs if sysargs is not None else sys.argv) == 1:
         if branch_exists('bloom', False):
             show_current()
+            info("See: 'git-bloom-config -h' on how to change the configs")
+            return 0
         else:
             info("No bloom branch found")
     parser = get_argument_parser()
