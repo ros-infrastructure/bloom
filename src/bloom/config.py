@@ -127,7 +127,11 @@ def show_current():
     if os.path.exists('bloom.conf'):
         info("Current bloom configuration:")
         f = open('bloom.conf', 'r')
-        info(f.read(), end='')
+        print('')
+        map(info, [l.rstrip() for l in f.read().splitlines()])
+        print('')
+    else:
+        info("No bloom.conf in the bloom branch")
 
 
 def get_argument_parser():
@@ -151,8 +155,10 @@ Example: `git-bloom-config https://github.com/ros/bloom.git git groovy-devel`
 
 def main(sysargs=None):
     if len(sysargs if sysargs is not None else sys.argv) == 1:
-        if branch_exists('bloom', True):
+        if branch_exists('bloom', False):
             show_current()
+        else:
+            info("No bloom branch found")
     parser = get_argument_parser()
     parser = add_global_arguments(parser)
     args = parser.parse_args(sysargs)
