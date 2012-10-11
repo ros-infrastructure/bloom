@@ -36,10 +36,10 @@ from __future__ import unicode_literals
 import os
 import unittest
 from subprocess import check_call, Popen, PIPE
+from script_runner import popen_bloom_script
 import tempfile
 import shutil
 
-from export_bloom_from_src import get_path_and_pythonpath
 
 from vcstools import VcsClient
 
@@ -54,11 +54,6 @@ class BloomSetUpstreamTestSetups(unittest.TestCase):
         self.directories = dict(setUp=self.root_directory)
         self.git_repo = os.path.join(self.root_directory, "git_repo")
         os.makedirs(self.git_repo)
-
-        # Setup environment for running commands
-        path, ppath = get_path_and_pythonpath()
-        os.putenv('PATH', path)
-        os.putenv('PYTHONPATH', ppath)
 
     @classmethod
     def tearDownClass(self):
@@ -80,7 +75,7 @@ class BloomSetUpstreamTest(BloomSetUpstreamTestSetups):
 
         # Detect freshly initialized repo, decline
         cmd = 'git-bloom-set-upstream https://github.com/ros/example.git git'
-        p = Popen(cmd, shell=True, cwd=self.git_repo, stdin=PIPE, stdout=PIPE)
+        p = popen_bloom_script(cmd, shell=True, cwd=self.git_repo, stdin=PIPE, stdout=PIPE)
         expected_response = 'Upstream \x1b[1mhttps://github.com/ros/example' \
                             '.git\x1b[22m type: \x1b[1mgit\x1b[22m\nFreshly ' \
                             'initialized git repository detected.\nAn ' \
@@ -89,11 +84,11 @@ class BloomSetUpstreamTest(BloomSetUpstreamTestSetups):
                             '\x1b[1mExiting.\x1b[0m\n'
         stdout_reponse, _ = p.communicate('n')
         assert expected_response == stdout_reponse, \
-               str(len(expected_response)) + ' == ' + str(len(stdout_reponse))
+               str(len(expected_response)) + ' == ' + str(len(stdout_reponse)) + ' : ' + stdout_reponse
         assert p.returncode == 1
 
         # Detect freshly initialized repo, accept
-        p = Popen(cmd, shell=True, cwd=self.git_repo, stdin=PIPE, stdout=PIPE)
+        p = popen_bloom_script(cmd, shell=True, cwd=self.git_repo, stdin=PIPE, stdout=PIPE)
         expected_response = 'Upstream \x1b[1mhttps://github.com/ros/example' \
                             '.git\x1b[22m type: \x1b[1mgit\x1b[22m\nFreshly ' \
                             'initialized git repository detected.\nAn ' \
@@ -105,7 +100,7 @@ class BloomSetUpstreamTest(BloomSetUpstreamTestSetups):
         assert p.returncode == 0
 
         # Should not detect freshly initialized repo
-        p = Popen(cmd, shell=True, cwd=self.git_repo, stdin=PIPE, stdout=PIPE)
+        p = popen_bloom_script(cmd, shell=True, cwd=self.git_repo, stdin=PIPE, stdout=PIPE)
         expected_response = 'Upstream \x1b[1mhttps://github.com/ros/example' \
                             '.git\x1b[22m type: \x1b[1mgit\x1b[22m\nUpstream' \
                             ' successively set.\n'
@@ -119,9 +114,9 @@ class BloomSetUpstreamTest(BloomSetUpstreamTestSetups):
 
         # Run the program and ok the initial commit option
         cmd = 'git-bloom-set-upstream https://github.com/ros/example.git git'
-        p = Popen(cmd, shell=True, cwd=self.git_repo, stdin=PIPE, stdout=PIPE)
-        p.communicate('y')
-        assert p.returncode == 0
+        p = popen_bloom_script(cmd, shell=True, cwd=self.git_repo, stdin=PIPE, stdout=PIPE)
+        stdout_reponse, _ = p.communicate('y')
+        assert p.returncode == 0, stdout_reponse
 
         # Ensure the proper branch was created by checking out to it
         client = VcsClient('git', self.git_repo)

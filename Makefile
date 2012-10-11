@@ -54,4 +54,4 @@ testsetup:
 	echo "running bloom tests"
 
 test: testsetup
-	cd test && nosetests
+	nosetests

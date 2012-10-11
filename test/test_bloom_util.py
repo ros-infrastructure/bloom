@@ -2,12 +2,6 @@ import os
 import sys
 import shutil
 
-from export_bloom_from_src import get_path_and_pythonpath
-# Setup environment for running commands
-path, ppath = get_path_and_pythonpath()
-os.putenv('PATH', path)
-os.putenv('PYTHONPATH', ppath)
-
 
 def test_create_temporary_directory():
     from bloom.util import create_temporary_directory
@@ -22,44 +16,16 @@ def test_create_temporary_directory():
         assert os.path.exists(tmp_dir)
         shutil.rmtree('/tmp/test-bloom-util')
 
-
-def test_ANSI_colors():
-    from bloom.util import ansi, enable_ANSI_colors, disable_ANSI_colors
-
-    control_str = '\033[1m\033[3m\033[31mBold and Italic and Red \033[0mPlain'
-    control_str_disable = 'Bold and Italic and Red Plain'
-
-    test_str = ansi('boldon') + ansi('italicson') + ansi('redf') \
-             + 'Bold and Italic and Red ' + ansi('reset') + 'Plain'
-    assert control_str == test_str, \
-           '{0} == {1}'.format(control_str, test_str)
-
-    disable_ANSI_colors()
-    test_str = ansi('boldon') + ansi('italicson') + ansi('redf') \
-             + 'Bold and Italic and Red ' + ansi('reset') + 'Plain'
-    assert control_str_disable == test_str, \
-           '{0} == {1}'.format(control_str_disable, test_str)
-
-    enable_ANSI_colors()
-    test_str = ansi('boldon') + ansi('italicson') + ansi('redf') \
-             + 'Bold and Italic and Red ' + ansi('reset') + 'Plain'
-    assert control_str == test_str, \
-           '{0} == {1}'.format(control_str, test_str)
-
-
-def test_maybe_continue():
-    from subprocess import Popen, PIPE
-    this_dir = os.path.abspath(os.path.dirname(__file__))
-    cmd = '/usr/bin/env python maybe_continue_helper.py'
-
-    p = Popen(cmd, shell=True, cwd=this_dir, stdin=PIPE, stdout=PIPE)
-    p.communicate('y')
-    assert p.returncode == 0
-
-    p = Popen(cmd, shell=True, cwd=this_dir, stdin=PIPE, stdout=PIPE)
-    p.communicate('n')
-    assert p.returncode == 1
-
+def test_continue_prompt():
+    import bloom.util
+    backup = raw_input
+    try:
+        bloom.util.raw_input = lambda _: 'y'
+        assert bloom.util.maybe_continue()
+        bloom.util.raw_input = lambda _: 'n'
+        assert (False == bloom.util.maybe_continue())
+    finally:
+        bloom.util.raw_input = backup
 
 def test_extract_text():
     example_xml = """\
