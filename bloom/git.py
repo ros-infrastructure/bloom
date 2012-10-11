@@ -262,18 +262,14 @@ class inbranch(ContextDecorator):
 
     Combination decorator/context manager, therefore it can be used like:
 
-        @branch('some_git_branch')
+        @inbranch('some_git_branch')
         def foo():
             pass
 
     Or in conjunction with the 'with' statement:
 
-        with branch('some_git_branch'):
+        with inbranch('some_git_branch'):
             foo()
-
-    Example:
-        with branch('my_branch'):
-            do_stuff_in_branch()
 
     :param branch_name: name of the branch to switch to
     :param directory: directory in which to run the branch change
@@ -288,7 +284,7 @@ class inbranch(ContextDecorator):
         self.current_branch = get_current_branch(self.directory)
         checkout(self.branch, raise_exc=True, directory=self.directory)
 
-    def __exit__(self):
+    def __exit__(self, exc_type, exc_value, traceback):
         checkout(self.current_branch, raise_exc=True, directory=self.directory)
 
 

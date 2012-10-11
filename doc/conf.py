@@ -108,6 +108,10 @@ pygments_style = 'sphinx'
 # Add any paths that contain custom themes here, relative to this directory.
 html_theme_path = [os.path.join(os.path.expanduser('~'), 'sphinx'), 'themes']
 
+import catkin_sphinx
+html_theme_path.append(os.path.join(os.path.dirname(catkin_sphinx.__file__),
+                                    'theme'))
+
 # The theme to use for HTML and HTML Help pages.  Major themes that come with
 # Sphinx are currently 'default' and 'sphinxdoc'.
 html_theme = 'ros-theme'
@@ -219,7 +223,6 @@ intersphinx_mapping = {
     'rospkg': ('http://ros.org/doc/api/rospkg/html', None),
     'rosdep2': ('http://ros.org/doc/api/rosdep2/html', None),
     }
-
 
 rst_epilog = """
 
