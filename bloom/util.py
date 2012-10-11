@@ -48,13 +48,12 @@ from bloom.logging import debug
 from bloom.logging import enable_debug
 from bloom.logging import error
 
-has_rospkg = False
-try:
-    import rospkg.stack
-    has_rospkg = True
-except ImportError:
-    warning("rospkg was not detected, stack.xml discovery is disabled",
-            file=sys.stderr)
+
+class code(object):
+    UNKNOWN = -1
+    OK = 0
+    INVALID_VERSION = 10
+    INVALID_UPSTREAM_TAG = 11
 
 
 def add_global_arguments(parser):
@@ -77,7 +76,7 @@ def handle_global_arguments(args):
     if args.version:
         from bloom import __version__
         print(__version__)
-        sys.exit(0)
+        sys.exit(code.OK)
 
 
 def print_exc(exc):
@@ -160,12 +159,6 @@ def maybe_continue(default='y'):
     return True
 
 
-def bailout(reason='Exiting.'):
-    """Exits bloom for a given reason"""
-    error(reason)
-    sys.exit(1)
-
-
 def extract_text(element):
     node_list = element.childNodes
     result = []
@@ -178,8 +171,9 @@ def extract_text(element):
 def segment_version(full_version):
     version_list = full_version.split('.')
     if len(version_list) != 3:
-        bailout('Invalid version element in the stack.xml, expected: ' \
-                '<major>.<minor>.<patch>')
+        error('Invalid version element in the stack.xml, expected: ' \
+              '<major>.<minor>.<patch>')
+        sys.exit(code.INVALID_VERSION)
     return version_list
 
 
@@ -220,6 +214,7 @@ def get_versions_from_upstream_tag(tag):
     """
     tag_version = tag.split('/')
     if len(tag_version) != 2:
-        bailout("Malformed tag {0}".format(tag))
+        error("Malformed tag {0}".format(tag))
+        sys.exit(code.INVALID_UPSTREAM_TAG)
     tag_version = tag_version[1]
     return segment_version(tag_version)
