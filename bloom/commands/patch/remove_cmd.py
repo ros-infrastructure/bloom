@@ -14,8 +14,8 @@ from bloom.git import checkout
 from bloom.git import get_current_branch
 from bloom.git import track_branches
 
-from bloom.patch.common import get_patch_config
-from bloom.patch.common import update_tag
+from bloom.commands.patch.common import get_patch_config
+from bloom.commands.patch.common import update_tag
 
 
 @log_prefix('[git-bloom-patch remove]: ')

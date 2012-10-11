@@ -6,7 +6,10 @@ setup(
     name='bloom',
     version='0.2.0',
     packages=find_packages(exclude=['test']),
-    package_data={'bloom': ['resources/em/*.em']},
+    package_data={
+        'bloom.generators.debian':
+            ['bloom/generators/debian/resources/em/*.em']
+    },
     install_requires=[
         'empy >= 3.1',
         'PyYAML >= 3.10',
@@ -19,7 +22,7 @@ setup(
     author='Tully Foote, William Woodall',
     author_email='tfoote@willowgarage.com, wwoodall@willowgarage.com',
     maintainer='William Woodall',
-    maintainer_email='wwoodall@gmail.com',
+    maintainer_email='wwoodall@willowgarage.com',
     url='http://www.ros.org/wiki/bloom',
     download_url='http://pr.willowgarage.com/downloads/bloom/',
     keywords=['ROS'],
@@ -36,12 +39,12 @@ generation of platform specific source packages, like debian's src-debs.""",
     test_suite='test',
     entry_points={
         'console_scripts': [
-            'git-bloom-config = bloom.config:main',
-            'git-bloom-import-upstream = bloom.import_upstream:main',
-            'git-bloom-branch = bloom.branch.branch_main:branchmain',
-            'git-bloom-patch = bloom.patch.patch_main:patchmain',
-            'git-bloom-generate = bloom.generate:main',
-            'git-bloom-release = bloom.release.main:release_main'
+            'git-bloom-config = bloom.commands.config:main',
+            'git-bloom-import-upstream = bloom.commands.import_upstream:main',
+            'git-bloom-branch = bloom.commands.branch:main',
+            'git-bloom-patch = bloom.commands.patch.patch_main:main',
+            'git-bloom-generate = bloom.commands.generate:main',
+            'git-bloom-release = bloom.commands.release.main:main'
         ]
     }
 )

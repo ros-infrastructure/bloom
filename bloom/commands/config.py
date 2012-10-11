@@ -36,12 +36,6 @@ import os
 import sys
 import argparse
 
-from bloom.util import add_global_arguments
-from bloom.util import handle_global_arguments
-from bloom.util import maybe_continue, execute_command, ansi
-from bloom.logging import debug
-from bloom.logging import info
-from bloom.logging import error
 from bloom.git import branch_exists
 from bloom.git import checkout
 from bloom.git import create_branch
@@ -49,6 +43,15 @@ from bloom.git import get_current_branch
 from bloom.git import get_root
 from bloom.git import has_changes
 from bloom.git import inbranch
+from bloom.git import ensure_clean_working_env
+
+from bloom.logging import debug
+from bloom.logging import info
+from bloom.logging import error
+
+from bloom.util import add_global_arguments
+from bloom.util import handle_global_arguments
+from bloom.util import maybe_continue, execute_command, ansi
 
 
 def check_git_init():
@@ -155,6 +158,9 @@ Example: `git-bloom-config https://github.com/ros/bloom.git git groovy-devel`
 
 def main(sysargs=None):
     if len(sysargs if sysargs is not None else sys.argv) == 1:
+        retcode = ensure_clean_working_env()
+        if retcode != 0:
+            return retcode
         if branch_exists('bloom', False):
             show_current()
             info("See: 'git-bloom-config -h' on how to change the configs")
@@ -165,6 +171,10 @@ def main(sysargs=None):
     parser = add_global_arguments(parser)
     args = parser.parse_args(sysargs)
     handle_global_arguments(args)
+
+    retcode = ensure_clean_working_env()
+    if retcode != 0:
+        return retcode
 
     # Summarize the requested operation
     summarize_arguments(args.upstream_repository, args.upstream_vcs_type,

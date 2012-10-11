@@ -21,9 +21,9 @@ from bloom.util import add_global_arguments
 from bloom.util import execute_command
 from bloom.util import handle_global_arguments
 
-from bloom.patch.common import get_patch_config
-from bloom.patch.common import list_patches
-from bloom.patch.common import update_tag
+from bloom.commands.patch.common import get_patch_config
+from bloom.commands.patch.common import list_patches
+from bloom.commands.patch.common import update_tag
 
 
 @log_prefix('[git-bloom-patch import]: ')

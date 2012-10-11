@@ -31,8 +31,13 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import argparse
+import sys
 
-from bloom.branch.branch import branch_packages
+from bloom.logging import error
+error("Not working currently")
+sys.exit(1)
+
+from bloom.commands.branch import execute_branch as branch_packages
 from bloom.generators.debian.main_all import main as gendeb_all_main
 
 from bloom.util import add_global_arguments

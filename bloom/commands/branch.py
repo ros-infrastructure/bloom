@@ -6,16 +6,13 @@ import argparse
 
 from subprocess import CalledProcessError
 
-from bloom.branch import branch_packages
-
 from bloom.git import branch_exists
 from bloom.git import checkout
 from bloom.git import create_branch
 from bloom.git import get_commit_hash
 from bloom.git import get_current_branch
-from bloom.git import get_root
+from bloom.git import ensure_clean_working_env
 from bloom.git import ls_tree
-from bloom.git import maybe_continue
 from bloom.git import track_branches
 
 from bloom.logging import ansi
@@ -23,10 +20,11 @@ from bloom.logging import error
 from bloom.logging import log_prefix
 from bloom.logging import info
 
-from bloom.patch.common import set_patch_config
+from bloom.commands.patch.common import set_patch_config
 
 from bloom.util import add_global_arguments
 from bloom.util import handle_global_arguments
+from bloom.util import maybe_continue
 from bloom.util import print_exc
 
 
@@ -131,20 +129,20 @@ def execute_branch(src, dst, interactive, directory=None):
 
 def get_parser():
     parser = argparse.ArgumentParser(description="""\
-If the DST_BRANCH does not exist yet, then it is created by branching the
-current working branch or the specified SRC_BRANCH.
+If the DESTINATION_BRANCH does not exist yet, then it is created by
+branching the current working branch or the specified SOURCE_BRANCH.
 
-If the patches/DST_BRANCH branch does not exist yet then it is created.
+If the patches/DESTINATION_BRANCH branch does not exist yet then it is created.
 
 If the branches are created successful, then the working branch will be set to
-the DST_BRANCH, otherwise the working branch will remain unchanged.
+the DESTINATION_BRANCH, otherwise the working branch will remain unchanged.
 """, formatter_class=argparse.RawTextHelpFormatter)
     add = parser.add_argument
-    add('destination_branch', metavar="DESTINATION_BRANCH", dest='dst',
+    add('destination_branch', metavar='DESTINATION_BRANCH',
         help="destination branch name")
-    add('--source-branch', '-s', metavar='SOURCE_BRANCH', dest='src',
+    add('-s', '--src', '--source-branch', metavar='SOURCE_BRANCH', dest='src',
         help="(optional) specifies which local git branch to branch from")
-    add('--interactive', '-i', dest='interactive',
+    add('-i', '--interactive', dest='interactive',
         help="asks before committing any changes",
         action='store_true', default=False)
     return parser
@@ -155,22 +153,20 @@ def main():
     parser = add_global_arguments(parser)
     args = parser.parse_args()
     handle_global_arguments(args)
+
+    # Check environment
+    retcode = ensure_clean_working_env()
+    if retcode != 0:
+        return retcode
+
     retcode = 0
     try:
-        # Assert this is a git repository
-        if get_root() == None:
-            error("Not in a valid git repository.")
-            return 127
         # If the src argument isn't set, use the current branch
         if args.src is None:
             args.src = get_current_branch()
         # Execute the branching
-        retcode = branch_packages(args.src, args.prefix, args.patch,
-                                  args.interactive, args.continue_on_error,
-                                  name=args.name)
-        if retcode != 0 and not args.continue_on_error:
-            print('')
-            info("Stopping branching, to continue pass '--continue-on-error'")
+        retcode = execute_branch(args.src, args.destination_branch,
+                                 args.interactive)
     except CalledProcessError as err:
         # No need for a trackback here, a git call probably failed
         print_exc(traceback.format_exc())

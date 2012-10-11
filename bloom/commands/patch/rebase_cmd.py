@@ -18,8 +18,8 @@ from bloom.logging import debug
 from bloom.logging import log_prefix
 from bloom.logging import warning
 
-from bloom.patch.common import get_patch_config
-from bloom.patch.common import set_patch_config
+from bloom.commands.patch.common import get_patch_config
+from bloom.commands.patch.common import set_patch_config
 
 from bloom.util import add_global_arguments
 from bloom.util import execute_command

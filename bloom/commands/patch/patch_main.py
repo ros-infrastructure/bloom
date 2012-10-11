@@ -11,11 +11,11 @@ from bloom.logging import error
 
 from bloom.util import print_exc
 
-from bloom.patch import export_cmd
-from bloom.patch import import_cmd
-from bloom.patch import remove_cmd
-from bloom.patch import rebase_cmd
-from bloom.patch import trim_cmd
+from bloom.commands.patch import export_cmd
+from bloom.commands.patch import import_cmd
+from bloom.commands.patch import remove_cmd
+from bloom.commands.patch import rebase_cmd
+from bloom.commands.patch import trim_cmd
 
 
 def usage(exit=True):
@@ -44,7 +44,7 @@ For more information on individual commands type, git-bloom-patch <cmd> -h
         sys.exit(getattr(os, 'EX_USAGE', 1))
 
 
-def patchmain():
+def main():
     if len(sys.argv) > 1:
         command = sys.argv[1]
     else:
