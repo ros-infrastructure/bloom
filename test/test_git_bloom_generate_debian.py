@@ -1,122 +1,125 @@
-# #!/usr/bin/env python
-# # Software License Agreement (BSD License)
-# #
-# # Copyright (c) 2012, Willow Garage, Inc.
-# # All rights reserved.
-# #
-# # Redistribution and use in source and binary forms, with or without
-# # modification, are permitted provided that the following conditions
-# # are met:
-# #
-# #  * Redistributions of source code must retain the above copyright
-# #    notice, this list of conditions and the following disclaimer.
-# #  * Redistributions in binary form must reproduce the above
-# #    copyright notice, this list of conditions and the following
-# #    disclaimer in the documentation and/or other materials provided
-# #    with the distribution.
-# #  * Neither the name of Willow Garage, Inc. nor the names of its
-# #    contributors may be used to endorse or promote products derived
-# #    from this software without specific prior written permission.
-# #
-# # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# # LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-# # FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-# # COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-# # INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-# # BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-# # LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-# # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# # POSSIBILITY OF SUCH DAMAGE.
+#!/usr/bin/env python
+# Software License Agreement (BSD License)
+#
+# Copyright (c) 2012, Willow Garage, Inc.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+#  * Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#  * Redistributions in binary form must reproduce the above
+#    copyright notice, this list of conditions and the following
+#    disclaimer in the documentation and/or other materials provided
+#    with the distribution.
+#  * Neither the name of Willow Garage, Inc. nor the names of its
+#    contributors may be used to endorse or promote products derived
+#    from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
 
-# from __future__ import unicode_literals
+from __future__ import unicode_literals
 
-# import os
-# import unittest
-# import tempfile
-# import argparse
-# import shutil
+import os
+import unittest
+import tempfile
+import argparse
+import shutil
 
-# from export_bloom_from_src import get_path_and_pythonpath
-
-
-# class BloomSetUpstreamTestSetups(unittest.TestCase):
-
-#     @classmethod
-#     def setUpClass(self):
-#         self.current_directory = os.getcwd()
-#         self.root_directory = tempfile.mkdtemp()
-#         # helpful when setting tearDown to pass
-#         self.directories = dict(setUp=self.root_directory)
-#         self.git_repo = os.path.join(self.root_directory, "git_repo")
-#         os.makedirs(self.git_repo)
-
-#         # Setup environment for running commands
-#         path, ppath = get_path_and_pythonpath()
-#         os.putenv('PATH', path)
-#         os.putenv('PYTHONPATH', ppath)
-
-#     @classmethod
-#     def tearDownClass(self):
-#         for d in self.directories:
-#             shutil.rmtree(self.directories[d])
-#         os.chdir(self.current_directory)
-
-#     def tearDown(self):
-#         os.chdir(self.current_directory)
+from mock import Mock
 
 
-# class BloomSetUpstreamTest(BloomSetUpstreamTestSetups):
+class BloomSetUpstreamTestSetups(unittest.TestCase):
 
-#     def test_get_argument_parser(self):
-#         from bloom.generate_debian import get_argument_parser
-#         parser = get_argument_parser()
-#         assert type(parser) == argparse.ArgumentParser, type(parser)
-#         args = parser.parse_args(['groovy'])
-#         assert args.rosdistro == 'groovy', args.rosdistro
-#         assert args.working == None, args.working
-#         assert args.debian_revision == 0, args.debian_revision
-#         assert args.install_prefix == None, args.install_prefix
-#         assert args.distros == [], args.distros
-#         test = ['--working', '.tmp/somedir',
-#                 '--debian-revision', '3',
-#                 '--install-prefix', '/opt/ros/groovy',
-#                 '--distros', 'lucid', 'precise', '--',
-#                 'groovy']
-#         args = parser.parse_args(test)
-#         assert args.rosdistro == 'groovy', args.rosdistro
-#         assert args.working == '.tmp/somedir', args.working
-#         assert args.debian_revision == '3', args.debian_revision
-#         assert args.install_prefix == '/opt/ros/groovy', args.install_prefix
-#         assert args.distros == ['lucid', 'precise'], args.distros
+    @classmethod
+    def setUpClass(self):
+        self.current_directory = os.getcwd()
+        self.root_directory = tempfile.mkdtemp()
+        # helpful when setting tearDown to pass
+        self.directories = dict(setUp=self.root_directory)
+        self.git_repo = os.path.join(self.root_directory, "git_repo")
+        os.makedirs(self.git_repo)
 
-#     def test_process_stack_xml(self):
-#         # Create a demo stack
-#         stack = """\
-# <stack>
-#   <name>langs</name>
-#   <version>0.4.0</version>
-#   <description>Meta package modeling the run-time dependencies for language \
-# bindings of messages.</description>
-#   <author>The ROS Ecosystem</author>
-#   <maintainer email="dthomas@willowgarage.com">Dirk Thomas</maintainer>
-#   <license>BSD</license>
-#   <copyright>Willow Garage</copyright>
-#   <url>http://www.ros.org</url>
+    @classmethod
+    def tearDownClass(self):
+        for d in self.directories:
+            shutil.rmtree(self.directories[d])
+        os.chdir(self.current_directory)
 
-#   <build_depends>catkin</build_depends>
+    def tearDown(self):
+        os.chdir(self.current_directory)
 
-#   <depends>catkin</depends>
-#   <!-- required for messages generated by gencpp -->
-#   <depends>roscpp_core</depends>
 
-#   <!-- workaround to provide the generators to dry downstream packages -->
-#   <depends>langs-dev</depends>
-# </stack>"""
-#         fh = open(os.path.join(self.git_repo, 'stack.xml'), 'w+')
-#         fh.write(stack)
-#         fh.close()
-#         from bloom.generate_debian import process_stack_xml
-#         process_stack_xml(None, self.git_repo)
+class BloomSetUpstreamTest(BloomSetUpstreamTestSetups):
+
+    def test_get_argument_parser(self):
+        from bloom.generators.debian.main_all import get_argument_parser
+        parser = get_argument_parser()
+        assert type(parser) == argparse.ArgumentParser, type(parser)
+        args = parser.parse_args(['groovy', 'release'])
+        assert args.rosdistro == 'groovy', args.rosdistro
+        assert args.prefix == 'release', args.prefix
+        args = parser.parse_args(
+            ['groovy', 'release', '--debian-revision', '3']
+        )
+        assert args.rosdistro == 'groovy', args.rosdistro
+        assert args.prefix == 'release', args.prefix
+        assert args.debian_revision == '3', args.debian_revision
+        # assert args.working == None, args.working
+        # assert args.debian_revision == 0, args.debian_revision
+        # assert args.install_prefix == None, args.install_prefix
+        # assert args.distros == [], args.distros
+        # test = ['--working', '.tmp/somedir',
+        #         '--debian-revision', '3',
+        #         '--install-prefix', '/opt/ros/groovy',
+        #         '--distros', 'lucid', 'precise', '--',
+        #         'groovy', 'release']
+        # args = parser.parse_args(test)
+        # assert args.rosdistro == 'groovy', args.rosdistro
+        # assert args.working == '.tmp/somedir', args.working
+        # assert args.debian_revision == '3', args.debian_revision
+        # assert args.install_prefix == '/opt/ros/groovy', args.install_prefix
+        # assert args.distros == ['lucid', 'precise'], args.distros
+
+    def test_process_stack_xml(self):
+        # Create a demo stack
+        stack = """\
+<stack>
+  <name>langs</name>
+  <version>0.4.0</version>
+  <description>Meta package modeling the run-time dependencies for language \
+bindings of messages.</description>
+  <author>The ROS Ecosystem</author>
+  <maintainer email="dthomas@willowgarage.com">Dirk Thomas</maintainer>
+  <license>BSD</license>
+  <copyright>Willow Garage</copyright>
+  <url>http://www.ros.org</url>
+
+  <build_depends>catkin</build_depends>
+
+  <depends>catkin</depends>
+  <!-- required for messages generated by gencpp -->
+  <depends>roscpp_core</depends>
+
+  <!-- workaround to provide the generators to dry downstream packages -->
+  <depends>langs-dev</depends>
+</stack>"""
+        fh = open(os.path.join(self.git_repo, 'stack.xml'), 'w+')
+        fh.write(stack)
+        fh.close()
+        from bloom.generators.debian import process_stack_xml
+        argsmock = Mock()
+        process_stack_xml(argsmock, self.git_repo)
