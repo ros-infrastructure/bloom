@@ -119,7 +119,7 @@ class log_prefix(ContextDecorator):
     def __enter__(self):
         push_log_prefix(self.prefix)
 
-    def __exit__(self):
+    def __exit__(self, exc_type, exc_value, traceback):
         pop_log_prefix()
 
 
