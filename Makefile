@@ -1,7 +1,6 @@
 .PHONY: all setup clean_dist distro clean install upload push
 
 NAME=bloom
-VERSION=`./setup.py --version`
 
 OUTPUT_DIR=deb_dist
 
@@ -16,7 +15,7 @@ all:
 	echo "noop for debbuild"
 
 setup:
-	echo "building version ${VERSION}"
+	echo "building version ${`./setup.py --version`}"
 
 clean_dist:
 	-rm -f MANIFEST
@@ -28,7 +27,7 @@ distro: setup clean_dist
 
 push: distro
 	python setup.py sdist register upload
-	scp dist/${NAME}-${VERSION}.tar.gz ${USERNAME}@ipr:/var/www/pr.willowgarage.com/html/downloads/${NAME}
+	scp dist/${NAME}-${`./setup.py --version`}.tar.gz ${USERNAME}@ipr:/var/www/pr.willowgarage.com/html/downloads/${NAME}
 
 clean: clean_dist
 	echo "clean"
@@ -41,12 +40,12 @@ deb_dist:
 	python setup.py --command-packages=stdeb.command sdist_dsc --workaround-548392=False bdist_deb
 
 upload-packages: deb_dist
-	dput -u -c dput.cf all-shadow ${OUTPUT_DIR}/${NAME}_${VERSION}-1_amd64.changes 
-	dput -u -c dput.cf all-shadow-fixed ${OUTPUT_DIR}/${NAME}_${VERSION}-1_amd64.changes 
-	dput -u -c dput.cf all-ros ${OUTPUT_DIR}/${NAME}_${VERSION}-1_amd64.changes 
+	dput -u -c dput.cf all-shadow ${OUTPUT_DIR}/${NAME}_${`./setup.py --version`}-1_amd64.changes 
+	dput -u -c dput.cf all-shadow-fixed ${OUTPUT_DIR}/${NAME}_${`./setup.py --version`}-1_amd64.changes 
+	dput -u -c dput.cf all-ros ${OUTPUT_DIR}/${NAME}_${`./setup.py --version`}-1_amd64.changes 
 
 upload-building: deb_dist
-	dput -u -c dput.cf all-building ${OUTPUT_DIR}/${NAME}_${VERSION}-1_amd64.changes 
+	dput -u -c dput.cf all-building ${OUTPUT_DIR}/${NAME}_${`./setup.py --version`}-1_amd64.changes 
 
 upload: upload-building upload-packages
 
@@ -54,4 +53,7 @@ testsetup:
 	echo "running bloom tests"
 
 test: testsetup
-	python setup.py test
+	python setup.py nosetests
+
+test--pdb-failures: testsetup
+	python setup.py nosetests --pdb-failures
