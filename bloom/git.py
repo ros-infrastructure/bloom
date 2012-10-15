@@ -45,9 +45,11 @@ from bloom.logging import debug
 from bloom.logging import error
 from bloom.logging import warning
 
+from bloom.util import code
 from bloom.util import execute_command
 from bloom.util import check_output
 from bloom.util import pdb_hook
+import bloom.util
 
 
 def ls_tree(reference, path=None, directory=None):
@@ -139,34 +141,34 @@ def ensure_clean_working_env(force=False, git_status=True, directory=None):
 
     :raises: subprocess.CalledProcessError if any git calls fail
     """
-    def ecwe_fail(show_git_status):
-        if show_git_status:
+    def ecwe_fail(code, show_git_status):
+        if not bloom.util._quiet and show_git_status:
             print('\n++ git status:\n')
             os.system('git status')
-        return 1
+        return code
     # Is it a git repo
     if get_root(directory) is None:
         error("Not is a valid git repository")
-        return 1
+        return code.NOT_A_GIT_REPOSITORY
     # Are we on a branch?
     current_branch = get_current_branch(directory)
     if current_branch is None:
         msg = warning if force else error
         msg("Could not determine current branch")
         if not force:
-            return ecwe_fail(git_status)
+            return ecwe_fail(code.NOT_ON_A_GIT_BRANCH, git_status)
     # Are there local changes?
     if has_changes(directory):
         msg = warning if force else error
         msg("Current git working branch has local changes")
         if not force:
-            return ecwe_fail(git_status)
+            return ecwe_fail(code.GIT_HAS_LOCAL_CHANGES, git_status)
     # Are there untracked files or directories?
     if has_untracked_files(directory):
         msg = warning if force else error
         msg("Current git working branch has untracked files/directories")
         if not force:
-            return ecwe_fail(git_status)
+            return ecwe_fail(code.GIT_HAS_UNTRACKED_FILES, git_status)
     return 0
 
 
