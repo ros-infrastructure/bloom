@@ -36,6 +36,7 @@ Provides common utility functions for bloom.
 
 from __future__ import print_function
 
+import argparse
 import os
 import sys
 
@@ -52,27 +53,37 @@ from bloom.logging import error
 class code(object):
     UNKNOWN = -1
     OK = 0
-    INVALID_VERSION = 10
-    INVALID_UPSTREAM_TAG = 11
+    NOT_A_GIT_REPOSITORY = 10
+    NOT_ON_A_GIT_BRANCH = 11
+    GIT_HAS_LOCAL_CHANGES = 12
+    GIT_HAS_UNTRACKED_FILES = 13
+    INVALID_VERSION = 30
+    INVALID_UPSTREAM_TAG = 31
+    VCSTOOLS_NOT_FOUND = 51
 
 
 def add_global_arguments(parser):
     group = parser.add_argument_group('global')
     group.add_argument('-d', '--debug', help='enable debug messages',
                        action='store_true', default=False)
-    group.add_argument('--pdb', help='enable debugging post mortem with pdb',
+    group.add_argument('--pdb', help=argparse.SUPPRESS,
                        action='store_true', default=False)
     group.add_argument('--version', action='store_true', default=False,
                        help="prints the bloom version")
+    add = group.add_argument
+    add('--quiet', help=argparse.SUPPRESS,
+        default=False, action='store_true')
     return parser
 
 _pdb = False
+_quiet = False
 
 
 def handle_global_arguments(args):
-    global _pdb
+    global _pdb, _quiet
     enable_debug(args.debug)
     _pdb = args.pdb
+    _quiet = args.quiet
     if args.version:
         from bloom import __version__
         print(__version__)
