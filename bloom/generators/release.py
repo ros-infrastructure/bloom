@@ -5,7 +5,6 @@ import sys
 
 from bloom.generators import BloomGenerator
 
-from bloom.git import checkout
 from bloom.git import inbranch
 from bloom.git import get_current_branch
 
@@ -32,14 +31,6 @@ except ImportError:
 
 
 def get_meta_data(source_branch, name=None, directory=None):
-    # Ensure we are on the correct src branch
-    current_branch = get_current_branch(directory)
-    if current_branch != source_branch:
-        info("Changing to specified source branch " + source_branch)
-        ret = checkout(source_branch, directory=directory)
-        if ret != 0:
-            return ret
-
     ## Determine the branching method
     # First check for arguments
     if name is not None:
@@ -89,13 +80,21 @@ each package in the upstream repository, so the source branch should be set to
         BloomGenerator.prepare_arguments(self, parser)
 
     def handle_arguments(self, args):
-        self.interactive = not args.non_interactive
+        # self.interactive = not args.non_interactive
+        self.prefix = args.prefix
         self.src = args.src if args.src is not None else get_current_branch()
         self.name = args.name
 
     def summarize(self):
-        info("Generating release branches")
-        info("")
+        info("Looking for packages to release...")
+        self.branch_list = self.detect_branches()
+        if type(self.branch_list) not in [list, tuple]:
+            self.exit(self.branch_list if self.branch_list is not None else -1)
+        info(
+            "Releasing package" + \
+            ('' if len(self.branch_list) == 1 else 's') + ": " + \
+            str(self.branch_list)
+        )
 
     def detect_branches(self):
         with inbranch(self.src):
@@ -108,4 +107,6 @@ each package in the upstream repository, so the source branch should be set to
             return name if type(name) is list else list(name)
 
     def branches(self):
-        self.branches = self.detect_branches()
+        p, s, n = self.prefix, self.src, self.name
+        self.branch_args = [['/'.join([p, b]), s, n] for b in self.branch_list]
+        return self.branch_args
