@@ -123,7 +123,8 @@ class log_prefix(ContextDecorator):
         pop_log_prefix()
 
 
-def debug(msg, file=sys.stdout, end='\n', use_prefix=True):
+def debug(msg, file=None, end='\n', use_prefix=True):
+    file = file if file is not None else sys.stdout
     global _quiet, _debug, _log_prefix
     if use_prefix:
         msg = ansi('greenf') + _log_prefix + msg + ansi('reset')
@@ -133,7 +134,8 @@ def debug(msg, file=sys.stdout, end='\n', use_prefix=True):
         print(msg, file=file, end=end)
 
 
-def info(msg, file=sys.stdout, end='\n', use_prefix=True):
+def info(msg, file=None, end='\n', use_prefix=True):
+    file = file if file is not None else sys.stdout
     global _quiet
     if use_prefix:
         msg = _log_prefix + msg
@@ -142,7 +144,8 @@ def info(msg, file=sys.stdout, end='\n', use_prefix=True):
     return msg
 
 
-def warning(msg, file=sys.stdout, end='\n', use_prefix=True):
+def warning(msg, file=None, end='\n', use_prefix=True):
+    file = file if file is not None else sys.stdout
     global _quiet
     if use_prefix:
         msg = ansi('yellowf') + ansi('boldon') + _log_prefix + msg \
@@ -154,7 +157,8 @@ def warning(msg, file=sys.stdout, end='\n', use_prefix=True):
     return msg
 
 
-def error(msg, file=sys.stderr, end='\n', use_prefix=True):
+def error(msg, file=None, end='\n', use_prefix=True):
+    file = file if file is not None else sys.stderr
     global _quiet
     if use_prefix:
         msg = ansi('redf') + ansi('boldon') + _log_prefix + msg + ansi('reset')
