@@ -39,22 +39,29 @@ import argparse
 from bloom.git import branch_exists
 from bloom.git import checkout
 from bloom.git import create_branch
+from bloom.git import ensure_clean_working_env
 from bloom.git import get_current_branch
 from bloom.git import get_root
 from bloom.git import has_changes
 from bloom.git import inbranch
-from bloom.git import ensure_clean_working_env
 
+from bloom.logging import ansi
 from bloom.logging import debug
-from bloom.logging import info
 from bloom.logging import error
+from bloom.logging import info
 
 from bloom.util import add_global_arguments
+from bloom.util import code
+from bloom.util import execute_command
 from bloom.util import handle_global_arguments
-from bloom.util import maybe_continue, execute_command, ansi
+from bloom.util import maybe_continue
 
 
 def check_git_init():
+    if get_root() is None:
+        error("Not is a valid git repository")
+        return code.NOT_A_GIT_REPOSITORY
+
     cmd = 'git show-ref --heads'
     result = execute_command(cmd, shell=True, autofail=False,
                              silent_error=True)
@@ -70,10 +77,6 @@ def check_git_init():
 
 
 def set_upstream(upstream_repo, upstream_repo_type, upstream_repo_branch):
-    # Check for freshly initialized repo
-    if check_git_init() != 0:
-        return 1
-
     # Check for a bloom branch
     if branch_exists('bloom', False):
         # Found a bloom branch
@@ -112,11 +115,6 @@ def summarize_arguments(upstream_repo, upstream_repo_type,
 
 
 def validate_args(upstream_repo_type):
-    # Check that the current directory is a servicable git/bloom repo
-    if get_root() is None:
-        error("Not in a git repository.\n")
-        return False
-
     # Ensure that the upstream-repo-type is valid
     if upstream_repo_type not in ['git', 'svn', 'hg', 'bzr']:
         error("Invalid upstream repository type: "
@@ -171,6 +169,11 @@ def main(sysargs=None):
     parser = add_global_arguments(parser)
     args = parser.parse_args(sysargs)
     handle_global_arguments(args)
+
+    # Check for freshly initialized repo
+    ret = check_git_init()
+    if ret != 0:
+        return ret
 
     retcode = ensure_clean_working_env()
     if retcode != 0:
