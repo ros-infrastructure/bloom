@@ -36,6 +36,12 @@ from bloom.logging import debug
 from bloom.logging import info
 
 
+class GeneratorError(Exception):
+    def __init__(self, retcode):
+        super(GeneratorError, self).__init__("Error running generator")
+        self.retcode = retcode
+
+
 class BloomGenerator(object):
     """
     Abstract generator class, from which all bloom generators inherit.
@@ -50,6 +56,9 @@ class BloomGenerator(object):
         desc = description
         self.description = desc if desc is not None else self.description
         self.help = help if help is not None else self.help
+
+    def exit(self, retcode):
+        raise GeneratorError(retcode)
 
     def prepare_arguments(self, parser):
         """
