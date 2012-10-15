@@ -64,6 +64,7 @@ from bloom.logging import warning
 
 from bloom.util import add_global_arguments
 from bloom.util import check_output
+from bloom.util import code
 from bloom.util import create_temporary_directory
 from bloom.util import execute_command
 from bloom.util import get_versions_from_upstream_tag
@@ -75,7 +76,7 @@ try:
     from vcstools import VcsClient
 except ImportError:
     error("vcstools was not detected, please install it.", file=sys.stderr)
-    sys.exit(1)
+    sys.exit(code.VCSTOOLS_NOT_FOUND)
 
 has_rospkg = False
 try:
@@ -503,9 +504,10 @@ def main(sysargs=None):
     handle_global_arguments(args)
 
     # Check that the current directory is a serviceable git/bloom repo
-    if ensure_clean_working_env() != 0:
+    ret = ensure_clean_working_env()
+    if ret != 0:
         parser.print_usage()
-        return 1
+        return ret
 
     # Get the current git branch
     current_branch = get_current_branch()
@@ -523,7 +525,8 @@ def main(sysargs=None):
         retcode = import_upstream(cwd, tmp_dir, args)
 
         # Done!
-        if retcode is None or retcode == 0:
+        retcode = retcode if retcode is not None else 0
+        if retcode == 0:
             info("I'm happy.  You should be too.")
 
         return retcode
