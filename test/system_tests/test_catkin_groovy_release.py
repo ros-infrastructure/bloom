@@ -87,4 +87,4 @@ def test_unary_package_repository(directory=None):
         # Import upstream
         user('git-bloom-import-upstream --quiet')
         # Generate the vanilla release
-        user('git-bloom-generate release --quiet')
+        # user('git-bloom-generate release --quiet')
