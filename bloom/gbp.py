@@ -41,6 +41,7 @@ from distutils.version import LooseVersion
 
 from bloom.logging import error
 
+import bloom.util
 from bloom.util import execute_command
 
 _gbp_version = None
@@ -82,7 +83,8 @@ def import_orig(tarball, interactive=False, merge=False, directory=None):
         cmd += ' --no-interactive'
     if not merge:
         cmd += ' --no-merge'
-    ret = execute_command(cmd, silent=False, autofail=False, cwd=directory)
+    ret = execute_command(cmd, silent=bloom.util._quiet, autofail=False,
+                          cwd=directory)
     if ret != 0:
         error("git-import-orig failed '{0}'".format(cmd))
         return True
