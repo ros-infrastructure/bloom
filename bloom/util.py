@@ -53,6 +53,7 @@ from bloom.logging import error
 class code(object):
     UNKNOWN = -1
     OK = 0
+    ANSWERED_NO_TO_CONTINUE = 5
     NOT_A_GIT_REPOSITORY = 10
     NOT_ON_A_GIT_BRANCH = 11
     GIT_HAS_LOCAL_CHANGES = 12
