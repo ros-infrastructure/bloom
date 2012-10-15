@@ -10,6 +10,7 @@ _debug = False
 _log_prefix_stack = ['']
 _log_prefix = ''
 _log_indent = False
+_drop_first_log_prefix = False
 
 
 def ansi(key):
@@ -91,8 +92,11 @@ def _get_log_prefix():
 
 
 def push_log_prefix(prefix):
-    global _log_prefix, _log_prefix_stack
-    _log_prefix_stack.append(prefix)
+    global _log_prefix, _log_prefix_stack, _drop_first_log_prefix
+    if _drop_first_log_prefix and len(_log_prefix_stack) <= 1:
+        _log_prefix_stack.append('')
+    else:
+        _log_prefix_stack.append(prefix)
     _log_prefix = _get_log_prefix()
 
 
