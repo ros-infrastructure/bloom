@@ -35,21 +35,59 @@
 from __future__ import print_function
 
 import os
+import functools
+import shutil
+import tempfile
 
 from subprocess import PIPE
 from subprocess import CalledProcessError
-
-import functools
 
 from bloom.logging import debug
 from bloom.logging import error
 from bloom.logging import warning
 
+from bloom.util import change_directory
+from bloom.util import check_output
 from bloom.util import code
 from bloom.util import execute_command
-from bloom.util import check_output
 from bloom.util import pdb_hook
 import bloom.util
+
+
+class GitClone(object):
+    def __init__(self, directory=None, track_all=True):
+        self.tmp_dir = None
+        self.directory = directory if directory is not None else os.getcwd()
+        if get_root(directory) is None:
+            raise RuntimeError("Provided directory, '" + str(directory) + \
+                               "', is not a git repository")
+        self.tmp_dir = tempfile.mkdtemp()
+        self.clone_dir = os.path.join(self.tmp_dir, 'clone')
+        self.repo_url = 'file://' + os.path.abspath(self.directory)
+        execute_command('git clone ' + self.repo_url + ' ' + self.clone_dir)
+        track_branches(self.clone_dir)
+
+    def __del__(self):
+        self.clean_up()
+
+    def __enter__(self):
+        self.orig_cwd = os.getcwd()
+        os.chdir(self.clone_dir)
+        return os.getcwd()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        os.chdir(self.orig_cwd)
+
+    def clean_up(self):
+        if self.tmp_dir is not None and os.path.exists(self.tmp_dir):
+            shutil.rmtree(self.tmp_dir)
+            self.tmp_dir = None
+
+    def commit(self):
+        with change_directory(self.clone_dir):
+            execute_command('git push --force --all')
+            execute_command('git push --force --tags')
+        self.clean_up()
 
 
 def ls_tree(reference, path=None, directory=None):
@@ -172,7 +210,7 @@ def ensure_clean_working_env(force=False, git_status=True, directory=None):
     return 0
 
 
-def checkout(reference, raise_exc=False, directory=None):
+def checkout(reference, raise_exc=False, directory=None, show_git_status=True):
     """
     Returns True if the checkout to a the reference was successful, else False
 
@@ -191,6 +229,9 @@ def checkout(reference, raise_exc=False, directory=None):
         debug("  Has local changes:   '{0}'".format(str(changes)))
         debug("  Has untrakced files: '{0}'".format(str(untracked)))
         pdb_hook()
+        if not bloom.util._quiet and show_git_status:
+            print('\n++ git status:\n')
+            os.system('git status')
         return 1
     debug("Checking out to " + str(reference))
     if reference == get_current_branch(directory):
@@ -216,37 +257,12 @@ def checkout(reference, raise_exc=False, directory=None):
     except CalledProcessError as err:
         fail_msg = "CalledProcessError: " + str(err)
         if raise_exc:
-            checkout_summarize(fail_msg)
+            checkout_summarize(fail_msg, branch, directory)
             raise
     if fail_msg != '':
         return checkout_summarize(fail_msg, branch, directory)
     else:
         return 0
-
-
-def branch_exists(branch_name, local_only=False, directory=None):
-    """
-    Returns true if a given branch exists locally or remotelly
-
-    :param branch_name: name of the branch to look for
-    :param local_only: if True, only look at the local branches
-    :param directory: directory in which to run this command
-
-    :returns: True if the branch is in the list of branches from git
-
-    :raises: subprocess.CalledProcessError if any git calls fail
-    """
-    for branch in get_branches(local_only, directory):
-        if branch.startswith('remotes/'):
-            branch = branch.split('/')
-            if len(branch) > 2:
-                branch = '/'.join(branch[2:])
-                if branch_name == branch:
-                    return True
-        else:
-            if branch_name == branch:
-                return True
-    return False
 
 
 class ContextDecorator(object):
@@ -339,6 +355,57 @@ def has_changes(directory=None):
     if 'nothing added to commit' in out:
         return False
     return True
+
+
+def tag_exists(tag, directory=None):
+    """
+    Returns True if the given tag exists, False otherwise
+
+    :param tag: tag to check for
+    :param directory: directory in which to preform this action
+    :returns: True if the given tag exists, False otherwise
+
+    :raises: subprocess.CalledProcessError if any git calls fail
+    """
+    return tag in get_tags(directory)
+
+
+def get_tags(directory=None):
+    """
+    Returns a list of tags in the git repository.
+
+    :param directory: directory in which to preform this action
+    :returns: list of tags
+
+    :raises: subprocess.CalledProcessError if any git calls fail
+    """
+    out = check_output('git tag -l', shell=True, cwd=directory)
+    return [l.strip() for l in out.splitlines()]
+
+
+def branch_exists(branch_name, local_only=False, directory=None):
+    """
+    Returns true if a given branch exists locally or remotelly
+
+    :param branch_name: name of the branch to look for
+    :param local_only: if True, only look at the local branches
+    :param directory: directory in which to run this command
+
+    :returns: True if the branch is in the list of branches from git
+
+    :raises: subprocess.CalledProcessError if any git calls fail
+    """
+    for branch in get_branches(local_only, directory):
+        if branch.startswith('remotes/'):
+            branch = branch.split('/')
+            if len(branch) > 2:
+                branch = '/'.join(branch[2:])
+                if branch_name == branch:
+                    return True
+        else:
+            if branch_name == branch:
+                return True
+    return False
 
 
 def get_branches(local_only=False, directory=None):
