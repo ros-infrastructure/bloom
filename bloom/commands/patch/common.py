@@ -1,33 +1,17 @@
 from __future__ import print_function
 
 import os
-import sys
 import subprocess
 import traceback
 
-from bloom.git import get_current_branch
 from bloom.git import has_changes
 from bloom.git import inbranch
+from bloom.git import show
 
 from bloom.logging import error
-from bloom.logging import debug
 
-from bloom.util import check_output
 from bloom.util import execute_command
 from bloom.util import print_exc
-
-try:
-    from catkin_pkg.packages import find_packages
-    from catkin_pkg.packages import verify_equal_package_versions
-except ImportError:
-    error("catkin_pkg was not detected, please install it.", file=sys.stderr)
-    sys.exit(1)
-
-try:
-    import rospkg
-except ImportError:
-    print("rospkg was not detected, please install it.", file=sys.stderr)
-    sys.exit(2)
 
 _patch_config_keys = [
     'parent',    # The name of the parent reference
@@ -37,39 +21,6 @@ _patch_config_keys = [
     'trimbase'   # Commit hash before trimming
 ]
 _patch_config_keys.sort()
-
-
-def get_version(directory=None):
-    basepath = directory if directory else os.getcwd()
-    packages = find_packages(basepath=basepath)
-    if type(packages) != dict or packages == {}:
-        debug("get_version: didn't find packages, looking for stacks")
-        stack_path = os.path.join(basepath, 'stack.xml')
-        if os.path.exists(stack_path):
-            stack = rospkg.stack.parse_stack_file(stack_path)
-            return stack.version
-        else:
-            error("Version could not be determined.")
-            sys.exit(1)
-    try:
-        return verify_equal_package_versions(packages.values())
-    except RuntimeError as err:
-        print_exc(traceback.format_exc())
-        error("Releasing multiple packages with different versions is "
-                "not supported: " + str(err))
-        sys.exit(1)
-
-
-def update_tag(version=None, force=True, directory=None):
-    if version is None:
-        version = get_version(directory)
-    current_branch = get_current_branch(directory)
-    tag_name = current_branch + "/" + version
-    debug("Updating tag " + tag_name + " to point to " + current_branch)
-    cmd = 'git tag ' + tag_name
-    if force:
-        cmd += ' -f'
-    execute_command(cmd, cwd=directory)
 
 
 def list_patches(directory=None):
@@ -83,30 +34,20 @@ def list_patches(directory=None):
 
 
 def get_patch_config(patches_branch, directory=None):
-    @inbranch(patches_branch, directory=directory)
-    def fn():
-        global _patch_config_keys
-        conf_path = 'patches.conf'
-        if directory is not None:
-            conf_path = os.path.join(directory, conf_path)
-        if not os.path.exists(conf_path):
-            return None
-        cmd = 'git config -f {0} patches.'.format(conf_path)
-        config = {}
-        for key in _patch_config_keys:
-            try:
-                config[key] = check_output(cmd + key, shell=True,
-                                           cwd=directory).strip()
-            except subprocess.CalledProcessError as err:
-                if key == 'previous':
-                    config[key] = ''
-                else:
-                    print_exc(traceback.format_exc())
-                    error("Failed to get patches info: " + str(err))
-                    return None
-        debug("get_patch_config: config -> " + str(config))
-        return config
-    return fn()
+    config_str = show(patches_branch, 'patches.conf')
+    if config_str is None:
+        error("Failed to get patches info: patches.conf does not exist")
+        return None
+    lines = config_str.splitlines()
+    meta = {}
+    for key in _patch_config_keys:
+        meta[key] = ''
+    for line in lines:
+        if line.count('=') == 0:
+            continue
+        key, value = line.split('=', 1)
+        meta[key.strip()] = value.strip()
+    return meta
 
 
 def set_patch_config(patches_branch, config, directory=None):
