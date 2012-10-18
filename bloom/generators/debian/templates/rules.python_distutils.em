@@ -14,21 +14,21 @@ export DH_OPTIONS=-v
 
 # elsewhere there is a PYTHON_PACKAGES_DIR defined.  We shouldn't
 # need this here:  this file is only for debian.
-export PYTHONPATH=@(INSTALL_PREFIX)/lib/python@(pyversion)/dist-packages
+export PYTHONPATH=@(InstallationPrefix)/lib/python@(pyversion)/dist-packages
 %:
 	dh  $@@
 
 override_dh_auto_configure:
 	dh_auto_configure -Scmake -- \
 		-DCATKIN_BUILD_BINARY_PACKAGE="1" \
-		-DCMAKE_INSTALL_PREFIX="@(INSTALL_PREFIX)" \
-		-DCMAKE_PREFIX_PATH="@(INSTALL_PREFIX)"
+		-DCMAKE_INSTALL_PREFIX="@(InstallationPrefix)" \
+		-DCMAKE_PREFIX_PATH="@(InstallationPrefix)"
 	dh_auto_configure -Spython_distutils
 
 override_dh_auto_install:
 	dh_auto_install -Scmake
 	dh_auto_install -Spython_distutils -- \
-		--prefix="@(INSTALL_PREFIX)" --install-layout=deb
+		--prefix="@(InstallationPrefix)" --install-layout=deb
 
 override_dh_auto_build:
 	dh_auto_build -Scmake
