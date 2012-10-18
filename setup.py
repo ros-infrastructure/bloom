@@ -8,7 +8,7 @@ setup(
     packages=find_packages(exclude=['test']),
     package_data={
         'bloom.generators.debian':
-            ['bloom/generators/debian/resources/em/*.em']
+            ['bloom/generators/debian/templates/*.em']
     },
     install_requires=[
         'empy >= 3.1',
