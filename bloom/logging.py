@@ -83,6 +83,13 @@ def enable_debug_indent(state=True):
 enable_debug_indent(True)
 
 
+def enable_drop_first_log_prefix(state=True):
+    global _drop_first_log_prefix
+    _drop_first_log_prefix = state
+
+enable_drop_first_log_prefix(True)
+
+
 def _get_log_prefix():
     global _log_prefix_stack, _log_indent
     if _log_indent:
@@ -152,10 +159,10 @@ def warning(msg, file=None, end='\n', use_prefix=True):
     file = file if file is not None else sys.stdout
     global _quiet
     if use_prefix:
-        msg = ansi('yellowf') + ansi('boldon') + _log_prefix + msg \
+        msg = ansi('yellowf') + _log_prefix + msg \
             + ansi('reset')
     else:
-        msg = ansi('yellowf') + ansi('boldon') + msg + ansi('reset')
+        msg = ansi('yellowf') + msg + ansi('reset')
     if not _quiet:
         print(msg, file=file, end=end)
     return msg
