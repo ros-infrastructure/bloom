@@ -8,14 +8,13 @@ from bloom.util import execute_command
 from bloom.util import handle_global_arguments
 from bloom.logging import log_prefix
 from bloom.logging import error
-from bloom.logging import info
+from bloom.logging import debug
 from bloom.git import branch_exists
 from bloom.git import checkout
 from bloom.git import get_current_branch
 from bloom.git import track_branches
 
 from bloom.commands.patch.common import get_patch_config
-from bloom.commands.patch.common import update_tag
 
 
 @log_prefix('[git-bloom-patch remove]: ')
@@ -43,12 +42,10 @@ def remove_patches(directory=None):
         if None in [parent, spec]:
             error("Could not retrieve patches info.")
             return 1
-        info("Removing patches from " + current_branch + " back to base "
-             "commit " + spec)
+        debug("Removing patches from " + current_branch + " back to base "
+              "commit " + spec)
         # Reset this branch using git reset --hard spec
         execute_command('git reset --hard ' + spec, cwd=directory)
-        # reset the tag
-        update_tag()
     finally:
         if current_branch:
             checkout(current_branch, directory=directory)

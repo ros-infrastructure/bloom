@@ -16,6 +16,7 @@ from bloom.git import ls_tree
 from bloom.git import track_branches
 
 from bloom.logging import ansi
+from bloom.logging import debug
 from bloom.logging import error
 from bloom.logging import log_prefix
 from bloom.logging import info
@@ -23,6 +24,7 @@ from bloom.logging import info
 from bloom.commands.patch.common import set_patch_config
 
 from bloom.util import add_global_arguments
+from bloom.util import code
 from bloom.util import handle_global_arguments
 from bloom.util import maybe_continue
 from bloom.util import print_exc
@@ -53,16 +55,17 @@ def execute_branch(src, dst, interactive, directory=None):
     # Determine if the srouce branch exists
     if branch_exists(src, local_only=False, directory=directory):
         if not branch_exists(src, local_only=True, directory=directory):
-            info("Tracking source branch: {0}".format(src))
+            debug("Tracking source branch: {0}".format(src))
             track_branches(src, directory)
     else:
         error("Specified source branch does not exist: {0}".format(src))
+        return code.BRANCH_DOES_NOT_EXIST
 
     # Determine if the destination branch needs to be created
     create_dst_branch = False
     if branch_exists(dst, local_only=False, directory=directory):
         if not branch_exists(dst, local_only=True, directory=directory):
-            info("Tracking destination branch: {0}".format(dst))
+            debug("Tracking destination branch: {0}".format(dst))
             track_branches(dst, directory)
     else:
         create_dst_branch = True

@@ -130,7 +130,7 @@ def git_rebase(upstream_branch, directory=None):
 
 
 @log_prefix('[git-bloom-patch rebase]: ')
-def rebase_patches(without_git_rebase=False, directory=None):
+def rebase_patches(without_git_rebase=True, directory=None):
     ### Ensure a clean/valid working environment
     ret = ensure_clean_working_env(git_status=True, directory=directory)
     if ret != 0:
@@ -146,11 +146,11 @@ def rebase_patches(without_git_rebase=False, directory=None):
     upstream_commit_hash = get_commit_hash(config['parent'], directory)
     # If the current upstream commit hash is the same as the stored one, noop
     if upstream_commit_hash == config['previous']:
-        warning("Nothing to do: Current branch (" + current_branch + ")'s "
+        debug("Nothing to do: Current branch (" + current_branch + ")'s "
                 "base commit hash is the same as the source branch (" + \
                 config['parent'] + ")'s commit hash.")
-        warning("    Did you forget to update the parent branch first?")
-        warning("    Updating the parent branch can be done by calling "
+        debug("    Did you forget to update the parent branch first?")
+        debug("    Updating the parent branch can be done by calling "
                 "'git-bloom-patch rebase' on it, or 'git-bloom-import-upsteam'"
                 " if the parent branch is the upstream branch.")
         return 0

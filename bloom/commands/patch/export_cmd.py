@@ -9,6 +9,7 @@ from bloom.git import ensure_clean_working_env
 from bloom.git import get_current_branch
 from bloom.git import has_changes
 
+from bloom.logging import debug
 from bloom.logging import error
 from bloom.logging import info
 from bloom.logging import log_prefix
@@ -43,7 +44,7 @@ def export_patches(directory=None):
         # Checkout to the patches branch
         checkout(patches_branch, directory=directory)
         # Notify the user
-        info("Exporting patches from "
+        debug("Exporting patches from "
              "{0}...{1}".format(config['base'], current_branch))
         # Remove all the old patches
         if len(list_patches(directory)) > 0:
@@ -55,7 +56,7 @@ def export_patches(directory=None):
         execute_command(cmd, cwd=directory)
         # Report of the number of patches created
         patches_list = list_patches(directory)
-        info("Created {0} patches".format(len(patches_list)))
+        debug("Created {0} patches".format(len(patches_list)))
         # Clean up and commit
         if len(patches_list) > 0:
             cmd = 'git add ./*.patch'

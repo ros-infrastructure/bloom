@@ -6,13 +6,6 @@ import tempfile
 import shutil
 from argparse import ArgumentParser
 
-from bloom.util import add_global_arguments
-from bloom.util import execute_command
-from bloom.util import handle_global_arguments
-from bloom.logging import debug
-from bloom.logging import log_prefix
-from bloom.logging import error
-from bloom.logging import warning
 from bloom.git import branch_exists
 from bloom.git import checkout
 from bloom.git import get_commit_hash
@@ -20,9 +13,18 @@ from bloom.git import get_current_branch
 from bloom.git import get_root
 from bloom.git import track_branches
 
+from bloom.logging import debug
+from bloom.logging import log_prefix
+from bloom.logging import error
+from bloom.logging import warning
+
+from bloom.util import add_global_arguments
+from bloom.util import code
+from bloom.util import execute_command
+from bloom.util import handle_global_arguments
+
 from bloom.commands.patch.common import get_patch_config
 from bloom.commands.patch.common import set_patch_config
-from bloom.commands.patch.common import update_tag
 
 
 def _set_trim_sub_dir(sub_dir, force, config, directory):
@@ -58,7 +60,7 @@ def _undo(config, directory):
     # TODO: handle repo with changes
     # TODO: handle repo with patches applied
     if config['trimbase'] == '':
-        warning("It does not look like this branch has been trimmed, exiting.")
+        debug("Branch has not been trimmed previously, undo not required.")
         return None
     # Reset with git-reset
     execute_command('git reset --hard ' + config['trimbase'], cwd=directory)
@@ -117,7 +119,7 @@ def trim(sub_dir=None, force=False, undo=False, directory=None):
     # Ensure the current branch is valid
     if current_branch is None:
         error("Could not determine current branch, are you in a git repo?")
-        return 1
+        return code.NOT_ON_A_GIT_BRANCH
     # Construct the patches branch
     patches_branch = 'patches/' + current_branch
     try:
@@ -128,31 +130,31 @@ def trim(sub_dir=None, force=False, undo=False, directory=None):
         else:
             error("No patches branch (" + patches_branch + ") found, cannot "
                   "perform trim.")
-            return 1
+            return code.BRANCH_DOES_NOT_EXIST
         # Get the parent branch from the patches branch
         config = get_patch_config(patches_branch, directory=directory)
         if config is None:
             error("Could not retrieve patches info.")
-            return 1
+            return code.COULD_NOT_GET_PATCH_INFO
         # If sub_dir is set, try to set it
         new_config = _set_trim_sub_dir(sub_dir, force, config, directory)
         if new_config is None:
-            return 1
+            return code.COULD_NOT_TRIM
         # Perform trime or undo
         if undo:
             new_config = _undo(new_config, directory)
+            if new_config is None:
+                return code.NOTHING_TO_DO
         else:
             new_config = _trim(new_config, force, directory)
         if new_config is None:
-            return 1
+            return code.COULD_NOT_TRIM
         # Commit the new config
         set_patch_config(patches_branch, new_config, directory)
-        # Update the tag
-        update_tag()
     finally:
         if current_branch:
             checkout(current_branch, directory=directory)
-    return 0
+    return code.OK
 
 
 def get_parser():
