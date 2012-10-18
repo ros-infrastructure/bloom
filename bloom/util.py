@@ -46,21 +46,106 @@ from subprocess import Popen
 
 from bloom.logging import ansi
 from bloom.logging import debug
+from bloom.logging import disable_ANSI_colors
 from bloom.logging import enable_debug
 from bloom.logging import error
+from bloom.logging import info
+from bloom.logging import warning
+
+try:
+    from catkin_pkg.packages import find_packages
+    from catkin_pkg.packages import verify_equal_package_versions
+except ImportError:
+    error("catkin_pkg was not detected, please install it.",
+          file=sys.stderr)
+    sys.exit(1)
 
 
+# Convention: < 0 is a warning exit, 0 is normal, > 0 is an error
 class code(object):
-    UNKNOWN = -1
+    NOTHING_TO_DO = -10
     OK = 0
+    UNKNOWN = 1
     ANSWERED_NO_TO_CONTINUE = 5
+    NO_PACKAGE_XML_FOUND = 6
     NOT_A_GIT_REPOSITORY = 10
     NOT_ON_A_GIT_BRANCH = 11
     GIT_HAS_LOCAL_CHANGES = 12
     GIT_HAS_UNTRACKED_FILES = 13
+    BRANCH_DOES_NOT_EXIST = 14
     INVALID_VERSION = 30
     INVALID_UPSTREAM_TAG = 31
-    VCSTOOLS_NOT_FOUND = 51
+    INVALID_BRANCH_ARGS = 40
+    VCSTOOLS_NOT_FOUND = 50
+    ROSDEP_NOT_FOUND = 51
+    EMPY_NOT_FOUND = 52
+    COULD_NOT_GET_PATCH_INFO = 60
+    PATCHES_NOT_EXPORTED = 61
+    COULD_NOT_TRIM = 62
+    DEBIAN_MULTIPLE_PACKAGES_FOUND = 70
+    DEBIAN_UNRECOGNIZED_BUILD_TYPE = 71
+    DEBIAN_FAILED_TO_LOAD_TEMPLATE = 72
+    DEBIAN_NO_SUCH_ROSDEP_KEY = 73
+    DEBIAN_NO_ROSDEP_KEY_FOR_DISTRO = 74
+
+
+class change_directory(object):
+    def __init__(self, directory=''):
+        self.directory = directory
+        self.original_cwd = None
+
+    def __enter__(self):
+        self.original_cwd = os.getcwd()
+        os.chdir(self.directory)
+        return self.directory
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.original_cwd and os.path.exists(self.original_cwd):
+            os.chdir(self.original_cwd)
+
+
+def get_package_data(branch_name, directory=None):
+    """
+    Gets package data about the package(s) in the current branch.
+
+    :param branch_name: name of the branch you are searching on (log use only)
+    """
+    debug("Looking for packages in '{0}'... ".format(branch_name), end='')
+    ## Check for package.xml(s)
+    repo_dir = directory if directory else os.getcwd()
+    packages = find_packages(repo_dir)
+    if type(packages) == dict and packages != {}:
+        if len(packages) > 1:
+            debug("found " + str(len(packages)) + " packages.",
+                 use_prefix=False)
+        else:
+            debug("found '" + packages.values()[0].name + "'.",
+                 use_prefix=False)
+        version = verify_equal_package_versions(packages.values())
+        return [p.name for p in packages.values()], version, packages
+    ## Check for stack.xml
+    has_rospkg = False
+    try:
+        import rospkg
+        has_rospkg = True
+    except ImportError:
+        debug(ansi('redf') + "failed." + ansi('reset'), use_prefix=False)
+        warning("rospkg was not detected, stack.xml discovery is disabled",
+                file=sys.stderr)
+    if not has_rospkg:
+        error("no package.xml(s) found, and no name specified with "
+              "'--package-name', aborting.", use_prefix=False)
+        return code.NO_PACKAGE_XML_FOUND
+    stack_path = os.path.join(repo_dir, 'stack.xml')
+    if os.path.exists(stack_path):
+        debug("found stack.xml.", use_prefix=False)
+        stack = rospkg.stack.parse_stack_file(stack_path)
+        return stack.name, stack.version, stack
+    # Otherwise we have a problem
+    debug("failed.", use_prefix=False)
+    error("no package.xml(s) or stack.xml found, and not name "
+          "specified with '--package-name', aborting.", use_prefix=False)
+    return code.NO_PACKAGE_XML_FOUND
 
 
 def add_global_arguments(parser):
@@ -71,6 +156,8 @@ def add_global_arguments(parser):
                        action='store_true', default=False)
     group.add_argument('--version', action='store_true', default=False,
                        help="prints the bloom version")
+    group.add_argument('--no-color', action='store_true', default=False,
+                       dest='no_color', help=argparse.SUPPRESS)
     add = group.add_argument
     add('--quiet', help=argparse.SUPPRESS,
         default=False, action='store_true')
@@ -85,6 +172,8 @@ def handle_global_arguments(args):
     enable_debug(args.debug)
     _pdb = args.pdb
     _quiet = args.quiet
+    if args.no_color:
+        disable_ANSI_colors()
     if args.version:
         from bloom import __version__
         print(__version__)
@@ -159,14 +248,14 @@ def maybe_continue(default='y'):
             response = default
 
         response = response.lower()
-        if response not in ['y', 'n']:
+        if response not in ['y', 'n', 'q']:
             error_msg = 'Reponse `' + response + '` was not recognized, ' \
                         'please use one of y, Y, n, N.'
             error(error_msg)
         else:
             break
 
-    if response == 'n':
+    if response in ['n', 'q']:
         return False
     return True
 
