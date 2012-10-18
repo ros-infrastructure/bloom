@@ -121,18 +121,18 @@ def user_bloom(cmd, args=None, directory=None, auto_assert=True,
         with redirected_stdio() as (out, err):
             func = load_entry_point('bloom==' + ver, 'console_scripts', cmd)
             ret = func(args)
+    if not silent:
+        print(out.getvalue(), file=sys.stdout, end='')
+        print(err.getvalue(), file=sys.stderr, end='')
     if auto_assert:
         assert ret == 0, \
                "user command '" + cmd + "' returned " + str(ret)
     if return_io:
         return ret, out.getvalue(), err.getvalue()
-    elif not silent:
-        print(out.getvalue(), file=sys.stdout, end='')
-        print(err.getvalue(), file=sys.stderr, end='')
     return ret
 
 
-def user_cd(cmd, directory=None, auto_assert=True, return_io=False):
+def user_cd(cmd, **kwargs):
     """
     Used in system tests to emulate a user changing directories
 
@@ -148,7 +148,7 @@ def user_cd(cmd, directory=None, auto_assert=True, return_io=False):
     return 0
 
 
-def user_echo(cmd, directory=None, auto_assert=True, return_io=False):
+def user_echo(cmd, **kwargs):
     """
     Used to emulate the user echoing something even to a file with >>
     """
@@ -169,7 +169,7 @@ def user_echo(cmd, directory=None, auto_assert=True, return_io=False):
     return 0
 
 
-def user_mkdir(cmd, directory=None, auto_assert=True, return_io=False):
+def user_mkdir(cmd, **kwargs):
     """
     Used in system tests to emulte a user creating a directory
     """
@@ -189,7 +189,7 @@ def user_mkdir(cmd, directory=None, auto_assert=True, return_io=False):
     return 0
 
 
-def user_touch(cmd, directory=None, auto_assert=True, return_io=False):
+def user_touch(cmd, **kwargs):
     """
     Used to emulat a user touching a file
     """
@@ -224,7 +224,8 @@ def user(cmd, directory=None, auto_assert=True, return_io=False,
                     cmd,
                     directory=directory,
                     auto_assert=auto_assert,
-                    return_io=return_io
+                    return_io=return_io,
+                    silent=silent
                 )
     ret = -1
     try:

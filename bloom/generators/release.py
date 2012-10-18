@@ -1,63 +1,17 @@
 from __future__ import print_function
 
-import os
-import sys
-
 from bloom.generators import BloomGenerator
 
 from bloom.git import inbranch
 from bloom.git import get_current_branch
 
-from bloom.logging import ansi
-from bloom.logging import error
 from bloom.logging import info
-from bloom.logging import warning
 
-try:
-    from catkin_pkg.packages import find_packages
-    from catkin_pkg.packages import verify_equal_package_versions
-except ImportError:
-    error("catkin_pkg was not detected, please install it.",
-          file=sys.stderr)
-    sys.exit(1)
+from bloom.util import code
+from bloom.util import execute_command
+from bloom.util import get_package_data
 
-has_rospkg = False
-try:
-    import rospkg
-    has_rospkg = True
-except ImportError:
-    warning("rospkg was not detected, stack.xml discovery is disabled",
-            file=sys.stderr)
-
-
-def get_meta_data(source_branch, name=None, directory=None):
-    ## Determine the branching method
-    # First check for arguments
-    if name is not None:
-        info("Using specified name " + ansi('boldon') + name + \
-             ansi('reset'))
-        return name, None, 'name'
-    # Check for package.xml(s)
-    repo_dir = directory if directory else os.getcwd()
-    packages = find_packages(repo_dir)
-    if type(packages) == dict and packages != {}:
-        info("Found " + str(len(packages)) + " packages.")
-        version = verify_equal_package_versions(packages.values())
-        return [p.name for p in packages.values()], version, 'package.xml'
-    # Check for stack.xml
-    if not has_rospkg:
-        error("No package.xml(s) found, and no name specified with "
-              "'--package-name', aborting.")
-        return 1
-    stack_path = os.path.join(repo_dir, 'stack.xml')
-    if os.path.exists(stack_path):
-        info("Found stack.xml.")
-        stack = rospkg.stack.parse_stack_file(stack_path)
-        return stack.name, stack.version, 'stack.xml'
-    # Otherwise we have a problem
-    error("No package.xml(s) or stack.xml found, and not name "
-          "specified with '--package-name', aborting.")
-    return 1
+from bloom.commands.patch.trim_cmd import trim
 
 
 class ReleaseGenerator(BloomGenerator):
@@ -72,41 +26,75 @@ each package in the upstream repository, so the source branch should be set to
     def prepare_arguments(self, parser):
         # Add command line arguments for this generator
         add = parser.add_argument
-        add('-s', '--source-branch', default=None, dest='src',
+        add('-s', '--src', '--source-branch', default=None, dest='src',
             help="git branch to branch from (defaults to 'upstream')")
         add('-n', '--package-name', default=None, dest='name',
             help="name of package being released (use if non catkin project)")
-        add('prefix', help="prefix for target branch name(s)")
+        add('-p', '--prefix', default='release', dest='prefix',
+            help="prefix for target branch name(s)")
         BloomGenerator.prepare_arguments(self, parser)
 
     def handle_arguments(self, args):
-        # self.interactive = not args.non_interactive
+        self.interactive = args.interactive
         self.prefix = args.prefix
         self.src = args.src if args.src is not None else get_current_branch()
         self.name = args.name
 
     def summarize(self):
-        info("Looking for packages to release...")
         self.branch_list = self.detect_branches()
         if type(self.branch_list) not in [list, tuple]:
-            self.exit(self.branch_list if self.branch_list is not None else -1)
+            self.exit(self.branch_list if self.branch_list is not None else 1)
         info(
             "Releasing package" + \
             ('' if len(self.branch_list) == 1 else 's') + ": " + \
             str(self.branch_list)
         )
 
+    def get_branching_arguments(self):
+        p, s, i = self.prefix, self.src, self.interactive
+        self.branch_args = [['/'.join([p, b]), s, i] for b in self.branch_list]
+        return self.branch_args
+
+    def pre_rebase(self, destination):
+        name = destination.split('/')[-1]
+        info("Releasing package '" + name + "' to: '" + destination + "'")
+        ret = trim(undo=True)
+        if ret == code.NOTHING_TO_DO:
+            return 0
+        else:
+            return ret
+
+    def post_rebase(self, destination):
+        # If self.packages is not a dict then this is a stack
+        # and therefore no trim is needed
+        if type(self.packages) is not dict:
+            return 0
+        # Figure out the trim sub dir
+        name = destination.split('/')[-1]
+        trim_d = [k for k, v in self.packages.iteritems() if v.name == name][0]
+        # Execute trim
+        if trim_d in ['', '.']:
+            return 0
+        return trim(trim_d)
+
+    def post_patch(self, destination):
+        # Figure out the version of the given package
+        with inbranch(destination):
+            package_data = get_package_data(destination)
+            if type(package_data) not in [list, tuple]:
+                return package_data
+        name, version, packages = package_data
+        # Execute git tag
+        execute_command('git tag -f ' + destination + '/' + version)
+        return 0
+
     def detect_branches(self):
         with inbranch(self.src):
-            meta_data = get_meta_data(self.src, self.name)
-            if type(meta_data) not in [list, tuple]:
-                return meta_data
-            name, version, package_type = meta_data
-            self.version = version
-            self.package_type = package_type
-            return name if type(name) is list else list(name)
-
-    def branches(self):
-        p, s, n = self.prefix, self.src, self.name
-        self.branch_args = [['/'.join([p, b]), s, n] for b in self.branch_list]
-        return self.branch_args
+            if self.name is not None:
+                return [self.name]
+            package_data = get_package_data(self.src)
+            if type(package_data) not in [list, tuple]:
+                return package_data
+            name, version, packages = package_data
+            self.packages = packages
+            return name if type(name) is list else [name]

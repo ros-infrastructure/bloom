@@ -57,7 +57,8 @@ class BloomGenerator(object):
         self.description = desc if desc is not None else self.description
         self.help = help if help is not None else self.help
 
-    def exit(self, retcode):
+    @classmethod
+    def exit(cls, retcode):
         raise GeneratorError(retcode)
 
     def prepare_arguments(self, parser):
@@ -80,7 +81,7 @@ class BloomGenerator(object):
         """
         info("Running " + self.title + " generator")
 
-    def branches(self):
+    def get_branching_arguments(self):
         """
         Return a list of tuples, each representing parameters for branching.
 
@@ -88,7 +89,9 @@ class BloomGenerator(object):
         needs to produce branches.
 
         The tuples can either be singular (destination,), or contain two
-        elements (destination, source).
+        elements (destination, source). Optionally, a third tuple element
+        can be a bool indicating if git-bloom-branch should be interactive:
+        (destination, source, interactive)
 
         :returns: list of tuples containing arguments for git-bloom-branch
         """
@@ -96,7 +99,7 @@ class BloomGenerator(object):
 
     def pre_branch(self, destination, source):
         """
-        Pre-branching hook, does not get called if branches() returns []
+        Pre-branching hook
 
         :param destination: destination branch name
         :param source: source branch name
@@ -107,7 +110,7 @@ class BloomGenerator(object):
 
     def post_branch(self, destination, source):
         """
-        Post-branching hook, does not get called if branches() returns []
+        Post-branching hook
 
         :param destination: destination branch name
         :param source: source branch name
@@ -118,7 +121,7 @@ class BloomGenerator(object):
 
     def pre_export_patches(self, branch_name):
         """
-        Pre-patch-export hook, does not get called if branches() returns []
+        Pre-patch-export hook
 
         :param branch_name: name of the branch patches are being exported from
 
@@ -128,7 +131,7 @@ class BloomGenerator(object):
 
     def post_export_patches(self, branch_name):
         """
-        Post-patch-export hook, does not get called if branches() returns []
+        Post-patch-export hook
 
         :param branch_name: name of the branch patches are being exported from
 
@@ -138,7 +141,7 @@ class BloomGenerator(object):
 
     def pre_rebase(self, branch_name):
         """
-        Pre-rebase hook, does not get called it branches() return []
+        Pre-rebase hook
 
         :param branch_name: name of the branch rebase is being done on
 
@@ -148,7 +151,7 @@ class BloomGenerator(object):
 
     def post_rebase(self, branch_name):
         """
-        Post-rebase hook, does not get called it branches() return []
+        Post-rebase hook
 
         :param branch_name: name of the branch rebase is being done on
 
@@ -158,7 +161,7 @@ class BloomGenerator(object):
 
     def pre_patch(self, branch_name):
         """
-        Pre-patching hook, does not get called if branches() returns []
+        Pre-patching hook
 
         :param branch_name: name of the branch being patched
 
@@ -168,7 +171,7 @@ class BloomGenerator(object):
 
     def post_patch(self, branch_name):
         """
-        Post-patching hook, does not get called if branches() returns []
+        Post-patching hook
 
         :param branch_name: name of the branch being patched
 

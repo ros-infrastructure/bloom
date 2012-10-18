@@ -33,7 +33,6 @@
 from __future__ import print_function
 
 import argparse
-import inspect
 import traceback
 
 from subprocess import CalledProcessError
@@ -45,8 +44,11 @@ from bloom.generators import list_generators
 from bloom.generators import load_generator_module
 from bloom.generators import load_generator
 
+from bloom.git import GitClone
+
+from bloom.logging import debug
 from bloom.logging import error
-from bloom.logging import info
+# from bloom.logging import info
 from bloom.logging import log_prefix
 from bloom.logging import warning
 
@@ -61,112 +63,112 @@ from bloom.util import maybe_continue
 from bloom.util import print_exc
 
 
-def parse_branch_args(branch_args):
+class CommandFailed(Exception):
+    def __init__(self, returncode):
+        self.returncode = returncode
+
+
+def parse_branch_args(branch_args, interactive):
     if type(branch_args) not in [list, tuple] or \
        len(branch_args) not in [1, 2, 3]:
-        error("Invalid branching arguments given: " + str(branch_args))
+        error("Invalid branching arguments given: '" + str(branch_args) + "'")
+        raise GeneratorError(code.INVALID_BRANCH_ARGS)
     blen = len(branch_args)
     # Get branching parameters:
     dest = branch_args[0]
     source = branch_args[1] if blen >= 2 else None
-    name = branch_args[2] if blen == 3 else None
-    return dest, source, name
+    interactive = interactive
+    if blen == 3 and branch_args[2] is not None:
+        interactive = branch_args[2]
+    return dest, source, interactive
 
 
-def summarize_branch_cmd(destination, source, name, interactive):
+def summarize_branch_cmd(destination, source, interactive):
     msg = "Executing 'git-bloom-branch " + str(destination)
     if source is not None:
         msg += " --src " + str(source)
-    if name is not None:
-        msg += " --package-name " + str(name)
     if interactive:
         msg += " --interactive"
     msg += "'"
     return msg
 
 
-class CommandFailed(Exception):
-    def __init__(self, returncode):
-        self.returncode = returncode
-
-
 def try_execute(msg, err_msg, func, *args, **kwargs):
     try:
-        if inspect.ismethod(func):
-            obj = args[0]
-            args = args[1:]
-            pycode = 'retcode = obj.{0}(*args, **kwargs)'.format(func.__name__)
-            obj
-            exec(pycode)
-        else:
-            retcode = func(*args, **kwargs)
+        retcode = func(*args, **kwargs)
         retcode = retcode if retcode is not None else 0
     except CalledProcessError as err:
         print_exc(traceback.format_exc())
         error("Error calling {0}: ".format(msg) + str(err))
         retcode = err.returncode
-    if retcode != 0:
-        error(msg + " returned exit code ({0})".format(str(retcode)))
+    ret_msg = msg + " returned exit code ({0})".format(str(retcode))
+    if retcode > 0:
+        error(ret_msg)
         raise CommandFailed(retcode)
+    elif retcode < 0:
+        debug(ret_msg)
 
 
-def run_generator(generator, args):
-    generator.handle_arguments(args)
-    generator.summarize()
-    if args.interactive:
-        if not maybe_continue('y'):
-            error("Answered no to continue, aborting.")
-            return code.ANSWERED_NO_TO_CONTINUE
-    for branch_args in generator.branches():
-        destination, source, name = parse_branch_args(branch_args)
-        interactive = args.interactive
-        # Summarize branch command
-        msg = summarize_branch_cmd(destination, source, name, interactive)
-        info(msg)
-        try:
-            gen = generator
+def run_generator(generator, arguments):
+    try:
+        gen = generator
+        try_execute('generator handle arguments', '',
+                    gen.handle_arguments, arguments)
+        try_execute('generator summarize', '',
+                    gen.summarize)
+        if arguments.interactive:
+            if not maybe_continue('y'):
+                error("Answered no to continue, aborting.")
+                return code.ANSWERED_NO_TO_CONTINUE
+        for branch_args in generator.get_branching_arguments():
+            parsed_branch_args = parse_branch_args(branch_args,
+                                                   arguments.interactive)
+            destination, source, interactive = parsed_branch_args
+            # Summarize branch command
+            msg = summarize_branch_cmd(destination, source, interactive)
+            # info(msg)
             ### Run pre - branch - post
             # Pre branch
             try_execute('generator pre_branch', msg,
-                        gen.pre_branch, gen, destination, source)
+                        gen.pre_branch, destination, source)
             # Branch
             try_execute('git-bloom-branch', msg,
                         execute_branch, source, destination, interactive)
             # Post branch
             try_execute('generator post_branch', msg,
-                        gen.post_branch, gen, destination, source)
+                        gen.post_branch, destination, source)
 
             ### Run pre - export patches - post
             # Pre patch
             try_execute('generator pre_export_patches', msg,
-                        gen.pre_export_patches, gen, destination)
+                        gen.pre_export_patches, destination)
             # Export patches
             try_execute('git-bloom-patch export', msg, export_patches)
             # Post branch
             try_execute('generator post_export_patches', msg,
-                        gen.post_export_patches, gen, destination)
+                        gen.post_export_patches, destination)
 
             ### Run pre - rebase - post
-            # Pre patch
-            try_execute('generator pre_patch', msg,
-                        gen.pre_patch, gen, destination)
+            # Pre rebase
+            try_execute('generator pre_rebase', msg,
+                        gen.pre_rebase, destination)
             # Rebase
             try_execute('git-bloom-patch rebase', msg, rebase_patches)
-            # Post branch
-            try_execute('generator post_patch', msg,
-                        gen.post_patch, gen, destination)
+            # Post rebase
+            try_execute('generator post_rebase', msg,
+                        gen.post_rebase, destination)
 
             ### Run pre - patch - post
             # Pre patch
             try_execute('generator pre_patch', msg,
-                        gen.pre_patch, gen, destination)
+                        gen.pre_patch, destination)
             # Import patches
             try_execute('git-bloom-patch import', msg, import_patches)
             # Post branch
             try_execute('generator post_patch', msg,
-                        gen.post_patch, gen, destination)
-        except CommandFailed as err:
-            return err.returncode
+                        gen.post_patch, destination)
+    except CommandFailed as err:
+        return err.returncode or 1
     return 0
 
 
@@ -224,9 +226,16 @@ def main(sysargs=None):
 
     generator = generators[args.generator]
 
-    # Run the generator that was selected
+    # Run the generator that was selected in a clone
+    # The clone protects the release repo state from mid change errors
     with log_prefix('[git-bloom-generate {0}]: '.format(generator.title)):
+        git_clone = GitClone()
         try:
-            return run_generator(generator, args)
+            with git_clone:
+                ret = run_generator(generator, args)
+            if ret > 0:
+                return ret
+            git_clone.commit()
+            return ret
         except GeneratorError as err:
             return err.retcode
