@@ -42,8 +42,7 @@ class RosDebianGenerator(DebianGenerator):
 
     def generate_tag_name(self, data):
         tag_name = 'ros-{ROS}-{Package}_{Version}-{DebianInc}_{Distribution}'
-        tag_name = 'debian/' + self.rosdistro + '/' + \
-                   tag_name.format(ROS=self.rosdistro, **data)
+        tag_name = 'debian/' + tag_name.format(ROS=self.rosdistro, **data)
         return tag_name
 
     def generate_branching_arguments(self, stackage, branch):
