@@ -118,10 +118,13 @@ class DebianGenerator(BloomGenerator):
             help='A list of debian distros to generate for')
         add('--install-prefix', default=self.default_install_prefix,
             help="overrides the default installation prefix")
+        add('--os-name', default='ubuntu',
+            help="overrides os_name, set to 'debian' for vanilla distros")
 
     def handle_arguments(self, args):
         self.interactive = args.interactive
         self.debian_inc = args.debian_inc
+        self.os_name = args.os_name
         self.distros = args.distros
         if self.distros in [None, []]:
             self.distros = get_ubuntu_targets(self.rosdistro)
@@ -380,8 +383,8 @@ class DebianGenerator(BloomGenerator):
                 os.chmod(outfile, chmod)
 
     def resolve_dependencies(self, data, debian_distro):
-        os_name = 'ubuntu'
-        rosdep_view = self.get_rosdep_view(debian_distro)
+        os_name = self.os_name
+        rosdep_view = self.get_rosdep_view(debian_distro, os_name)
 
         def resolve_rosdep_key(rosdep_key):
             from rosdep2.catkin_support import resolve_for_os
@@ -409,8 +412,7 @@ class DebianGenerator(BloomGenerator):
         data['BuildDepends'] = resolved_build_depends
         return data
 
-    def get_rosdep_view(self, debian_distro):
-        os_name = 'ubuntu'
+    def get_rosdep_view(self, debian_distro, os_name):
         rosdistro = self.rosdistro
         from rosdep2.catkin_support import get_catkin_view
         return get_catkin_view(rosdistro, os_name, debian_distro, update=False)
