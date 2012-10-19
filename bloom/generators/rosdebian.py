@@ -3,6 +3,7 @@ from __future__ import print_function
 import sys
 
 from bloom.generators.debian import DebianGenerator
+from bloom.generators.debian import sanitize_package_name
 
 from bloom.logging import error
 from bloom.logging import info
@@ -40,9 +41,13 @@ class RosDebianGenerator(DebianGenerator):
         info("Releasing for rosdistro: " + self.rosdistro)
         return ret
 
+    def get_stackage_name(self, stackage):
+        name = 'ros-{0}-{1}'.format(self.rosdistro, str(stackage.name))
+        return sanitize_package_name(name)
+
     def generate_tag_name(self, data):
-        tag_name = 'ros-{ROS}-{Package}_{Version}-{DebianInc}_{Distribution}'
-        tag_name = 'debian/' + tag_name.format(ROS=self.rosdistro, **data)
+        tag_name = '{Package}_{Version}-{DebianInc}_{Distribution}'
+        tag_name = 'debian/' + tag_name.format(**data)
         return tag_name
 
     def generate_branching_arguments(self, stackage, branch):
