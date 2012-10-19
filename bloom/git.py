@@ -84,9 +84,10 @@ class GitClone(object):
             self.tmp_dir = None
 
     def commit(self):
-        with change_directory(self.clone_dir):
-            execute_command('git push --force --all')
-            execute_command('git push --force --tags')
+        with inbranch(get_commit_hash(get_current_branch())):
+            with change_directory(self.clone_dir):
+                execute_command('git push --force --all')
+                execute_command('git push --force --tags')
         self.clean_up()
 
 
