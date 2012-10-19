@@ -9,64 +9,62 @@ Once in your release repository, ensure that you are on the 'master' branch::
 
 It is always best to run from the master branch when possible.
 
-Importing the upstream repository
----------------------------------
-
 Preparing your upstream repository
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+----------------------------------
 
-Before importing your upstream repository into the release repository using bloom, the upstream repository needs to be prepared. For catkin projects, this means updating the version number in the `package.xml`(s) of your project. Additionally, there needs to be a tag matching the version number exactly. For example, if you just released version 1.1.1 from 1.1.0 and you use a git repository as your upstream vcs type, then you would need to run::
+Before importing your upstream repository into the release repository using 
+bloom, the upstream repository needs to be prepared. For catkin projects, this 
+means updating the version number in the ``package.xml``\ (s) of your project. 
+Additionally, there needs to be a tag matching the version number exactly. For 
+example, if you just released version 1.1.1 from 1.1.0 and you use a git 
+repository as your upstream vcs type, then you would need to run::
 
     $ git tag 1.1.1 -m "Releasing version 1.1.1 of foo"
 
 If you use a different tagging scheme, git bloom-import-upstream can handle that, see `git bloom-import-upstream -h`.
 
-Importing the upstream repository
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Running git bloom-release
+-------------------------
 
-The first step in the release pipeline is to import the new version from upstream into the local release repository. To do this run the `git bloom-import-upstream` command::
+Now that you have either setup a new release repository, or cloned an existing one, and prepared your upstream repository for release, it is time to run the bloom release command::
 
-    $ git bloom-import-upstream
-    [git-bloom-import-upstream]: Searching in upstream development branch for the name and version
-    [git-bloom-import-upstream]:   Upstream url: git@github.com:bar/foo.git
-    [git-bloom-import-upstream]:   Upstream type: git
-    [git-bloom-import-upstream]: Checking for package.xml(s)
-    [git-bloom-import-upstream]: package.xml(s) found
-    [git-bloom-import-upstream]: Found upstream with version: 0.5.35
-    [git-bloom-import-upstream]: Upstream contains package: foo
-    [git-bloom-import-upstream]: Exporting version 0.5.35
-    [git-bloom-import-upstream]: The latest upstream tag in the release repository is upstream/0.5.33
-    gbp:info: Importing '/tmp/bloom_hmZ0lr/upstream-0.5.35.tar.gz' to branch 'upstream'...
-    gbp:info: Source package is upstream
-    gbp:info: Upstream version is 0.5.35
-    gbp:info: Successfully imported version 0.5.35 of /tmp/bloom_hmZ0lr/upstream-0.5.35.tar.gz
-    I'm happy.  You should be too.
+    $ git bloom-release rosdebian groovy
 
-The above output should be very similar to what you get.
+In this example rosdebian will create ROS tailored debians for the groovy release of ROS.
 
-What happens if you try again?::
+That's it, if successful you should receive a message something like::
 
-    $ git bloom-import-upstream
-    [git-bloom-import-upstream]: Searching in upstream development branch for the name and version
-    [git-bloom-import-upstream]:   Upstream url: git@github.com:ros/catkin.git
-    [git-bloom-import-upstream]:   Upstream type: git
-    [git-bloom-import-upstream]: Checking for package.xml(s)
-    [git-bloom-import-upstream]: package.xml(s) found
-    [git-bloom-import-upstream]: Found upstream with version: 0.5.35
-    [git-bloom-import-upstream]: Upstream contains package: catkin
-    [git-bloom-import-upstream]: Exporting version 0.5.35
-    [git-bloom-import-upstream]: The latest upstream tag in the release repository is upstream/0.5.35
-    [git-bloom-import-upstream]: The upstream version, 0.5.35, is equal to a previous import version. git-buildpackage will fail, if you want to replace the existing upstream import use the '--replace' option.
-    gbp:info: Importing '/tmp/bloom_mN1iDw/upstream-0.5.35.tar.gz' to branch 'upstream'...
-    gbp:info: Source package is upstream
-    gbp:info: Upstream version is 0.5.35
-    fatal: tag 'upstream/0.5.35' already exists
-    gbp:error: git returned 128
-    gbp:error: Couldn't tag "upstream/0.5.35"
-    gbp:error: Import of /tmp/bloom_mN1iDw/upstream-0.5.35.tar.gz failed
-    [git-bloom-import-upstream]: 'execute_command' failed to call 'git import-orig /tmp/bloom_mN1iDw/upstream-0.5.35.tar.gz --no-interactive --no-merge' which had a return code (1):
-    [git-bloom-import-upstream]: git-import-orig failed 'git import-orig /tmp/bloom_mN1iDw/upstream-0.5.35.tar.gz --no-interactive --no-merge'
-
-The command failed because you have previously imported this version of the upstream. As the above warnings tell say, you can override this by using the '--replace' argument.
+    .
+    .
+    .
+    ### Running 'git bloom-generate -y release --src upstream'... returned (0)
 
 
+    Tip: Check to ensure that the debian tags created have the same version as the upstream version you are releasing.
+    Everything went as expected, you should check that the new tags match your expectations, and then push to the release repo with:
+      git push --all && git push --tags
+
+You can follow the message's advice::
+
+    $ git push --all && git push --tags
+
+Now, if you want your packages built and released by the build farm see: :doc:`notify_build_farm`
+
+What is git bloom-release doing?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The bloom release command is a convenience command which combines three bloom commands into one.
+
+The normal work-flow for releasing a project with bloom is:
+
+#. Import the latest version from upstream
+#. Run the release generator
+#. Run the platform specific generator off the release stage
+
+The release generator creates a new stage in the release pipeline for each package present in the upstream source tree.  For example, if you have an upstream repository with catkin packages 'foo' in the '<git root>/foo' directory and 'bar' in the '<git root>/bar' directory, then the release generator will create the branches 'release/foo' and 'release/bar'. The release branches will not contain the entire upstream source tree, but just the source tree for each package.
+
+The platform specific generator, like 'rosdebian' or 'debian', will produce additional release pipeline stages for each 'release/' prefixed branch and each distribution of the generator's platform. For example, the 'release/foo' branch would result in the 'debian/groovy/oneiric/foo', 'debian/groovy/precise/foo', and 'debian/groovy/quantal/foo' branches. On each of these branches the necessary debian files are generated from the contents of the catkin 'package.xml' file and when complete the branch is tagged for a specific source debian, like ``debian/ros-groovy-foo_1.1.1-0_quantal``.
+
+For more information about ``git bloom-release`` and how it can be used see::
+
+    $ git bloom-release -h

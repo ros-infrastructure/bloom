@@ -63,9 +63,9 @@ Preforms the standard release procedure: import, release, generate platform
 
 The normal process for releasing catkin packages with bloom is as follows:
 
-    - $ git bloom-import-upstream
-    - $ git bloom-generate -y release --source upstream
-    - $ git bloom-generate -y <generator> --prefix release <generator args>
+    $ git bloom-import-upstream
+    $ git bloom-generate -y release --source upstream
+    $ git bloom-generate -y <generator> --prefix release <generator args>
 
 Where <generator> is one of the available platform generators, e.g. debian,
 rosdebian, fedora, homebrew, etc...

@@ -1,4 +1,4 @@
-Setting up a new bloom repository
+Creating a new release repository
 =================================
 
 Before you can release anything, you need to setup a bloom release repository.
@@ -11,6 +11,8 @@ Start by creating a git repository::
 
     $ git init .
     Initialized empty Git repository in /tmp/docs/foo-release/.git/
+
+You will probably want to push this new release repository to a centralized server, like github.com or a personal git server, for reuse in future releases. The converntion for naming this repository is {package name}-release. A list of example release repositories can be seen at the ros-gbp repository: `https://github.com/ros-gbp <https://github.com/ros-gbp>`_.
 
 Now inform bloom of your upstream repository settings and initialize the repository::
 
@@ -44,9 +46,9 @@ You can examine your handy work by running `git-bloom-config` with no arguments:
 
     See: 'git-bloom-config -h' on how to change the configs
 
-.. Once you have set the configurations for you particular upstream setup, you are now ready to continue with releasing:
+Once you have set the configurations for you particular upstream setup, you are now ready to continue with releasing:
 
-.. - :doc:`catkin_release`
-.. - :doc:`non_catkin`
+- :doc:`catkin_release`
+- :doc:`non_catkin`
 
 

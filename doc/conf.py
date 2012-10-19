@@ -20,7 +20,7 @@ import subprocess
 # They can be extensions coming with Sphinx (named 'sphinx.ext.*') or your
 # custom ones.
 extensions = ['sphinx.ext.ifconfig', 'sphinx.ext.todo', 'sphinx.ext.graphviz',
-              'sphinx.ext.intersphinx',
+              'sphinx.ext.intersphinx', 'sphinx.ext.doctest',
               'catkin_sphinx.ShLexer', 'catkin_sphinx.cmake']
 todo_include_todos = True
 

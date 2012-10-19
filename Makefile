@@ -10,6 +10,16 @@ ifeq ($(USERNAME),william)
 	USERNAME := wwoodall
 endif
 
+UNAME := $(shell uname)
+
+.PHONY: doc
+doc:
+	python setup.py build_sphinx
+ifeq ($(UNAME),Darwin)
+	@open doc/build/html/index.html
+else
+	@echo "Not opening index.html on $(UNAME)"
+endif
 
 all:
 	echo "noop for debbuild"
