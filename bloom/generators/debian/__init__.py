@@ -58,7 +58,7 @@ def match_branches_with_prefix(prefix, get_branches):
             branch = branch.split('/', 2)[-1]
         if branch.startswith(prefix):
             branches.append(branch)
-    return branches
+    return list(set(branches))
 
 
 def get_stackage_from_branch(branch):
