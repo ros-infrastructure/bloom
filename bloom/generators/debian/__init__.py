@@ -116,7 +116,7 @@ class DebianGenerator(BloomGenerator):
                  " hint: if you want to match 'release/foo' use 'release'")
         add('--distros', nargs='+', required=False, default=[],
             help='A list of debian distros to generate for')
-        add('--install-prefix', default=self.default_install_prefix,
+        add('--install-prefix', default=None,
             help="overrides the default installation prefix")
         add('--os-name', default='ubuntu',
             help="overrides os_name, set to 'debian' for vanilla distros")
@@ -129,6 +129,8 @@ class DebianGenerator(BloomGenerator):
         if self.distros in [None, []]:
             self.distros = get_ubuntu_targets(self.rosdistro)
         self.install_prefix = args.install_prefix
+        if args.install_prefix is None:
+            self.install_prefix = self.default_install_prefix
         self.prefix = args.prefix
         self.branches = match_branches_with_prefix(self.prefix, get_branches)
         if len(self.branches) == 0:
