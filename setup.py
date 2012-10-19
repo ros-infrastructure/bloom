@@ -17,7 +17,8 @@ setup(
         'rosdep >= 0.10.3',
         'rospkg >= 1.0.6',
         'vcstools >= 0.1.22',
-        'catkin-pkg >= 0.1.2'
+        'catkin-pkg >= 0.1.2',
+        'distribute >= 0.6.24'
     ],
     author='Tully Foote, William Woodall',
     author_email='tfoote@willowgarage.com, wwoodall@willowgarage.com',
@@ -44,7 +45,7 @@ generation of platform specific source packages, like debian's src-debs.""",
             'git-bloom-branch = bloom.commands.branch:main',
             'git-bloom-patch = bloom.commands.patch.patch_main:main',
             'git-bloom-generate = bloom.commands.generate:main',
-            'git-bloom-release = bloom.commands.release.main:main'
+            'git-bloom-release = bloom.commands.release:main'
         ]
     }
 )
