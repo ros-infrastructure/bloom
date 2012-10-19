@@ -210,7 +210,7 @@ def get_upstream_meta(upstream_dir):
 
 
 def try_vcstools_checkout(repo, checkout_url, version=''):
-    if not repo.checkout(checkout_url, version):
+    if not repo.checkout(checkout_url, version, shallow=True):
         if repo.get_vcs_type_name() == 'svn':
             error(
                 "Could not checkout upstream repostiory "
@@ -359,7 +359,8 @@ def import_upstream(cwd, tmp_dir, args):
                 return meta
 
     ### Export the repository
-    version = args.upstream_version if args.upstream_version is not None else meta['version']
+    version = args.upstream_version if args.upstream_version is not None \
+                                    else meta['version']
 
     # Export the repository to a tar ball
     tarball_prefix = 'upstream-' + str(version)
