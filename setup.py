@@ -10,6 +10,7 @@ setup(
         'bloom.generators.debian':
             ['bloom/generators/debian/templates/*.em']
     },
+    include_package_data = True,
     install_requires=[
         'empy >= 3.1',
         'PyYAML >= 3.10',
