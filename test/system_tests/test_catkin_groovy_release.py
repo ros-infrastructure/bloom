@@ -185,6 +185,12 @@ def test_multi_package_repository(directory=None):
                 assert package_xml.count('<name>' + pkg + '</name>'), \
                        "incorrect package.xml for " + str(pkg)
 
+        # Make a patch
+        with inbranch('release/' + pkgs[0]):
+            user('echo "This is a change" >> README.md')
+            user('git add README.md')
+            user('git commit -m "added a readme"')
+
         ###
         ### Release generator, again
         ###
@@ -234,9 +240,9 @@ def test_multi_package_repository(directory=None):
                 assert branch_exists(patches_branch), \
                        "no patches/release/" + pkg + " branch"
                 # Did the debian tag get created?
-                tag = 'debian/groovy/ros-groovy-' + pkg + '_0.1.0-0_' + distro
+                tag = 'debian/ros-groovy-' + pkg + '_0.1.0-0_' + distro
                 assert out.count(tag) == 1, \
-                   "no release tag created for " + pkg
+                   "no release tag created for '" + pkg + "': `" + out + "`"
             # Is there a package.xml in the top level?
             with inbranch('debian/groovy/' + distro + '/' + pkg):
                 assert os.path.exists('package.xml'), "release branch invalid"
