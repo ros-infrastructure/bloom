@@ -5,18 +5,20 @@ Before you can release anything, you need to setup a bloom release repository.
 
 Start by creating a git repository::
 
-    $ mkdir ~/foo-release
+    mkdir ~/foo-release
 
-    $ cd ~/foo-release
+    cd ~/foo-release
 
-    $ git init .
-    Initialized empty Git repository in /tmp/docs/foo-release/.git/
+    git init .
 
 You will probably want to push this new release repository to a centralized server, like github.com or a personal git server, for reuse in future releases. The converntion for naming this repository is {package name}-release. A list of example release repositories can be seen at the ros-gbp repository: `https://github.com/ros-gbp <https://github.com/ros-gbp>`_.
 
 Now inform bloom of your upstream repository settings and initialize the repository::
 
-    $ git bloom-config https://github.com/bar/foo.git git groovy-devel
+    git bloom-config https://github.com/bar/foo.git git groovy-devel
+
+With output like::
+
     Upstream https://github.com/bar/foo.git type: git
     Freshly initialized git repository detected.
     An initial empty commit is going to be made.
@@ -36,7 +38,7 @@ The `upstream_repository` is the uri of your upstream source code repository and
 
 You can examine your handy work by running `git-bloom-config` with no arguments::
 
-    $ git-bloom-config
+    git-bloom-config
     Current bloom configuration:
 
     [bloom]

@@ -86,17 +86,18 @@
 <h1>Creating a new release repository<a class="headerlink" href="#creating-a-new-release-repository" title="Permalink to this headline">¶</a></h1>
 <p>Before you can release anything, you need to setup a bloom release repository.</p>
 <p>Start by creating a git repository:</p>
-<div class="highlight-python"><pre>$ mkdir ~/foo-release
+<div class="highlight-python"><pre>mkdir ~/foo-release
 
-$ cd ~/foo-release
+cd ~/foo-release
 
-$ git init .
-Initialized empty Git repository in /tmp/docs/foo-release/.git/</pre>
+git init .</pre>
 </div>
 <p>You will probably want to push this new release repository to a centralized server, like github.com or a personal git server, for reuse in future releases. The converntion for naming this repository is {package name}-release. A list of example release repositories can be seen at the ros-gbp repository: <a class="reference external" href="https://github.com/ros-gbp">https://github.com/ros-gbp</a>.</p>
 <p>Now inform bloom of your upstream repository settings and initialize the repository:</p>
-<div class="highlight-python"><pre>$ git bloom-config https://github.com/bar/foo.git git groovy-devel
-Upstream https://github.com/bar/foo.git type: git
+<div class="highlight-python"><pre>git bloom-config https://github.com/bar/foo.git git groovy-devel</pre>
+</div>
+<p>With output like:</p>
+<div class="highlight-python"><pre>Upstream https://github.com/bar/foo.git type: git
 Freshly initialized git repository detected.
 An initial empty commit is going to be made.
 Continue [Y/n]?</pre>
@@ -111,7 +112,7 @@ Continue [Y/n]?</pre>
 </div>
 <p>The <cite>upstream_repository</cite> is the uri of your upstream source code repository and the <cite>upstream_vcs_type</cite> is the type of your upstream repostiory. Acceptable vcs types are &#8216;git&#8217;, &#8216;hg&#8217;, &#8216;svn&#8217;, and &#8216;bzr&#8217;. The optional <cite>upstream_branch</cite> argument specifies the branch on which you normally develop, this might be something like &#8216;groovy-devel&#8217;, but if left blank it will default to &#8216;master&#8217;, or &#8216;default&#8217;, or &#8216;trunk&#8217;, etc... depending on your vcs type.</p>
 <p>You can examine your handy work by running <cite>git-bloom-config</cite> with no arguments:</p>
-<div class="highlight-python"><pre>$ git-bloom-config
+<div class="highlight-python"><pre>git-bloom-config
 Current bloom configuration:
 
 [bloom]
@@ -150,8 +151,8 @@ See: 'git-bloom-config -h' on how to change the configs</pre>
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2012, Willow Garage --  Version e01753b00d92360d0d869f97406a85ba995edded, Fri, 19 Oct 2012.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+        &copy; Copyright 2012, Willow Garage --  Version a018c284d30552836d316bcad7b6c9e17936036f, Fri, 19 Oct 2012.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
     </div>
   </body>
 </html>

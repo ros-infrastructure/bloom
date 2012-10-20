@@ -98,25 +98,25 @@
 <h1>Releasing a catkin project<a class="headerlink" href="#releasing-a-catkin-project" title="Permalink to this headline">¶</a></h1>
 <p>Assuming you have either setup a new bloom release repository (<a class="reference internal" href="bloom_setup.html"><em>Creating a new release repository</em></a>) or you have cloned an existing release repository, you are now ready to begin releasing your catkin project.</p>
 <p>Once in your release repository, ensure that you are on the &#8216;master&#8217; branch:</p>
-<div class="highlight-python"><pre>$ git checkout master</pre>
+<div class="highlight-python"><pre>git checkout master</pre>
 </div>
 <p>It is always best to run from the master branch when possible.</p>
 <div class="section" id="preparing-your-upstream-repository">
-<h2>Preparing your upstream repository<a class="headerlink" href="#preparing-your-upstream-repository" title="Permalink to this headline">¶</a></h2>
+<span id="prepare-your-upstream-repository"></span><h2>Preparing your upstream repository<a class="headerlink" href="#preparing-your-upstream-repository" title="Permalink to this headline">¶</a></h2>
 <p>Before importing your upstream repository into the release repository using
 bloom, the upstream repository needs to be prepared. For catkin projects, this
 means updating the version number in the <tt class="docutils literal"><span class="pre">package.xml</span></tt>(s) of your project.
 Additionally, there needs to be a tag matching the version number exactly. For
 example, if you just released version 1.1.1 from 1.1.0 and you use a git
 repository as your upstream vcs type, then you would need to run:</p>
-<div class="highlight-python"><pre>$ git tag 1.1.1 -m "Releasing version 1.1.1 of foo"</pre>
+<div class="highlight-python"><pre>git tag 1.1.1 -m "Releasing version 1.1.1 of foo"</pre>
 </div>
 <p>If you use a different tagging scheme, git bloom-import-upstream can handle that, see <cite>git bloom-import-upstream -h</cite>.</p>
 </div>
 <div class="section" id="running-git-bloom-release">
 <h2>Running git bloom-release<a class="headerlink" href="#running-git-bloom-release" title="Permalink to this headline">¶</a></h2>
 <p>Now that you have either setup a new release repository, or cloned an existing one, and prepared your upstream repository for release, it is time to run the bloom release command:</p>
-<div class="highlight-python"><pre>$ git bloom-release rosdebian groovy</pre>
+<div class="highlight-python"><pre>git bloom-release rosdebian groovy</pre>
 </div>
 <p>In this example rosdebian will create ROS tailored debians for the groovy release of ROS.</p>
 <p>That&#8217;s it, if successful you should receive a message something like:</p>
@@ -131,7 +131,7 @@ Everything went as expected, you should check that the new tags match your expec
   git push --all &amp;&amp; git push --tags</pre>
 </div>
 <p>You can follow the message&#8217;s advice:</p>
-<div class="highlight-python"><pre>$ git push --all &amp;&amp; git push --tags</pre>
+<div class="highlight-python"><pre>git push --all &amp;&amp; git push --tags</pre>
 </div>
 <p>Now, if you want your packages built and released by the build farm see: <a class="reference internal" href="notify_build_farm.html"><em>Notifying the buildfarm</em></a></p>
 <div class="section" id="what-is-git-bloom-release-doing">
@@ -146,7 +146,40 @@ Everything went as expected, you should check that the new tags match your expec
 <p>The release generator creates a new stage in the release pipeline for each package present in the upstream source tree.  For example, if you have an upstream repository with catkin packages &#8216;foo&#8217; in the &#8216;&lt;git root&gt;/foo&#8217; directory and &#8216;bar&#8217; in the &#8216;&lt;git root&gt;/bar&#8217; directory, then the release generator will create the branches &#8216;release/foo&#8217; and &#8216;release/bar&#8217;. The release branches will not contain the entire upstream source tree, but just the source tree for each package.</p>
 <p>The platform specific generator, like &#8216;rosdebian&#8217; or &#8216;debian&#8217;, will produce additional release pipeline stages for each &#8216;release/&#8217; prefixed branch and each distribution of the generator&#8217;s platform. For example, the &#8216;release/foo&#8217; branch would result in the &#8216;debian/groovy/oneiric/foo&#8217;, &#8216;debian/groovy/precise/foo&#8217;, and &#8216;debian/groovy/quantal/foo&#8217; branches. On each of these branches the necessary debian files are generated from the contents of the catkin &#8216;package.xml&#8217; file and when complete the branch is tagged for a specific source debian, like <tt class="docutils literal"><span class="pre">debian/ros-groovy-foo_1.1.1-0_quantal</span></tt>.</p>
 <p>For more information about <tt class="docutils literal"><span class="pre">git</span> <span class="pre">bloom-release</span></tt> and how it can be used see:</p>
-<div class="highlight-python"><pre>$ git bloom-release -h</pre>
+<div class="highlight-text"><div class="highlight"><pre>usage: git-bloom-release [-h] [-d] [--version]
+                         {release,rosdebian,debian,fedora} ...
+
+Preforms the standard release procedure: import, release, generate platform
+
+The normal process for releasing catkin packages with bloom is as follows:
+
+    $ git bloom-import-upstream
+    $ git bloom-generate -y release --source upstream
+    $ git bloom-generate -y &lt;generator&gt; --prefix release &lt;generator args&gt;
+
+Where &lt;generator&gt; is one of the available platform generators, e.g. debian,
+rosdebian, fedora, homebrew, etc...
+
+Example:
+
+    git bloom-release rosdebian groovy --debian-revision 1
+
+optional arguments:
+  -h, --help            show this help message and exit
+
+global:
+  -d, --debug           enable debug messages
+  --version             prints the bloom version
+
+generators:
+  Available bloom platform generators:
+
+  {release,rosdebian,debian,fedora}
+    release
+    rosdebian
+    debian
+    fedora
+</pre></div>
 </div>
 </div>
 </div>
@@ -174,8 +207,8 @@ Everything went as expected, you should check that the new tags match your expec
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2012, Willow Garage --  Version e01753b00d92360d0d869f97406a85ba995edded, Fri, 19 Oct 2012.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+        &copy; Copyright 2012, Willow Garage --  Version a018c284d30552836d316bcad7b6c9e17936036f, Fri, 19 Oct 2012.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
     </div>
   </body>
 </html>
