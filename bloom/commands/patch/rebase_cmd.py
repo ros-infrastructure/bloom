@@ -16,13 +16,13 @@ from bloom.git import inbranch
 from bloom.logging import ansi
 from bloom.logging import debug
 from bloom.logging import log_prefix
-from bloom.logging import warning
 
 from bloom.commands.patch.common import get_patch_config
 from bloom.commands.patch.common import set_patch_config
 
 from bloom.util import add_global_arguments
 from bloom.util import execute_command
+from bloom.util import get_package_data
 from bloom.util import handle_global_arguments
 
 
@@ -80,7 +80,10 @@ def non_git_rebase(upstream_branch, directory=None):
         # Only if we have local changes commit
         # (not true if the upstream didn't change any files)
         if has_changes(directory):
-            cmd = 'git commit -m "Rebase from ' + upstream_branch + '"'
+            cmd = 'git commit -m "Rebase from \'' + upstream_branch + '\'"'
+            data = get_package_data(upstream_branch)
+            if type(data) in [list, tuple]:
+                cmd += " @ version '{}'".format(data[1])
             execute_command(cmd, cwd=directory)
     finally:
         # Clean up
