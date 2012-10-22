@@ -1,11 +1,6 @@
 Bloom
 =====
 
-Current Version:
-----------------
-
-.. program-output:: git-bloom-config --version
-
 .. Links
 
 .. _catkin: https://github.com/ros/catkin
