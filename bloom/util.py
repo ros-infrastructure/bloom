@@ -156,7 +156,7 @@ def add_global_arguments(parser):
                        action='store_true', default=False)
     from bloom import __version__
     group.add_argument('--version', action='version', version=__version__,
-                       help="prints the bloom version")
+                       help="prints the bloom version", default=False)
     group.add_argument('--no-color', action='store_true', default=False,
                        dest='no_color', help=argparse.SUPPRESS)
     add = group.add_argument
