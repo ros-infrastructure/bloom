@@ -1,5 +1,8 @@
 try:
     import pkg_resources
-    __version__ = pkg_resources.require("bloom")[0].version
+    try:
+        __version__ = pkg_resources.require("bloom")[0].version
+    except pkg_resources.DistributionNotFound:
+        __version__ = 'unset'
 except ImportError:
     __version__ = 'unset'
