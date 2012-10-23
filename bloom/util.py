@@ -175,10 +175,6 @@ def handle_global_arguments(args):
     _quiet = args.quiet
     if args.no_color:
         disable_ANSI_colors()
-    if args.version:
-        from bloom import __version__
-        print(__version__)
-        sys.exit(code.OK)
 
 
 def print_exc(exc):
