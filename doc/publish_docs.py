@@ -11,6 +11,8 @@ cmd = setup_py + ' build'
 print("### Running '" + cmd + "'")
 os.system(cmd)
 
+sys.path.append(os.path.abspath(os.path.join(this_dir, '..')))
+
 from bloom import __version__ as ver
 
 from bloom.logging import warning
