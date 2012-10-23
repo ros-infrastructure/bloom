@@ -369,7 +369,10 @@ def import_upstream(cwd, tmp_dir, args):
     if upstream_repo.get_vcs_type_name() == 'svn':
         upstream_repo.export_repository('', tarball_path)
     else:
-        upstream_repo.export_repository(version, tarball_path)
+        if args.upstream_tag is not None:
+            upstream_repo.export_repository(args.upstream_tag, tarball_path)
+        else:
+            upstream_repo.export_repository(version, tarball_path)
 
     # Get the gbp version elements from either the last tag or the default
     last_tag = get_last_tag_by_date()
