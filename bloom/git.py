@@ -65,7 +65,8 @@ class GitClone(object):
         self.clone_dir = os.path.join(self.tmp_dir, 'clone')
         self.repo_url = 'file://' + os.path.abspath(self.directory)
         execute_command('git clone ' + self.repo_url + ' ' + self.clone_dir)
-        track_branches(self.clone_dir)
+        if track_all:
+            track_branches(directory=directory)
 
     def __del__(self):
         self.clean_up()

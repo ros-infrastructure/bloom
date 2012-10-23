@@ -19,6 +19,7 @@ from bloom.git import show
 from bloom.git import tag_exists
 
 from bloom.logging import ansi
+from bloom.logging import debug
 from bloom.logging import enable_drop_first_log_prefix
 enable_drop_first_log_prefix(True)
 from bloom.logging import error
@@ -50,6 +51,8 @@ except ImportError:
 
 
 def match_branches_with_prefix(prefix, get_branches):
+    debug("match_branches_with_prefix(" + str(prefix) + ", " + \
+          str(get_branches()) + ")")
     branches = []
     # Match branches
     existing_branches = get_branches()
