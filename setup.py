@@ -30,7 +30,7 @@ setup(
     keywords=['ROS'],
     classifiers=['Programming Language :: Python',
                  'License :: OSI Approved :: BSD License'],
-    description="A tool for facilitating git-buildpackage based releases",
+    description="Bloom is a release automation tool.",
     long_description="""\
 Bloom provides tools for releasing software on top of a git repository \
 and leverages tools and patterns from git-buildpackage.  Additionally, \
