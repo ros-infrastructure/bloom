@@ -418,8 +418,8 @@ upstream import use the '--replace' option.\
     if not branch_exists('upstream', local_only=True):
         create_branch('upstream', orphaned=True, changeto=True)
 
-    # Go to the master branch
-    bloom_repo.update(get_commit_hash('upstream'))
+    # Go to the bloom branch during import
+    bloom_repo.update('bloom')
 
     # Detect if git-import-orig is installed
     tarball_path += '.tar.gz'
