@@ -36,8 +36,20 @@ def non_git_rebase(upstream_branch, directory=None):
         with inbranch(upstream_branch):
             ignores = ('.git', '.gitignore', '.svn', '.hgignore', '.hg', 'CVS')
             parent_source = os.path.join(tmp_dir, 'parent_source')
-            shutil.copytree(git_root, parent_source,
-                            ignore=shutil.ignore_patterns(*ignores))
+            try:
+                # Try catch this to handle dangling symbolic links
+                # See: http://bugs.python.org/issue6547
+                shutil.copytree(git_root, parent_source,
+                                ignore=shutil.ignore_patterns(*ignores))
+            except shutil.Error as e:
+                for src, dst, error in e.args[0]:
+                    if not os.path.islink(src):
+                        raise
+                    else:
+                        linkto = os.readlink(src)
+                        if os.path.exists(linkto):
+                            raise
+                    # dangling symlink found.. ignoring..
 
         # Clear out the local branch
         execute_command('git rm -rf *', cwd=directory)
@@ -80,10 +92,11 @@ def non_git_rebase(upstream_branch, directory=None):
         # Only if we have local changes commit
         # (not true if the upstream didn't change any files)
         if has_changes(directory):
-            cmd = 'git commit -m "Rebase from \'' + upstream_branch + '\'"'
+            cmd = 'git commit -m "Rebase from \'' + upstream_branch + "'"
             data = get_package_data(upstream_branch)
             if type(data) in [list, tuple]:
                 cmd += " @ version '{}'".format(data[1])
+            cmd += '"'
             execute_command(cmd, cwd=directory)
     finally:
         # Clean up
