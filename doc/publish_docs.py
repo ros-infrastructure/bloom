@@ -33,6 +33,7 @@ orig_cwd = os.getcwd()
 
 clone = GitClone()
 with clone as clone_dir:
+    execute_command('git clean -fdx')
     with inbranch('gh-pages'):
         doc_dir = os.path.join('doc', ver)
         if os.path.exists(doc_dir):
@@ -48,7 +49,8 @@ with clone as clone_dir:
         redirect = p.sub(ver, redirect)
         with open('doc/index.html', 'w+') as f:
             f.write(redirect)
-        execute_command('git add doc')
+        execute_command('git add ' + os.path.join('doc', ver))
+        execute_command('git add doc/index.html')
         if has_changes():
             execute_command('git commit -m "Uploading documentation for '
                             'version {0}"'.format(ver))
