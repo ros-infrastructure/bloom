@@ -68,3 +68,13 @@ test: testsetup
 
 test--pdb-failures: testsetup
 	python setup.py nosetests --pdb-failures
+
+release:
+	git push --all && git push --tags
+	# Bump the version
+	NEW_VERSION=$(shell python doc/bump_version.py setup.py --version_only)
+	python doc/bump_version.py setup.py > setup.py
+	# Commit bump
+	git commit -m "Releasing bloom version ${NEW_VERSION}" setup.py
+	# Update docs
+	doc
