@@ -73,8 +73,10 @@ release:
 	git push --all && git push --tags
 	# Bump the version
 	NEW_VERSION=$(shell python doc/bump_version.py setup.py --version_only)
-	python doc/bump_version.py setup.py > setup.py
+	python doc/bump_version.py setup.py > setup.py_tmp
+	mv setup.py_tmp setup.py
 	# Commit bump
 	git commit -m "Releasing bloom version ${NEW_VERSION}" setup.py
 	# Update docs
 	doc
+	@echo "Now push the result with git push --all"
