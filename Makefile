@@ -83,6 +83,8 @@ pre-release:
 	chmod 775 setup.py
 	# Commit bump
 	git commit -m "Releasing bloom version $(NEW_VERSION)" setup.py
+	# Tag it
+	git tag -f $(NEW_VERSION)
 
-release: pre-release publish_docs
+release: pre-release publish_docs push upload
 	@echo "Now push the result with git push --all"
