@@ -22,6 +22,9 @@ else
 	@echo "Not opening index.html on $(UNAME)"
 endif
 
+publish_docs:
+	python doc/publish_docs.py
+
 all:
 	echo "noop for debbuild"
 
@@ -78,5 +81,5 @@ pre-release:
 	# Commit bump
 	git commit -m "Releasing bloom version ${NEW_VERSION}" setup.py
 
-release: pre-release doc
+release: pre-release publish_docs
 	@echo "Now push the result with git push --all"
