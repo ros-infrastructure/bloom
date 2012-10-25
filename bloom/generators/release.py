@@ -6,6 +6,7 @@ from bloom.git import inbranch
 from bloom.git import get_current_branch
 
 from bloom.logging import info
+from bloom.logging import warning
 
 from bloom.util import code
 from bloom.util import execute_command
@@ -79,6 +80,11 @@ each package in the upstream repository, so the source branch should be set to
 
     def post_patch(self, destination):
         # Figure out the version of the given package
+        if self.name is not None:
+            warning("Cannot automatically tag the release because this is "
+                    "not a catkin project. Please create a tag manually with:")
+            warning("  git tag -f release/" + str(self.name) + "/<version>")
+            return 0
         with inbranch(destination):
             package_data = get_package_data(destination)
             if type(package_data) not in [list, tuple]:
@@ -89,8 +95,10 @@ each package in the upstream repository, so the source branch should be set to
         return 0
 
     def detect_branches(self):
+        self.packages = None
         with inbranch(self.src):
             if self.name is not None:
+                self.packages = [self.name]
                 return [self.name]
             package_data = get_package_data(self.src)
             if type(package_data) not in [list, tuple]:
