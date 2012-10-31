@@ -19,7 +19,7 @@ setup(
         'rospkg >= 1.0.6',
         'vcstools >= 0.1.22',
         'catkin-pkg >= 0.1.2',
-        'distribute >= 0.6.24'
+        'distribute'
     ],
     author='Tully Foote, William Woodall',
     author_email='tfoote@willowgarage.com, wwoodall@willowgarage.com',
