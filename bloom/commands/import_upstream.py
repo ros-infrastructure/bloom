@@ -304,8 +304,8 @@ def import_upstream(cwd, tmp_dir, args):
     # If explicit svn url just export and git-import-orig
     if args.explicit_svn_url is not None:
         if args.upstream_version is None:
-            error("'--explicit-svn-version' must be specified with "
-                  "'--explicit-svn-url'")
+            error("'--explicit-svn-url' must be specified with "
+                  "'--upstream-version'")
             return 1
         info("Checking out upstream at version " + ansi('boldon') + \
              str(args.upstream_version) + ansi('reset') + \
