@@ -61,12 +61,13 @@ class GitClone(object):
         if get_root(directory) is None:
             raise RuntimeError("Provided directory, '" + str(directory) + \
                                "', is not a git repository")
+        self.track_all = track_all
+        if self.track_all:
+            track_branches(directory=directory)
         self.tmp_dir = tempfile.mkdtemp()
         self.clone_dir = os.path.join(self.tmp_dir, 'clone')
         self.repo_url = 'file://' + os.path.abspath(self.directory)
         execute_command('git clone ' + self.repo_url + ' ' + self.clone_dir)
-        if track_all:
-            track_branches(directory=directory)
 
     def __del__(self):
         self.clean_up()
@@ -74,6 +75,8 @@ class GitClone(object):
     def __enter__(self):
         self.orig_cwd = os.getcwd()
         os.chdir(self.clone_dir)
+        if self.track_all:
+            track_branches(directory=self.clone_dir)
         return os.getcwd()
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -87,8 +90,9 @@ class GitClone(object):
     def commit(self):
         with inbranch(get_commit_hash(get_current_branch())):
             with change_directory(self.clone_dir):
-                execute_command('git push --force --all')
-                execute_command('git push --force --tags')
+                execute_command('git pull --rebase')
+                execute_command('git push --all')
+                execute_command('git push --tags')
         self.clean_up()
 
 
