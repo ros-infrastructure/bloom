@@ -63,7 +63,7 @@ def _undo(config, directory):
         debug("Branch has not been trimmed previously, undo not required.")
         return None
     # Reset with git-revert
-    execute_command('git revert --no-edit ' + config['base'], cwd=directory)
+    execute_command('git revert --no-edit -Xtheirs ' + config['base'], cwd=directory)
     # Unset the trimbase
     config['trimbase'] = ''
     return config
