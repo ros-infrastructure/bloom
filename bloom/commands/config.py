@@ -99,7 +99,7 @@ def set_upstream(upstream_repo, upstream_repo_type, upstream_repo_branch):
 
     execute_command('git add bloom.conf')
     if has_changes():
-        cmd = 'git commit -m "bloom branch update by git-bloom-set-upstream"'
+        cmd = 'git commit -m "bloom branch update by git-bloom-config"'
         execute_command(cmd)
     else:
         debug("No chages, nothing to commit.")
