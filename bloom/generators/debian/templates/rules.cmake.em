@@ -8,7 +8,7 @@
 
 # Uncomment this to turn on verbose mode.
 export DH_VERBOSE=1
-export DH_OPTIONS=-v --buildsystem=cmake
+export DH_OPTIONS=-v
 # TODO: remove the LDFLAGS override.  It's here to avoid esoteric problems
 # of this sort:
 #  https://code.ros.org/trac/ros/ticket/2977
