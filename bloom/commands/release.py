@@ -121,7 +121,10 @@ def main(sysargs=None):
     msg = "### Running 'git bloom-import-upstream --replace'... "
     info(msg)
     info("###")
-    ret = iu_main(['--replace', '-d' if args.debug else ''])
+    iu_args = ['--replace']
+    if args.debug:
+        iu_args.append('-d')
+    ret = iu_main(iu_args)
     msg += "returned (" + str(ret) + ")"
     if ret > 0:
         error(msg)
