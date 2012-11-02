@@ -49,7 +49,6 @@ from bloom.logging import debug
 from bloom.logging import disable_ANSI_colors
 from bloom.logging import enable_debug
 from bloom.logging import error
-from bloom.logging import info
 from bloom.logging import warning
 
 try:
