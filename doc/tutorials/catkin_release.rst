@@ -69,4 +69,4 @@ The platform specific generator, like 'rosdebian' or 'debian', will produce addi
 
 For more information about ``git bloom-release`` and how it can be used see:
 
-.. program-output:: git-bloom-release -h
+.. program-output:: git bloom-release -h
