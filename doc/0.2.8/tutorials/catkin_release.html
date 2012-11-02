@@ -146,9 +146,9 @@ Everything went as expected, you should check that the new tags match your expec
 <p>The release generator creates a new stage in the release pipeline for each package present in the upstream source tree.  For example, if you have an upstream repository with catkin packages &#8216;foo&#8217; in the &#8216;&lt;git root&gt;/foo&#8217; directory and &#8216;bar&#8217; in the &#8216;&lt;git root&gt;/bar&#8217; directory, then the release generator will create the branches &#8216;release/foo&#8217; and &#8216;release/bar&#8217;. The release branches will not contain the entire upstream source tree, but just the source tree for each package.</p>
 <p>The platform specific generator, like &#8216;rosdebian&#8217; or &#8216;debian&#8217;, will produce additional release pipeline stages for each &#8216;release/&#8217; prefixed branch and each distribution of the generator&#8217;s platform. For example, the &#8216;release/foo&#8217; branch would result in the &#8216;debian/groovy/oneiric/foo&#8217;, &#8216;debian/groovy/precise/foo&#8217;, and &#8216;debian/groovy/quantal/foo&#8217; branches. On each of these branches the necessary debian files are generated from the contents of the catkin &#8216;package.xml&#8217; file and when complete the branch is tagged for a specific source debian, like <tt class="docutils literal"><span class="pre">debian/ros-groovy-foo_1.1.1-0_quantal</span></tt>.</p>
 <p>For more information about <tt class="docutils literal"><span class="pre">git</span> <span class="pre">bloom-release</span></tt> and how it can be used see:</p>
-<div class="highlight-text"><div class="highlight"><pre>git: &#39;bloom-release&#39; is not a git command. See &#39;git --help&#39;.
-</pre></div>
-</div>
+<div class="system-message">
+<p class="system-message-title">System Message: ERROR/3 (<tt class="docutils">/home/william/devel/bloom/doc/tutorials/catkin_release.rst</tt>, line 72)</p>
+Command u&#8217;git-bloom-release -h&#8217; failed: [Errno 2] No such file or directory</div>
 </div>
 </div>
 </div>
