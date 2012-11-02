@@ -162,13 +162,12 @@ def rebase_patches(without_git_rebase=True, directory=None):
     upstream_commit_hash = get_commit_hash(config['parent'], directory)
     # If the current upstream commit hash is the same as the stored one, noop
     if upstream_commit_hash == config['previous']:
-        debug("Nothing to do: Current branch (" + current_branch + ")'s "
-                "base commit hash is the same as the source branch (" + \
-                config['parent'] + ")'s commit hash.")
+        debug("Nothing to do: The source branch (" + \
+                config['parent'] + ")'s commit hash has not changed.")
         debug("    Did you forget to update the parent branch first?")
         debug("    Updating the parent branch can be done by calling "
-                "'git-bloom-patch rebase' on it, or 'git-bloom-import-upsteam'"
-                " if the parent branch is the upstream branch.")
+              "'git-bloom-patch rebase' on it, or 'git-bloom-import-upsteam'"
+              " if the parent branch is the upstream branch.")
         return 0
     else:
         debug("rebase_patches: " + upstream_commit_hash + " == " + \
@@ -185,9 +184,12 @@ def rebase_patches(without_git_rebase=True, directory=None):
     # Get the latest configs
     config = get_patch_config(patches_branch, directory)
     # Set the base to the current hash (before patches)
+    debug('Current branch: ' + get_current_branch(directory))
     config['base'] = get_commit_hash(current_branch, directory)
+    debug('New current commit hash after rebase: ' + config['base'])
     # Set the new upstream hash to the previous upstream hash
     config['previous'] = get_commit_hash(config['parent'], directory)
+    debug('New parent commit hash after rebase: ' + config['previous'])
     # Clear the trimbase (it needs to be reapplied)
     config['trimbase'] = ''
     # Write the new configs
