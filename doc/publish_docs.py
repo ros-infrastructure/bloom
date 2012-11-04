@@ -43,7 +43,7 @@ with clone as clone_dir:
             execute_command('git rm -rf ' + doc_dir)
         shutil.copytree(os.path.join(orig_cwd, 'doc', 'build', 'html'),
                         doc_dir)
-        p = re.compile('\d[.]\d[.]\d')
+        p = re.compile('\d*[.]\d*[.]\d*')
         with open('doc/index.html', 'r') as f:
             redirect = f.read()
         redirect = p.sub(ver, redirect)
