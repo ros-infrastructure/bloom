@@ -5,8 +5,10 @@ python:
   - "3.2"
 # command to install dependencies
 install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq git-buildpackage
+  - sudo apt-get install -qq git
   - sudo pip install empy
-  - sudo apt-get install git-buildpackage
   - sudo python setup.py develop
 # command to run tests
 script:
