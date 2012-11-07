@@ -11,4 +11,4 @@ install:
   - sudo python setup.py develop
 # command to run tests
 script:
-  - nosetests -s
+  - sudo python setup.py nosetests -s
