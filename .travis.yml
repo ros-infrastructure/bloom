@@ -5,6 +5,7 @@ python:
   - "3.2"
 # command to install dependencies
 install:
+  - sudo pip install empy
   - sudo python setup.py develop
 # command to run tests
 script:
