@@ -99,7 +99,7 @@ class temporary_directory(object):
 
 
 def user_bloom(cmd, args=None, directory=None, auto_assert=True,
-               return_io=True, silent=True):
+               return_io=True, silent=False):
     """Runs the given bloom cmd ('git-bloom-{cmd}') with the given args"""
     assert type(cmd) == str, \
            "user_bloom cmd takes str only, got " + str(type(cmd))
