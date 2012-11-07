@@ -111,7 +111,3 @@ def test_call_config_with_untracked_files(directory=None):
                  auto_assert=False)
     assert r == code.GIT_HAS_UNTRACKED_FILES, "actually returned " + str(r)
 
-
-def test_failing():
-    assert False
-
