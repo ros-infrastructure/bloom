@@ -9,6 +9,8 @@ install:
   - sudo apt-get install -qq git-buildpackage
   - sudo pip install empy
   - sudo python setup.py develop
+  - sudo rosdep init
+  - sudo rosdep update
 # command to run tests
 script:
   - sudo python setup.py nosetests -s
