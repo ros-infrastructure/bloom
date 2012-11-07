@@ -6,6 +6,7 @@ python:
 # command to install dependencies
 install:
   - sudo pip install empy
+  - sudo apt-get install git-buildpackage
   - sudo python setup.py develop
 # command to run tests
 script:
