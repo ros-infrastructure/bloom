@@ -19,6 +19,7 @@ setup(
         'rospkg >= 1.0.6',
         'vcstools >= 0.1.22',
         'catkin-pkg >= 0.1.2',
+        'python-dateutil',
         'distribute'
     ],
     author='Tully Foote, William Woodall',
