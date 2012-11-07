@@ -12,7 +12,7 @@ setup(
     },
     include_package_data=True,
     install_requires=[
-        'empy >= 3.1',
+        'empy',
         'PyYAML >= 3.10',
         'argparse >= 1.2.1',
         'rosdep >= 0.10.3',
