@@ -223,7 +223,10 @@ def test_multi_package_repository(directory=None):
         ###
         with bloom_answer(bloom_answer.ASSERT_NO_QUESTION):
             ret, out, err = user('git-bloom-generate -y rosdebian '
-                                 '-p release groovy --quiet', return_io=True)
+                                 '-p release groovy', return_io=True)
+            if ret != 0:
+                print(out)
+                print(err)
         expected = "Debian Distributions: ['oneiric', 'precise', 'quantal']"
         assert out.count(expected) > 0, "not using expected ubuntu distros"
         # generator should have reported OK
