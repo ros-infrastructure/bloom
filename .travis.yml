@@ -8,6 +8,7 @@ install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq git-buildpackage
   - sudo pip install empy
+  - sudo pip install python-dateutil
   - sudo python setup.py develop
   - sudo rosdep init
   - sudo rosdep update
