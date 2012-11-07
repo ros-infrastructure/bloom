@@ -110,3 +110,4 @@ def test_call_config_with_untracked_files(directory=None):
         r = user('git-bloom-config https://gh.com/foo/foo.git git --quiet',
                  auto_assert=False)
     assert r == code.GIT_HAS_UNTRACKED_FILES, "actually returned " + str(r)
+
