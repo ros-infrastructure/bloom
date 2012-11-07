@@ -122,6 +122,7 @@ def user_bloom(cmd, args=None, directory=None, auto_assert=True,
             func = load_entry_point('bloom==' + ver, 'console_scripts', cmd)
             ret = func(args)
     if not silent:
+        print("Command '{0}' returned '{1}':".format(cmd, ret))
         print(out.getvalue(), file=sys.stdout, end='')
         print(err.getvalue(), file=sys.stderr, end='')
     if auto_assert:
