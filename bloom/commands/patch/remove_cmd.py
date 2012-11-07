@@ -1,20 +1,24 @@
 from __future__ import print_function
 
 import sys
-from argparse import ArgumentParser
+import argparse
+
+from bloom.commands.patch.common import get_patch_config
+from bloom.commands.patch.common import set_patch_config
+
+from bloom.git import branch_exists
+from bloom.git import checkout
+from bloom.git import get_commit_hash
+from bloom.git import get_current_branch
+from bloom.git import track_branches
+
+from bloom.logging import log_prefix
+from bloom.logging import error
+from bloom.logging import debug
 
 from bloom.util import add_global_arguments
 from bloom.util import execute_command
 from bloom.util import handle_global_arguments
-from bloom.logging import log_prefix
-from bloom.logging import error
-from bloom.logging import debug
-from bloom.git import branch_exists
-from bloom.git import checkout
-from bloom.git import get_current_branch
-from bloom.git import track_branches
-
-from bloom.commands.patch.common import get_patch_config
 
 
 @log_prefix('[git-bloom-patch remove]: ')
@@ -44,8 +48,11 @@ def remove_patches(directory=None):
             return 1
         debug("Removing patches from " + current_branch + " back to base "
               "commit " + spec)
-        # Reset this branch using git reset --hard spec
-        execute_command('git reset --hard ' + spec, cwd=directory)
+        # Reset this branch using git revert --no-edit spec
+        execute_command('git revert --no-edit -Xtheirs ' + spec, cwd=directory)
+        # Update the base
+        config['base'] = get_commit_hash(current_branch, directory)
+        set_patch_config(patches_branch, config, directory=directory)
     finally:
         if current_branch:
             checkout(current_branch, directory=directory)
@@ -54,7 +61,7 @@ def remove_patches(directory=None):
 
 def get_parser():
     """Returns a parser.ArgumentParser with all arguments defined"""
-    parser = ArgumentParser(description="""
+    parser = argparse.ArgumentParser(description="""
 Removes any applied patches from the working branch, including any un-exported
 patches, so use with caution.
 """)

@@ -179,8 +179,6 @@ class DebianGenerator(BloomGenerator):
         config = self.load_original_config(patches_branch)
         if config is not None:
             set_patch_config(patches_branch, config)
-        # Remove back to the base
-        remove_patches()
 
     def post_rebase(self, destination):
         # Determine the current package being generated

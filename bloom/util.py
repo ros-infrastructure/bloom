@@ -49,7 +49,6 @@ from bloom.logging import debug
 from bloom.logging import disable_ANSI_colors
 from bloom.logging import enable_debug
 from bloom.logging import error
-from bloom.logging import info
 from bloom.logging import warning
 
 try:
@@ -292,12 +291,10 @@ def execute_command(cmd, shell=True, autofail=True, silent=True,
         if not silent_error:
             error("'execute_command' failed to call '{0}'".format(cmd) + \
                   " which had a return code ({0}):".format(result))
-            if out:
-                error("    stdout:\n" + ansi('reset') + str(out))
-                error("end stdout")
-            if err:
-                error("    stderr:\n" + ansi('reset') + str(err))
-                error("end stderr")
+            error("    stdout:\n" + ansi('reset') + str(out))
+            error("end stdout")
+            error("    stderr:\n" + ansi('reset') + str(err))
+            error("end stderr")
         if autofail:
             raise CalledProcessError(cmd=cmd, output=out, returncode=result)
     if return_io:

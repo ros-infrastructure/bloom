@@ -121,7 +121,10 @@ def main(sysargs=None):
     msg = "### Running 'git bloom-import-upstream --replace'... "
     info(msg)
     info("###")
-    ret = iu_main(['--replace'])
+    iu_args = ['--replace']
+    if args.debug:
+        iu_args.append('-d')
+    ret = iu_main(iu_args)
     msg += "returned (" + str(ret) + ")"
     if ret > 0:
         error(msg)
@@ -180,5 +183,5 @@ def main(sysargs=None):
     info(ansi('greenf') + ansi('boldon') + "Everything went as expected, "
          "you should check that the new tags match your expectations, and "
          "then push to the release repo with:" + ansi('reset'))
-    info("  git push --all && git push --tags")
+    info("  git push --all && git push --tags  # You might have to add --force to the second command if you are over-writing existing flags")
     return 0
