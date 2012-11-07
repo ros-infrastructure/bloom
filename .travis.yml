@@ -12,3 +12,5 @@ install:
 # command to run tests
 script:
   - sudo python setup.py nosetests -s
+notifications:
+  email: false
