@@ -9,4 +9,4 @@ install:
   - sudo python setup.py develop
 # command to run tests
 script:
-  - python setup.py nosetests
+  - sudo python setup.py nosetests
