@@ -59,7 +59,9 @@ def create_upstream_catkin_groovy_repository(packages, directory=None):
     """.format(package)
                 with open('package.xml', 'w+') as f:
                     f.write(package_xml)
-                user('git add package.xml')
+                user('touch .cproject')
+                user('touch .project')
+                user('git add package.xml .cproject .project')
         user('git commit -m "Releasing version 0.1.0"')
         user('git tag 0.1.0 -m "Releasing version 0.1.0"')
         url = 'file://' + os.getcwd()
@@ -223,7 +225,8 @@ def test_multi_package_repository(directory=None):
         ###
         with bloom_answer(bloom_answer.ASSERT_NO_QUESTION):
             ret, out, err = user('git-bloom-generate -y rosdebian '
-                                 '-p release groovy', return_io=True, auto_assert=False)
+                                 '-p release groovy', return_io=True,
+                                 auto_assert=False)
             if ret != 0:
                 print(out)
                 print(err)
