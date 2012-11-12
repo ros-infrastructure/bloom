@@ -90,6 +90,18 @@ def _trim(config, force, directory):
         shutil.copytree(sub_dir, storage)
         # Clear out the git repo
         execute_command('git rm -rf ./*', cwd=directory)
+        # Collect .* files (excluding .git)
+        dot_items = []
+        for item in os.listdir(git_root):
+            if item in ['.git', '..', '.']:
+                continue
+            if item.startswith('.'):
+                dot_items.append(item)
+        # Remove and .* files missed by 'git rm -rf *'
+        if len(dot_items) > 0:
+            execute_command('git rm -rf ' + ' '.join(dot_items), cwd=directory)
+        # Clear out any untracked files
+        execute_command('git clean -fdx', cwd=directory)
         # Copy the sub directory back
         for item in os.listdir(storage):
             src = os.path.join(storage, item)
@@ -100,6 +112,18 @@ def _trim(config, force, directory):
                 shutil.copy(src, dst)
         # Stage
         execute_command('git add ./*', cwd=directory)
+        # Collect .* files
+        dot_items = []
+        for item in os.listdir(git_root):
+            if item in ['.git', '..', '.']:
+                continue
+            if item.startswith('.'):
+                dot_items.append(item)
+        # Add any .* files missed by 'git add ./*'
+        if len(dot_items) > 0:
+            execute_command('git add ' + ' '.join(dot_items), cwd=directory)
+        # Remove any straggling untracked files
+        execute_command('git clean -dXf', cwd=directory)
         # Commit
         cmd = 'git commit -m "Trimmed the branch to only the ' + \
               config['trim'] + ' sub directory"'
