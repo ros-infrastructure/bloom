@@ -9,7 +9,7 @@ install:
   - python setup.py build
   - sudo pip install -r bloom.egg-info/requires.txt
   - sudo rosdep init
-  - sudo rosdep update
+  - rosdep update
 # command to run tests
 script:
   - sudo python setup.py nosetests -s
