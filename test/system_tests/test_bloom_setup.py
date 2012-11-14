@@ -33,9 +33,7 @@ def test_create_a_bloom_repository(directory=None):
     """
     # Setup
     user('mkdir new_repo')
-    assert os.getcwd() == directory, str(os.getcwd()) + " == " + str(directory)
     user('cd new_repo')
-    assert os.getcwd() != directory, str(os.getcwd()) + " != " + str(directory)
     user('git init .')
     # Test bloom command
     with bloom_answer('y'):
