@@ -24,7 +24,7 @@ from bloom.git import has_changes
 from bloom.util import execute_command
 from bloom.util import maybe_continue
 
-print("Generating github pages documentation for version '{}'...".format(ver))
+print("Generating github pages documentation for version '{0}'...".format(ver))
 
 execute_command('make clean', cwd='doc')
 execute_command('python setup.py build_sphinx')

@@ -2,10 +2,9 @@ language: python
 python:
   - "2.6"
   - "2.7"
+  - "3.2"
 # command to install dependencies
 install:
-  - sudo apt-get update -qq
-  - sudo apt-get install -qq git-buildpackage
   - python setup.py build
   - sudo pip install -r bloom.egg-info/requires.txt
   - sudo rosdep init
@@ -15,3 +14,6 @@ script:
   - sudo python setup.py nosetests -s
 notifications:
   email: false
+matrix:
+  allow_failures:
+    - python: "3.2"
