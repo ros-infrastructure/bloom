@@ -36,13 +36,12 @@ import os
 import sys
 import argparse
 import shutil
+import tarfile
 import traceback
 
 from subprocess import CalledProcessError
 
 from pkg_resources import parse_version
-
-from bloom import gbp
 
 from bloom.git import branch_exists
 from bloom.git import checkout
@@ -51,6 +50,7 @@ from bloom.git import ensure_clean_working_env
 from bloom.git import get_commit_hash
 from bloom.git import get_current_branch
 from bloom.git import get_last_tag_by_date
+from bloom.git import has_changes
 from bloom.git import inbranch
 from bloom.git import show
 from bloom.git import track_branches
@@ -283,6 +283,51 @@ def auto_upstream_checkout(upstream_repo, upstream_url, devel_branch):
     return meta
 
 
+def import_orig(tarball_path, target_branch, upstream_url, version):
+    # Create the tarfile handle
+    targz = tarfile.open(tarball_path, 'r:gz')
+    with inbranch(target_branch):
+        # Prepare list of members to extract, ignoring some
+        ignores = ('.git', '.gitignore', '.svn', '.hgignore', '.hg', 'CVS')
+        members = targz.getmembers()
+        members = [m for m in members if m.name.split('/')[-1] not in ignores]
+
+        # Clear out the local branch
+        items = []
+        for item in os.listdir(os.getcwd()):
+            if item in ['.git', '..', '.']:
+                continue
+            items.append(item)
+        if len(items) > 0:
+            execute_command('git rm -rf ' + ' '.join(items))
+        # Clear out any untracked files
+        execute_command('git clean -fdx')
+
+        # Extract the tarball into the clean branch
+        targz.extractall(os.getcwd(), members)
+
+        # Commit changes to the repository
+        items = []
+        for item in os.listdir(os.getcwd()):
+            if item in ['.git', '..', '.']:
+                continue
+            items.append(item)
+        if len(items) > 0:
+            execute_command('git add ' + ' '.join(items))
+        # Remove any straggling untracked files
+        execute_command('git clean -dXf')
+        # Only if we have local changes commit
+        # (not true if the upstream didn't change any files)
+        if has_changes():
+            msg = "Imported upstream version '{0}' from '{1}'"
+            msg = msg.format(version, upstream_url)
+            cmd = 'git commit -m "{0}"'.format(msg)
+            execute_command(cmd)
+        # Create the upstream tag
+        execute_command('git tag {0}/{1}'.format(target_branch, version))
+    # with inbranch(target_branch):
+
+
 @log_prefix('[git-bloom-import-upstream]: ')
 def import_upstream(cwd, tmp_dir, args):
     # Ensure the bloom and upstream branches are tracked locally
@@ -393,10 +438,6 @@ release version, {1}.
 """.format(version, last_tag_version))
         if parse_version(version) <= parse_version(last_tag_version):
             if args.replace:
-                if not gbp.has_replace():
-                    error("The '--replace' flag is not supported on this "
-                          "version of git-buildpackage.")
-                    return 1
                 # Remove the conflicting tag first
                 warning("""\
 The upstream version, {0}, is equal to or less than a previous \
@@ -423,8 +464,7 @@ upstream import use the '--replace' option.\
 
     # Detect if git-import-orig is installed
     tarball_path += '.tar.gz'
-    if gbp.import_orig(tarball_path, args.interactive) != 0:
-        return 1
+    import_orig(tarball_path, 'upstream', upstream_repo.get_url(), version)
 
     # Push changes back to the original bloom repo
     execute_command('git push --all -f')
