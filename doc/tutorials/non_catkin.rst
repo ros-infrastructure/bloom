@@ -24,28 +24,23 @@ Now you will want to create a catkin package.xml file in the root of this branch
     <?xml version="1.0"?>
     <package>
       <name>@name</name>
-      <version@version_abi>@version</version>
+      <version>@version</version>
       <description>@description</description>
 
       <!-- multiple maintainer tags allowed, one name per tag-->
-      <!-- <maintainer email="jane.doe@@example.com">Jane Doe</maintainer> -->
+      <maintainer email="jane.doe@example.com">Jane Doe</maintainer>
       <!-- Commonly used license strings:
       BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3-->
-      <!-- <license>LICENSE HERE</license> -->
+      <license>LICENSE HERE</license>
       <!-- url type could be one of website (default), bugtracker and repository -->
       <!-- <url type="website">http://wiki.ros.org/@name</url> -->
       <!-- multiple authors tags allowed, one name per tag-->
-      <!-- <author email="jane.doe@@example.com">Jane Doe</author> -->
+      <author email="jane.doe@example.com">Jane Doe</author>
       <!--Any system dependency or dependency to catkin packages. Examples:-->
       <!--<build_depend>genmsg</build_depend> for libraries for compiling-->
       <!--<buildtool_depend>cmake</buildtool_depend> for build tools-->
       <!--<run_depend>python-yaml</run_depend> for packages used at runtime-->
       <!--<test_depend>gtest</test_depend> for packages needed for testing-->
-      <export>
-        <!-- This section contains any information that other tools require-->
-        <!-- <architecture_independent/> -->
-        <!-- <meta_package/> -->
-      </export>
     </package>
 
 Which will create a template package.xml in the current directory for a package foo at version 1.1.1. Once you have completed your package.xml file, commit it to this branch::
