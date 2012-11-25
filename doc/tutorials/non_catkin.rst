@@ -5,7 +5,7 @@ When importing a non-catkin project, which is to say a project which does not ha
 
 To import any non-catkin project you must specify the upstream version manually using the ``--upstream-version`` argument and the upstream tag to export from using the ``--upstream-tag`` argument. For example::
 
-    git bloom-import-upstream --upstream-version 1.1.1 --upstream-tag foo-1.1.1
+    git-bloom-import-upstream --upstream-version 1.1.1 --upstream-tag foo-1.1.1
 
 If you are using svn in a non standard layout, you can specify the exact url to use like this:
 
@@ -13,7 +13,7 @@ If you are using svn in a non standard layout, you can specify the exact url to 
 
 Once you have imported the upstream, you will need to manually run the two standard generators, starting with the release generator::
 
-    git bloom-generate release --src upstream --package-name foo
+    git-bloom-generate release --src upstream --package-name foo
 
 Once the release generator is done it will have created the branch ``release/foo``. Since the rosdebian generator heavily depends on a catkin package.xml file you will need to add that as a patch, so checkout to the release branch::
 
@@ -59,7 +59,7 @@ Next, you need to tag this release for the build farm (this is automatic when yo
 
 Now you are ready to generate the debians::
 
-    git bloom-generate rosdebian --prefix release groovy
+    git-bloom-generate rosdebian --prefix release groovy
 
 If this is successful you won't get a nice little message like git bloom-release gives you, but as long as the return code was 0 you can push just like you would with catkin branches::
 

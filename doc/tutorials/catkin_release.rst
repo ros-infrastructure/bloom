@@ -30,7 +30,7 @@ Running git bloom-release
 
 Now that you have either setup a new release repository, or cloned an existing one, and prepared your upstream repository for release, it is time to run the bloom release command::
 
-    git bloom-release rosdebian groovy
+    git-bloom-release rosdebian groovy
 
 In this example rosdebian will create ROS tailored debians for the groovy release of ROS.
 
@@ -52,7 +52,7 @@ You can follow the message's advice::
 
 Now, if you want your packages built and released by the build farm see: :doc:`notify_build_farm`
 
-What is git bloom-release doing?
+What is git-bloom-release doing?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The bloom release command is a convenience command which combines three bloom commands into one.
