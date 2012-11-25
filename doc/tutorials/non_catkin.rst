@@ -15,6 +15,14 @@ Once you have imported the upstream, you will need to manually run the two stand
 
     git-bloom-generate release --src upstream --package-name foo
 
+You may get this warning::
+
+  Cannot automatically tag the release because this is not a catkin project.  Please checkout the release branch and then create a tag manually with:
+  git checkout release/foo
+  git tag -f release/foo/<version>
+
+Do what the warning says.
+
 Once the release generator is done it will have created the branch ``release/foo``. Since the rosdebian generator heavily depends on a catkin package.xml file you will need to add that as a patch, so checkout to the release branch::
 
     git checkout release/foo

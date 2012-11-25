@@ -82,7 +82,8 @@ each package in the upstream repository, so the source branch should be set to
         # Figure out the version of the given package
         if self.name is not None:
             warning("Cannot automatically tag the release because this is "
-                    "not a catkin project. Please create a tag manually with:")
+                    "not a catkin project. Please checkout the release branch and then create a tag manually with:")
+            warning("  git checkout release/" + str(self.name))
             warning("  git tag -f release/" + str(self.name) + "/<version>")
             return 0
         with inbranch(destination):
