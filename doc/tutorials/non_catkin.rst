@@ -5,7 +5,7 @@ When importing a non-catkin project, which is to say a project which does not ha
 
 To import any non-catkin project you must specify the upstream version manually using the ``--upstream-version`` argument and the upstream tag to export from using the ``--upstream-tag`` argument. For example::
 
-    git bloom-import-upstream --upstream-version 1.1.1 --upstream-tag foo-1.1.1
+    git-bloom-import-upstream --upstream-version 1.1.1 --upstream-tag foo-1.1.1
 
 If you are using svn in a non standard layout, you can specify the exact url to use like this:
 
@@ -13,7 +13,15 @@ If you are using svn in a non standard layout, you can specify the exact url to 
 
 Once you have imported the upstream, you will need to manually run the two standard generators, starting with the release generator::
 
-    git bloom-generate release --src upstream --package-name foo
+    git-bloom-generate release --src upstream --package-name foo
+
+You may get this warning::
+
+  Cannot automatically tag the release because this is not a catkin project.  Please checkout the release branch and then create a tag manually with:
+  git checkout release/foo
+  git tag -f release/foo/<version>
+
+Do what the warning says.
 
 Once the release generator is done it will have created the branch ``release/foo``. Since the rosdebian generator heavily depends on a catkin package.xml file you will need to add that as a patch, so checkout to the release branch::
 
@@ -24,28 +32,23 @@ Now you will want to create a catkin package.xml file in the root of this branch
     <?xml version="1.0"?>
     <package>
       <name>@name</name>
-      <version@version_abi>@version</version>
+      <version>@version</version>
       <description>@description</description>
 
       <!-- multiple maintainer tags allowed, one name per tag-->
-      <!-- <maintainer email="jane.doe@@example.com">Jane Doe</maintainer> -->
+      <maintainer email="jane.doe@example.com">Jane Doe</maintainer>
       <!-- Commonly used license strings:
       BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3-->
-      <!-- <license>LICENSE HERE</license> -->
+      <license>LICENSE HERE</license>
       <!-- url type could be one of website (default), bugtracker and repository -->
       <!-- <url type="website">http://wiki.ros.org/@name</url> -->
       <!-- multiple authors tags allowed, one name per tag-->
-      <!-- <author email="jane.doe@@example.com">Jane Doe</author> -->
+      <author email="jane.doe@example.com">Jane Doe</author>
       <!--Any system dependency or dependency to catkin packages. Examples:-->
       <!--<build_depend>genmsg</build_depend> for libraries for compiling-->
       <!--<buildtool_depend>cmake</buildtool_depend> for build tools-->
       <!--<run_depend>python-yaml</run_depend> for packages used at runtime-->
       <!--<test_depend>gtest</test_depend> for packages needed for testing-->
-      <export>
-        <!-- This section contains any information that other tools require-->
-        <!-- <architecture_independent/> -->
-        <!-- <meta_package/> -->
-      </export>
     </package>
 
 Which will create a template package.xml in the current directory for a package foo at version 1.1.1. Once you have completed your package.xml file, commit it to this branch::
@@ -59,7 +62,7 @@ Next, you need to tag this release for the build farm (this is automatic when yo
 
 Now you are ready to generate the debians::
 
-    git bloom-generate rosdebian --prefix release groovy
+    git-bloom-generate rosdebian --prefix release groovy
 
 If this is successful you won't get a nice little message like git bloom-release gives you, but as long as the return code was 0 you can push just like you would with catkin branches::
 

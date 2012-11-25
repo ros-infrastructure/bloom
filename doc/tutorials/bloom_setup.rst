@@ -15,7 +15,7 @@ You will probably want to push this new release repository to a centralized serv
 
 Now inform bloom of your upstream repository settings and initialize the repository::
 
-    git bloom-config https://github.com/bar/foo.git git groovy-devel
+    git-bloom-config https://github.com/bar/foo.git git groovy-devel
 
 With output like::
 
