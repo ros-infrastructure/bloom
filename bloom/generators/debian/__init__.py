@@ -7,6 +7,7 @@ import pkg_resources
 import re
 import shutil
 import sys
+import traceback
 
 from bloom.generators import BloomGenerator
 
@@ -28,13 +29,13 @@ from bloom.logging import warning
 
 from bloom.commands.patch.common import get_patch_config
 from bloom.commands.patch.common import set_patch_config
-from bloom.commands.patch.remove_cmd import remove_patches
 
 from bloom.util import change_directory
 from bloom.util import code
 from bloom.util import execute_command
 from bloom.util import get_package_data
 from bloom.util import maybe_continue
+from bloom.util import print_exc
 
 try:
     from rosdep2.platforms.debian import APT_INSTALLER
@@ -163,7 +164,13 @@ class DebianGenerator(BloomGenerator):
         if not self.has_run_rosdep:
             info("Running 'rosdep update'...")
             from rosdep2.catkin_support import update_rosdep
-            update_rosdep()
+            try:
+                update_rosdep()
+            except:
+                print_exc(traceback.format_exc())
+                error("Failed to update rosdep, did you run "
+                      "'rosdep init' first?")
+                return code.ROSDEP_FAILED
             self.has_run_rosdep = True
         # Determine the current package being generated
         name = destination.split('/')[-1]
