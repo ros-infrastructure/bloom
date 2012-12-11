@@ -51,7 +51,7 @@ with clone as clone_dir:
         redirect = p.sub(ver, redirect)
         with open('doc/index.html', 'w+') as f:
             f.write(redirect)
-        execute_command('git add -f' + os.path.join('doc', ver, '*'))
+        execute_command('git add -f ' + os.path.join('doc', ver, '*'))
         execute_command('git add doc/index.html')
         if has_changes():
             execute_command('git commit -m "Uploading documentation for '
