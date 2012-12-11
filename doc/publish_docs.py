@@ -52,9 +52,10 @@ with clone as clone_dir:
         with open('doc/index.html', 'w+') as f:
             f.write(redirect)
         execute_command('git add -f ' + os.path.join('doc', ver, '*'))
-        execute_command('git add doc/index.html')
+        execute_command('git add -f doc/index.html')
         if has_changes():
             execute_command('git commit -m "Uploading documentation for '
                             'version {0}"'.format(ver))
+        execute_command('git clean -fdx')
 clone.commit()
 clone.clean_up()
