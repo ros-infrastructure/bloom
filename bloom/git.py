@@ -93,7 +93,8 @@ class GitClone(object):
             with change_directory(self.clone_dir):
                 new_branches = get_branches()
                 for branch in self.current_branches:
-                    new_branches.remove(branch)
+                    if branch in new_branches:
+                        new_branches.remove(branch)
                 for branch in get_branches(local_only=True):
                     if branch not in new_branches:
                         with inbranch(branch):
