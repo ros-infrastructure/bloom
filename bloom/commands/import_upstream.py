@@ -416,13 +416,19 @@ def import_upstream(cwd, tmp_dir, args):
         # We have to search for the upstream tag
         else:
             if args.upstream_devel is not None:
-                warning("Overriding the bloom.conf upstream branch with " + \
+                warning("Overriding the bloom.conf upstream branch with " +
                         args.upstream_devel)
                 devel_branch = args.upstream_devel
             else:
                 devel_branch = upstream_branch
-            meta = auto_upstream_checkout(upstream_repo,
-                                             upstream_url, devel_branch)
+            if args.upstream_version is not None:
+                meta = auto_upstream_checkout(
+                    upstream_repo, upstream_url, devel_branch
+                )
+            else:
+                meta = {
+                    'version': args.upstream_version
+                }
             if type(meta) not in [dict] and meta != 0:
                 return meta
 
