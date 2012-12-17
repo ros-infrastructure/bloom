@@ -16,6 +16,8 @@ sys.path.append(os.path.abspath(os.path.join(this_dir, '..')))
 from bloom import __version__ as ver
 
 from bloom.logging import warning
+from bloom.logging import enable_debug
+enable_debug(True)
 
 from bloom.git import GitClone
 from bloom.git import inbranch
@@ -49,10 +51,11 @@ with clone as clone_dir:
         redirect = p.sub(ver, redirect)
         with open('doc/index.html', 'w+') as f:
             f.write(redirect)
-        execute_command('git add ' + os.path.join('doc', ver))
-        execute_command('git add doc/index.html')
+        execute_command('git add -f ' + os.path.join('doc', ver, '*'))
+        execute_command('git add -f doc/index.html')
         if has_changes():
             execute_command('git commit -m "Uploading documentation for '
                             'version {0}"'.format(ver))
+        execute_command('git clean -fdx')
 clone.commit()
 clone.clean_up()

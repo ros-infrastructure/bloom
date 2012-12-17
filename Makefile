@@ -19,7 +19,7 @@ else
 endif
 
 publish_docs:
-	python doc/publish_docs.py
+	PYTHONPATH=`pwd`/bloom:$PYTHONPATH python doc/publish_docs.py
 
 all:
 	echo "noop for debbuild"
