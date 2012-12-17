@@ -53,6 +53,7 @@ from bloom.git import get_last_tag_by_date
 from bloom.git import has_changes
 from bloom.git import inbranch
 from bloom.git import show
+from bloom.git import tag_exists
 from bloom.git import track_branches
 
 from bloom.logging import ansi
@@ -445,15 +446,17 @@ import version.
     Removing conflicting tag before continuing \
 because the '--replace' options was specified.\
 """.format(version))
-                execute_command('git tag -d {0}'.format('upstream/' + version))
-                execute_command('git push origin :refs/tags/'
-                                '{0}'.format('upstream/' + version))
             else:
                 warning("""\
 The upstream version, {0}, is equal to a previous import version. \
 git-buildpackage will fail, if you want to replace the existing \
 upstream import use the '--replace' option.\
 """.format(version))
+    if args.replace:
+        if tag_exists('upstream/' + version):
+            execute_command('git tag -d {0}'.format('upstream/' + version))
+            execute_command('git push origin :refs/tags/'
+                            '{0}'.format('upstream/' + version))
 
     # Look for upstream branch
     if not branch_exists('upstream', local_only=True):
