@@ -307,6 +307,28 @@ def import_orig(tarball_path, target_branch, upstream_url, version):
         # Extract the tarball into the clean branch
         targz.extractall(os.getcwd(), members)
 
+        # Check for folder nesting (mostly hg)
+        items = []
+        for item in os.listdir(os.getcwd()):
+            if not item.startswith('.'):
+                items.append(item)
+        tarball_prefix = os.path.basename(tarball_path)[:-len('.tag.gz')]
+        if tarball_prefix in items:
+            debug('Removing nested tarball folder: ' + str(tarball_prefix))
+            tarball_prefix_path = os.path.join(os.getcwd(), tarball_prefix)
+            for item in os.listdir(tarball_prefix_path):
+                if item in ['.', '..']:
+                    continue
+                item_path = os.path.join(os.getcwd(), tarball_prefix, item)
+                debug(
+                    'moving ' + str(item_path) + ' to ' +
+                    str(os.path.join(os.getcwd(), item))
+                )
+                shutil.move(item_path, os.path.join(os.getcwd(), item))
+            shutil.rmtree(tarball_prefix_path)
+        else:
+            debug('No nested tarball folder found.')
+
         # Commit changes to the repository
         items = []
         for item in os.listdir(os.getcwd()):
