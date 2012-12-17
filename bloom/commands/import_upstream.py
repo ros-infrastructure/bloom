@@ -49,7 +49,7 @@ from bloom.git import create_branch
 from bloom.git import ensure_clean_working_env
 from bloom.git import get_commit_hash
 from bloom.git import get_current_branch
-from bloom.git import get_last_tag_by_date
+from bloom.git import get_last_tag_by_version
 from bloom.git import has_changes
 from bloom.git import inbranch
 from bloom.git import show
@@ -421,7 +421,7 @@ def import_upstream(cwd, tmp_dir, args):
             upstream_repo.export_repository(version, tarball_path)
 
     # Get the gbp version elements from either the last tag or the default
-    last_tag = get_last_tag_by_date()
+    last_tag = get_last_tag_by_version()
     if last_tag == '':
         gbp_major, gbp_minor, gbp_patch = segment_version(version)
     else:

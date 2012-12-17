@@ -42,6 +42,8 @@ import tempfile
 from subprocess import PIPE
 from subprocess import CalledProcessError
 
+from pkg_resources import parse_version
+
 from bloom.logging import debug
 from bloom.logging import error
 from bloom.logging import warning
@@ -571,6 +573,26 @@ def track_branches(branches=None, directory=None):
     finally:
         if current_branch:
             checkout(current_branch, directory=directory)
+
+
+def get_last_tag_by_version(directory=None):
+    """
+    Returns the most recent, by date, tag in the given local git repository.
+
+    :param directory: the directory in which to run the query
+    :returns: the most recent tag by date, else '' if there are no tags
+
+    :raises: subprocess.CalledProcessError if git command fails
+    """
+    cmd = "git for-each-ref --sort='*authordate' " \
+          "--format='%(refname:short)' refs/tags/upstream"
+    output = check_output(cmd, shell=True, cwd=directory, stderr=PIPE)
+    tags = []
+    versions = []
+    for line in output.splitlines():
+        tags.append(line.strip())
+        versions.append(parse_version(line.strip()))
+    return tags[versions.index(max(versions))]
 
 
 def get_last_tag_by_date(directory=None):
