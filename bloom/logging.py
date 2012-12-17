@@ -137,6 +137,7 @@ class log_prefix(ContextDecorator):
 def debug(msg, file=None, end='\n', use_prefix=True):
     file = file if file is not None else sys.stdout
     global _quiet, _debug, _log_prefix
+    msg = str(msg)
     if use_prefix:
         msg = ansi('greenf') + _log_prefix + msg + ansi('reset')
     else:
@@ -148,6 +149,7 @@ def debug(msg, file=None, end='\n', use_prefix=True):
 def info(msg, file=None, end='\n', use_prefix=True):
     file = file if file is not None else sys.stdout
     global _quiet
+    msg = str(msg)
     if use_prefix:
         msg = _log_prefix + msg
     if not _quiet:
@@ -158,6 +160,7 @@ def info(msg, file=None, end='\n', use_prefix=True):
 def warning(msg, file=None, end='\n', use_prefix=True):
     file = file if file is not None else sys.stdout
     global _quiet
+    msg = str(msg)
     if use_prefix:
         msg = ansi('yellowf') + _log_prefix + msg \
             + ansi('reset')
@@ -171,6 +174,7 @@ def warning(msg, file=None, end='\n', use_prefix=True):
 def error(msg, file=None, end='\n', use_prefix=True):
     file = file if file is not None else sys.stderr
     global _quiet
+    msg = str(msg)
     if use_prefix:
         msg = ansi('redf') + ansi('boldon') + _log_prefix + msg + ansi('reset')
     else:
