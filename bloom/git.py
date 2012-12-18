@@ -592,7 +592,7 @@ def get_last_tag_by_version(directory=None):
     for line in output.splitlines():
         tags.append(line.strip())
         versions.append(parse_version(line.strip()))
-    return tags[versions.index(max(versions))]
+    return tags[versions.index(max(versions))] if versions else ''
 
 
 def get_last_tag_by_date(directory=None):
