@@ -421,7 +421,7 @@ def import_upstream(cwd, tmp_dir, args):
                 devel_branch = args.upstream_devel
             else:
                 devel_branch = upstream_branch
-            if args.upstream_version is not None:
+            if args.upstream_version is None:
                 meta = auto_upstream_checkout(
                     upstream_repo, upstream_url, devel_branch
                 )
@@ -433,8 +433,7 @@ def import_upstream(cwd, tmp_dir, args):
                 return meta
 
     ### Export the repository
-    version = args.upstream_version if args.upstream_version is not None \
-                                    else meta['version']
+    version = meta['version']
 
     # Export the repository to a tar ball
     tarball_prefix = 'upstream-' + str(version)
