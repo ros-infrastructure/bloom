@@ -147,13 +147,23 @@ Everything went as expected, you should check that the new tags match your expec
 <p>The platform specific generator, like &#8216;rosdebian&#8217; or &#8216;debian&#8217;, will produce additional release pipeline stages for each &#8216;release/&#8217; prefixed branch and each distribution of the generator&#8217;s platform. For example, the &#8216;release/foo&#8217; branch would result in the &#8216;debian/groovy/oneiric/foo&#8217;, &#8216;debian/groovy/precise/foo&#8217;, and &#8216;debian/groovy/quantal/foo&#8217; branches. On each of these branches the necessary debian files are generated from the contents of the catkin &#8216;package.xml&#8217; file and when complete the branch is tagged for a specific source debian, like <tt class="docutils literal"><span class="pre">debian/ros-groovy-foo_1.1.1-0_quantal</span></tt>.</p>
 <p>For more information about <tt class="docutils literal"><span class="pre">git</span> <span class="pre">bloom-release</span></tt> and how it can be used see:</p>
 <div class="highlight-text"><pre>Traceback (most recent call last):
-  File "/usr/local/bin/git-bloom-release", line 5, in &lt;module&gt;
-    from pkg_resources import load_entry_point
-  File "/usr/local/lib/python2.7/dist-packages/distribute-0.6.28-py2.7.egg/pkg_resources.py", line 2819, in &lt;module&gt;
-    parse_requirements(__requires__), Environment()
-  File "/usr/local/lib/python2.7/dist-packages/distribute-0.6.28-py2.7.egg/pkg_resources.py", line 588, in resolve
-    raise DistributionNotFound(req)
-pkg_resources.DistributionNotFound: bloom==0.2.11</pre>
+  File "/usr/local/bin/git-bloom-release", line 9, in &lt;module&gt;
+    load_entry_point('bloom==0.2.12', 'console_scripts', 'git-bloom-release')()
+  File "/usr/local/lib/python2.7/dist-packages/distribute-0.6.28-py2.7.egg/pkg_resources.py", line 337, in load_entry_point
+    return get_distribution(dist).load_entry_point(group, name)
+  File "/usr/local/lib/python2.7/dist-packages/distribute-0.6.28-py2.7.egg/pkg_resources.py", line 2311, in load_entry_point
+    return ep.load()
+  File "/usr/local/lib/python2.7/dist-packages/distribute-0.6.28-py2.7.egg/pkg_resources.py", line 2017, in load
+    entry = __import__(self.module_name, globals(),globals(), ['__name__'])
+  File "/home/william/devel/bloom/bloom/commands/release.py", line 37, in &lt;module&gt;
+    from bloom.commands.import_upstream import main as iu_main
+  File "/home/william/devel/bloom/bloom/commands/import_upstream.py", line 77, in &lt;module&gt;
+    from vcstools import VcsClient
+  File "/usr/lib/pymodules/python2.7/vcstools/__init__.py", line 75, in &lt;module&gt;
+    setup_logger()
+  File "/usr/lib/pymodules/python2.7/vcstools/__init__.py", line 61, in setup_logger
+    logger = logging.getLogger('vcstools')
+AttributeError: 'module' object has no attribute 'getLogger'</pre>
 </div>
 </div>
 </div>
