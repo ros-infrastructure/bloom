@@ -403,14 +403,21 @@ class DebianGenerator(BloomGenerator):
                 return resolve_for_os(rosdep_key, rosdep_view,
                                       self.apt_installer, os_name,
                                       debian_distro)
-            except KeyError:
-                error("Could not resolve rosdep key '" + rosdep_key + "'")
-                self.exit(code.DEBIAN_NO_SUCH_ROSDEP_KEY)
-            except ResolutionError as err:
-                error("Could not resolve the rosdep key '" + rosdep_key + \
-                      "' for distro '" + debian_distro + "': \n")
-                print(str(err))
-                self.exit(code.DEBIAN_NO_ROSDEP_KEY_FOR_DISTRO)
+            except (KeyError, ResolutionError) as err:
+                if rosdep_key not in self.packages:
+                    if type(err) == KeyError:
+                        error(
+                            "Could not resolve rosdep key '" + rosdep_key + "'"
+                        )
+                        self.exit(code.DEBIAN_NO_SUCH_ROSDEP_KEY)
+                    else:
+                        error(
+                            "Could not resolve the rosdep key '" + rosdep_key +
+                            "' for distro '" + debian_distro + "': \n"
+                        )
+                        print(str(err))
+                        self.exit(code.DEBIAN_NO_ROSDEP_KEY_FOR_DISTRO)
+                return ['ros-{0}-{1}'.format(self.rosdistro, rosdep_key)]
 
         resolved_depends = {}
         for rosdep_key in data['Depends']:
