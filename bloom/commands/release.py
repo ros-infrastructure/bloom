@@ -72,7 +72,7 @@ rosdebian, fedora, homebrew, etc...
 
 Example:
 
-    $ git-bloom-release -y rosdebian --prefix release groovy --debian-inc 1
+    $ git-bloom-generate -y rosdebian --prefix release groovy --debian-inc 1
 """, formatter_class=argparse.RawTextHelpFormatter)
     return parser
 
