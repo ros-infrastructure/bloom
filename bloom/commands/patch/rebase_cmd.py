@@ -93,7 +93,7 @@ def non_git_rebase(upstream_branch, directory=None):
         # (not true if the upstream didn't change any files)
         if has_changes(directory):
             cmd = 'git commit -m "Rebase from \'' + upstream_branch + "'"
-            data = get_package_data(upstream_branch)
+            data = get_package_data(upstream_branch, quiet=True)
             if type(data) in [list, tuple]:
                 cmd += " @ version '{0}'".format(data[1])
             cmd += '"'

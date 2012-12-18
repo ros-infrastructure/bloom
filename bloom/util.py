@@ -104,7 +104,7 @@ class change_directory(object):
             os.chdir(self.original_cwd)
 
 
-def get_package_data(branch_name, directory=None):
+def get_package_data(branch_name, directory=None, quiet=False):
     """
     Gets package data about the package(s) in the current branch.
 
@@ -143,8 +143,9 @@ def get_package_data(branch_name, directory=None):
         return stack.name, stack.version, stack
     # Otherwise we have a problem
     debug("failed.", use_prefix=False)
-    error("no package.xml(s) or stack.xml found, and not name "
-          "specified with '--package-name', aborting.", use_prefix=False)
+    if not quiet:
+        error("no package.xml(s) or stack.xml found, and not name "
+              "specified with '--package-name', aborting.", use_prefix=False)
     return code.NO_PACKAGE_XML_FOUND
 
 
