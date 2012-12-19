@@ -1,0 +1,188 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Releasing a catkin project &mdash; bloom 0.2 documentation</title>
+    
+    <link rel="stylesheet" href="../static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../static/jquery.js"></script>
+    <script type="text/javascript" src="../static/underscore.js"></script>
+    <script type="text/javascript" src="../static/doctools.js"></script>
+    <link rel="top" title="bloom 0.2 documentation" href="../index.html" />
+    <link rel="next" title="Releasing a non-caktin project" href="non_catkin.html" />
+    <link rel="prev" title="Creating a new release repository" href="bloom_setup.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="non_catkin.html" title="Releasing a non-caktin project"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="bloom_setup.html" title="Creating a new release repository"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">bloom 0.2 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../static/ros.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Releasing a catkin project</a><ul>
+<li><a class="reference internal" href="#preparing-your-upstream-repository">Preparing your upstream repository</a></li>
+<li><a class="reference internal" href="#running-git-bloom-release">Running git bloom-release</a><ul>
+<li><a class="reference internal" href="#what-is-git-bloom-release-doing">What is git-bloom-release doing?</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="bloom_setup.html"
+                        title="previous chapter">Creating a new release repository</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="non_catkin.html"
+                        title="next chapter">Releasing a non-caktin project</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../sources/tutorials/catkin_release.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="releasing-a-catkin-project">
+<h1>Releasing a catkin project<a class="headerlink" href="#releasing-a-catkin-project" title="Permalink to this headline">¶</a></h1>
+<p>Assuming you have either setup a new bloom release repository (<a class="reference internal" href="bloom_setup.html"><em>Creating a new release repository</em></a>) or you have cloned an existing release repository, you are now ready to begin releasing your catkin project.</p>
+<p>Once in your release repository, ensure that you are on the &#8216;master&#8217; branch:</p>
+<div class="highlight-python"><pre>git checkout master</pre>
+</div>
+<p>It is always best to run from the master branch when possible.</p>
+<div class="section" id="preparing-your-upstream-repository">
+<span id="prepare-your-upstream-repository"></span><h2>Preparing your upstream repository<a class="headerlink" href="#preparing-your-upstream-repository" title="Permalink to this headline">¶</a></h2>
+<p>Before importing your upstream repository into the release repository using
+bloom, the upstream repository needs to be prepared. For catkin projects, this
+means updating the version number in the <tt class="docutils literal"><span class="pre">package.xml</span></tt>(s) of your project.
+Additionally, there needs to be a tag matching the version number exactly. For
+example, if you just released version 1.1.1 from 1.1.0 and you use a git
+repository as your upstream vcs type, then you would need to run:</p>
+<div class="highlight-python"><pre>git tag 1.1.1 -m "Releasing version 1.1.1 of foo"</pre>
+</div>
+<p>If you use a different tagging scheme, git bloom-import-upstream can handle that, see <cite>git bloom-import-upstream -h</cite>.</p>
+</div>
+<div class="section" id="running-git-bloom-release">
+<h2>Running git bloom-release<a class="headerlink" href="#running-git-bloom-release" title="Permalink to this headline">¶</a></h2>
+<p>Now that you have either setup a new release repository, or cloned an existing one, and prepared your upstream repository for release, it is time to run the bloom release command:</p>
+<div class="highlight-python"><pre>git-bloom-release rosdebian groovy</pre>
+</div>
+<p>In this example rosdebian will create ROS tailored debians for the groovy release of ROS.</p>
+<p>That&#8217;s it, if successful you should receive a message something like:</p>
+<div class="highlight-python"><pre>.
+.
+.
+### Running 'git bloom-generate -y release --src upstream'... returned (0)
+
+
+Tip: Check to ensure that the debian tags created have the same version as the upstream version you are releasing.
+Everything went as expected, you should check that the new tags match your expectations, and then push to the release repo with:
+  git push --all &amp;&amp; git push --tags</pre>
+</div>
+<p>You can follow the message&#8217;s advice:</p>
+<div class="highlight-python"><pre>git push --all &amp;&amp; git push --tags</pre>
+</div>
+<p>Now, if you want your packages built and released by the build farm see: <a class="reference internal" href="notify_build_farm.html"><em>Notifying the buildfarm</em></a></p>
+<div class="section" id="what-is-git-bloom-release-doing">
+<h3>What is git-bloom-release doing?<a class="headerlink" href="#what-is-git-bloom-release-doing" title="Permalink to this headline">¶</a></h3>
+<p>The bloom release command is a convenience command which combines three bloom commands into one.</p>
+<p>The normal work-flow for releasing a project with bloom is:</p>
+<ol class="arabic simple">
+<li>Import the latest version from upstream</li>
+<li>Run the release generator</li>
+<li>Run the platform specific generator off the release stage</li>
+</ol>
+<p>The release generator creates a new stage in the release pipeline for each package present in the upstream source tree.  For example, if you have an upstream repository with catkin packages &#8216;foo&#8217; in the &#8216;&lt;git root&gt;/foo&#8217; directory and &#8216;bar&#8217; in the &#8216;&lt;git root&gt;/bar&#8217; directory, then the release generator will create the branches &#8216;release/foo&#8217; and &#8216;release/bar&#8217;. The release branches will not contain the entire upstream source tree, but just the source tree for each package.</p>
+<p>The platform specific generator, like &#8216;rosdebian&#8217; or &#8216;debian&#8217;, will produce additional release pipeline stages for each &#8216;release/&#8217; prefixed branch and each distribution of the generator&#8217;s platform. For example, the &#8216;release/foo&#8217; branch would result in the &#8216;debian/groovy/oneiric/foo&#8217;, &#8216;debian/groovy/precise/foo&#8217;, and &#8216;debian/groovy/quantal/foo&#8217; branches. On each of these branches the necessary debian files are generated from the contents of the catkin &#8216;package.xml&#8217; file and when complete the branch is tagged for a specific source debian, like <tt class="docutils literal"><span class="pre">debian/ros-groovy-foo_1.1.1-0_quantal</span></tt>.</p>
+<p>For more information about <tt class="docutils literal"><span class="pre">git</span> <span class="pre">bloom-release</span></tt> and how it can be used see:</p>
+<div class="highlight-text"><pre>Traceback (most recent call last):
+  File "/usr/local/bin/git-bloom-release", line 5, in &lt;module&gt;
+    from pkg_resources import load_entry_point
+  File "/usr/local/lib/python2.7/dist-packages/distribute-0.6.28-py2.7.egg/pkg_resources.py", line 2819, in &lt;module&gt;
+    parse_requirements(__requires__), Environment()
+  File "/usr/local/lib/python2.7/dist-packages/distribute-0.6.28-py2.7.egg/pkg_resources.py", line 588, in resolve
+    raise DistributionNotFound(req)
+pkg_resources.DistributionNotFound: bloom==0.2.12</pre>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="non_catkin.html" title="Releasing a non-caktin project"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="bloom_setup.html" title="Creating a new release repository"
+             >previous</a> |</li>
+        <li><a href="../index.html">bloom 0.2 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Willow Garage --  Version 7bc9e6d51b81bfc7ac070f3c1c7a7e1a62f997fc, Tue, 18 Dec 2012.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>
