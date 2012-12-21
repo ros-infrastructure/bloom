@@ -156,9 +156,9 @@ def main(sysargs=None):
         info(msg)
     print('\n')
 
-    # Run release generator
+    # Run given generator
     info("###")
-    msg = "### Running 'git bloom-generate -y release --src upstream'... "
+    msg = "### Running 'git bloom-generate -y {0}'... ".format(' '.join(args))
     info(msg)
     info("###")
     generator = generators[args.generator]
