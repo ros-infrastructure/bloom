@@ -417,9 +417,9 @@ class DebianGenerator(BloomGenerator):
                         )
                         print(str(err))
                         self.exit(code.DEBIAN_NO_ROSDEP_KEY_FOR_DISTRO)
-                return sanitize_package_name(
-                    ['ros-{0}-{1}'.format(self.rosdistro, rosdep_key)]
-                )
+                return [sanitize_package_name(
+                    'ros-{0}-{1}'.format(self.rosdistro, rosdep_key)
+                )]
 
         resolved_depends = {}
         for rosdep_key in data['Depends']:
