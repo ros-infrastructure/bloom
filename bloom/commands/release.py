@@ -158,7 +158,7 @@ def main(sysargs=None):
 
     # Run given generator
     info("###")
-    msg = "### Running 'git bloom-generate -y {0}'... ".format(' '.join(args))
+    msg = "### Running 'git bloom-generate -y {0}'... ".format(args.generator)
     info(msg)
     info("###")
     generator = generators[args.generator]
