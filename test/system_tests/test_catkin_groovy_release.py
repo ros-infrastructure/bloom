@@ -8,7 +8,7 @@ import os
 import sys
 
 try:
-    from vcstools import VcsClient
+    from vcstools.vcs_abstraction import get_vcs_client
 except ImportError:
     print("vcstools was not detected, please install it.", file=sys.stderr)
     sys.exit(1)
@@ -78,7 +78,7 @@ def test_unary_package_repository(directory=None):
     upstream_url = create_upstream_catkin_groovy_repository(['foo'], directory)
     release_url = create_release_repo(upstream_url, 'git', 'groovy_devel')
     release_dir = os.path.join(directory, 'foo_release_clone')
-    release_client = VcsClient('git', release_dir)
+    release_client = get_vcs_client('git', release_dir)
     release_client.checkout(release_url)
     with change_directory(release_dir):
         ###
@@ -139,7 +139,7 @@ def test_multi_package_repository(directory=None):
     upstream_url = create_upstream_catkin_groovy_repository(pkgs, directory)
     release_url = create_release_repo(upstream_url, 'git', 'groovy_devel')
     release_dir = os.path.join(directory, 'foo_release_clone')
-    release_client = VcsClient('git', release_dir)
+    release_client = get_vcs_client('git', release_dir)
     release_client.checkout(release_url)
     with change_directory(release_dir):
         ###

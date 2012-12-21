@@ -74,7 +74,7 @@ from bloom.util import print_exc
 from bloom.util import segment_version
 
 try:
-    from vcstools import VcsClient
+    from vcstools.vcs_abstraction import get_vcs_client
 except ImportError:
     error("vcstools was not detected, please install it.", file=sys.stderr)
     sys.exit(code.VCSTOOLS_NOT_FOUND)
@@ -265,7 +265,7 @@ def auto_upstream_checkout(upstream_repo, upstream_url, devel_branch):
         upstream_url = '/'.join(upstream_url.split('/')[:-1])
         upstream_dir = upstream_repo.get_path()
         shutil.rmtree(upstream_dir)  # Delete old upstream
-        upstream_repo = VcsClient('svn', upstream_dir)
+        upstream_repo = get_vcs_client('svn', upstream_dir)
         checkout_url = upstream_url + '/tags/' + meta['version']
         if not upstream_repo.checkout(checkout_url):
             got_it = False
@@ -360,7 +360,7 @@ def import_upstream(cwd, tmp_dir, args):
     bloom_repo_clone_dir = os.path.join(tmp_dir, 'bloom_clone')
     os.makedirs(bloom_repo_clone_dir)
     os.chdir(bloom_repo_clone_dir)
-    bloom_repo = VcsClient('git', bloom_repo_clone_dir)
+    bloom_repo = get_vcs_client('git', bloom_repo_clone_dir)
     bloom_repo.checkout('file://{0}'.format(cwd))
 
     # Ensure the bloom and upstream branches are tracked from the original
@@ -379,7 +379,7 @@ def import_upstream(cwd, tmp_dir, args):
              str(args.upstream_version) + ansi('reset') + \
              " from repository at " + ansi('boldon') + \
              str(args.explicit_svn_url) + ansi('reset'))
-        upstream_repo = VcsClient('svn', upstream_repo_dir)
+        upstream_repo = get_vcs_client('svn', upstream_repo_dir)
         retcode = try_vcstools_checkout(upstream_repo, args.explicit_svn_url)
         if retcode != 0:
             return retcode
@@ -395,7 +395,7 @@ def import_upstream(cwd, tmp_dir, args):
         # Parse the bloom config file
         upstream_url, upstream_type, upstream_branch = parse_bloom_conf()
         # If the upstream_tag is specified, don't search just fetch
-        upstream_repo = VcsClient(upstream_type, upstream_repo_dir)
+        upstream_repo = get_vcs_client(upstream_type, upstream_repo_dir)
         if args.upstream_tag is not None:
             warning("Using specified upstream tag '" + args.upstream_tag + "'")
             if upstream_type == 'svn':

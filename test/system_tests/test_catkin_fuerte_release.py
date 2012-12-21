@@ -8,7 +8,7 @@ import os
 import sys
 
 try:
-    from vcstools import VcsClient
+    from vcstools.vcs_abstraction import get_vcs_client
 except ImportError:
     print("vcstools was not detected, please install it.", file=sys.stderr)
     sys.exit(1)
@@ -72,7 +72,7 @@ def test_fuerte_package_repository(directory=None):
     upstream_url = create_upstream_catkin_fuerte_repository('foo', directory)
     release_url = create_release_repo(upstream_url, 'git', 'fuerte_devel')
     release_dir = os.path.join(directory, 'foo_release_clone')
-    release_client = VcsClient('git', release_dir)
+    release_client = get_vcs_client('git', release_dir)
     release_client.checkout(release_url)
     with change_directory(release_dir):
         ###
