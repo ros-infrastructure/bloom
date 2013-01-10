@@ -13,12 +13,12 @@ except ImportError:
     print("vcstools was not detected, please install it.", file=sys.stderr)
     sys.exit(1)
 
-from . import create_release_repo
+from .common import create_release_repo
 
-from ..utils import bloom_answer
-from ..utils import change_directory
-from ..utils import in_temporary_directory
-from ..utils import user
+from ..utils.common import bloom_answer
+from ..utils.common import change_directory
+from ..utils.common import in_temporary_directory
+from ..utils.common import user
 
 from bloom.git import branch_exists
 from bloom.git import get_branches

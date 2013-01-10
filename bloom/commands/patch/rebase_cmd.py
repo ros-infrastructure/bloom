@@ -21,6 +21,7 @@ from bloom.commands.patch.common import get_patch_config
 from bloom.commands.patch.common import set_patch_config
 
 from bloom.util import add_global_arguments
+from bloom.util import code
 from bloom.util import execute_command
 from bloom.util import get_package_data
 from bloom.util import handle_global_arguments
@@ -168,7 +169,7 @@ def rebase_patches(without_git_rebase=True, directory=None):
         debug("    Updating the parent branch can be done by calling "
               "'git-bloom-patch rebase' on it, or 'git-bloom-import-upsteam'"
               " if the parent branch is the upstream branch.")
-        return 0
+        return code.NOTHING_TO_DO
     else:
         debug("rebase_patches: " + upstream_commit_hash + " == " + \
               config['previous'] + ": " + \
@@ -185,7 +186,7 @@ def rebase_patches(without_git_rebase=True, directory=None):
     config = get_patch_config(patches_branch, directory)
     # Set the base to the current hash (before patches)
     debug('Current branch: ' + get_current_branch(directory))
-    config['base'] = get_commit_hash(current_branch, directory)
+    config['base'] = get_commit_hash(get_current_branch(directory), directory)
     debug('New current commit hash after rebase: ' + config['base'])
     # Set the new upstream hash to the previous upstream hash
     config['previous'] = get_commit_hash(config['parent'], directory)

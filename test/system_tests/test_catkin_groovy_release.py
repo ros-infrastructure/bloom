@@ -13,12 +13,13 @@ except ImportError:
     print("vcstools was not detected, please install it.", file=sys.stderr)
     sys.exit(1)
 
-from . import create_release_repo
+from .common import create_release_repo
 
-from ..utils import bloom_answer
-from ..utils import change_directory
-from ..utils import in_temporary_directory
-from ..utils import user
+from ..utils.common import bloom_answer
+from ..utils.common import change_directory
+from ..utils.common import in_temporary_directory
+from ..utils.common import user
+from ..utils.package_version import change_upstream_version
 
 from bloom.git import branch_exists
 from bloom.git import inbranch
@@ -26,7 +27,7 @@ from bloom.git import inbranch
 from bloom.util import code
 
 
-def create_upstream_catkin_groovy_repository(packages, directory=None):
+def create_upstream_repository(packages, directory=None):
     upstream_dir = 'upstream_repo_groovy'
     user('mkdir ' + upstream_dir)
     with change_directory(upstream_dir):
@@ -61,25 +62,16 @@ def create_upstream_catkin_groovy_repository(packages, directory=None):
                     f.write(package_xml)
                 user('touch .cproject')
                 user('touch .project')
-                user('git add package.xml .cproject .project')
+                user('mkdir -p include')
+                user('touch include/{0}.h'.format(package))
+                user('git add package.xml .cproject .project include')
         user('git commit -m "Releasing version 0.1.0"')
         user('git tag 0.1.0 -m "Releasing version 0.1.0"')
-        url = 'file://' + os.getcwd()
-    return url
+        return os.getcwd()
 
 
-@in_temporary_directory
-def test_unary_package_repository(directory=None):
-    """
-    Release a single package catkin (groovy) repository.
-    """
-    directory = directory if directory is not None else os.getcwd()
-    # Setup
-    upstream_url = create_upstream_catkin_groovy_repository(['foo'], directory)
-    release_url = create_release_repo(upstream_url, 'git', 'groovy_devel')
-    release_dir = os.path.join(directory, 'foo_release_clone')
-    release_client = get_vcs_client('git', release_dir)
-    release_client.checkout(release_url)
+def _test_unary_package_repository(release_dir, version, directory=None):
+    print("Testing in {0} at version {1}".format(release_dir, version))
     with change_directory(release_dir):
         ###
         ### Import upstream
@@ -87,15 +79,17 @@ def test_unary_package_repository(directory=None):
         user('git-bloom-import-upstream --quiet')
         # does the upstream branch exist?
         assert branch_exists('upstream', local_only=True), "no upstream branch"
-        # does the upstrea/0.1.0 tag exist?
+        # does the upstrea/<version> tag exist?
         ret, out, err = user('git tag', return_io=True)
-        assert out.count('upstream/0.1.0') == 1, "no upstream tag created"
+        assert out.count('upstream/' + version) == 1, "no upstream tag created"
         # Is the package.xml from upstream in the upstream branch now?
         with inbranch('upstream'):
             assert os.path.exists('package.xml'), \
                    "upstream did not import: '" + os.getcwd() + "': " + \
                    str(os.listdir(os.getcwd()))
-            assert open('package.xml').read().count('0.1.0'), "not right file"
+            with open('package.xml') as f:
+                package_xml = f.read()
+                assert package_xml.count(version), "not right file"
 
         ###
         ### Release generator
@@ -110,7 +104,15 @@ def test_unary_package_repository(directory=None):
                "no patches/release/foo branch"
         # was the release tag created?
         ret, out, err = user('git tag', return_io=True)
-        assert out.count('release/foo/0.1.0') == 1, "no release tag created"
+        assert out.count('release/foo/' + version) == 1, \
+               "no release tag created"
+
+        ###
+        ### Make patch
+        ###
+        with inbranch('release/foo'):
+            user('echo "version: {0}" >> include/foo.h'.format(version))
+            user('git commit -am "A release patch"')
 
         ###
         ### Release generator, again
@@ -125,7 +127,28 @@ def test_unary_package_repository(directory=None):
                "no patches/release/foo branch"
         # was the release tag created?
         ret, out, err = user('git tag', return_io=True)
-        assert out.count('release/foo/0.1.0') == 1, "no release tag created"
+        assert out.count('release/foo/' + version) == 1, \
+               "no release tag created"
+
+
+@in_temporary_directory
+def test_unary_package_repository(directory=None):
+    """
+    Release a single package catkin (groovy) repository.
+    """
+    directory = directory if directory is not None else os.getcwd()
+    # Setup
+    upstream_dir = create_upstream_repository(['foo'], directory)
+    upstream_url = 'file://' + upstream_dir
+    release_url = create_release_repo(upstream_url, 'git', 'groovy_devel')
+    release_dir = os.path.join(directory, 'foo_release_clone')
+    release_client = get_vcs_client('git', release_dir)
+    release_client.checkout(release_url)
+    versions = ['0.1.0', '0.1.1', '0.2.0']
+    for index in range(len(versions)):
+        _test_unary_package_repository(release_dir, versions[index], directory)
+        if index != len(versions) - 1:
+            change_upstream_version(upstream_dir, versions[index + 1])
 
 
 @in_temporary_directory
@@ -136,7 +159,8 @@ def test_multi_package_repository(directory=None):
     directory = directory if directory is not None else os.getcwd()
     # Setup
     pkgs = ['foo', 'bar', 'baz']
-    upstream_url = create_upstream_catkin_groovy_repository(pkgs, directory)
+    upstream_dir = create_upstream_repository(pkgs, directory)
+    upstream_url = 'file://' + upstream_dir
     release_url = create_release_repo(upstream_url, 'git', 'groovy_devel')
     release_dir = os.path.join(directory, 'foo_release_clone')
     release_client = get_vcs_client('git', release_dir)
@@ -157,8 +181,8 @@ def test_multi_package_repository(directory=None):
                 with change_directory(pkg):
                     assert os.path.exists('package.xml'), \
                            "upstream did not import: " + os.listdir()
-                    assert open('package.xml').read().count('0.1.0'), \
-                           "not right file"
+                    with open('package.xml') as f:
+                        assert f.read().count('0.1.0'), "not right file"
 
         ###
         ### Release generator
@@ -216,8 +240,8 @@ def test_multi_package_repository(directory=None):
             with inbranch('release/' + pkg):
                 assert os.path.exists('package.xml'), "release branch invalid"
                 # Is it the correct package.xml for this pkg?
-                package_xml = open('package.xml', 'r').read()
-                assert package_xml.count('<name>' + pkg + '</name>'), \
+                with open('package.xml', 'r') as f:
+                    assert f.read().count('<name>' + pkg + '</name>'), \
                        "incorrect package.xml for " + str(pkg)
 
         ###
@@ -254,6 +278,6 @@ def test_multi_package_repository(directory=None):
             with inbranch('debian/groovy/' + distro + '/' + pkg):
                 assert os.path.exists('package.xml'), "release branch invalid"
                 # Is it the correct package.xml for this pkg?
-                package_xml = open('package.xml', 'r').read()
-                assert package_xml.count('<name>' + pkg + '</name>'), \
+                with open('package.xml', 'r') as f:
+                    assert f.read().count('<name>' + pkg + '</name>'), \
                        "incorrect package.xml for " + str(pkg)

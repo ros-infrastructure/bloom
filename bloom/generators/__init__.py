@@ -222,7 +222,7 @@ def load_generator(load_module, generator_name):
         if item.lower() == (generator_name + 'generator').lower():
             generator_class = item
     if generator_class is None:
-        raise RuntimeError("Could not find a generator class for the " + \
+        raise RuntimeError("Could not find a generator class for the " +
                            generator_name + " generator.")
     exec('generator = module.' + generator_class)
     locals()['generator'].generator_type = generator_name

@@ -48,9 +48,31 @@ def import_patches(directory=None):
         config = get_patch_config(patches_branch, directory)
         parent_branch, commit = config['parent'], config['base']
         if commit != get_commit_hash(current_branch, directory):
-            warning("The current commit is not the same as the most recent "
-                    "rebase commit. This might mean that you have committed "
-                    "since the last time you did 'git-bloom-patch export'.")
+            debug(
+                "commit != get_commit_hash(current_branch, directory)"
+            )
+            debug(
+                "{0} != get_commit_hash({1}, {2}) != {3}".format(
+                    commit, current_branch, directory,
+                    get_commit_hash(current_branch, directory)
+                )
+            )
+            os.system('git log')
+            warning(
+                "The current commit is not the same as the most recent "
+                "rebase commit."
+            )
+            warning(
+                "This might mean that you have committed since the last "
+                "time you did:"
+            )
+            warning(
+                "    'git-bloom-patch rebase' or 'git-bloom-patch remove'"
+            )
+            warning(
+                "Make sure you export any commits you want to save first:"
+            )
+            warning("    'git-bloom-patch export'")
             return code.PATCHES_NOT_EXPORTED
         # Checkout to the patches branch
         checkout(patches_branch, directory=directory)

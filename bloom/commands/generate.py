@@ -94,6 +94,7 @@ def summarize_branch_cmd(destination, source, interactive):
 
 
 def try_execute(msg, err_msg, func, *args, **kwargs):
+    retcode = 0
     try:
         retcode = func(*args, **kwargs)
         retcode = retcode if retcode is not None else 0
@@ -107,6 +108,7 @@ def try_execute(msg, err_msg, func, *args, **kwargs):
         raise CommandFailed(retcode)
     elif retcode < 0:
         debug(ret_msg)
+    return retcode
 
 
 def run_generator(generator, arguments):
@@ -126,7 +128,7 @@ def run_generator(generator, arguments):
             destination, source, interactive = parsed_branch_args
             # Summarize branch command
             msg = summarize_branch_cmd(destination, source, interactive)
-            # info(msg)
+
             ### Run pre - branch - post
             # Pre branch
             try_execute('generator pre_branch', msg,
@@ -153,20 +155,23 @@ def run_generator(generator, arguments):
             try_execute('generator pre_rebase', msg,
                         gen.pre_rebase, destination)
             # Rebase
-            try_execute('git-bloom-patch rebase', msg, rebase_patches)
+            ret = try_execute('git-bloom-patch rebase', msg, rebase_patches)
             # Post rebase
             try_execute('generator post_rebase', msg,
                         gen.post_rebase, destination)
 
-            ### Run pre - patch - post
-            # Pre patch
-            try_execute('generator pre_patch', msg,
-                        gen.pre_patch, destination)
-            # Import patches
-            try_execute('git-bloom-patch import', msg, import_patches)
-            # Post branch
-            try_execute('generator post_patch', msg,
-                        gen.post_patch, destination)
+            ### Run pre - import patches - post
+            if ret == 0:
+                # Pre patch
+                try_execute('generator pre_patch', msg,
+                            gen.pre_patch, destination)
+                # Import patches
+                try_execute('git-bloom-patch import', msg, import_patches)
+                # Post branch
+                try_execute('generator post_patch', msg,
+                            gen.post_patch, destination)
+            elif ret == code.NOTHING_TO_DO:
+                debug("Skipping patching because rebase did run.")
     except CommandFailed as err:
         return err.returncode or 1
     return 0

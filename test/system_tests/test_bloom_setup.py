@@ -4,9 +4,9 @@ This system test tests the scenario of setting up a new bloom repository.
 
 import os
 
-from ..utils import in_temporary_directory
-from ..utils import bloom_answer
-from ..utils import user
+from ..utils.common import in_temporary_directory
+from ..utils.common import bloom_answer
+from ..utils.common import user
 
 from bloom.git import branch_exists
 from bloom.git import inbranch
