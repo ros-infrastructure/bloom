@@ -26,6 +26,10 @@ from bloom.git import inbranch
 
 from bloom.util import code
 
+from bloom.commands.patch import export_cmd
+from bloom.commands.patch import import_cmd
+from bloom.commands.patch import remove_cmd
+
 
 def create_upstream_repository(packages, directory=None):
     upstream_dir = 'upstream_repo_groovy'
@@ -111,8 +115,22 @@ def _test_unary_package_repository(release_dir, version, directory=None):
         ### Make patch
         ###
         with inbranch('release/foo'):
-            user('echo "version: {0}" >> include/foo.h'.format(version))
-            user('git commit -am "A release patch"')
+            if os.path.exists('include/foo.h'):
+                user('git rm include/foo.h')
+            else:
+                if not os.path.exists('include'):
+                    os.makedirs('include')
+                user('touch include/foo.h')
+                user('git add include/foo.h')
+            user('git commit -m "A release patch"')
+
+        ###
+        ### Test import and export
+        ###
+        with inbranch('release/foo'):
+            export_cmd.export_patches()
+            remove_cmd.remove_patches()
+            import_cmd.import_patches()
 
         ###
         ### Release generator, again
@@ -221,7 +239,9 @@ def test_multi_package_repository(directory=None):
         ### Release generator, again
         ###
         with bloom_answer(bloom_answer.ASSERT_NO_QUESTION):
-            ret = user('git-bloom-generate -y release -s upstream --quiet')
+            ret = user(
+                'git-bloom-generate -y release -s upstream', silent=False
+            )
         # patch import should have reported OK
         assert ret == code.OK, "actually returned ({0})".format(ret)
         # Check the environment after the release generator

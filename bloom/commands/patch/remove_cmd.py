@@ -49,7 +49,11 @@ def remove_patches(directory=None):
         debug("Removing patches from " + current_branch + " back to base "
               "commit " + spec)
         # Reset this branch using git revert --no-edit spec
-        execute_command('git revert --no-edit -Xtheirs ' + spec, cwd=directory)
+        current_commit = get_commit_hash(current_branch, directory)
+        command_spec = spec + '..' + current_commit
+        execute_command(
+            'git revert --no-edit -Xtheirs ' + command_spec, cwd=directory
+        )
         # Update the base
         config['base'] = get_commit_hash(current_branch, directory)
         set_patch_config(patches_branch, config, directory=directory)
