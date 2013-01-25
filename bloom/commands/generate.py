@@ -41,7 +41,6 @@ from bloom.commands.branch import execute_branch
 
 from bloom.generators import GeneratorError
 from bloom.generators import list_generators
-from bloom.generators import load_generator_module
 from bloom.generators import load_generator
 
 from bloom.git import GitClone
@@ -194,7 +193,7 @@ def create_subparsers(parent_parser, generators):
 def create_generators(generator_names):
     generators = {}
     for generator_name in generator_names:
-        generator = load_generator(load_generator_module, generator_name)
+        generator = load_generator(generator_name)
         if generator is not None:
             generators[generator_name] = generator()
         else:
