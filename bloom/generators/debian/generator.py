@@ -144,11 +144,14 @@ class DebianGenerator(BloomGenerator):
         self.tag_names = {}
         self.names = []
         self.branch_args = []
+        self.debian_branches = []
         for branch in self.branches:
             stackage, kind = get_stackage_from_branch(branch)
             self.packages[stackage.name] = (stackage, kind)
             self.names.append(stackage.name)
             args = self.generate_branching_arguments(stackage, branch)
+            # First branch is debian/[<rosdistro>/]<package>
+            self.debian_branches.append(args[0][0])
             self.branch_args.extend(args)
 
     def summarize(self):
@@ -160,6 +163,8 @@ class DebianGenerator(BloomGenerator):
         return self.branch_args
 
     def pre_branch(self, destination, source):
+        if destination in self.debian_branches:
+            return
         # Run rosdep update is needed
         if not self.has_run_rosdep:
             info("Running 'rosdep update'...")
@@ -181,6 +186,8 @@ class DebianGenerator(BloomGenerator):
         self.summarize_package(stackage, kind, distro)
 
     def pre_rebase(self, destination):
+        if destination in self.debian_branches:
+            return
         # Get the stored configs is any
         patches_branch = 'patches/' + destination
         config = self.load_original_config(patches_branch)
@@ -188,6 +195,8 @@ class DebianGenerator(BloomGenerator):
             set_patch_config(patches_branch, config)
 
     def post_rebase(self, destination):
+        if destination in self.debian_branches:
+            return
         # Determine the current package being generated
         name = destination.split('/')[-1]
         distro = destination.split('/')[-2]
@@ -223,6 +232,8 @@ class DebianGenerator(BloomGenerator):
         set_patch_config(patches_branch, config)
 
     def post_patch(self, destination, color='bluef'):
+        if destination in self.debian_branches:
+            return
         # Tag after patches have been applied
         with inbranch(destination):
             # Tag
@@ -547,7 +558,15 @@ class DebianGenerator(BloomGenerator):
 
     def generate_branching_arguments(self, stackage, branch):
         n = stackage.name
-        return [['debian/' + d + '/' + n, branch, False] for d in self.distros]
+        # Debian branch
+        deb_branch = 'debian/' + n
+        # Branch first to the debian branch
+        args = [[deb_branch, branch, False]]
+        # Then for each debian distro, branch from the base debian branch
+        args.extend([
+            ['debian/' + d + '/' + n, deb_branch, False] for d in self.distros
+        ])
+        return args
 
     def summarize_package(self, stackage, kind, distro, color='bluef'):
         info(ansi(color) + "\n####" + ansi('reset'), use_prefix=False)

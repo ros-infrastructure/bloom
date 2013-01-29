@@ -51,5 +51,10 @@ class RosDebianGenerator(DebianGenerator):
         return tag_name
 
     def generate_branching_arguments(self, stackage, branch):
-        n, r, b, ds = stackage.name, self.rosdistro, branch, self.distros
-        return [['debian/' + r + '/' + d + '/' + n, b, False] for d in ds]
+        deb_branch = 'debian/' + self.rosdistro + '/' + stackage.name
+        args = [[deb_branch, branch, False]]
+        n, r, b, ds = stackage.name, self.rosdistro, deb_branch, self.distros
+        args.extend([
+            ['debian/' + r + '/' + d + '/' + n, b, False] for d in ds
+        ])
+        return args
