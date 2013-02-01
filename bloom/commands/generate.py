@@ -160,17 +160,17 @@ def run_generator(generator, arguments):
                         gen.post_rebase, destination)
 
             ### Run pre - import patches - post
+            # Pre patch
+            try_execute('generator pre_patch', msg,
+                        gen.pre_patch, destination)
             if ret == 0:
-                # Pre patch
-                try_execute('generator pre_patch', msg,
-                            gen.pre_patch, destination)
                 # Import patches
                 try_execute('git-bloom-patch import', msg, import_patches)
-                # Post branch
-                try_execute('generator post_patch', msg,
-                            gen.post_patch, destination)
             elif ret == code.NOTHING_TO_DO:
-                debug("Skipping patching because rebase did run.")
+                debug("Skipping patching because rebase did not run.")
+            # Post branch
+            try_execute('generator post_patch', msg,
+                        gen.post_patch, destination)
     except CommandFailed as err:
         return err.returncode or 1
     return 0
