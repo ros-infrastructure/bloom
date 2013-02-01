@@ -92,13 +92,17 @@ def non_git_rebase(upstream_branch, directory=None):
         execute_command('git clean -dXf', cwd=directory)
         # Only if we have local changes commit
         # (not true if the upstream didn't change any files)
-        if has_changes(directory):
-            cmd = 'git commit -m "Rebase from \'' + upstream_branch + "'"
-            data = get_package_data(upstream_branch, quiet=True)
-            if type(data) in [list, tuple]:
-                cmd += " @ version '{0}'".format(data[1])
-            cmd += '"'
-            execute_command(cmd, cwd=directory)
+        cmd = 'git commit '
+        if not has_changes(directory):
+            cmd += '--allow-empty '
+        cmd += '-m "Rebase from \'' + upstream_branch + "'"
+        data = get_package_data(upstream_branch, quiet=True)
+        if type(data) in [list, tuple]:
+            cmd += " @ version '{0}'".format(data[1])
+        if not has_changes(directory):
+            cmd += " (no changes)"
+        cmd += '"'
+        execute_command(cmd, cwd=directory)
     finally:
         # Clean up
         if os.path.exists(tmp_dir):
@@ -163,6 +167,7 @@ def rebase_patches(without_git_rebase=True, directory=None):
     upstream_commit_hash = get_commit_hash(config['parent'], directory)
     # If the current upstream commit hash is the same as the stored one, noop
     if upstream_commit_hash == config['previous']:
+        debug(str(upstream_commit_hash) + ' ' + str(config['previous']))
         debug("Nothing to do: The source branch (" + \
                 config['parent'] + ")'s commit hash has not changed.")
         debug("    Did you forget to update the parent branch first?")
