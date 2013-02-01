@@ -9,10 +9,11 @@ from subprocess import CalledProcessError
 from bloom.git import branch_exists
 from bloom.git import checkout
 from bloom.git import create_branch
+from bloom.git import ensure_clean_working_env
 from bloom.git import get_commit_hash
 from bloom.git import get_current_branch
-from bloom.git import ensure_clean_working_env
 from bloom.git import ls_tree
+from bloom.git import tag_exists
 from bloom.git import track_branches
 
 from bloom.logging import ansi
@@ -57,6 +58,8 @@ def execute_branch(src, dst, interactive, directory=None):
         if not branch_exists(src, local_only=True, directory=directory):
             debug("Tracking source branch: {0}".format(src))
             track_branches(src, directory)
+    elif tag_exists(src):
+        pass
     else:
         error("Specified source branch does not exist: {0}".format(src))
         return code.BRANCH_DOES_NOT_EXIST
