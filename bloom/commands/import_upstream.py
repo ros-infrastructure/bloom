@@ -449,32 +449,27 @@ def import_upstream(cwd, tmp_dir, args):
 
     # Get the gbp version elements from either the last tag or the default
     last_tag = get_last_tag_by_version()
-    if last_tag == '':
-        gbp_major, gbp_minor, gbp_patch = segment_version(version)
-    else:
-        gbp_major, gbp_minor, gbp_patch = \
-            get_versions_from_upstream_tag(last_tag)
-        info("The latest upstream tag in the release repository is "
-              + ansi('boldon') + last_tag + ansi('reset'))
-        # Ensure the new version is greater than the last tag
-        last_tag_version = '.'.join([gbp_major, gbp_minor, gbp_patch])
-        if parse_version(version) < parse_version(last_tag_version):
-            warning("""\
+    last_tag_version = '.'.join(get_versions_from_upstream_tag(last_tag))
+    info("The latest upstream tag in the release repository is "
+          + ansi('boldon') + last_tag + ansi('reset'))
+    # Ensure the new version is greater than the last tag
+    if parse_version(version) < parse_version(last_tag_version):
+        warning("""\
 Version discrepancy:
-    The upstream version, {0}, is not newer than the previous \
+The upstream version, {0}, is not newer than the previous \
 release version, {1}.
 """.format(version, last_tag_version))
-        if parse_version(version) <= parse_version(last_tag_version):
-            if args.replace:
-                # Remove the conflicting tag first
-                warning("""\
+    if parse_version(version) <= parse_version(last_tag_version):
+        if args.replace:
+            # Remove the conflicting tag first
+            warning("""\
 The upstream version, {0}, is equal to or less than a previous \
 import version.
-    Removing conflicting tag before continuing \
+Removing conflicting tag before continuing \
 because the '--replace' options was specified.\
 """.format(version))
-            else:
-                warning("""\
+        else:
+            warning("""\
 The upstream version, {0}, is equal to a previous import version. \
 git-buildpackage will fail, if you want to replace the existing \
 upstream import use the '--replace' option.\

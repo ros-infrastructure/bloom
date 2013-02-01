@@ -270,8 +270,9 @@ def extract_text(element):
 def segment_version(full_version):
     version_list = full_version.split('.')
     if len(version_list) != 3:
-        error('Invalid version element in the stack.xml, expected: ' \
-              '<major>.<minor>.<patch>')
+        warning('Invalid version element in the stack.xml, expected: ' \
+                '<major>.<minor>.<patch>')
+    if len(version_list) < 3:
         sys.exit(code.INVALID_VERSION)
     return version_list
 
