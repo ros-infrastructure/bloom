@@ -47,7 +47,8 @@ generation of platform specific source packages, like debian's src-debs.""",
             'git-bloom-branch = bloom.commands.branch:main',
             'git-bloom-patch = bloom.commands.patch.patch_main:main',
             'git-bloom-generate = bloom.commands.generate:main',
-            'git-bloom-release = bloom.commands.release:main'
+            'git-bloom-release = bloom.commands.release:main',
+            'bloom-update = bloom.commands.update:main'
         ],
         'bloom.generators': [
             'release = bloom.generators.release:ReleaseGenerator',
