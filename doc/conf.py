@@ -50,7 +50,7 @@ dochash = subprocess.Popen('git log -n1 --pretty=format:%H'.split(),
                            stdout=subprocess.PIPE).communicate()[0]
 
 print "dochash=", dochash
-copyright = u'2012, Willow Garage -- ' + ' Version ' + dochash + ", " \
+copyright = u'2013, Willow Garage -- ' + ' Version ' + dochash + ", " \
            + ' '.join(lastmod.split(' ')[:4])
 
 # The version info for the project you're documenting, acts as replacement for
