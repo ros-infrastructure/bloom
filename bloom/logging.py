@@ -171,7 +171,7 @@ def warning(msg, file=None, end='\n', use_prefix=True):
     return msg
 
 
-def error(msg, file=None, end='\n', use_prefix=True):
+def error(msg, file=None, end='\n', use_prefix=True, exit=False):
     file = file if file is not None else sys.stderr
     global _quiet
     msg = str(msg)
@@ -179,6 +179,8 @@ def error(msg, file=None, end='\n', use_prefix=True):
         msg = ansi('redf') + ansi('boldon') + _log_prefix + msg + ansi('reset')
     else:
         msg = ansi('redf') + ansi('boldon') + msg + ansi('reset')
+    if exit:
+        sys.exit(msg)
     if not _quiet:
         print(msg, file=file, end=end)
     return msg
