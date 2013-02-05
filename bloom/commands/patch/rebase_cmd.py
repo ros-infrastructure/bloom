@@ -153,9 +153,7 @@ def git_rebase(upstream_branch, directory=None):
 @log_prefix('[git-bloom-patch rebase]: ')
 def rebase_patches(without_git_rebase=True, directory=None):
     ### Ensure a clean/valid working environment
-    ret = ensure_clean_working_env(git_status=True, directory=directory)
-    if ret != 0:
-        return ret
+    ensure_clean_working_env(git_status=True, directory=directory)
     ### Make sure we need to actually call this
     # Get the current branch
     current_branch = get_current_branch(directory)
@@ -174,7 +172,7 @@ def rebase_patches(without_git_rebase=True, directory=None):
         debug("    Updating the parent branch can be done by calling "
               "'git-bloom-patch rebase' on it, or 'git-bloom-import-upsteam'"
               " if the parent branch is the upstream branch.")
-        return code.NOTHING_TO_DO
+        return -1  # Indicates that rebase did nothing
     else:
         debug("rebase_patches: " + upstream_commit_hash + " == " + \
               config['previous'] + ": " + \
@@ -200,7 +198,6 @@ def rebase_patches(without_git_rebase=True, directory=None):
     config['trimbase'] = ''
     # Write the new configs
     set_patch_config(patches_branch, config, directory)
-    return 0
 
 
 def get_parser():

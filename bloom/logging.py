@@ -151,7 +151,7 @@ def info(msg, file=None, end='\n', use_prefix=True):
     global _quiet
     msg = str(msg)
     if use_prefix:
-        msg = _log_prefix + msg
+        msg = _log_prefix + msg + ansi('reset')
     if not _quiet:
         print(msg, file=file, end=end)
     return msg

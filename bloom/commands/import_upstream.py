@@ -71,7 +71,6 @@ from bloom.util import execute_command
 from bloom.util import get_versions_from_upstream_tag
 from bloom.util import handle_global_arguments
 from bloom.util import print_exc
-from bloom.util import segment_version
 
 try:
     from vcstools.vcs_abstraction import get_vcs_client
@@ -201,8 +200,7 @@ def get_upstream_meta(upstream_dir):
         except RuntimeError as err:
             print_exc(traceback.format_exc())
             error("Releasing multiple packages with different versions is "
-                  "not supported: " + str(err))
-            sys.exit(1)
+                  "not supported: " + str(err), exit=True)
         meta = {}
         meta['version'] = version
         meta['name'] = [p.name for p in packages.values()]
@@ -215,16 +213,14 @@ def try_vcstools_checkout(repo, checkout_url, version=''):
         if repo.get_vcs_type_name() == 'svn':
             error(
                 "Could not checkout upstream repostiory "
-                "({0})".format(checkout_url)
+                "({0})".format(checkout_url), exit=True
             )
         else:
             error(
                 "Could not checkout upstream repostiory "
                 "({0})".format(checkout_url)
-              + " to branch ({0})".format(version)
+              + " to branch ({0})".format(version), exit=True
             )
-        return 1
-    return 0
 
 
 def auto_upstream_checkout(upstream_repo, upstream_url, devel_branch):
@@ -241,14 +237,11 @@ def auto_upstream_checkout(upstream_repo, upstream_url, devel_branch):
             upstream_url += '/branches/' + str(devel_branch)
         devel_branch = ''
     # Checkout to the upstream development branch
-    retcode = try_vcstools_checkout(upstream_repo, upstream_url, devel_branch)
-    if retcode != 0:
-        return retcode
+    try_vcstools_checkout(upstream_repo, upstream_url, devel_branch)
     # Look into the upstream devel branch for the version
     meta = get_upstream_meta(upstream_repo.get_path())
     if meta is None or None in meta.values():
-        error("Failed to get the upstream meta data.")
-        return 1
+        error("Failed to get the upstream meta data.", exit=True)
     # Summarize the package.xml/stack.xml contents
     info("Found upstream with version: " + ansi('boldon') + meta['version'] + \
          ansi('reset'))
@@ -278,8 +271,7 @@ def auto_upstream_checkout(upstream_repo, upstream_url, devel_branch):
                     got_it = True
                     break
             if not got_it:
-                error("Could not checkout upstream version")
-                return 1
+                error("Could not checkout upstream version", exit=True)
     # Return the meta data
     return meta
 
@@ -403,16 +395,13 @@ def import_upstream(cwd, tmp_dir, args):
     if args.explicit_svn_url is not None:
         if args.upstream_version is None:
             error("'--explicit-svn-url' must be specified with "
-                  "'--upstream-version'")
-            return 1
+                  "'--upstream-version'", exit=True)
         info("Checking out upstream at version " + ansi('boldon') + \
              str(args.upstream_version) + ansi('reset') + \
              " from repository at " + ansi('boldon') + \
              str(args.explicit_svn_url) + ansi('reset'))
         upstream_repo = get_vcs_client('svn', upstream_repo_dir)
-        retcode = try_vcstools_checkout(upstream_repo, args.explicit_svn_url)
-        if retcode != 0:
-            return retcode
+        try_vcstools_checkout(upstream_repo, args.explicit_svn_url)
         meta = {
             'name': None,
             'version': args.upstream_version,
@@ -433,11 +422,7 @@ def import_upstream(cwd, tmp_dir, args):
                 upstream_tag = ''
             else:
                 upstream_tag = args.upstream_tag
-            retcode = try_vcstools_checkout(upstream_repo,
-                                            upstream_url,
-                                            upstream_tag)
-            if retcode != 0:
-                return retcode
+            try_vcstools_checkout(upstream_repo, upstream_url, upstream_tag)
             meta = {
                 'name': None,
                 'version': args.upstream_tag,
@@ -459,8 +444,6 @@ def import_upstream(cwd, tmp_dir, args):
                 meta = {
                     'version': args.upstream_version
                 }
-            if type(meta) not in [dict] and meta != 0:
-                return meta
 
     ### Export the repository
     version = meta['version']
@@ -580,10 +563,11 @@ def main(sysargs=None):
     handle_global_arguments(args)
 
     # Check that the current directory is a serviceable git/bloom repo
-    ret = ensure_clean_working_env()
-    if ret != 0:
+    try:
+        ensure_clean_working_env()
+    except SystemExit:
         parser.print_usage()
-        return ret
+        raise
 
     # Get the current git branch
     current_branch = get_current_branch()
@@ -598,14 +582,8 @@ def main(sysargs=None):
         if current_branch == 'upstream':
             checkout(get_commit_hash('upstream'), directory=cwd)
 
-        retcode = import_upstream(cwd, tmp_dir, args)
-
-        # Done!
-        retcode = retcode if retcode is not None else 0
-        if retcode == 0:
-            info("I'm happy.  You should be too.")
-
-        return retcode
+        import_upstream(cwd, tmp_dir, args)
+        info("I'm happy.  You should be too.")
     finally:
         # Change back to the original cwd
         os.chdir(cwd)

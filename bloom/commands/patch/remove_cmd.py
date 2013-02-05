@@ -27,8 +27,8 @@ def remove_patches(directory=None):
     current_branch = get_current_branch(directory)
     # Ensure the current branch is valid
     if current_branch is None:
-        error("Could not determine current branch, are you in a git repo?")
-        return 1
+        error("Could not determine current branch, are you in a git repo?",
+            exit=True)
     # Construct the patches branch
     patches_branch = 'patches/' + current_branch
     try:
@@ -38,14 +38,12 @@ def remove_patches(directory=None):
                 track_branches(patches_branch, directory)
         else:
             error("No patches branch (" + patches_branch + ") found, cannot "
-                  "remove patches.")
-            return 1
+                  "remove patches.", exit=True)
         # Get the parent branch from the patches branch
         config = get_patch_config(patches_branch, directory=directory)
         parent, spec = config['parent'], config['base']
         if None in [parent, spec]:
-            error("Could not retrieve patches info.")
-            return 1
+            error("Could not retrieve patches info.", exit=True)
         debug("Removing patches from " + current_branch + " back to base "
               "commit " + spec)
         # Reset this branch using git revert --no-edit spec
@@ -60,7 +58,6 @@ def remove_patches(directory=None):
     finally:
         if current_branch:
             checkout(current_branch, directory=directory)
-    return 0
 
 
 def get_parser():

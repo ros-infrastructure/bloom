@@ -36,7 +36,6 @@ import sys
 
 from bloom.commands.import_upstream import main as iu_main
 
-from bloom.commands.generate import GeneratorError
 from bloom.commands.generate import create_generators
 from bloom.commands.generate import create_subparsers
 from bloom.commands.generate import run_generator
@@ -82,15 +81,9 @@ def execute_generator(generator, arguments):
     # The clone protects the release repo state from mid change errors
     with log_prefix('[git-bloom-generate {0}]: '.format(generator.title)):
         git_clone = GitClone()
-        try:
-            with git_clone:
-                ret = run_generator(generator, arguments)
-            if ret > 0:
-                return ret
-            git_clone.commit()
-            return ret
-        except GeneratorError as err:
-            return err.retcode
+        with git_clone:
+            run_generator(generator, arguments)
+        git_clone.commit()
 
 
 def main(sysargs=None):
@@ -124,11 +117,13 @@ def main(sysargs=None):
     iu_args = ['--replace']
     if args.debug:
         iu_args.append('-d')
-    ret = iu_main(iu_args)
+    try:
+        ret = iu_main(iu_args) or 0
+    except SystemExit:
+        error(msg + 'failed.', exit=True)
     msg += "returned (" + str(ret) + ")"
     if ret > 0:
-        error(msg)
-        return 0
+        error(msg, exit=True)
     if ret < 0:
         warning(msg)
     else:
@@ -145,11 +140,13 @@ def main(sysargs=None):
     release_args = copy.deepcopy(args)
     release_args.src = 'upstream'
     release_args.name = None
-    ret = execute_generator(generator, release_args)
+    try:
+        ret = execute_generator(generator, release_args)
+    except SystemExit:
+        error(msg + 'failed.', exit=True)
     msg += "returned (" + str(ret) + ")"
     if ret > 0:
-        error(msg)
-        return 0
+        error(msg, exit=True)
     if ret < 0:
         warning(msg)
     else:
@@ -162,11 +159,13 @@ def main(sysargs=None):
     info(msg)
     info("###")
     generator = generators[args.generator]
-    ret = execute_generator(generator, args)
+    try:
+        ret = execute_generator(generator, args)
+    except SystemExit:
+        error(msg + 'failed.', exit=True)
     msg += "returned (" + str(ret) + ")"
     if ret > 0:
-        error(msg)
-        return 0
+        error(msg, exit=True)
     if ret < 0:
         warning(msg)
     else:
@@ -184,4 +183,3 @@ def main(sysargs=None):
          "you should check that the new tags match your expectations, and "
          "then push to the release repo with:" + ansi('reset'))
     info("  git push --all && git push --tags  # You might have to add --force to the second command if you are over-writing existing flags")
-    return 0

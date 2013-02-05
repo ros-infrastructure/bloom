@@ -49,7 +49,6 @@ def execute_branch(src, dst, interactive, directory=None):
     :param dst: destination branch
     :param interactive: if True actions are summarized before committing
     :param directory: directory in which to preform this action
-    :returns: return code to be passed to sys.exit
 
     :raises: subprocess.CalledProcessError if any git calls fail
     """
@@ -61,8 +60,8 @@ def execute_branch(src, dst, interactive, directory=None):
     elif tag_exists(src):
         pass
     else:
-        error("Specified source branch does not exist: {0}".format(src))
-        return code.BRANCH_DOES_NOT_EXIST
+        error("Specified source branch does not exist: {0}".format(src),
+            exit=True)
 
     # Determine if the destination branch needs to be created
     create_dst_branch = False
@@ -97,8 +96,7 @@ def execute_branch(src, dst, interactive, directory=None):
         print(" " * 22 + "- The working branch will be set to " + \
               ansi('boldon') + dst + ansi('reset'))
         if not maybe_continue():
-            error("Answered no to continue, aborting.")
-            return 1
+            error("Answered no to continue, aborting.", exit=True)
 
     # Make changes to the layout
     current_branch = get_current_branch(directory)
@@ -130,7 +128,6 @@ def execute_branch(src, dst, interactive, directory=None):
     finally:
         if current_branch is not None:
             checkout(current_branch, directory=directory)
-    return 0
 
 
 def get_parser():
@@ -154,36 +151,17 @@ the DESTINATION_BRANCH, otherwise the working branch will remain unchanged.
     return parser
 
 
-def main():
+def main(sysargs=None):
     parser = get_parser()
     parser = add_global_arguments(parser)
-    args = parser.parse_args()
+    args = parser.parse_args(sysargs)
     handle_global_arguments(args)
 
     # Check environment
-    retcode = ensure_clean_working_env()
-    if retcode != 0:
-        return retcode
+    ensure_clean_working_env()
 
-    retcode = 0
-    try:
-        # If the src argument isn't set, use the current branch
-        if args.src is None:
-            args.src = get_current_branch()
-        # Execute the branching
-        retcode = execute_branch(args.src, args.destination_branch,
-                                 args.interactive)
-    except CalledProcessError as err:
-        # No need for a trackback here, a git call probably failed
-        print_exc(traceback.format_exc())
-        error(str(err))
-        retcode = 1
-    except Exception as err:
-        # Unhandled exception, print traceback
-        print_exc(traceback.format_exc())
-        error(str(err))
-        retcode = 2
-    if retcode == 0:
-        info("Working branch: " + ansi('boldon') + \
-            str(get_current_branch()) + ansi('reset'))
-    sys.exit(retcode)
+    # If the src argument isn't set, use the current branch
+    if args.src is None:
+        args.src = get_current_branch()
+    # Execute the branching
+    execute_branch(args.src, args.destination_branch, args.interactive)

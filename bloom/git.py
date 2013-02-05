@@ -35,6 +35,7 @@
 from __future__ import print_function
 
 import os
+import sys
 import functools
 import shutil
 import tempfile
@@ -50,7 +51,6 @@ from bloom.logging import warning
 
 from bloom.util import change_directory
 from bloom.util import check_output
-from bloom.util import code
 from bloom.util import execute_command
 from bloom.util import pdb_hook
 import bloom.util
@@ -181,7 +181,7 @@ def show(reference, path, directory=None):
 
 def ensure_clean_working_env(force=False, git_status=True, directory=None):
     """
-    Returns 0 if the working environment is clean, otherwise 1.
+    Checks the environment to ensure it is clean, raises SystemExit otherwise.
 
     Clean is defined as:
         - In a git repository
@@ -192,39 +192,39 @@ def ensure_clean_working_env(force=False, git_status=True, directory=None):
     :param force: If True, overrides a few of the fail conditions
     :param directory: directory in which to run this command
 
-    :returns: 0 if the env is clean, otherwise 1
-
     :raises: subprocess.CalledProcessError if any git calls fail
+    :raises: SystemExit if any git calls fail
     """
     def ecwe_fail(code, show_git_status):
         if not bloom.util._quiet and show_git_status:
             print('\n++ git status:\n')
             os.system('git status')
-        return code
+        sys.exit(code)
     # Is it a git repo
     if get_root(directory) is None:
-        error("Not is a valid git repository")
-        return code.NOT_A_GIT_REPOSITORY
+        error("Not is a valid git repository", exit=True)
     # Are we on a branch?
     current_branch = get_current_branch(directory)
     if current_branch is None:
-        msg = warning if force else error
-        msg("Could not determine current branch")
+        msg = "Could not determine current branch"
         if not force:
-            return ecwe_fail(code.NOT_ON_A_GIT_BRANCH, git_status)
+            return ecwe_fail(msg, git_status)
+        else:
+            warning(msg)
     # Are there local changes?
     if has_changes(directory):
-        msg = warning if force else error
-        msg("Current git working branch has local changes")
+        msg = "Current git working branch has local changes"
         if not force:
-            return ecwe_fail(code.GIT_HAS_LOCAL_CHANGES, git_status)
+            return ecwe_fail(msg, git_status)
+        else:
+            warning(msg)
     # Are there untracked files or directories?
     if has_untracked_files(directory):
-        msg = warning if force else error
-        msg("Current git working branch has untracked files/directories")
+        msg = "Current git working branch has untracked files/directories"
         if not force:
-            return ecwe_fail(code.GIT_HAS_UNTRACKED_FILES, git_status)
-    return 0
+            return ecwe_fail(msg, git_status)
+        else:
+            warning(msg)
 
 
 def checkout(reference, raise_exc=False, directory=None, show_git_status=True):
@@ -249,7 +249,7 @@ def checkout(reference, raise_exc=False, directory=None, show_git_status=True):
         if not bloom.util._quiet and show_git_status:
             print('\n++ git status:\n')
             os.system('git status')
-        return 1
+        return False
     debug("Checking out to " + str(reference))
     if reference == get_current_branch(directory):
         debug("Requested checkout reference is the same as the current branch")
@@ -279,7 +279,7 @@ def checkout(reference, raise_exc=False, directory=None, show_git_status=True):
     if fail_msg != '':
         return checkout_summarize(fail_msg, branch, directory)
     else:
-        return 0
+        return True
 
 
 class ContextDecorator(object):

@@ -3,16 +3,11 @@ from __future__ import print_function
 from bloom.generators.release import ReleaseGenerator
 
 from bloom.git import inbranch
-from bloom.git import get_current_branch
 
-from bloom.logging import info
 from bloom.logging import warning
 
-from bloom.util import code
 from bloom.util import execute_command
 from bloom.util import get_package_data
-
-from bloom.commands.patch.trim_cmd import trim
 
 
 class RosReleaseGenerator(ReleaseGenerator):
@@ -62,15 +57,11 @@ Please checkout the release branch and then create a tag manually with:"""
             )
             warning("  git checkout " + destination)
             warning("  git tag -f " + destination + "/<version>")
-            return 0
+            return
         with inbranch(destination):
-            package_data = get_package_data(destination)
-            if type(package_data) not in [list, tuple]:
-                return package_data
-        name, version, packages = package_data
+            name, version, packages = get_package_data(destination)
         # Execute git tag
         execute_command('git tag -f ' + destination + '/' + version)
-        return 0
 
     def detect_branches(self):
         self.packages = None

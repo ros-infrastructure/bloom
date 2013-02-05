@@ -11,7 +11,6 @@ from bloom.git import has_changes
 
 from bloom.logging import debug
 from bloom.logging import error
-from bloom.logging import info
 from bloom.logging import log_prefix
 
 from bloom.util import execute_command
@@ -23,9 +22,7 @@ from bloom.commands.patch.common import list_patches
 @log_prefix('[git-bloom-patch export]: ')
 def export_patches(directory=None):
     ### Ensure a clean/valid working environment
-    ret = ensure_clean_working_env(git_status=True, directory=directory)
-    if ret != 0:
-        return ret
+    ensure_clean_working_env(git_status=True, directory=directory)
     # Get current branch
     current_branch = get_current_branch(directory)
     # Construct the patches branch name
@@ -33,14 +30,12 @@ def export_patches(directory=None):
     # Ensure the patches branch exists
     if not branch_exists(patches_branch, False, directory=directory):
         error("The patches branch ({0}) does not ".format(patches_branch) + \
-              "exist, did you use git-bloom-branch?")
-        return 1
+              "exist, did you use git-bloom-branch?", exit=True)
     try:
         # Get parent branch and base commit from patches branch
         config = get_patch_config(patches_branch, directory)
         if config is None:
-            error("Failed to get patches information.")
-            return 1
+            error("Failed to get patches information.", exit=True)
         # Checkout to the patches branch
         checkout(patches_branch, directory=directory)
         # Notify the user
@@ -67,7 +62,6 @@ def export_patches(directory=None):
     finally:
         if current_branch:
             checkout(current_branch, directory=directory)
-    return 0
 
 
 def get_parser():

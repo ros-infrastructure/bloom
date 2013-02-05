@@ -51,7 +51,6 @@ from bloom.logging import error
 from bloom.logging import info
 
 from bloom.util import add_global_arguments
-from bloom.util import code
 from bloom.util import execute_command
 from bloom.util import handle_global_arguments
 from bloom.util import maybe_continue
@@ -59,8 +58,7 @@ from bloom.util import maybe_continue
 
 def check_git_init():
     if get_root() is None:
-        error("Not is a valid git repository")
-        return code.NOT_A_GIT_REPOSITORY
+        error("Not is a valid git repository", exit=True)
 
     cmd = 'git show-ref --heads'
     result = execute_command(cmd, shell=True, autofail=False,
@@ -69,11 +67,9 @@ def check_git_init():
         info("Freshly initialized git repository detected.")
         info("An initial empty commit is going to be made.")
         if not maybe_continue():
-            error("Answered no to continue, exiting.")
-            return 1
+            error("Answered no to continue, exiting.", exit=True)
         # Make an initial empty commit
         execute_command('git commit -m "initial commit" --allow-empty')
-    return 0
 
 
 def set_upstream(upstream_repo, upstream_repo_type, upstream_repo_branch):
@@ -156,13 +152,11 @@ Example: `git-bloom-config https://github.com/ros/bloom.git git groovy-devel`
 
 def main(sysargs=None):
     if len(sysargs if sysargs is not None else sys.argv) == 1:
-        retcode = ensure_clean_working_env()
-        if retcode != 0:
-            return retcode
+        ensure_clean_working_env()
         if branch_exists('bloom', False):
             show_current()
             info("See: 'git-bloom-config -h' on how to change the configs")
-            return 0
+            return
         else:
             info("No bloom branch found")
     parser = get_argument_parser()
@@ -171,13 +165,9 @@ def main(sysargs=None):
     handle_global_arguments(args)
 
     # Check for freshly initialized repo
-    ret = check_git_init()
-    if ret != 0:
-        return ret
+    check_git_init()
 
-    retcode = ensure_clean_working_env()
-    if retcode != 0:
-        return retcode
+    ensure_clean_working_env()
 
     # Summarize the requested operation
     summarize_arguments(args.upstream_repository, args.upstream_vcs_type,
@@ -185,7 +175,7 @@ def main(sysargs=None):
 
     # Validate the arguments and repository
     if not validate_args(args.upstream_vcs_type):
-        return 1
+        sys.exit("Invalid arguments")
 
     # Store the current branch
     current_branch = get_current_branch()
@@ -193,11 +183,8 @@ def main(sysargs=None):
         set_upstream(args.upstream_repository, args.upstream_vcs_type,
                      args.upstream_branch)
         info("Upstream successively set.")
-        return 0
     finally:
         # Try to roll back to the branch the user was on before
         # this possibly failed.
         if current_branch:
             checkout(current_branch)
-
-    return 1

@@ -134,8 +134,7 @@ def get_package_data(branch_name, directory=None, quiet=False):
                 file=sys.stderr)
     if not has_rospkg:
         error("no package.xml(s) found, and no name specified with "
-              "'--package-name', aborting.", use_prefix=False)
-        return code.NO_PACKAGE_XML_FOUND
+              "'--package-name', aborting.", use_prefix=False, exit=True)
     stack_path = os.path.join(repo_dir, 'stack.xml')
     if os.path.exists(stack_path):
         debug("found stack.xml.", use_prefix=False)
@@ -143,10 +142,9 @@ def get_package_data(branch_name, directory=None, quiet=False):
         return stack.name, stack.version, stack
     # Otherwise we have a problem
     debug("failed.", use_prefix=False)
-    if not quiet:
-        error("no package.xml(s) or stack.xml found, and not name "
-              "specified with '--package-name', aborting.", use_prefix=False)
-    return code.NO_PACKAGE_XML_FOUND
+    error("no package.xml(s) or stack.xml found, and not name "
+          "specified with '--package-name', aborting.",
+          use_prefix=False, exit=True)
 
 
 def add_global_arguments(parser):
