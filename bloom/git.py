@@ -199,7 +199,7 @@ def ensure_clean_working_env(force=False, git_status=True, directory=None):
         if not bloom.util._quiet and show_git_status:
             print('\n++ git status:\n')
             os.system('git status')
-        sys.exit(code)
+        error(code, exit=True)
     # Is it a git repo
     if get_root(directory) is None:
         error("Not is a valid git repository", exit=True)

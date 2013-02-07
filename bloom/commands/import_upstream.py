@@ -131,8 +131,7 @@ def check_for_bloom():
     # Check for bloom.conf
     if os.path.exists('bloom'):
         error("File or directory bloom prevents checking out to the bloom "
-              "branch, remove it.")
-        sys.exit(1)
+              "branch, remove it.", exit=True)
     if not branch_exists('bloom'):
         debug('no bloom branch')
         not_a_bloom_release_repo()
