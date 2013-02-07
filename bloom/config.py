@@ -32,7 +32,6 @@
 
 from __future__ import print_function
 
-import copy
 import json
 
 from bloom.git import inbranch
@@ -69,17 +68,3 @@ def get_tracks_dict_raw(directory=None):
         return json.loads(tracks_json)
     except:
         raise
-
-
-def get_tracks(directory=None):
-    tracks_dict = get_tracks_dict_raw(directory=directory)
-    tracks = []
-    if 'tracks' in tracks_dict:
-        tracks = [track for track in tracks_dict['tracks'].keys()]
-    return tracks
-
-
-def write_track(track, track_dict, directory=None):
-    tracks_dict = get_tracks_dict_raw(directory=directory)
-    tracks_dict['tracks'][track] = copy.copy(track_dict)
-    write_tracks_dict_raw(tracks_dict, directory=directory)
