@@ -39,16 +39,154 @@ from bloom.git import branch_exists
 from bloom.git import create_branch
 from bloom.git import show
 
+from bloom.logging import error
+from bloom.logging import fmt
 from bloom.logging import info
 
 from bloom.util import execute_command
+
+AUTO = ':{auto}'
+ASK = ':{ask}'
+
+
+class PromptEntry(object):
+    def __init__(self, name, default=None, values=None, prompt='', spec=None):
+        object.__setattr__(self, 'values', values)
+        self.name = name
+        self.default = default
+        self.prompt = prompt
+        self.spec = spec
+
+    def __setattr__(self, key, value):
+        if key == 'default' and self.values:
+            if value not in self.values:
+                error(
+                    "Invalid input '{0}' for '{1}', acceptable values: {2}."
+                    .format(value, self.name, self.values),
+                    exit=True
+                )
+        object.__setattr__(self, key, value)
+
+    def __str__(self):
+        msg = '@_' + self.name + ':@|'
+        if self.spec is not None:
+            for key, val in self.spec.iteritems():
+                msg += '\n  ' + key
+                for line in val.splitlines():
+                    msg += '\n    ' + line
+        else:
+            msg += '\n  ' + self.prompt
+        msg += '\n '
+        if self.default is None:
+            msg += " @![@{yf}None@|@!]@|: "
+        else:
+            msg += " @!['@{{yf}}{0}@|@!']@|: ".format(self.default)
+        return fmt(msg)
+
+config_spec = {
+    'vcs_uri': {
+        '<uri>': '''\
+Any valid URI. This variable can be templated, for example an svn url
+can be templated as such: "https://svn.foo.com/foo/tags/foo-:{version}"
+where the :{version} token will be replaced with the version for this release.\
+'''
+    },
+    'vcs_type': {
+        'git': 'Upstream URI is a git repository',
+        'hg': 'Upstream URI is a hg repository',
+        'svn': 'Upstream URI is a svn repository',
+        'tar': 'Upstream URI is a tarball'
+    },
+    'version': {
+        ':{auto}': '''\
+This means the version will be guessed from the devel branch.
+This means that the devel branch must be set, the devel branch must exist,
+and there must be a valid package.xml in the upstream devel branch.''',
+        ':{ask}': '''\
+This means that the user will be prompted for the version each release.
+This also means that the upstream devel will be ignored.''',
+        '<version>': '''\
+This will be the version used.
+It must be updated for each new upstream version.'''
+    },
+    'release_tag': {
+        ':{version}': '''\
+This means that the release tag will match the :{version} tag.
+This can be further templated, for example: "foo-:{version}" or "v:{version}"
+
+This can describe any vcs reference. For git that means {tag, branch, hash},
+for hg that means {tag, branch, hash}, for svn that means a revision number.
+For tar this value doubles as the sub directory (if the repository is
+in foo/ of the tar ball, putting foo here will cause the contents of
+foo/ to be imported to upstream instead of foo itself).
+''',
+        ':{ask}': '''\
+This means the user will be prompted for the release tag on each release.
+''',
+        ':{none}': '''\
+For svn and tar only you can set the release tag to :{none}, so that
+it is ignored.  For svn this means no revision number is used.
+'''
+    },
+    'devel_branch': {
+        '<vcs reference>': '''\
+Branch in upstream repository on which to search for the version.
+This is used only when version is set to ':{auto}'.
+''',
+    },
+    'ros_distro': {
+        '<ROS distro>': 'This can be any valid ROS distro, e.g. groovy, hydro'
+    },
+    'patches': {
+        '<path in bloom branch>': '''\
+This can be any valid relative path in the bloom branch. The contents
+of this folder will be overlaid onto the upstream branch after each
+import-upstream.  Additionally, any package.xml files found in the
+overlay will have the :{version} string replaced with the current
+version being released.'''
+    }
+}
+
+DEFAULT_TEMPLATE = {
+    'vcs_uri': PromptEntry('Upstream Repository URI',
+        spec=config_spec['vcs_uri']),
+    'vcs_type': PromptEntry('Upstream VCS Type', default='git',
+        spec=config_spec['vcs_type'], values=['git', 'hg', 'svn', 'tar']),
+    'version': PromptEntry('Version', default=AUTO,
+        spec=config_spec['version']),
+    'release_tag': PromptEntry('Release Tag', default=':{version}',
+        spec=config_spec['release_tag']),
+    'devel_branch': PromptEntry('Upstream Devel Branch',
+        spec=config_spec['devel_branch']),
+    'patches': PromptEntry('Patched Directory',
+        spec=config_spec['patches']),
+    'ros_distro': PromptEntry('ROS Distro', default='groovy',
+        spec=config_spec['ros_distro']),
+    'release_inc': 0,
+    'actions': [
+        'git-bloom-import-upstream', ['--replace'],
+        'git-bloom-generate', ['-y', 'rosrelease', '--source', 'upstream'],
+        'git-bloom-generate', ['-y', 'rosdebian', '--prefix', 'release',
+            ':{ros_distro}', '-i', ':{release_inc}']
+    ]
+}
+
+CUSTOM_TEMPLATE = {
+    'reference': ASK,
+    'patches': ':name'
+}
+
+config_template = {
+    'third-party': CUSTOM_TEMPLATE,
+    None: {}
+}
 
 
 def write_tracks_dict_raw(tracks_dict, cmt_msg=None, directory=None):
     cmt_msg = cmt_msg if cmt_msg is not None else 'Modified tracks.json'
     with inbranch('bloom'):
         with open('tracks.json', 'w') as f:
-            json.dump(tracks_dict, f)
+            json.dump(tracks_dict, f, indent=2)
         execute_command('git add tracks.json', cwd=directory)
         execute_command('git commit --allow-empty -m "{0}"'.format(cmt_msg),
             cwd=directory)
@@ -67,4 +205,5 @@ def get_tracks_dict_raw(directory=None):
     try:
         return json.loads(tracks_json)
     except:
+        # TODO handle json errors
         raise

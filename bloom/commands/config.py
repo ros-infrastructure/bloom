@@ -38,7 +38,8 @@ import json
 import subprocess
 import sys
 
-from bloom.config import write_track
+from bloom.config import config_template
+from bloom.config import DEFAULT_TEMPLATE
 from bloom.config import get_tracks_dict_raw
 from bloom.config import write_tracks_dict_raw
 
@@ -49,7 +50,6 @@ from bloom.git import GitClone
 from bloom.git import get_root
 from bloom.git import inbranch
 
-from bloom.logging import fmt
 from bloom.logging import debug
 from bloom.logging import error
 from bloom.logging import info
@@ -59,53 +59,6 @@ from bloom.util import execute_command
 from bloom.util import check_output
 from bloom.util import handle_global_arguments
 from bloom.util import maybe_continue
-
-AUTO = ':{auto}'
-ASK = ':{ask}'
-
-
-class PromptEntry(object):
-    def __init__(self, name, default=None, values=None, prompt=''):
-        self.name = name
-        self.default = default
-        self.values = values
-        self.prompt = prompt
-
-    def __str__(self):
-        msg = '@_' + self.name + ':@|\n  '
-        msg += self.prompt
-        if self.values:
-            msg += ' (' + ', '.join(self.values) + ')'
-        msg += '\n '
-        if self.default is None:
-            msg += " @![@{yf}None@|@!]@|: "
-        else:
-            msg += " @!['@{{yf}}{0}@|@!']@|: ".format(self.default)
-        return fmt(msg)
-
-DEFAULT_TEMPLATE = {
-    'vcs_uri': PromptEntry('Upstream Repository URI',
-        prompt='URI of the repository which holds the project source code'),
-    'vcs_type': PromptEntry('Upstream VCS Type', default='git',
-        prompt='Type of the upstream VCS', values=['git', 'hg', 'svn', 'tar']),
-    'version': PromptEntry('Version', default=AUTO,
-        prompt='Current version tagged in upstream ({0} trys to guess from upstream devel branch, {1} will ask each release)'.format(AUTO, ASK)),
-    'release_tag': PromptEntry('Release Tag', default=AUTO,
-        prompt='VCS tag to import from the next release from. ({0} will guess this from the version, {1} will ask each release for the tag to import from)'.format(AUTO, ASK)),
-    'devel_branch': PromptEntry('Upstream Devel Branch',
-        prompt='Upstream branch on which development happens (used when version is set to {0})'.format(AUTO)),
-    'patches': PromptEntry('Patched Directory',
-        prompt='Directory located relatively from the root of the bloom branch, which is overlayed onto the upstream repository just after each import.\n  Package.xml versions are also templated before overlay.'),
-    'ros_distro': PromptEntry('ROS Distro', default='groovy',
-        prompt='ROS distrobution (groovy, hydro, etc...)'),
-    'release_inc': 0,
-    'actions': [
-        'git-bloom-import-upstream', ['--replace'],
-        'git-bloom-generate', ['-y', 'rosrelease', '--source', 'upstream'],
-        'git-bloom-generate', ['-y', 'rosdebian', '--prefix', 'release',
-            ':{ros_distro}', '-i', ':{release_inc}']
-    ]
-}
 
 template_entry_order = [
     'vcs_uri',
@@ -117,20 +70,15 @@ template_entry_order = [
     'patches'
 ]
 
-CUSTOM_TEMPLATE = {
-    'reference': ASK,
-    'patches': ':name'
-}
-
-config_template = {
-    'third-party': CUSTOM_TEMPLATE,
-    None: {}
-}
-
 
 @inbranch('bloom')
 def convert_old_bloom_conf():
+    tracks_dict = get_tracks_dict_raw()
     track = 'convert'
+    track_count = 0
+    while track in tracks_dict['tracks']:
+        track_count += 1
+        track = 'convert-' + str(track_count)
     track_dict = copy.copy(DEFAULT_TEMPLATE)
     cmd = 'git config -f bloom.conf bloom.upstream'
     upstream_repo = check_output(cmd, shell=True).strip()
@@ -157,7 +105,8 @@ def convert_old_bloom_conf():
         debug(f.read())
     debug('To this track:')
     debug(str({track: track_dict}))
-    write_track(track, track_dict)
+    tracks_dict[track] = track_dict
+    write_tracks_dict_raw(tracks_dict)
     execute_command('git rm bloom.conf', shell=True)
     execute_command('git commit -m "Removed bloom.conf"', shell=True)
 
@@ -204,9 +153,8 @@ def new(args):
             track[key].default = args.track
         ret = raw_input(str(track[key]))
         if ret:
-            track[key] = ret
-        else:
-            track[key] = str(track[key].default)
+            track[key].default = ret  # This type checks against self.values
+        track[key] = str(track[key].default)
     tracks_dict['tracks'][args.track] = track
     write_tracks_dict_raw(tracks_dict)
     info("Created '{0}' track.".format(args.track))
@@ -228,7 +176,8 @@ def edit(args):
         pe.default = tracks_dict['tracks'][args.track][key]
         ret = raw_input(str(pe))
         if ret:
-            tracks_dict['tracks'][args.track][key] = ret
+            pe.default = ret  # This type checks against self.values
+        tracks_dict['tracks'][args.track][key] = pe.default
     write_tracks_dict_raw(tracks_dict)
 
 
@@ -294,5 +243,5 @@ def main(sysargs=None):
         with git_clone:
             args.func(args)
         git_clone.commit()
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         error("\nUser sent a Keyboard Interrupt, aborting.", exit=True)
