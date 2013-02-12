@@ -211,12 +211,12 @@ def try_vcstools_checkout(repo, checkout_url, version=''):
     if not repo.checkout(checkout_url, version, shallow=True):
         if repo.get_vcs_type_name() == 'svn':
             error(
-                "Could not checkout upstream repostiory "
+                "Could not checkout upstream repository "
                 "({0})".format(checkout_url), exit=True
             )
         else:
             error(
-                "Could not checkout upstream repostiory "
+                "Could not checkout upstream repository "
                 "({0})".format(checkout_url)
               + " to branch ({0})".format(version), exit=True
             )
