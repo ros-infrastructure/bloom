@@ -38,11 +38,15 @@ from __future__ import print_function
 
 import argparse
 import os
+import shutil
 import sys
+import tempfile
 
 from subprocess import CalledProcessError
 from subprocess import PIPE
 from subprocess import Popen
+
+from StringIO import StringIO
 
 from bloom.logging import ansi
 from bloom.logging import debug
@@ -100,6 +104,36 @@ class change_directory(object):
         return self.directory
 
     def __exit__(self, exc_type, exc_value, traceback):
+        if self.original_cwd and os.path.exists(self.original_cwd):
+            os.chdir(self.original_cwd)
+
+
+class redirected_stdio(object):
+    def __enter__(self):
+        self.original_stdout = sys.stdout
+        self.original_stderr = sys.stderr
+        sys.stdout = out = StringIO()
+        sys.stderr = err = StringIO()
+        return out, err
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        sys.stdout = self.original_stdout
+        sys.stderr = self.original_stderr
+
+
+class temporary_directory(object):
+    def __init__(self, prefix=''):
+        self.prefix = prefix
+
+    def __enter__(self):
+        self.original_cwd = os.getcwd()
+        self.temp_path = tempfile.mkdtemp(prefix=self.prefix)
+        os.chdir(self.temp_path)
+        return self.temp_path
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.temp_path and os.path.exists(self.temp_path):
+            shutil.rmtree(self.temp_path)
         if self.original_cwd and os.path.exists(self.original_cwd):
             os.chdir(self.original_cwd)
 
