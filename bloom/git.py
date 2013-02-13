@@ -387,6 +387,44 @@ def tag_exists(tag, directory=None):
     return tag in get_tags(directory)
 
 
+def create_tag(tag, directory=None):
+    """
+    Creates a given tag
+
+    :param tag: tag to create
+    :param directory: directory in which to preform this action
+
+    :raises: subprocess.CalledProcessError if any git calls fail
+    """
+    execute_command('git tag {0}'.format(tag), shell=True, cwd=directory)
+
+
+def delete_tag(tag, directory=None):
+    """
+    Deletes a given local tag.
+
+    :param tag: local tag to delete
+    :param directory: directory in which to preform this action
+
+    :raises: subprocess.CalledProcessError if any git calls fail
+    """
+    execute_command('git tag -d {0}'.format(tag), shell=True, cwd=directory)
+
+
+def delete_remote_tag(tag, remote='origin', directory=None):
+    """
+    Deletes a given remote tag.
+
+    :param tag: remote tag to delete
+    :param remote: git remote to delete tag from (defaults to 'origin')
+    :param directory: directory in which to preform this action
+
+    :raises: subprocess.CalledProcessError if any git calls fail
+    """
+    execute_command('git push {0} :{1}'.format(remote, tag), shell=True,
+        cwd=directory)
+
+
 def get_tags(directory=None):
     """
     Returns a list of tags in the git repository.
