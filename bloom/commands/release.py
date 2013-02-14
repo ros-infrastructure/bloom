@@ -95,7 +95,7 @@ def clean_up_repositories():
             shutil.rmtree(path)
 
 
-def find_version_from_upstream_github(vcs_uri, devel_branch):
+def find_version_from_upstream_github(vcs_uri, devel_branch=None):
     # TODO: Implement this
     info('  raw.github.com checking is not implemented yet.')
     return None
@@ -150,7 +150,7 @@ def get_upstream_meta(upstream_dir):
     return meta
 
 
-def find_version_from_upstream(vcs_uri, vcs_type, devel_branch):
+def find_version_from_upstream(vcs_uri, vcs_type, devel_branch=None):
     # Check for github.com
     if vcs_uri.startswith('http') and 'github.com' in vcs_uri:
         info("Detected github.com repository, checking for package.xml "
@@ -162,14 +162,15 @@ def find_version_from_upstream(vcs_uri, vcs_type, devel_branch):
     # Try to clone the upstream repository
     info("Checking upstream devel branch for a package.xml(s) or stack.xml")
     upstream_repo = get_upstream_repo(vcs_uri, vcs_type)
-    if not upstream_repo.checkout(vcs_uri, devel_branch, shallow=True):
+    if not upstream_repo.checkout(vcs_uri, devel_branch or '', shallow=True):
         error("Failed to checkout to the upstream branch "
-            "'{0}' in the repository from '{1}'".format(devel_branch, vcs_uri))
+            "'{0}' in the repository from '{1}'"
+            .format(devel_branch or '<default>', vcs_uri))
     meta = get_upstream_meta(upstream_repo.get_path())
     if not meta:
         error("Failed to find any package.xml(s) or a stack.xml in the "
             "upstream devel branch '{0}' in the repository from '{1}'"
-            .format(devel_branch, vcs_uri))
+            .format(devel_branch or '<default>', vcs_uri))
     info("Detected version '{0}' from package(s): {1}"
         .format(meta['version'], meta['name']))
     return meta['version'], upstream_repo
@@ -201,10 +202,9 @@ def process_track_settings(track_dict, release_inc_override):
             error("Auto detection of version is not supported for '{0}'"
                 .format(vcs_type), exit=True)
         devel_branch = track_dict['devel_branch']
-        if type(devel_branch) not in [str, unicode]\
-        or devel_branch.lower() == ':{none}':
-            error("Cannot autodetect the version without the '{0}' being set."
-                .format(DEFAULT_TEMPLATE['devel_branch'].name), exit=True)
+        if type(devel_branch) in [str, unicode]\
+        and devel_branch.lower() == ':{none}':
+            devel_branch = None
         version, repo = find_version_from_upstream(vcs_uri,
             vcs_type, devel_branch)
         if version is None:
