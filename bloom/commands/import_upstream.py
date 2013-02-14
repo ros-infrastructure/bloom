@@ -49,6 +49,8 @@ from bloom.git import get_last_tag_by_version
 from bloom.git import GitClone
 from bloom.git import has_changes
 from bloom.git import inbranch
+from bloom.git import ls_tree
+from bloom.git import show
 from bloom.git import tag_exists
 from bloom.git import track_branches
 
@@ -145,7 +147,64 @@ def import_tarball(tarball_path, target_branch, version, name):
     # with inbranch(target_branch):
 
 
-def import_upstream(tarball_path, version, name, replace):
+def handle_tree(tree, directory, root_path, version):
+    for path, kind in tree.iteritems():
+        if kind == 'directory':
+            # Path relative to start path
+            rel_path = os.path.join(directory, path)
+            # If it is a file, error
+            if os.path.isfile(rel_path):
+                error("In patches path '{0}' is a directory".format(rel_path) +
+                    ", but it exists in the upstream branch as a file.",
+                    exit=True)
+            # If it is not already a directory, create it
+            if not os.path.isdir(rel_path):
+                info("  Createing directory... '{0}'".format(rel_path))
+                os.mkdir(rel_path)
+            # Recurse on the directory
+            handle_tree(ls_tree('bloom', os.path.join(root_path, rel_path)),
+                rel_path, root_path, version)
+        if kind == 'file':
+            # Path relative to start path
+            rel_path = os.path.join(directory, path)
+            # If the local version is a directory, error
+            if os.path.isdir(rel_path):
+                error("In patches path '{0}' is a file, ".format(rel_path) +
+                    "but it exists in the upstream branch as a directory.",
+                    exit=True)
+            # If the file already exists, warn
+            if os.path.isfile(rel_path):
+                warning("  File '{0}' already exists, overwriting..."
+                    .format(rel_path))
+                execute_command('git rm {0}'.format(rel_path), shell=True)
+            # If package.xml tempalte in version, else grab data
+            if path == 'package.xml':
+                info("  Templating '{0}' into upstream branch..."
+                    .format(rel_path))
+                file_data = show('bloom', os.path.join(root_path, rel_path))
+                file_data = file_data.replace(':{version}', version)
+            else:
+                info("  Overlaying '{0}' into upstream branch..."
+                    .format(rel_path))
+                file_data = show('bloom', os.path.join(root_path, rel_path))
+            # Write file
+            with open(rel_path, 'wb') as f:
+                f.write(file_data)
+            # Add it with git
+            execute_command('git add {0}'.format(rel_path), shell=True)
+
+
+def import_patches(patches_path, patches_path_dict, target_branch, version):
+    info("Overlaying files from 'bloom:{0}' into '{1}' branch..."
+        .format(patches_path, target_branch))
+    with inbranch(target_branch):
+        handle_tree(patches_path_dict, '', patches_path, version)
+        cmd = ('git commit --allow-empty -m "Overlaid patches from \'{0}\'"'
+            .format(patches_path))
+        execute_command(cmd, shell=True)
+
+
+def import_upstream(tarball_path, patches_path, version, name, replace):
     # If there is not tarball at the given path, fail
     if not os.path.exists(tarball_path):
         error("Specified archive does not exists: '{0}'".format(tarball_path),
@@ -170,6 +229,14 @@ def import_upstream(tarball_path, version, name, replace):
                 .format(tarball_file), exit=True)
     name = name if name else '-'.join(split_tarball_file[:-1])
     version = version if version else split_tarball_file[-1]
+
+    # Check if the patches_path (if given) exists
+    patches_path_dict = None
+    if patches_path:
+        patches_path_dict = ls_tree('bloom', patches_path)
+        if not patches_path_dict:
+            error("Given patches path '{0}' does not exist in bloom branch."
+                .format(patches_path), exit=True)
 
     # Do version checking
     version_check(version)
@@ -203,6 +270,10 @@ def import_upstream(tarball_path, version, name, replace):
     info("Importing archive into upstream branch...")
     import_tarball(tarball_path, 'upstream', version, name)
 
+    # Handle patches_path
+    if patches_path:
+        import_patches(patches_path, patches_path_dict, 'upstream', version)
+
     # Create tags
     with inbranch('upstream'):
         info("Creating tag: '{0}'".format(upstream_tag))
@@ -216,13 +287,20 @@ def get_argument_parser():
     parser = argparse.ArgumentParser(description="""\
 Imports a given archive into the release repository's upstream branch.
 The upstream is cleared of all files, then the archive is extracted
-into the upstream branch. Then the 'upstream-<version>' tag is created.
-If a repository name is given (or guessed from the archive), a
-'<name>-<version>' tag is also created. This command must be run in a
-clean git environment, i.e. no untracked or uncommitted local changes.
+into the upstream branch. If a patches_path is given then the contents
+of that folder are overlaid onto the upstream branch, and any
+package.xml files are templated on the version. The patches_path must
+exist in the bloom branch of the local repository. Then the
+'upstream-<version>' tag is created. If a repository name is given
+(or guessed from the archive), a '<name>-<version>' tag is also created.
+This command must be run in a clean git environment, i.e. no untracked
+or uncommitted local changes.
 """)
     add = parser.add_argument
     add('archive_path', help="path to the archive to be imported")
+    add('patches_path', nargs='?', default='',
+        help="relative path in the 'bloom' branch to a folder to be"
+        " overlaid after import of upstream sources (optional)")
     add('-v', '--release-version',
         help="version being imported (defaults to guessing from archive name)")
     add('-n', '--name',
@@ -250,8 +328,8 @@ def main(sysargs=None):
 
     git_clone = GitClone()
     with git_clone:
-        import_upstream(args.archive_path, args.release_version, args.name,
-            args.replace)
+        import_upstream(args.archive_path, args.patches_path,
+            args.release_version, args.name, args.replace)
     git_clone.commit()
 
     info("I'm happy.  You should be too.")

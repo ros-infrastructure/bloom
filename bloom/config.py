@@ -172,7 +172,7 @@ DEFAULT_TEMPLATE = {
         ' --tag :{release_tag} --display-uri :{vcs_uri}'
         ' --name :{name} --output-dir :{archive_dir_path}',
         'git-bloom-import-upstream :{archive_path}'
-        ' --release-version :{version} --replace',
+        ' --release-version :{version} :{patches} --replace',
         'git-bloom-generate -y rosrelease :{ros_distro} --source upstream',
         'git-bloom-generate -y rosdebian --prefix release'
         ' :{ros_distro} -i :{release_inc}'
