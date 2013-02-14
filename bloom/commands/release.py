@@ -30,6 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import print_function
+
 import argparse
 import atexit
 import os
@@ -95,10 +97,10 @@ def clean_up_repositories():
             shutil.rmtree(path)
 
 
-def find_version_from_upstream_github(vcs_uri, devel_branch=None):
-    # TODO: Implement this
-    info('  raw.github.com checking is not implemented yet.')
-    return None
+# def find_version_from_upstream_github(vcs_uri, devel_branch=None):
+#     # TODO: Implement this
+#     info('  raw.github.com checking is not implemented yet.')
+#     return None
 
 
 def get_upstream_meta(upstream_dir):
@@ -152,13 +154,13 @@ def get_upstream_meta(upstream_dir):
 
 def find_version_from_upstream(vcs_uri, vcs_type, devel_branch=None):
     # Check for github.com
-    if vcs_uri.startswith('http') and 'github.com' in vcs_uri:
-        info("Detected github.com repository, checking for package.xml "
-            "in root of devel branch using raw.github.com...")
-        version = find_version_from_upstream_github(vcs_uri, devel_branch)
-        if version:
-            return version, None
-        warning("  Failed to find the version using raw.github.com.")
+    # if vcs_uri.startswith('http') and 'github.com' in vcs_uri:
+    #     info("Detected github.com repository, checking for package.xml "
+    #         "in root of devel branch using raw.github.com...")
+    #     version = find_version_from_upstream_github(vcs_uri, devel_branch)
+    #     if version:
+    #         return version, None
+    #     warning("  Failed to find the version using raw.github.com.")
     # Try to clone the upstream repository
     info("Checking upstream devel branch for a package.xml(s) or stack.xml")
     upstream_repo = get_upstream_repo(vcs_uri, vcs_type)
@@ -239,7 +241,7 @@ def process_track_settings(track_dict, release_inc_override):
     settings['release_tag'] = release_tag
     # Transfer other settings
     settings['devel_branch'] = track_dict['devel_branch']
-    settings['patches'] = track_dict['patches']
+    settings['patches'] = track_dict['patches'] or ''
     settings['ros_distro'] = track_dict['ros_distro']
     # Release increment
     if 'last_version' in track_dict and track_dict['last_version'] != version:
@@ -270,6 +272,7 @@ def execute_track(track, track_dict, release_inc, pretend=True):
         if ret > 0:
             error(fmt("@{rf}@!<== @|Error running command '@!{0}@|'")
                 .format(templated_action), exit=True)
+        print()
     if not pretend:
         # Update the release_inc
         tracks_dict = get_tracks_dict_raw()
