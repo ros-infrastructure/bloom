@@ -283,7 +283,7 @@ class DebianGenerator(BloomGenerator):
             return config_store
         return json.loads(config_store)
 
-    def summarize_dependency_mapping(self, data, deps, build_deps):
+    def summarize_dependency_mapping(self, data, deps, build_deps, resolved_deps):
         if len(deps) == 0 and len(build_deps) == 0:
             return
         info("Package '" + data['Package'] + "' has dependencies:")
@@ -296,35 +296,47 @@ class DebianGenerator(BloomGenerator):
             info(ansi('purplef') + "Run Dependencies:" + \
                  ansi('reset'))
             info(header)
-            for key in deps:
-                info(template.format(key, data['Depends'][key]))
+            for key in [d.name for d in deps]:
+                info(template.format(key, resolved_deps[key]))
         if len(build_deps) != 0:
             info(ansi('purplef') + \
                  "Build and Build Tool Dependencies:" + ansi('reset'))
             info(header)
-            for key in build_deps:
-                info(template.format(key, data['BuildDepends'][key]))
+            for key in [d.name for d in build_deps]:
+                info(template.format(key, resolved_deps[key]))
 
     def generate_debian(self, data, stamp, debian_distro):
         info("Generating debian for {0}...".format(debian_distro))
         # Resolve dependencies
-        deps = data['Depends']
-        build_deps = data['BuildDepends']
-        data = self.resolve_dependencies(data, debian_distro)
+        self.resolved_dependencies = self.resolve_dependencies(self.depends + self.build_depends, debian_distro)
         # Set the distribution
         data['Distribution'] = debian_distro
         # Use the time stamp to set the date strings
         data['Date'] = stamp.strftime('%a, %d %b %Y %T %z')
         data['YYYY'] = stamp.strftime('%Y')
-        self.summarize_dependency_mapping(data, deps, build_deps)
-        deps_list = []
-        for dep in data['Depends'].values():
-            deps_list.extend(dep)
-        data['Depends'] = deps_list
-        build_deps_list = []
-        for dep in data['BuildDepends'].values():
-            build_deps_list.extend(dep)
-        data['BuildDepends'] = build_deps_list
+        self.summarize_dependency_mapping(data, self.depends, self.build_depends, self.resolved_dependencies)
+
+        def format_depends(depends, resolved_deps):
+            versions = {
+                'version_lt': '<<',
+                'version_lte': '<=',
+                'version_eq': '=',
+                'version_gte': '>=',
+                'version_gt': '>>'
+            }
+            formatted = []
+            for d in depends:
+                for resolved_d in resolved_deps[d.name]:
+                    version_depends = [k for k in versions.keys() if getattr(d, k, None) is not None]
+                    if not version_depends:
+                        formatted.append(resolved_d)
+                    else:
+                        for v in version_depends:
+                            formatted.append('%s (%s %s)' % (resolved_d, versions[v], getattr(d, v)))
+            return formatted
+
+        data['Depends'] = sorted(set(format_depends(self.depends, self.resolved_dependencies)))
+        data['BuildDepends'] = sorted(set(format_depends(self.build_depends, self.resolved_dependencies)))
         # Create/Clean the debian folder
         debian_dir = 'debian'
         if os.path.exists(debian_dir):
@@ -405,7 +417,7 @@ class DebianGenerator(BloomGenerator):
             if chmod is not None:
                 os.chmod(outfile, chmod)
 
-    def resolve_dependencies(self, data, debian_distro):
+    def resolve_dependencies(self, depends, debian_distro):
         os_name = self.os_name
         rosdep_view = self.get_rosdep_view(debian_distro, os_name)
 
@@ -435,14 +447,9 @@ class DebianGenerator(BloomGenerator):
                 )]
 
         resolved_depends = {}
-        for rosdep_key in data['Depends']:
+        for rosdep_key in set([d.name for d in depends]):
             resolved_depends[rosdep_key] = resolve_rosdep_key(rosdep_key)
-        data['Depends'] = resolved_depends
-        resolved_build_depends = {}
-        for rosdep_key in data['BuildDepends']:
-            resolved_build_depends[rosdep_key] = resolve_rosdep_key(rosdep_key)
-        data['BuildDepends'] = resolved_build_depends
-        return data
+        return resolved_depends
 
     def get_rosdep_view(self, debian_distro, os_name):
         rosdistro = self.rosdistro
@@ -473,9 +480,8 @@ class DebianGenerator(BloomGenerator):
         # Installation prefix
         data['InstallationPrefix'] = self.install_prefix
         # Dependencies
-        data['Depends'] = set([d.name for d in package.run_depends])
-        build_deps = (package.build_depends + package.buildtool_depends)
-        data['BuildDepends'] = set([d.name for d in build_deps])
+        self.depends = package.run_depends
+        self.build_depends = package.build_depends + package.buildtool_depends
         # Maintainers
         maintainers = []
         for m in package.maintainers:
