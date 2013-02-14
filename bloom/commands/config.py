@@ -185,10 +185,6 @@ def edit(args):
                     .format(key))
                 if maybe_continue('n'):
                     track_dict[key] = DEFAULT_TEMPLATE[key]
-            else:
-                print(key)
-                print(track_dict[key])
-                print(DEFAULT_TEMPLATE[key])
         elif key not in track_dict:
             value = value.default if isinstance(value, PromptEntry) else value
             track_dict[key] = value
