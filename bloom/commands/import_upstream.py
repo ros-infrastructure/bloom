@@ -205,8 +205,10 @@ def import_upstream(tarball_path, version, name, replace):
 
     # Create tags
     with inbranch('upstream'):
+        info("Creating tag: '{0}'".format(upstream_tag))
         create_tag(upstream_tag)
         if name_tag != upstream_tag:
+            info("Creating tag: '{0}'".format(name_tag))
             create_tag(name_tag)
 
 
@@ -248,7 +250,7 @@ def main(sysargs=None):
 
     git_clone = GitClone()
     with git_clone:
-        import_upstream(args.tarball_path, args.version, args.name,
+        import_upstream(args.archive_path, args.release_version, args.name,
             args.replace)
     git_clone.commit()
 

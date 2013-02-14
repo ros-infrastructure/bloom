@@ -37,6 +37,11 @@ import hashlib
 import os
 import sys
 
+try:
+    from urllib.parse import urlparse
+except ImportError:
+    from urlparse import urlparse
+
 from bloom.logging import error
 from bloom.logging import info
 
@@ -64,7 +69,7 @@ git-bloom-import-upstream to be imported into the release repository.
         help="release tag to be exported (can be other types of references)")
     add('--output-dir', '-o', help="destination of the tarball")
     add('--display-uri', help="uri to use in messages (original upstream)")
-    add('--repository-name', '-n',
+    add('--name', '-n',
         help="name of the repository being exported (used in tarball name)")
     return parser
 
@@ -82,15 +87,21 @@ def calculate_file_md5(path, block_size=2 ** 20):
 
 def export_upstream(uri, tag, vcs_type, output_dir, show_uri, name):
     output_dir = output_dir or os.getcwd()
+    uri_parsed = urlparse(uri)
+    uri = uri if uri_parsed.scheme else uri_parsed.path
+    uri_is_path = False if uri_parsed.scheme else True
     name = name or 'upstream'
     with temporary_directory() as tmp_dir:
         info("Checking out repository at '{0}'".format(show_uri or uri) +
             (" to reference '{0}'.".format(tag) if tag else '.'))
-        upstream_repo = get_vcs_client(vcs_type, tmp_dir)
-        if not upstream_repo.checkout(uri, tag, shallow=True):
-            error("Failed to clone repository at '{0}'".format(uri) +
-                (" to reference '{0}'.".format(tag) if tag else '.'),
-                exit=True)
+        if uri_is_path:
+            upstream_repo = get_vcs_client(vcs_type, uri)
+        else:
+            upstream_repo = get_vcs_client(vcs_type, tmp_dir)
+            if not upstream_repo.checkout(uri, tag, shallow=True):
+                error("Failed to clone repository at '{0}'".format(uri) +
+                    (" to reference '{0}'.".format(tag) if tag else '.'),
+                    exit=True)
         tarball_prefix = '{0}-{1}'.format(name, tag) if tag else name
         tarball_path = os.path.join(output_dir, tarball_prefix)
         full_tarball_path = tarball_path + '.tar.gz'
@@ -108,4 +119,4 @@ def main(sysargs=None):
     handle_global_arguments(args)
 
     export_upstream(args.uri, args.tag, args.type, args.output_dir,
-        args.display_uri, args.repository_name)
+        args.display_uri, args.name)

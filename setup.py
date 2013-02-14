@@ -53,6 +53,7 @@ generation of platform specific source packages, like debian's src-debs.""",
         ],
         'bloom.generators': [
             'release = bloom.generators.release:ReleaseGenerator',
+            'rosrelease = bloom.generators.rosrelease:RosReleaseGenerator',
             'debian = bloom.generators.debian:DebianGenerator',
             'rosdebian = bloom.generators.rosdebian:RosDebianGenerator'
         ]
