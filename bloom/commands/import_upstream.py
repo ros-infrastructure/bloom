@@ -180,7 +180,7 @@ def import_upstream(tarball_path, version, name, replace):
         if not replace:
             error("Tag '{0}' already exists, use --replace to override it."
                 .format(upstream_tag), exit=True)
-        info("Removing tag: '{0}'".format(upstream_tag))
+        warning("Removing tag: '{0}'".format(upstream_tag))
         delete_tag(upstream_tag)
         delete_remote_tag(upstream_tag)
     name_tag = '{0}/{1}'.format(name, version)
@@ -188,7 +188,7 @@ def import_upstream(tarball_path, version, name, replace):
         if not replace:
             error("Tag '{0}' already exists, use --replace to override it."
                 .format(name_tag), exit=True)
-        info("Removing tag: '{0}'".format(name_tag))
+        warning("Removing tag: '{0}'".format(name_tag))
         delete_tag(name_tag)
         delete_remote_tag(name_tag)
 
