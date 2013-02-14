@@ -158,7 +158,9 @@ def new(args):
         ret = raw_input(str(track[key]))
         if ret:
             track[key].default = ret  # This type checks against self.values
-        track[key] = str(track[key].default)
+            if ret in [':{none}', 'None']:
+                track[key].default = None
+        track[key] = track[key].default
     tracks_dict['tracks'][args.track] = track
     write_tracks_dict_raw(tracks_dict)
     info("Created '{0}' track.".format(args.track))
@@ -195,6 +197,8 @@ def edit(args):
         ret = raw_input(str(pe))
         if ret:
             pe.default = ret  # This type checks against self.values
+            if ret in [':{none}', 'None']:
+                pe.default = None
         tracks_dict['tracks'][args.track][key] = pe.default
     write_tracks_dict_raw(tracks_dict)
 
