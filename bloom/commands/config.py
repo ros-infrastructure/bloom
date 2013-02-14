@@ -34,13 +34,14 @@ from __future__ import print_function
 
 import argparse
 import copy
-import json
+import yaml
 import subprocess
 import sys
 
 from bloom.config import config_template
 from bloom.config import DEFAULT_TEMPLATE
 from bloom.config import get_tracks_dict_raw
+from bloom.config import PromptEntry
 from bloom.config import write_tracks_dict_raw
 
 from bloom.git import branch_exists
@@ -53,6 +54,7 @@ from bloom.git import inbranch
 from bloom.logging import debug
 from bloom.logging import error
 from bloom.logging import info
+from bloom.logging import warning
 
 from bloom.util import add_global_arguments
 from bloom.util import execute_command
@@ -61,6 +63,7 @@ from bloom.util import handle_global_arguments
 from bloom.util import maybe_continue
 
 template_entry_order = [
+    'name',
     'vcs_uri',
     'vcs_type',
     'version',
@@ -105,7 +108,7 @@ def convert_old_bloom_conf():
         debug(f.read())
     debug('To this track:')
     debug(str({track: track_dict}))
-    tracks_dict[track] = track_dict
+    tracks_dict['tracks'][track] = track_dict
     write_tracks_dict_raw(tracks_dict)
     execute_command('git rm bloom.conf', shell=True)
     execute_command('git commit -m "Removed bloom.conf"', shell=True)
@@ -119,8 +122,9 @@ def show_current():
         convert_old_bloom_conf()
         bloom_ls = ls_tree('bloom')
         bloom_files = [f for f, t in bloom_ls.iteritems() if t == 'file']
-    if 'tracks.json' in bloom_files:
-        info(json.dumps(get_tracks_dict_raw(), indent=2))
+    if 'tracks.yaml' in bloom_files:
+        info(yaml.dump(get_tracks_dict_raw(), indent=2,
+            default_flow_style=False))
 
 
 def check_git_init():
@@ -164,13 +168,31 @@ def show(args):
     tracks_dict = get_tracks_dict_raw()
     if args.track not in tracks_dict['tracks']:
         error("Track '{0}' does not exist.".format(args.track), exit=True)
-    info(json.dumps({args.track: tracks_dict['tracks'][args.track]}, indent=2))
+    info(yaml.dump({args.track: tracks_dict['tracks'][args.track]}, indent=2,
+        default_flow_style=False))
 
 
 def edit(args):
     tracks_dict = get_tracks_dict_raw()
     if args.track not in tracks_dict['tracks']:
         error("Track '{0}' does not exist.".format(args.track), exit=True)
+    track_dict = tracks_dict['tracks'][args.track]
+    # Ensure the track is complete
+    for key, value in DEFAULT_TEMPLATE.iteritems():
+        if key in ['actions']:
+            if track_dict[key] != DEFAULT_TEMPLATE[key]:
+                warning("Your track's '{0}' configuration is not the same as the default, should it be updated to the default setting?"
+                    .format(key))
+                if maybe_continue('n'):
+                    track_dict[key] = DEFAULT_TEMPLATE[key]
+            else:
+                print(key)
+                print(track_dict[key])
+                print(DEFAULT_TEMPLATE[key])
+        elif key not in track_dict:
+            value = value.default if isinstance(value, PromptEntry) else value
+            track_dict[key] = value
+    # Prompt for updates
     for key in template_entry_order:
         pe = DEFAULT_TEMPLATE[key]
         pe.default = tracks_dict['tracks'][args.track][key]

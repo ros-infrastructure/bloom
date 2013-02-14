@@ -32,7 +32,8 @@
 
 from __future__ import print_function
 
-import json
+import yaml
+import string
 
 from bloom.git import inbranch
 from bloom.git import branch_exists
@@ -45,45 +46,11 @@ from bloom.logging import info
 
 from bloom.util import execute_command
 
-AUTO = ':{auto}'
-ASK = ':{ask}'
-
-
-class PromptEntry(object):
-    def __init__(self, name, default=None, values=None, prompt='', spec=None):
-        object.__setattr__(self, 'values', values)
-        self.name = name
-        self.default = default
-        self.prompt = prompt
-        self.spec = spec
-
-    def __setattr__(self, key, value):
-        if key == 'default' and self.values:
-            if value not in self.values:
-                error(
-                    "Invalid input '{0}' for '{1}', acceptable values: {2}."
-                    .format(value, self.name, self.values),
-                    exit=True
-                )
-        object.__setattr__(self, key, value)
-
-    def __str__(self):
-        msg = '@_' + self.name + ':@|'
-        if self.spec is not None:
-            for key, val in self.spec.iteritems():
-                msg += '\n  ' + key
-                for line in val.splitlines():
-                    msg += '\n    ' + line
-        else:
-            msg += '\n  ' + self.prompt
-        msg += '\n '
-        if self.default is None:
-            msg += " @![@{yf}None@|@!]@|: "
-        else:
-            msg += " @!['@{{yf}}{0}@|@!']@|: ".format(self.default)
-        return fmt(msg)
-
 config_spec = {
+    'name': {
+        '<name>': 'Name of the repository (used in the archive name)',
+        'upstream': 'Default value, leave this as upstream if you are unsure'
+    },
     'vcs_uri': {
         '<uri>': '''\
 Any valid URI. This variable can be templated, for example an svn url
@@ -147,12 +114,49 @@ version being released.'''
     }
 }
 
+
+class PromptEntry(object):
+    def __init__(self, name, default=None, values=None, prompt='', spec=None):
+        object.__setattr__(self, 'values', values)
+        self.name = name
+        self.default = default
+        self.prompt = prompt
+        self.spec = spec
+
+    def __setattr__(self, key, value):
+        if key == 'default' and self.values:
+            if value not in self.values:
+                error(
+                    "Invalid input '{0}' for '{1}', acceptable values: {2}."
+                    .format(value, self.name, self.values),
+                    exit=True
+                )
+        object.__setattr__(self, key, value)
+
+    def __str__(self):
+        msg = '@_' + self.name + ':@|'
+        if self.spec is not None:
+            for key, val in self.spec.iteritems():
+                msg += '\n  ' + key
+                for line in val.splitlines():
+                    msg += '\n    ' + line
+        else:
+            msg += '\n  ' + self.prompt
+        msg += '\n '
+        if self.default is None:
+            msg += " @![@{yf}None@|@!]@|: "
+        else:
+            msg += " @!['@{{yf}}{0}@|@!']@|: ".format(self.default)
+        return fmt(msg)
+
 DEFAULT_TEMPLATE = {
+    'name': PromptEntry('Repository Name',
+        spec=config_spec['name'], default='upstream'),
     'vcs_uri': PromptEntry('Upstream Repository URI',
         spec=config_spec['vcs_uri']),
     'vcs_type': PromptEntry('Upstream VCS Type', default='git',
         spec=config_spec['vcs_type'], values=['git', 'hg', 'svn', 'tar']),
-    'version': PromptEntry('Version', default=AUTO,
+    'version': PromptEntry('Version', default=':{auto}',
         spec=config_spec['version']),
     'release_tag': PromptEntry('Release Tag', default=':{version}',
         spec=config_spec['release_tag']),
@@ -162,17 +166,21 @@ DEFAULT_TEMPLATE = {
         spec=config_spec['patches']),
     'ros_distro': PromptEntry('ROS Distro', default='groovy',
         spec=config_spec['ros_distro']),
-    'release_inc': 0,
+    'release_inc': -1,
     'actions': [
-        'git-bloom-import-upstream', ['--replace'],
-        'git-bloom-generate', ['-y', 'rosrelease', '--source', 'upstream'],
-        'git-bloom-generate', ['-y', 'rosdebian', '--prefix', 'release',
-            ':{ros_distro}', '-i', ':{release_inc}']
+        'bloom-export-upstream :{vcs_local_uri} :{vcs_type}'
+        ' --tag :{release_tag} --display-uri :{vcs_uri}'
+        ' --name :{name} --output-dir :{archive_dir_path}',
+        'git-bloom-import-upstream :{archive_path}'
+        ' --release-version :{version} --replace',
+        'git-bloom-generate -y rosrelease :{ros_distro} --source upstream',
+        'git-bloom-generate -y rosdebian --prefix release'
+        ' :{ros_distro} -i :{release_inc}'
     ]
 }
 
 CUSTOM_TEMPLATE = {
-    'reference': ASK,
+    'reference': ':{ask}',
     'patches': ':name'
 }
 
@@ -182,12 +190,28 @@ config_template = {
 }
 
 
+def verify_track(track_name, track):
+    for entry in DEFAULT_TEMPLATE:
+        if entry not in track:
+            error("Track '{0}' is missing configuration '{1}', it may be out of date, please run 'git-bloom-config edit {0}'."
+                .format(track_name, entry), exit=True)
+
+
+class ConfigTemplate(string.Template):
+    delimiter = ':'
+
+
+def template_str(line, settings):
+    t = ConfigTemplate(line)
+    return t.substitute(settings)
+
+
 def write_tracks_dict_raw(tracks_dict, cmt_msg=None, directory=None):
-    cmt_msg = cmt_msg if cmt_msg is not None else 'Modified tracks.json'
+    cmt_msg = cmt_msg if cmt_msg is not None else 'Modified tracks.yaml'
     with inbranch('bloom'):
-        with open('tracks.json', 'w') as f:
-            json.dump(tracks_dict, f, indent=2)
-        execute_command('git add tracks.json', cwd=directory)
+        with open('tracks.yaml', 'w') as f:
+            f.write(yaml.dump(tracks_dict, indent=2, default_flow_style=False))
+        execute_command('git add tracks.yaml', cwd=directory)
         execute_command('git commit --allow-empty -m "{0}"'.format(cmt_msg),
             cwd=directory)
 
@@ -196,14 +220,14 @@ def get_tracks_dict_raw(directory=None):
     if not branch_exists('bloom'):
         info("Creating bloom branch.")
         create_branch('bloom', orphaned=True, directory=directory)
-    tracks_json = show('bloom', 'tracks.json', directory=directory)
-    if not tracks_json:
+    tracks_yaml = show('bloom', 'tracks.yaml', directory=directory)
+    if not tracks_yaml:
         write_tracks_dict_raw(
-            {'tracks': {}}, 'Initial tracks.json', directory=directory
+            {'tracks': {}}, 'Initial tracks.yaml', directory=directory
         )
-        tracks_json = show('bloom', 'tracks.json', directory=directory)
+        tracks_yaml = show('bloom', 'tracks.yaml', directory=directory)
     try:
-        return json.loads(tracks_json)
+        return yaml.load(tracks_yaml)
     except:
-        # TODO handle json errors
+        # TODO handle yaml errors
         raise
