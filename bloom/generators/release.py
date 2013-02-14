@@ -32,6 +32,8 @@ each package in the upstream repository, so the source branch should be set to
             help="name of package being released (use if non catkin project)")
         add('-p', '--prefix', default='release', dest='prefix',
             help="prefix for target branch name(s)")
+        add('--release-increment', '-i', default=0,
+            help="release increment number")
         return BloomGenerator.prepare_arguments(self, parser)
 
     def handle_arguments(self, args):
@@ -39,6 +41,7 @@ each package in the upstream repository, so the source branch should be set to
         self.prefix = args.prefix
         self.src = args.src if args.src is not None else get_current_branch()
         self.name = args.name
+        self.release_inc = args.release_increment
 
     def summarize(self):
         self.branch_list = self.detect_branches()
@@ -92,7 +95,8 @@ Please checkout the release branch and then create a tag manually with:"""
         with inbranch(destination):
             name, version, packages = get_package_data(destination)
         # Execute git tag
-        execute_command('git tag -f ' + destination + '/' + version)
+        execute_command('git tag -f ' + destination + '/' + version +
+            '-' + self.release_inc)
 
     def detect_branches(self):
         self.packages = None
