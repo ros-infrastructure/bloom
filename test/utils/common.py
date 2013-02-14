@@ -120,7 +120,10 @@ def user_bloom(cmd, args=None, directory=None, auto_assert=True,
     with change_directory(directory if directory is not None else os.getcwd()):
         with redirected_stdio() as (out, err):
             func = load_entry_point('bloom==' + ver, 'console_scripts', cmd)
-            ret = func(args)
+            try:
+                ret = func(args) or 0
+            except SystemExit as e:
+                ret = e.code
     if not silent:
         print("Command '{0}' returned '{1}':".format(cmd, ret))
         print(out.getvalue(), file=sys.stdout, end='')

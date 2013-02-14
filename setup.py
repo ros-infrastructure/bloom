@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='bloom',
-    version='0.2.16',
+    version='0.3.0',
     packages=find_packages(exclude=['test']),
     package_data={
         'bloom.generators.debian':
@@ -47,10 +47,13 @@ generation of platform specific source packages, like debian's src-debs.""",
             'git-bloom-branch = bloom.commands.branch:main',
             'git-bloom-patch = bloom.commands.patch.patch_main:main',
             'git-bloom-generate = bloom.commands.generate:main',
-            'git-bloom-release = bloom.commands.release:main'
+            'git-bloom-release = bloom.commands.release:main',
+            'bloom-export-upstream = bloom.commands.export_upstream:main',
+            'bloom-update = bloom.commands.update:main'
         ],
         'bloom.generators': [
             'release = bloom.generators.release:ReleaseGenerator',
+            'rosrelease = bloom.generators.rosrelease:RosReleaseGenerator',
             'debian = bloom.generators.debian:DebianGenerator',
             'rosdebian = bloom.generators.rosdebian:RosDebianGenerator'
         ]

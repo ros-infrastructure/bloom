@@ -138,8 +138,10 @@ class DebianGenerator(BloomGenerator):
         self.prefix = args.prefix
         self.branches = match_branches_with_prefix(self.prefix, get_branches)
         if len(self.branches) == 0:
-            error("No packages found, check your --prefix or --src arguments.")
-            return code.NO_PACKAGE_XML_FOUND
+            error(
+                "No packages found, check your --prefix or --src arguments.",
+                exit=True
+            )
         self.packages = {}
         self.tag_names = {}
         self.names = []

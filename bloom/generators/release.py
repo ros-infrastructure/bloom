@@ -8,7 +8,6 @@ from bloom.git import get_current_branch
 from bloom.logging import info
 from bloom.logging import warning
 
-from bloom.util import code
 from bloom.util import execute_command
 from bloom.util import get_package_data
 
@@ -33,7 +32,7 @@ each package in the upstream repository, so the source branch should be set to
             help="name of package being released (use if non catkin project)")
         add('-p', '--prefix', default='release', dest='prefix',
             help="prefix for target branch name(s)")
-        BloomGenerator.prepare_arguments(self, parser)
+        return BloomGenerator.prepare_arguments(self, parser)
 
     def handle_arguments(self, args):
         self.interactive = args.interactive
@@ -56,14 +55,14 @@ each package in the upstream repository, so the source branch should be set to
         self.branch_args = [['/'.join([p, b]), s, i] for b in self.branch_list]
         return self.branch_args
 
-    def pre_rebase(self, destination):
+    def pre_rebase(self, destination, msg=None):
         name = destination.split('/')[-1]
-        info("Releasing package '" + name + "' to: '" + destination + "'")
+        msg = msg if msg is not None else (
+            "Releasing package '" + name + "' to: '" + destination + "'"
+        )
+        info(msg)
         ret = trim(undo=True)
-        if ret == code.NOTHING_TO_DO:
-            return 0
-        else:
-            return ret
+        return 0 if ret < 0 else ret  # Ret < 0 indicates nothing was done
 
     def post_rebase(self, destination):
         # If self.packages is not a dict then this is a stack
@@ -75,26 +74,25 @@ each package in the upstream repository, so the source branch should be set to
         trim_d = [k for k, v in self.packages.iteritems() if v.name == name][0]
         # Execute trim
         if trim_d in ['', '.']:
-            return 0
+            return
         return trim(trim_d)
 
     def post_patch(self, destination):
         # Figure out the version of the given package
         if self.name is not None:
-            warning("Cannot automatically tag the release because this is "
-                    "not a catkin project. Please checkout the release branch and "
-                    "then create a tag manually with:")
+            warning("""\
+Cannot automatically tag the release because this is not a catkin project."""
+            )
+            warning("""\
+Please checkout the release branch and then create a tag manually with:"""
+            )
             warning("  git checkout release/" + str(self.name))
             warning("  git tag -f release/" + str(self.name) + "/<version>")
-            return 0
+            return
         with inbranch(destination):
-            package_data = get_package_data(destination)
-            if type(package_data) not in [list, tuple]:
-                return package_data
-        name, version, packages = package_data
+            name, version, packages = get_package_data(destination)
         # Execute git tag
         execute_command('git tag -f ' + destination + '/' + version)
-        return 0
 
     def detect_branches(self):
         self.packages = None
@@ -102,9 +100,6 @@ each package in the upstream repository, so the source branch should be set to
             if self.name is not None:
                 self.packages = [self.name]
                 return [self.name]
-            package_data = get_package_data(self.src)
-            if type(package_data) not in [list, tuple]:
-                return package_data
-            name, version, packages = package_data
+            name, version, packages = get_package_data(self.src)
             self.packages = packages
             return name if type(name) is list else [name]

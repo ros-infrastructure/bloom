@@ -92,13 +92,17 @@ def non_git_rebase(upstream_branch, directory=None):
         execute_command('git clean -dXf', cwd=directory)
         # Only if we have local changes commit
         # (not true if the upstream didn't change any files)
-        if has_changes(directory):
-            cmd = 'git commit -m "Rebase from \'' + upstream_branch + "'"
-            data = get_package_data(upstream_branch, quiet=True)
-            if type(data) in [list, tuple]:
-                cmd += " @ version '{0}'".format(data[1])
-            cmd += '"'
-            execute_command(cmd, cwd=directory)
+        cmd = 'git commit '
+        if not has_changes(directory):
+            cmd += '--allow-empty '
+        cmd += '-m "Rebase from \'' + upstream_branch + "'"
+        data = get_package_data(upstream_branch, quiet=True)
+        if type(data) in [list, tuple]:
+            cmd += " @ version '{0}'".format(data[1])
+        if not has_changes(directory):
+            cmd += " (no changes)"
+        cmd += '"'
+        execute_command(cmd, cwd=directory)
     finally:
         # Clean up
         if os.path.exists(tmp_dir):
@@ -149,9 +153,7 @@ def git_rebase(upstream_branch, directory=None):
 @log_prefix('[git-bloom-patch rebase]: ')
 def rebase_patches(without_git_rebase=True, directory=None):
     ### Ensure a clean/valid working environment
-    ret = ensure_clean_working_env(git_status=True, directory=directory)
-    if ret != 0:
-        return ret
+    ensure_clean_working_env(git_status=True, directory=directory)
     ### Make sure we need to actually call this
     # Get the current branch
     current_branch = get_current_branch(directory)
@@ -163,13 +165,14 @@ def rebase_patches(without_git_rebase=True, directory=None):
     upstream_commit_hash = get_commit_hash(config['parent'], directory)
     # If the current upstream commit hash is the same as the stored one, noop
     if upstream_commit_hash == config['previous']:
+        debug(str(upstream_commit_hash) + ' ' + str(config['previous']))
         debug("Nothing to do: The source branch (" + \
                 config['parent'] + ")'s commit hash has not changed.")
         debug("    Did you forget to update the parent branch first?")
         debug("    Updating the parent branch can be done by calling "
               "'git-bloom-patch rebase' on it, or 'git-bloom-import-upsteam'"
               " if the parent branch is the upstream branch.")
-        return code.NOTHING_TO_DO
+        return -1  # Indicates that rebase did nothing
     else:
         debug("rebase_patches: " + upstream_commit_hash + " == " + \
               config['previous'] + ": " + \
@@ -195,7 +198,6 @@ def rebase_patches(without_git_rebase=True, directory=None):
     config['trimbase'] = ''
     # Write the new configs
     set_patch_config(patches_branch, config, directory)
-    return 0
 
 
 def get_parser():

@@ -19,7 +19,6 @@ from bloom.logging import error
 from bloom.logging import warning
 
 from bloom.util import add_global_arguments
-from bloom.util import code
 from bloom.util import execute_command
 from bloom.util import handle_global_arguments
 
@@ -144,8 +143,8 @@ def trim(sub_dir=None, force=False, undo=False, directory=None):
     current_branch = get_current_branch(directory)
     # Ensure the current branch is valid
     if current_branch is None:
-        error("Could not determine current branch, are you in a git repo?")
-        return code.NOT_ON_A_GIT_BRANCH
+        error("Could not determine current branch, are you in a git repo?",
+            exit=True)
     # Construct the patches branch
     patches_branch = 'patches/' + current_branch
     try:
@@ -155,32 +154,29 @@ def trim(sub_dir=None, force=False, undo=False, directory=None):
                 track_branches(patches_branch, directory)
         else:
             error("No patches branch (" + patches_branch + ") found, cannot "
-                  "perform trim.")
-            return code.BRANCH_DOES_NOT_EXIST
+                  "perform trim.", exit=True)
         # Get the parent branch from the patches branch
         config = get_patch_config(patches_branch, directory=directory)
         if config is None:
-            error("Could not retrieve patches info.")
-            return code.COULD_NOT_GET_PATCH_INFO
+            error("Could not retrieve patches info.", exit=True)
         # If sub_dir is set, try to set it
         new_config = _set_trim_sub_dir(sub_dir, force, config, directory)
         if new_config is None:
-            return code.COULD_NOT_TRIM
+            sys.exit('Could not perform trim')
         # Perform trime or undo
         if undo:
             new_config = _undo(new_config, directory)
             if new_config is None:
-                return code.NOTHING_TO_DO
+                return -1  # Indicates that nothing was done
         else:
             new_config = _trim(new_config, force, directory)
         if new_config is None:
-            return code.COULD_NOT_TRIM
+            sys.exit('Could not perform trim')
         # Commit the new config
         set_patch_config(patches_branch, new_config, directory)
     finally:
         if current_branch:
             checkout(current_branch, directory=directory)
-    return code.OK
 
 
 def get_parser():

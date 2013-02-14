@@ -4,6 +4,7 @@ import sys
 import os
 import tempfile
 import shutil
+import subprocess
 from argparse import ArgumentParser
 
 from bloom.git import branch_exists
@@ -19,7 +20,6 @@ from bloom.logging import log_prefix
 from bloom.logging import warning
 
 from bloom.util import add_global_arguments
-from bloom.util import code
 from bloom.util import execute_command
 from bloom.util import handle_global_arguments
 
@@ -39,8 +39,7 @@ def import_patches(directory=None):
             track_branches(patches_branch, directory)
     else:
         error("The patches branch ({0}) does not ".format(patches_branch) + \
-              "exist, did you use git-bloom-branch?")
-        return code.BRANCH_DOES_NOT_EXIST
+              "exist, did you use git-bloom-branch?", exit=True)
     # Create a swap space
     tmp_dir = tempfile.mkdtemp()
     try:
@@ -73,14 +72,14 @@ def import_patches(directory=None):
                 "Make sure you export any commits you want to save first:"
             )
             warning("    'git-bloom-patch export'")
-            return code.PATCHES_NOT_EXPORTED
+            error("Patches not exported", exit=True)
         # Checkout to the patches branch
         checkout(patches_branch, directory=directory)
         # Copy the patches to a temp location
         patches = list_patches(directory)
         if len(patches) == 0:
             debug("No patches in the patches branch, nothing to do")
-            return code.NOTHING_TO_DO
+            return -1  # Indicates that nothing was done
         tmp_dir_patches = []
         for patch in patches:
             tmp_dir_patches.append(os.path.join(tmp_dir, patch))
@@ -89,8 +88,29 @@ def import_patches(directory=None):
             shutil.copy(patch, tmp_dir)
         # Now checkout back to the original branch and import them
         checkout(current_branch, directory=directory)
-        cmd = 'git am {0}*.patch'.format(tmp_dir + os.sep)
-        execute_command(cmd, cwd=directory)
+        try:
+            cmd = 'git am {0}*.patch'.format(tmp_dir + os.sep)
+            execute_command(cmd, cwd=directory)
+        except subprocess.CalledProcessError as e:
+            warning("Failed to apply one or more patches for the "
+                    "'{0}' branch.".format(str(e)))
+            print()
+            print()
+            print(">>> Resolve any conflicts and when you have resolved this "
+                  "problem run 'git am --resolved' and then exit the "
+                  "shell using 'exit 0'. <<<")
+            print("    To abort use 'exit 1'")
+            if 'bash' in os.environ['SHELL']:
+                ret = subprocess.call([
+                    "/bin/bash", "-l", "-c",
+                    """/bin/bash --rcfile <(echo "if [ -f /etc/bashrc ]; then source /etc/bashrc; fi; if [ -f ~/.bashrc ]; then source ~/.bashrc; fi;PS1='(bloom)$PS1'") -i"""
+                ])
+            else:
+                ret = subprocess.call("$SHELL", shell=True)
+            if ret != 0:
+                error("User failed to resolve patch conflicts, exiting.")
+                sys.exit("'git-bloom-patch import' aborted.")
+            info("User reports that conflicts have been resolved, continuing.")
         # Notify the user
         info("Applied {0} patches".format(len(patches)))
     finally:
@@ -98,7 +118,6 @@ def import_patches(directory=None):
             checkout(current_branch, directory=directory)
         if os.path.exists(tmp_dir):
             shutil.rmtree(tmp_dir)
-    return 0
 
 
 def get_parser():

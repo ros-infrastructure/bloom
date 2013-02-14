@@ -1,6 +1,6 @@
 # Software License Agreement (BSD License)
 #
-# Copyright (c) 2012, Willow Garage, Inc.
+# Copyright (c) 2013, Willow Garage, Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -38,11 +38,15 @@ from __future__ import print_function
 
 import argparse
 import os
+import shutil
 import sys
+import tempfile
 
 from subprocess import CalledProcessError
 from subprocess import PIPE
 from subprocess import Popen
+
+from StringIO import StringIO
 
 from bloom.logging import ansi
 from bloom.logging import debug
@@ -104,6 +108,36 @@ class change_directory(object):
             os.chdir(self.original_cwd)
 
 
+class redirected_stdio(object):
+    def __enter__(self):
+        self.original_stdout = sys.stdout
+        self.original_stderr = sys.stderr
+        sys.stdout = out = StringIO()
+        sys.stderr = err = StringIO()
+        return out, err
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        sys.stdout = self.original_stdout
+        sys.stderr = self.original_stderr
+
+
+class temporary_directory(object):
+    def __init__(self, prefix=''):
+        self.prefix = prefix
+
+    def __enter__(self):
+        self.original_cwd = os.getcwd()
+        self.temp_path = tempfile.mkdtemp(prefix=self.prefix)
+        os.chdir(self.temp_path)
+        return self.temp_path
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.temp_path and os.path.exists(self.temp_path):
+            shutil.rmtree(self.temp_path)
+        if self.original_cwd and os.path.exists(self.original_cwd):
+            os.chdir(self.original_cwd)
+
+
 def get_package_data(branch_name, directory=None, quiet=False):
     """
     Gets package data about the package(s) in the current branch.
@@ -134,8 +168,7 @@ def get_package_data(branch_name, directory=None, quiet=False):
                 file=sys.stderr)
     if not has_rospkg:
         error("no package.xml(s) found, and no name specified with "
-              "'--package-name', aborting.", use_prefix=False)
-        return code.NO_PACKAGE_XML_FOUND
+              "'--package-name', aborting.", use_prefix=False, exit=True)
     stack_path = os.path.join(repo_dir, 'stack.xml')
     if os.path.exists(stack_path):
         debug("found stack.xml.", use_prefix=False)
@@ -143,10 +176,9 @@ def get_package_data(branch_name, directory=None, quiet=False):
         return stack.name, stack.version, stack
     # Otherwise we have a problem
     debug("failed.", use_prefix=False)
-    if not quiet:
-        error("no package.xml(s) or stack.xml found, and not name "
-              "specified with '--package-name', aborting.", use_prefix=False)
-    return code.NO_PACKAGE_XML_FOUND
+    error("no package.xml(s) or stack.xml found, and not name "
+          "specified with '--package-name', aborting.",
+          use_prefix=False, exit=True)
 
 
 def add_global_arguments(parser):
@@ -270,8 +302,9 @@ def extract_text(element):
 def segment_version(full_version):
     version_list = full_version.split('.')
     if len(version_list) != 3:
-        error('Invalid version element in the stack.xml, expected: ' \
-              '<major>.<minor>.<patch>')
+        warning('Invalid version element in the stack.xml, expected: ' \
+                '<major>.<minor>.<patch>')
+    if len(version_list) < 3:
         sys.exit(code.INVALID_VERSION)
     return version_list
 

@@ -1,6 +1,6 @@
 # Software License Agreement (BSD License)
 #
-# Copyright (c) 2012, Willow Garage, Inc.
+# Copyright (c) 2013, Willow Garage, Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -33,6 +33,7 @@
 from __future__ import print_function
 
 import argparse
+import sys
 import traceback
 
 from subprocess import CalledProcessError
@@ -99,7 +100,7 @@ def try_execute(msg, err_msg, func, *args, **kwargs):
         retcode = retcode if retcode is not None else 0
     except CalledProcessError as err:
         print_exc(traceback.format_exc())
-        error("Error calling {0}: ".format(msg) + str(err))
+        error("Error calling {0}: {1}".format(msg, str(err)))
         retcode = err.returncode
     ret_msg = msg + " returned exit code ({0})".format(str(retcode))
     if retcode > 0:
@@ -119,8 +120,7 @@ def run_generator(generator, arguments):
                     gen.summarize)
         if arguments.interactive:
             if not maybe_continue('y'):
-                error("Answered no to continue, aborting.")
-                return code.ANSWERED_NO_TO_CONTINUE
+                error("Answered no to continue, aborting.", exit=True)
         for branch_args in generator.get_branching_arguments():
             parsed_branch_args = parse_branch_args(branch_args,
                                                    arguments.interactive)
@@ -160,20 +160,19 @@ def run_generator(generator, arguments):
                         gen.post_rebase, destination)
 
             ### Run pre - import patches - post
+            # Pre patch
+            try_execute('generator pre_patch', msg,
+                        gen.pre_patch, destination)
             if ret == 0:
-                # Pre patch
-                try_execute('generator pre_patch', msg,
-                            gen.pre_patch, destination)
                 # Import patches
                 try_execute('git-bloom-patch import', msg, import_patches)
-                # Post branch
-                try_execute('generator post_patch', msg,
-                            gen.post_patch, destination)
-            elif ret == code.NOTHING_TO_DO:
-                debug("Skipping patching because rebase did run.")
+            elif ret < 0:
+                debug("Skipping patching because rebase did not run.")
+            # Post branch
+            try_execute('generator post_patch', msg,
+                        gen.post_patch, destination)
     except CommandFailed as err:
-        return err.returncode or 1
-    return 0
+        sys.exit(err.returncode or 1)
 
 
 def create_subparsers(parent_parser, generators):
@@ -234,12 +233,6 @@ def main(sysargs=None):
     # The clone protects the release repo state from mid change errors
     with log_prefix('[git-bloom-generate {0}]: '.format(generator.title)):
         git_clone = GitClone()
-        try:
-            with git_clone:
-                ret = run_generator(generator, args)
-            if ret > 0:
-                return ret
-            git_clone.commit()
-            return ret
-        except GeneratorError as err:
-            return err.retcode
+        with git_clone:
+            run_generator(generator, args)
+        git_clone.commit()
