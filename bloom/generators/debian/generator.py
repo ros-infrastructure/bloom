@@ -199,26 +199,27 @@ class DebianGenerator(BloomGenerator):
             # Then this is a debian branch
             # Place the raw template files
             self.place_tempalte_files()
-            return
-        # Determine the current package being generated
-        name = destination.split('/')[-1]
-        distro = destination.split('/')[-2]
-        # Retrieve the stackage
-        stackage, kind = self.packages[name]
-        ### Start debian generation
-        # Get time of day
-        from dateutil import tz
-        stamp = datetime.datetime.now(tz.tzlocal())
-        # Convert stackage to debian data
-        data = self.convert_stackage_to_debian_data(stackage, kind)
-        # Get apt_installer from rosdep
-        from rosdep2.catkin_support import get_installer
-        self.apt_installer = get_installer(APT_INSTALLER)
-        # Create debians for each distro
-        with inbranch(destination):
-            self.generate_debian(data, stamp, distro)
-            # Create the tag name for later
-            self.tag_names[destination] = self.generate_tag_name(data)
+        else:
+            # This is a distro specific debian branch
+            # Determine the current package being generated
+            name = destination.split('/')[-1]
+            distro = destination.split('/')[-2]
+            # Retrieve the stackage
+            stackage, kind = self.packages[name]
+            ### Start debian generation
+            # Get time of day
+            from dateutil import tz
+            stamp = datetime.datetime.now(tz.tzlocal())
+            # Convert stackage to debian data
+            data = self.convert_stackage_to_debian_data(stackage, kind)
+            # Get apt_installer from rosdep
+            from rosdep2.catkin_support import get_installer
+            self.apt_installer = get_installer(APT_INSTALLER)
+            # Create debians for each distro
+            with inbranch(destination):
+                self.generate_debian(data, stamp, distro)
+                # Create the tag name for later
+                self.tag_names[destination] = self.generate_tag_name(data)
         # Update the patch configs
         patches_branch = 'patches/' + destination
         config = get_patch_config(patches_branch)
@@ -241,8 +242,7 @@ class DebianGenerator(BloomGenerator):
                     warning("Tag exists: " + tag_name)
                     warning("Do you wish to overwrite it?")
                     if not maybe_continue('y'):
-                        error("Answered no to continue, aborting.")
-                        return code.ANSWERED_NO_TO_CONTINUE
+                        error("Answered no to continue, aborting.", exit=True)
                 else:
                     warning("Overwriting tag: " + tag_name)
             else:
