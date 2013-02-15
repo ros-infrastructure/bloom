@@ -188,8 +188,6 @@ class DebianGenerator(BloomGenerator):
         self.summarize_package(stackage, kind, distro)
 
     def pre_rebase(self, destination):
-        if destination in self.debian_branches:
-            return
         # Get the stored configs is any
         patches_branch = 'patches/' + destination
         config = self.load_original_config(patches_branch)
@@ -198,17 +196,15 @@ class DebianGenerator(BloomGenerator):
 
     def post_rebase(self, destination):
         if destination in self.debian_branches:
+            # Then this is a debian branch
+            # Place the raw template files
+            self.place_tempalte_files()
             return
         # Determine the current package being generated
         name = destination.split('/')[-1]
         distro = destination.split('/')[-2]
         # Retrieve the stackage
         stackage, kind = self.packages[name]
-        # Ask to continue if interactive
-        if self.interactive:
-            if not maybe_continue('y'):
-                error("Answered no to continue, aborting.")
-                return code.ANSWERED_NO_TO_CONTINUE
         ### Start debian generation
         # Get time of day
         from dateutil import tz
@@ -305,7 +301,58 @@ class DebianGenerator(BloomGenerator):
             for key in [d.name for d in build_deps]:
                 info(template.format(key, resolved_deps[key]))
 
-    def generate_debian(self, data, stamp, debian_distro):
+    def place_tempalte_files(self, debian_dir='debian'):
+        # Create/Clean the debian folder
+        if os.path.exists(debian_dir):
+            if self.interactive:
+                warning("Debian directory exists: " + debian_dir)
+                warning("Do you wish to overwrite it?")
+                if not maybe_continue('y'):
+                    error("Answered no to continue, aborting.")
+                    return code.ANSWERED_NO_TO_CONTINUE
+            else:
+                warning("Overwriting Debian directory: " + debian_dir)
+            execute_command('git rm -rf ' + debian_dir)
+            execute_command('git commit -m "Clearing previous debian folder"')
+            if os.path.exists(debian_dir):
+                shutil.rmtree(debian_dir)
+        os.makedirs(debian_dir)
+        # Place template files
+        templates = [
+            'changelog.em',
+            'control.em',
+            'gbp.conf.em',
+            'rules.cmake.em',
+            'rules.metapackage.em'
+        ]
+        for template_file in templates:
+            template_path = os.path.join('templates', template_file)
+            # Get the template contents using pkg_resources
+            group = 'bloom.generators.debian'
+            # info("Looking for template: " + group + ':' + template_path)
+            try:
+                template = pkg_resources.resource_string(group, template_path)
+            except IOError as err:
+                error("Failed to load template "
+                      "'{0}': {1}".format(template_file, str(err)))
+                self.exit(code.DEBIAN_FAILED_TO_LOAD_TEMPLATE)
+            with open(os.path.join(debian_dir, template_file), 'w') as f:
+                f.write(template)
+        # Create the compat file
+        compat_path = os.path.join(debian_dir, 'compat')
+        with open(compat_path, 'w+') as f:
+            print("7", file=f)
+        # Create the source/format file
+        source_dir = os.path.join(debian_dir, 'source')
+        os.makedirs(source_dir)
+        format_path = os.path.join(source_dir, 'format')
+        with open(format_path, 'w+') as f:
+            print("3.0 (quilt)", file=f)
+        # Commit results
+        execute_command('git add ' + debian_dir)
+        execute_command('git commit -m "Placing debian template files"')
+
+    def generate_debian(self, data, stamp, debian_distro, debian_dir='debian'):
         info("Generating debian for {0}...".format(debian_distro))
         # Resolve dependencies
         self.resolved_dependencies = self.resolve_dependencies(self.depends + self.build_depends, debian_distro)
@@ -337,22 +384,6 @@ class DebianGenerator(BloomGenerator):
 
         data['Depends'] = sorted(set(format_depends(self.depends, self.resolved_dependencies)))
         data['BuildDepends'] = sorted(set(format_depends(self.build_depends, self.resolved_dependencies)))
-        # Create/Clean the debian folder
-        debian_dir = 'debian'
-        if os.path.exists(debian_dir):
-            if self.interactive:
-                warning("Debian directory exists: " + debian_dir)
-                warning("Do you wish to overwrite it?")
-                if not maybe_continue('y'):
-                    error("Answered no to continue, aborting.")
-                    return code.ANSWERED_NO_TO_CONTINUE
-            else:
-                warning("Overwriting Debian directory: " + debian_dir)
-            execute_command('git rm -rf ' + debian_dir)
-            execute_command('git commit -m "Clearing previous debian folder"')
-            if os.path.exists(debian_dir):
-                shutil.rmtree(debian_dir)
-        os.makedirs(debian_dir)
         # Generate the control file from the template
         self.create_from_template('control', data, debian_dir)
         # Generate the changelog file
@@ -370,16 +401,6 @@ class DebianGenerator(BloomGenerator):
             return code.DEBIAN_UNRECOGNIZED_BUILD_TYPE
         # Generate the gbp.conf file
         self.create_from_template('gbp.conf', data, debian_dir)
-        # Create the compat file
-        compat_path = os.path.join(debian_dir, 'compat')
-        with open(compat_path, 'w+') as f:
-            print("7", file=f)
-        # Create the source/format file
-        source_dir = os.path.join(debian_dir, 'source')
-        os.makedirs(source_dir)
-        format_path = os.path.join(source_dir, 'format')
-        with open(format_path, 'w+') as f:
-            print("3.0 (quilt)", file=f)
         # Commit results
         execute_command('git add ' + debian_dir)
         execute_command('git commit -m "Generated debian files for ' + \
@@ -394,16 +415,11 @@ class DebianGenerator(BloomGenerator):
         else:
             template_file = template_name
             template_name = template_name[:len(extention)]
-        template_path = os.path.join('templates', template_file)
-        # Get the template contents using pkg_resources
-        group = 'bloom.generators.debian'
-        # info("Looking for template: " + group + ':' + template_path)
-        try:
-            template = pkg_resources.resource_string(group, template_path)
-        except IOError as err:
-            error("Failed to load template "
-                  "'{0}': {1}".format(template_name, str(err)))
-            self.exit(code.DEBIAN_FAILED_TO_LOAD_TEMPLATE)
+        # Open the template
+        with change_directory(directory):
+            with open(template_file, 'r') as f:
+                template = f.read()
+            execute_command('git rm ' + template_file)
         # Expand template
         outfile = outfile if outfile is not None else template_name
         info("Expanding template: '" + template_file + "' to '" + \
