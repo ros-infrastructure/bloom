@@ -15,8 +15,8 @@ from bloom.logging import log_prefix
 
 from bloom.util import execute_command
 
-from bloom.commands.patch.common import get_patch_config
-from bloom.commands.patch.common import list_patches
+from bloom.commands.git.patch.common import get_patch_config
+from bloom.commands.git.patch.common import list_patches
 
 
 @log_prefix('[git-bloom-patch export]: ')

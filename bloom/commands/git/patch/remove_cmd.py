@@ -3,8 +3,8 @@ from __future__ import print_function
 import sys
 import argparse
 
-from bloom.commands.patch.common import get_patch_config
-from bloom.commands.patch.common import set_patch_config
+from bloom.commands.git.patch.common import get_patch_config
+from bloom.commands.git.patch.common import set_patch_config
 
 from bloom.git import branch_exists
 from bloom.git import checkout

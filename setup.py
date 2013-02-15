@@ -42,12 +42,12 @@ generation of platform specific source packages, like debian's src-debs.""",
     test_suite='test',
     entry_points={
         'console_scripts': [
-            'git-bloom-config = bloom.commands.config:main',
-            'git-bloom-import-upstream = bloom.commands.import_upstream:main',
-            'git-bloom-branch = bloom.commands.branch:main',
-            'git-bloom-patch = bloom.commands.patch.patch_main:main',
-            'git-bloom-generate = bloom.commands.generate:main',
-            'git-bloom-release = bloom.commands.release:main',
+            'git-bloom-config = bloom.commands.git.config:main',
+            'git-bloom-import-upstream = bloom.commands.git.import_upstream:main',
+            'git-bloom-branch = bloom.commands.git.branch:main',
+            'git-bloom-patch = bloom.commands.git.patch.patch_main:main',
+            'git-bloom-generate = bloom.commands.git.generate:main',
+            'git-bloom-release = bloom.commands.git.release:main',
             'bloom-export-upstream = bloom.commands.export_upstream:main',
             'bloom-update = bloom.commands.update:main'
         ],

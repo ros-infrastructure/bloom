@@ -1,10 +1,6 @@
 from __future__ import print_function
 
-import sys
-import traceback
 import argparse
-
-from subprocess import CalledProcessError
 
 from bloom.git import branch_exists
 from bloom.git import checkout
@@ -22,13 +18,11 @@ from bloom.logging import error
 from bloom.logging import log_prefix
 from bloom.logging import info
 
-from bloom.commands.patch.common import set_patch_config
+from bloom.commands.git.patch.common import set_patch_config
 
 from bloom.util import add_global_arguments
-from bloom.util import code
 from bloom.util import handle_global_arguments
 from bloom.util import maybe_continue
-from bloom.util import print_exc
 
 
 @log_prefix('[git-bloom-branch]: ')

@@ -17,11 +17,10 @@ from bloom.logging import ansi
 from bloom.logging import debug
 from bloom.logging import log_prefix
 
-from bloom.commands.patch.common import get_patch_config
-from bloom.commands.patch.common import set_patch_config
+from bloom.commands.git.patch.common import get_patch_config
+from bloom.commands.git.patch.common import set_patch_config
 
 from bloom.util import add_global_arguments
-from bloom.util import code
 from bloom.util import execute_command
 from bloom.util import get_package_data
 from bloom.util import handle_global_arguments
@@ -147,7 +146,7 @@ def git_rebase(upstream_branch, directory=None):
     The LICENSE.txt survives because the original trim patches do not contain
     a removal of LICENSE.txt in the diff (the trim patches are explicit)
     """
-    raise NotImplementedError('bloom.commands.patch.rebase_cmd.git_rebase')
+    raise NotImplementedError('bloom.commands.git.patch.rebase_cmd.git_rebase')
 
 
 @log_prefix('[git-bloom-patch rebase]: ')

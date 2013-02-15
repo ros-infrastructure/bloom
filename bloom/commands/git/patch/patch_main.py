@@ -11,11 +11,11 @@ from bloom.logging import error
 
 from bloom.util import print_exc
 
-from bloom.commands.patch import export_cmd
-from bloom.commands.patch import import_cmd
-from bloom.commands.patch import remove_cmd
-from bloom.commands.patch import rebase_cmd
-from bloom.commands.patch import trim_cmd
+from bloom.commands.git.patch import export_cmd
+from bloom.commands.git.patch import import_cmd
+from bloom.commands.git.patch import remove_cmd
+from bloom.commands.git.patch import rebase_cmd
+from bloom.commands.git.patch import trim_cmd
 
 
 def usage(exit=True):

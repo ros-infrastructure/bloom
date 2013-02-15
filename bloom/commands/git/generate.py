@@ -38,7 +38,7 @@ import traceback
 
 from subprocess import CalledProcessError
 
-from bloom.commands.branch import execute_branch
+from bloom.commands.git.branch import execute_branch
 
 from bloom.generators import GeneratorError
 from bloom.generators import list_generators
@@ -52,9 +52,9 @@ from bloom.logging import error
 from bloom.logging import log_prefix
 from bloom.logging import warning
 
-from bloom.commands.patch.export_cmd import export_patches
-from bloom.commands.patch.import_cmd import import_patches
-from bloom.commands.patch.rebase_cmd import rebase_patches
+from bloom.commands.git.patch.export_cmd import export_patches
+from bloom.commands.git.patch.import_cmd import import_patches
+from bloom.commands.git.patch.rebase_cmd import rebase_patches
 
 from bloom.util import add_global_arguments
 from bloom.util import code

@@ -11,7 +11,7 @@ from bloom.logging import warning
 from bloom.util import execute_command
 from bloom.util import get_package_data
 
-from bloom.commands.patch.trim_cmd import trim
+from bloom.commands.git.patch.trim_cmd import trim
 
 
 class ReleaseGenerator(BloomGenerator):

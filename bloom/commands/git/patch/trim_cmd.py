@@ -22,8 +22,8 @@ from bloom.util import add_global_arguments
 from bloom.util import execute_command
 from bloom.util import handle_global_arguments
 
-from bloom.commands.patch.common import get_patch_config
-from bloom.commands.patch.common import set_patch_config
+from bloom.commands.git.patch.common import get_patch_config
+from bloom.commands.git.patch.common import set_patch_config
 
 
 def _set_trim_sub_dir(sub_dir, force, config, directory):

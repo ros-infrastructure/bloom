@@ -26,9 +26,9 @@ from bloom.git import inbranch
 
 from bloom.util import code
 
-from bloom.commands.patch import export_cmd
-from bloom.commands.patch import import_cmd
-from bloom.commands.patch import remove_cmd
+from bloom.commands.git.patch import export_cmd
+from bloom.commands.git.patch import import_cmd
+from bloom.commands.git.patch import remove_cmd
 
 
 def create_upstream_repository(packages, directory=None):

@@ -27,8 +27,8 @@ from bloom.logging import error
 from bloom.logging import info
 from bloom.logging import warning
 
-from bloom.commands.patch.common import get_patch_config
-from bloom.commands.patch.common import set_patch_config
+from bloom.commands.git.patch.common import get_patch_config
+from bloom.commands.git.patch.common import set_patch_config
 
 from bloom.util import change_directory
 from bloom.util import code
