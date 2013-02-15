@@ -44,6 +44,7 @@ import tempfile
 
 from subprocess import CalledProcessError
 from subprocess import PIPE
+from subprocess import STDOUT
 from subprocess import Popen
 
 from StringIO import StringIO
@@ -314,22 +315,23 @@ def execute_command(cmd, shell=True, autofail=True, silent=True,
     """
     Executes a given command using vcstools' run_shell_command function.
     """
-    io_type = None
+    out_io = None
+    err_io = None
     result = 0
     if silent:
-        io_type = PIPE
+        out_io = PIPE
+        err_io = STDOUT
     debug(((cwd) if cwd else os.getcwd()) + ":$ " + str(cmd))
-    p = Popen(cmd, shell=True, cwd=cwd, stdout=io_type, stderr=io_type)
+    p = Popen(cmd, shell=True, cwd=cwd, stdout=out_io, stderr=err_io)
     out, err = p.communicate()
     result = p.returncode
     if result != 0:
         if not silent_error:
             error("'execute_command' failed to call '{0}'".format(cmd) + \
                   " which had a return code ({0}):".format(result))
-            error("    stdout:\n" + ansi('reset') + str(out))
-            error("end stdout")
-            error("    stderr:\n" + ansi('reset') + str(err))
-            error("end stderr")
+            error("```")
+            print(out)
+            error("```")
         if autofail:
             raise CalledProcessError(cmd=cmd, output=out, returncode=result)
     if return_io:
