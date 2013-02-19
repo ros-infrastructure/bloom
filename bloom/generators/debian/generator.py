@@ -192,7 +192,9 @@ class DebianGenerator(BloomGenerator):
         patches_branch = 'patches/' + destination
         config = self.load_original_config(patches_branch)
         if config is not None:
-            set_patch_config(patches_branch, config)
+            curr_config = get_patch_config(patches_branch)
+            if curr_config['parent'] == config['parent']:
+                set_patch_config(patches_branch, config)
 
     def post_rebase(self, destination):
         if destination in self.debian_branches:

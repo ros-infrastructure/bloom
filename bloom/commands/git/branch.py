@@ -15,9 +15,11 @@ from bloom.git import track_branches
 from bloom.logging import ansi
 from bloom.logging import debug
 from bloom.logging import error
-from bloom.logging import log_prefix
 from bloom.logging import info
+from bloom.logging import log_prefix
+from bloom.logging import warning
 
+from bloom.commands.git.patch.common import get_patch_config
 from bloom.commands.git.patch.common import set_patch_config
 
 from bloom.util import add_global_arguments
@@ -116,6 +118,14 @@ def execute_branch(src, dst, interactive, directory=None):
                 'trim': '',
                 'trimbase': ''
             }
+            set_patch_config(dst_patches, config, directory=directory)
+        else:
+            config = get_patch_config(dst_patches, directory=directory)
+            if config['parent'] != src:
+                warning("Updated parent to '{0}' from '{1}'"
+                    .format(src, config['parent']))
+                config['parent'] = src
+                config['base'] = get_commit_hash(dst, directory=directory)
             set_patch_config(dst_patches, config, directory=directory)
         # Command successful, do not switch back to previous branch
         current_branch = None
