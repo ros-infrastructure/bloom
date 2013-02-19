@@ -75,13 +75,13 @@ template_entry_order = [
 
 
 @inbranch('bloom')
-def convert_old_bloom_conf():
+def convert_old_bloom_conf(prefix='convert'):
     tracks_dict = get_tracks_dict_raw()
-    track = 'convert'
+    track = prefix
     track_count = 0
     while track in tracks_dict['tracks']:
         track_count += 1
-        track = 'convert-' + str(track_count)
+        track = prefix + str(track_count)
     track_dict = copy.copy(DEFAULT_TEMPLATE)
     cmd = 'git config -f bloom.conf bloom.upstream'
     upstream_repo = check_output(cmd, shell=True).strip()
@@ -174,12 +174,7 @@ def show(args):
         default_flow_style=False))
 
 
-def edit(args):
-    tracks_dict = get_tracks_dict_raw()
-    if args.track not in tracks_dict['tracks']:
-        error("Track '{0}' does not exist.".format(args.track), exit=True)
-    track_dict = tracks_dict['tracks'][args.track]
-    # Ensure the track is complete
+def update_track(track_dict):
     for key, value in DEFAULT_TEMPLATE.iteritems():
         if key in ['actions']:
             if track_dict[key] != DEFAULT_TEMPLATE[key]:
@@ -190,6 +185,16 @@ def edit(args):
         elif key not in track_dict:
             value = value.default if isinstance(value, PromptEntry) else value
             track_dict[key] = value
+    return track_dict
+
+
+def edit(args):
+    tracks_dict = get_tracks_dict_raw()
+    if args.track not in tracks_dict['tracks']:
+        error("Track '{0}' does not exist.".format(args.track), exit=True)
+    # Ensure the track is complete
+    track_dict = tracks_dict['tracks'][args.track]
+    update_track(track_dict)
     # Prompt for updates
     for key in template_entry_order:
         pe = DEFAULT_TEMPLATE[key]
@@ -200,6 +205,7 @@ def edit(args):
             if ret in [':{none}', 'None']:
                 pe.default = None
         tracks_dict['tracks'][args.track][key] = pe.default
+    tracks_dict['tracks'][args.track] = track_dict
     write_tracks_dict_raw(tracks_dict)
 
 
