@@ -162,7 +162,7 @@ DEFAULT_TEMPLATE = {
         spec=config_spec['release_tag']),
     'devel_branch': PromptEntry('Upstream Devel Branch',
         spec=config_spec['devel_branch']),
-    'patches': PromptEntry('Patched Directory',
+    'patches': PromptEntry('Patches Directory',
         spec=config_spec['patches']),
     'ros_distro': PromptEntry('ROS Distro', default='groovy',
         spec=config_spec['ros_distro']),

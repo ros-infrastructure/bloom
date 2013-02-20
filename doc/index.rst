@@ -4,6 +4,7 @@ Bloom
 .. Links
 
 .. _catkin: https://github.com/ros/catkin
+.. _bloom: http://ros.org/wiki/bloom
 
 What is bloom?
 --------------
@@ -13,9 +14,11 @@ Bloom is a release automation tool, designed to make generating platform specifi
 How does it work?
 -----------------
 
-Bloom works by importing your upstream source tree into a git repository, where it is manipulated and used to generate build artifacts for different platforms like Debian and Fedora.
+Bloom works by importing your upstream source tree into a git repository, where it is manipulated and used to generate build artifacts for different platforms like Debian or Fedora.
 
-After importing your upstream source tree, the source tree is run through a release pipeline of git branches, each of which gives you the opportunity to patch the upstream source tree for specific platforms, and finally produces platform specific release tags using platform specific generators.
+First bloom gathers information about your source repository and creates an archive for the version you want to release. Then the archive is imported into the release repository, and the source tree is run through a release track where it is tagged, can be patched, and has platform specific artifacts generated for it.
+
+The individual stages of these release tracks are tagged with git and those tags are used by build infrastructure and deployment systems.
 
 What can I release with bloom?
 ------------------------------
@@ -35,22 +38,9 @@ On other systems you can install bloom via pypi::
 
     $ sudo pip install -U bloom
 
-Note: pip will not notify you of updates, so check often if you use pip
+Note: pip will not notify you of updates, but bloom will notify you when you are using a version of bloom that is not the latest released.
 
 How do I release something with bloom?
 ---------------------------------------
 
-It depends on your use case:
-
-.. toctree::
-    :maxdepth: 1
-
-    tutorials/bloom_setup
-    tutorials/catkin_release
-    tutorials/non_catkin
-    tutorials/notify_build_farm
-
-.. toctree::
-    :hidden:
-
-    glossary
+Please refer to the documentation and tutorials on the bloom_ ROS wiki page.

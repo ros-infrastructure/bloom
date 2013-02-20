@@ -13,11 +13,11 @@ Build status: |Build Status|
    :target: http://travis-ci.org/ros-infrastructure/bloom
 
 +---------------+---------------------------------------------------+
-| bloom         | http://github.com/ros-infrastructure/bloom        |
+| bloom         | http://ros.org/wiki/bloom                         |
 +---------------+---------------------------------------------------+
 | Issues        | http://github.com/ros-infrastructure/bloom/issues |
 +---------------+---------------------------------------------------+
-| Documentation | http://ros-infrastructure.github.com/bloom/       |
+| Documentation | http://ros-infrastructure.github.com/bloom/doc    |
 +---------------+---------------------------------------------------+
 
 
