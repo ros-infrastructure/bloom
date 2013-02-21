@@ -36,6 +36,6 @@ For each 'command' check for updates...
 
 import sys
 
-if not sys.argv[0].endswith('bloom-update'):
+if not sys.argv[0].endswith('bloom-update') and not sys.argv[0].endswith('nosetests'):
     from bloom.commands.update import start_updater
     start_updater()

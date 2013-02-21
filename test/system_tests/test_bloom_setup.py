@@ -4,6 +4,8 @@ This system test tests the scenario of setting up a new bloom repository.
 
 import os
 
+import yaml
+
 from ..utils.common import in_temporary_directory
 from ..utils.common import bloom_answer
 from ..utils.common import user
@@ -11,48 +13,49 @@ from ..utils.common import user
 from bloom.git import branch_exists
 from bloom.git import inbranch
 
-from bloom.util import code
-
 
 @in_temporary_directory
 def test_create_a_bloom_repository(directory=None):
     """
     Create a Bloom Repository:
-        User creates a new release repository, and immediately calls
-        git-bloom-config.
+        User creates a new release repository, and calls git-bloom-config new.
 
     actions:
         - user creates a folder
         - user calls 'git init .' in that folder
-        - user calls 'git-bloom-config <url> <type> [<branch>]'
+        - user calls 'git-bloom-config new <track name>'
 
     expects:
         - bloom to ask the user if initialization is desired
+        - bloom prompts the user for input on the settings
         - bloom branch to be created
-        - bloom.conf to be in bloom branch with appropriate contents
+        - tracks.yaml to be in bloom branch with appropriate contents
     """
     # Setup
     user('mkdir new_repo')
     user('cd new_repo')
     user('git init .')
     # Test bloom command
-    with bloom_answer('y'):
-        r = user('git-bloom-config https://github.com/foo/foo.git git devel',
-                 return_io=True)
+    with bloom_answer(['', 'foo', 'https://github.com/bar/foo.git']):
+        r = user('git-bloom-config new foo', return_io=True, silent=False)
         _, out, err = r
     assert out.count('ontinue') > 0, \
-           "git-bloom-config didn't ask about git init: \n`" + out + "`"
+           "git-bloom-config didn't ask about git init:\n```\n" + out + "\n```"
     assert branch_exists('bloom'), "branch 'bloom' does not exist"
     with inbranch('bloom'):
-        assert os.path.exists('bloom.conf'), \
-               "no bloom.conf file in the 'bloom' branch"
-        bloom_file = open('bloom.conf').read()
-        assert bloom_file.count('foo/foo.git') > 0, "bad content in bloom.conf"
-        assert bloom_file.count(' git') > 0, "bad content in bloom.conf"
-        assert bloom_file.count(' devel') > 0, "bad content in bloom.conf"
+        assert os.path.exists('tracks.yaml'), \
+               "no tracks.yaml file in the 'bloom' branch"
+        with open('tracks.yaml', 'r') as f:
+            tracks_dict = yaml.load(f.read())
+        assert 'tracks' in tracks_dict, "bad bloom configurations"
+        assert 'foo' in tracks_dict['tracks'], "bad bloom configurations"
+        track = tracks_dict['tracks']['foo']
+        assert 'vcs_uri' in track, "bad bloom configurations"
+        assert 'https://github.com/bar/foo.git' == track['vcs_uri'], \
+            "bad bloom configurations" + str(track)
     # Assert no question on the second attempt
     with bloom_answer(bloom_answer.ASSERT_NO_QUESTION):
-        user('git-bloom-config https://github.com/foo/foo.git git devel')
+        user('git-bloom-config')
 
 
 @in_temporary_directory
@@ -68,7 +71,7 @@ def test_call_config_outside_of_git_repo(directory=None):
         - git-bloom-config should error out with an appropriate message
     """
     with bloom_answer(bloom_answer.ASSERT_NO_QUESTION):
-        r = user('git-bloom-config https://github.com/foo/foo.git git devel',
+        r = user('git-bloom-config --quite new foo',
                  auto_assert=False)
     assert r != 0, "actually returned " + str(r)
 
@@ -91,7 +94,7 @@ def test_call_config_with_local_changes(directory=None):
     user('echo "some text" >> README.md')
     # Try to run bloom
     with bloom_answer(bloom_answer.ASSERT_NO_QUESTION):
-        r = user('git-bloom-config https://gh.com/foo/foo.git git --quiet',
+        r = user('git-bloom-config --quite new foo',
                  auto_assert=False)
     assert r != 0, "actually returned " + str(r)
 
@@ -99,12 +102,12 @@ def test_call_config_with_local_changes(directory=None):
 @in_temporary_directory
 def test_call_config_with_untracked_files(directory=None):
     """
-    Call git-bloom-config on a git repository with local changes.
+    Call git-bloom-config on a git repository with untracked files.
     """
     setup_git_repo(directory)
     user('echo "some text" > somefile.txt')
     # Try to run bloom
     with bloom_answer(bloom_answer.ASSERT_NO_QUESTION):
-        r = user('git-bloom-config https://gh.com/foo/foo.git git --quiet',
+        r = user('git-bloom-config --quite new foo',
                  auto_assert=False)
     assert r != 0, "actually returned " + str(r)

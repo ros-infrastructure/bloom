@@ -59,6 +59,7 @@ from bloom.logging import warning
 
 from bloom.git import ensure_clean_working_env
 
+import bloom.util
 from bloom.util import add_global_arguments
 from bloom.util import handle_global_arguments
 from bloom.util import print_exc
@@ -167,7 +168,7 @@ def find_version_from_upstream(vcs_uri, vcs_type, devel_branch=None):
     if not upstream_repo.checkout(vcs_uri, devel_branch or '', shallow=True):
         error("Failed to checkout to the upstream branch "
             "'{0}' in the repository from '{1}'"
-            .format(devel_branch or '<default>', vcs_uri))
+            .format(devel_branch or '<default>', vcs_uri), exit=True)
     meta = get_upstream_meta(upstream_repo.get_path())
     if not meta:
         error("Failed to find any package.xml(s) or a stack.xml in the "
@@ -268,7 +269,17 @@ def execute_track(track, track_dict, release_inc, pretend=True):
         info(fmt("@{bf}@!==> @|@!" + str(templated_action)))
         if pretend:
             continue
-        ret = subprocess.call(templated_action, shell=True)
+        stdout = None
+        stderr = None
+        if bloom.util._quiet:
+            stdout = subprocess.PIPE
+            stderr = subprocess.STDOUT
+        p = subprocess.Popen(templated_action, stdout=stdout, stderr=stderr,
+            shell=True)
+        out, err = p.communicate()
+        if bloom.util._quiet:
+            info(out, use_prefix=False)
+        ret = p.returncode
         if ret > 0:
             error(fmt("@{rf}@!<== @|Error running command '@!{0}@|'")
                 .format(templated_action), exit=True)

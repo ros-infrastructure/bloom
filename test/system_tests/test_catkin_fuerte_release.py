@@ -70,15 +70,18 @@ def test_fuerte_package_repository(directory=None):
     directory = directory if directory is not None else os.getcwd()
     # Setup
     upstream_url = create_upstream_catkin_fuerte_repository('foo', directory)
-    release_url = create_release_repo(upstream_url, 'git', 'fuerte_devel')
+    release_url = create_release_repo(upstream_url, 'git', 'fuerte_devel',
+        'fuerte')
     release_dir = os.path.join(directory, 'foo_release_clone')
     release_client = get_vcs_client('git', release_dir)
     release_client.checkout(release_url)
     with change_directory(release_dir):
+        # First run everything
+        with bloom_answer(bloom_answer.ASSERT_NO_QUESTION):
+            user('git-bloom-release --quiet fuerte', silent=False)
         ###
-        ### Import upstream
+        ### Import upstream tests
         ###
-        user('git-bloom-import-upstream --quiet')
         # does the upstream branch exist?
         assert branch_exists('upstream', local_only=True), "no upstream branch"
         # does the upstrea/0.1.0 tag exist?
@@ -94,31 +97,29 @@ def test_fuerte_package_repository(directory=None):
         ###
         ### Release generator
         ###
-        with bloom_answer(bloom_answer.ASSERT_NO_QUESTION):
-            ret = user('git-bloom-generate -y release -s upstream --quiet')
         # patch import should have reported OK
         assert ret == code.OK, "actually returned ({0})".format(ret)
         # do the proper branches exist?
-        assert branch_exists('release/foo'), "no release/foo branch: " + \
-                                             str(get_branches())
-        assert branch_exists('patches/release/foo'), \
-               "no patches/release/foo branch"
+        assert branch_exists('release/fuerte/foo'), \
+            "no release/foo branch: " + str(get_branches())
+        assert branch_exists('patches/release/fuerte/foo'), \
+            "no patches/release/foo branch"
         # was the release tag created?
         ret, out, err = user('git tag', return_io=True)
-        assert out.count('release/foo/0.1.0') == 1, "no release tag created"
+        assert out.count('release/fuerte/foo/0.1.0') == 1, \
+            "no release tag created"
 
         ###
         ### Release generator, again
         ###
-        with bloom_answer(bloom_answer.ASSERT_NO_QUESTION):
-            ret = user('git-bloom-generate -y release -s upstream --quiet')
         # patch import should have reported OK
         assert ret == code.OK, "actually returned ({0})".format(ret)
         # do the proper branches exist?
-        assert branch_exists('release/foo'), "no release/foo branch: " + \
-                                             str(get_branches())
-        assert branch_exists('patches/release/foo'), \
-               "no patches/release/foo branch"
+        assert branch_exists('release/fuerte/foo'), \
+            "no release/foo branch: " + str(get_branches())
+        assert branch_exists('patches/release/fuerte/foo'), \
+            "no patches/release/fuerte/foo branch"
         # was the release tag created?
         ret, out, err = user('git tag', return_io=True)
-        assert out.count('release/foo/0.1.0') == 1, "no release tag created"
+        assert out.count('release/fuerte/foo/0.1.0') == 1, \
+            "no release tag created"

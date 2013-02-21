@@ -19,24 +19,39 @@ from subprocess import Popen, PIPE, CalledProcessError
 class bloom_answer(object):
     ASSERT_NO_QUESTION = -1
 
-    def __init__(self, anwser, util_module=None):
-        self.anwser = anwser
+    def __init__(self, answer, util_module=None):
+        self.answer = answer
         if util_module is None:
             import bloom.util as util_module
+            import bloom.commands.git.config as config_module
         self.util_module = util_module
+        self.config_module = config_module
 
     def __call__(self, msg=None):
         if msg is not None:
             print(msg)
-        assert self.anwser != self.ASSERT_NO_QUESTION, \
+        assert self.answer != self.ASSERT_NO_QUESTION, \
                "bloom asked a question, and it should not have"
-        return self.anwser
+        if isinstance(self.answer, str):
+            print(self.answer)
+            return self.answer
+        elif isinstance(self.answer, list):
+            if self.answer:
+                print(self.answer)
+                return self.answer.pop(0)
+            else:
+                print('Nada')
+                return ''
+        else:
+            assert False, "Invalid answers given to bloom_answer"
 
     def __enter__(self):
         self.util_module.raw_input = self
+        self.config_module.raw_input = self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.util_module.raw_input = raw_input
+        self.config_module.raw_input = raw_input
 
 
 class change_directory(object):
@@ -93,7 +108,8 @@ class temporary_directory(object):
 
     def __exit__(self, exc_type, exc_value, traceback):
         if self.temp_path and os.path.exists(self.temp_path):
-            shutil.rmtree(self.temp_path)
+            # shutil.rmtree(self.temp_path)
+            pass
         if self.original_cwd and os.path.exists(self.original_cwd):
             os.chdir(self.original_cwd)
 
@@ -124,13 +140,12 @@ def user_bloom(cmd, args=None, directory=None, auto_assert=True,
                 ret = func(args) or 0
             except SystemExit as e:
                 ret = e.code
+                if ret != 0 and auto_assert:
+                    raise
     if not silent:
         print("Command '{0}' returned '{1}':".format(cmd, ret))
         print(out.getvalue(), file=sys.stdout, end='')
         print(err.getvalue(), file=sys.stderr, end='')
-    if auto_assert:
-        assert ret == 0, \
-               "user command '" + cmd + "' returned " + str(ret)
     if return_io:
         return ret, out.getvalue(), err.getvalue()
     return ret
