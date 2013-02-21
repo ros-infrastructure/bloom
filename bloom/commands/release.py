@@ -214,7 +214,7 @@ def perform_release(repository, track, interactive):
             "Generating pull request to distro file located at '{0}'"
             .format(ROS_DISTRO_FILE))
         info("In the future this will create a pull request for you, done for now...")
-        info(fmt("@{gf}<== @|") + "Pull request opend at: '{0}'".format(None))
+        info(fmt("@{gf}<== @|") + "Pull request opened at: '{0}'".format('Not yet Implemented'))
 
 
 def get_argument_parser():
