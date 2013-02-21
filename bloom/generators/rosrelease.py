@@ -62,7 +62,7 @@ Please checkout the release branch and then create a tag manually with:"""
             name, version, packages = get_package_data(destination)
         # Execute git tag
         execute_command('git tag -f ' + destination + '/' + version +
-            '-' + self.release_inc)
+            '-' + str(self.release_inc))
 
     def detect_branches(self):
         self.packages = None

@@ -526,8 +526,11 @@ class DebianGenerator(BloomGenerator):
         # Installation prefix
         data['InstallationPrefix'] = self.install_prefix
         # Dependencies
-        data['Depends'] = set([d.name for d in stack.depends])
-        data['BuildDepends'] = set([d.name for d in stack.build_depends])
+        from catkin_pkg.package import Dependency
+        self.depends = list(set([d.name for d in stack.depends]))
+        self.depends = [Dependency(d) for d in self.depends]
+        self.build_depends = list(set([d.name for d in stack.build_depends]))
+        self.build_depends = [Dependency(d) for d in self.build_depends]
         # Maintainers
         maintainers = []
         for m in stack.maintainers:
