@@ -44,8 +44,13 @@ except ImportError:
 
 from bloom.logging import error
 from bloom.logging import info
+from bloom.logging import warning
+
+from bloom.git import branch_exists
+from bloom.git import tag_exists
 
 from bloom.util import add_global_arguments
+from bloom.util import change_directory
 from bloom.util import handle_global_arguments
 from bloom.util import temporary_directory
 
@@ -87,9 +92,12 @@ def calculate_file_md5(path, block_size=2 ** 20):
 
 def export_upstream(uri, tag, vcs_type, output_dir, show_uri, name):
     output_dir = output_dir or os.getcwd()
-    uri_parsed = urlparse(uri)
-    uri = uri if uri_parsed.scheme else uri_parsed.path
-    uri_is_path = False if uri_parsed.scheme else True
+    if uri.startswith('git@'):
+        uri_is_path = False
+    else:
+        uri_parsed = urlparse(uri)
+        uri = uri if uri_parsed.scheme else uri_parsed.path
+        uri_is_path = False if uri_parsed.scheme else True
     name = name or 'upstream'
     with temporary_directory() as tmp_dir:
         info("Checking out repository at '{0}'".format(show_uri or uri) +
@@ -98,7 +106,7 @@ def export_upstream(uri, tag, vcs_type, output_dir, show_uri, name):
             upstream_repo = get_vcs_client(vcs_type, uri)
         else:
             upstream_repo = get_vcs_client(vcs_type, tmp_dir)
-            if not upstream_repo.checkout(uri, tag, shallow=True):
+            if not upstream_repo.checkout(uri, tag):
                 error("Failed to clone repository at '{0}'".format(uri) +
                     (" to reference '{0}'.".format(tag) if tag else '.'),
                     exit=True)
@@ -106,7 +114,17 @@ def export_upstream(uri, tag, vcs_type, output_dir, show_uri, name):
         tarball_path = os.path.join(output_dir, tarball_prefix)
         full_tarball_path = tarball_path + '.tar.gz'
         info("Exporting to archive: '{0}'".format(full_tarball_path))
-        upstream_repo.export_repository(tag or '', tarball_path)
+        if not upstream_repo.export_repository(tag or '', tarball_path):
+            error("Failed to create archive of upstream repository at '{0}'"
+                .format(show_uri))
+            if tag:
+                with change_directory(upstream_repo.get_path()):
+                    if not tag_exists(tag):
+                        warning("'{0}' is not a tag in the upstream repository..."
+                            .format(tag))
+                    if not branch_exists(tag):
+                        warning("'{0}' is not a branch in the upstream repository..."
+                            .format(tag))
         if not os.path.exists(full_tarball_path):
             error("Tarball was not created.", exit=True)
         info("md5: {0}".format(calculate_file_md5(full_tarball_path)))
