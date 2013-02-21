@@ -5,10 +5,9 @@ python:
   - "3.2"
 # command to install dependencies
 install:
-  - python setup.py build
-  - sudo pip install -r bloom.egg-info/requires.txt
+  - sudo python setup.py install
   - sudo rosdep init
-  - rosdep update
+  - sudo rosdep update
 # command to run tests
 script:
   - sudo python setup.py nosetests -s
