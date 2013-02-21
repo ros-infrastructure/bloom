@@ -43,6 +43,8 @@ import urllib2
 import yaml
 
 from bloom.commands.git.config import convert_old_bloom_conf
+from bloom.commands.git.config import edit as edit_track_cmd
+from bloom.commands.git.config import new as new_track_cmd
 from bloom.commands.git.config import update_track
 
 from bloom.config import get_tracks_dict_raw
@@ -53,6 +55,7 @@ from bloom.git import ls_tree
 from bloom.logging import error
 from bloom.logging import fmt
 from bloom.logging import info
+from bloom.logging import warning
 
 from bloom.util import change_directory
 from bloom.util import check_output
@@ -64,8 +67,7 @@ except ImportError:
     error("vcstools was not detected, please install it.", file=sys.stderr,
         exit=True)
 
-ROS_DISTRO = 'groovy'
-ROS_DISTRO_FILE = 'https://raw.github.com/ros/rosdistro/master/releases/{0}.yaml'.format(ROS_DISTRO)
+ROS_DISTRO_FILE = 'https://raw.github.com/ros/rosdistro/master/releases/{0}.yaml'
 
 _repositories = {}
 
@@ -79,9 +81,14 @@ def exit_cleanup():
             shutil.rmtree(repo_path)
 
 
-def get_repo_uri(repository, distro_file_url=ROS_DISTRO_FILE):
-    # Fetch the DISTRO_FILE
-    raw_distro_file = urllib2.urlopen(distro_file_url)
+def get_repo_uri(repository, distro, distro_file_url=ROS_DISTRO_FILE):
+    # Fetch the distro file
+    distro_file_url = distro_file_url.format(distro)
+    try:
+        raw_distro_file = urllib2.urlopen(distro_file_url)
+    except urllib2.HTTPError as e:
+        error("Failed to fetch ROS distro file at '{0}': {1}"
+            .format(distro_file_url, e), exit=True)
     distro_file = yaml.load(raw_distro_file.read())
     if repository not in distro_file['repositories']:
         error("Specified repository '{0}' is not in the distro file located at '{1}'".format(repository, distro_file_url),
@@ -89,9 +96,9 @@ def get_repo_uri(repository, distro_file_url=ROS_DISTRO_FILE):
     return distro_file['repositories'][repository]['url']
 
 
-def get_release_repo(repository):
+def get_release_repo(repository, distro):
     global _repositories
-    uri = get_repo_uri(repository)
+    uri = get_repo_uri(repository, distro)
     if repository not in _repositories.values():
         temp_dir = tempfile.mkdtemp()
         _repositories[repository] = get_vcs_client('git', temp_dir)
@@ -125,8 +132,8 @@ def list_tracks(repository):
     return tracks_dict['tracks'].keys() if tracks_dict else None
 
 
-def perform_release(repository, track, interactive):
-    release_repo = get_release_repo(repository)
+def perform_release(repository, track, distro, new_track, interactive):
+    release_repo = get_release_repo(repository, distro)
     with change_directory(release_repo.get_path()):
         # Check for push permissions
         try:
@@ -137,11 +144,25 @@ def perform_release(repository, track, interactive):
         # Check to see if the old bloom.conf exists
         if check_for_bloom_conf(repository):
             # Convert to a track
-            info("Old bloom.conf file detected, up converting...")
-            convert_old_bloom_conf(ROS_DISTRO)
+            info("Old bloom.conf file detected.")
+            info(fmt("@{gf}@!==> @|Converting to bloom.conf to track"))
+            convert_old_bloom_conf(distro)
         # Check that the track is valid
         tracks_dict = get_tracks_dict_raw()
-        if track and track not in [tracks_dict['tracks']]:
+        # If new_track, create the new track first
+        if new_track:
+            if not track:
+                error("You must specify a track when creating a new one.", exit=True)
+            overrides = {'ros_distro': distro}
+            if track in tracks_dict['tracks']:
+                warning("Track '{0}' exists, editing instead...".format(track))
+                edit_track_cmd(track)
+            else:
+                # Create a new track called <track>,
+                # copying an existing track if possible,
+                # and overriding the ros_distro
+                new_track_cmd(track, copy_track='', overrides=overrides)
+        if track and track not in tracks_dict['tracks']:
             error("Given track '{0}' does not exist in release repository."
                 .format(track))
             error("Available tracks: " + str(tracks_dict['tracks'].keys()),
@@ -225,6 +246,8 @@ def get_argument_parser():
         help="list available tracks for repository")
     add('track', nargs='?', default=None, help="track to run")
     add('--non-interactive', '-y', action='store_true', default=False)
+    add('--ros-distro', '-r', default='groovy', help="determines the ROS distro file used")
+    add('--new-track', '-n', action='store_true', default=False, help="if used, a new track will be created before running bloom")
     return parser
 
 _quiet = False
@@ -238,4 +261,4 @@ def main(sysargs=None):
         list_tracks(args.repository)
         return
 
-    perform_release(args.repository, args.track, not args.non_interactive)
+    perform_release(args.repository, args.track, args.ros_distro, args.new_track, not args.non_interactive)

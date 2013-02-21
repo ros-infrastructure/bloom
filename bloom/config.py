@@ -43,6 +43,7 @@ from bloom.git import show
 from bloom.logging import error
 from bloom.logging import fmt
 from bloom.logging import info
+from bloom.logging import sanitize
 
 from bloom.util import execute_command
 
@@ -134,7 +135,7 @@ class PromptEntry(object):
         object.__setattr__(self, key, value)
 
     def __str__(self):
-        msg = '@_' + self.name + ':@|'
+        msg = fmt('@_' + sanitize(self.name) + ':@|')
         if self.spec is not None:
             for key, val in self.spec.iteritems():
                 msg += '\n  ' + key
@@ -144,10 +145,10 @@ class PromptEntry(object):
             msg += '\n  ' + self.prompt
         msg += '\n '
         if self.default is None:
-            msg += " @![@{yf}None@|@!]@|: "
+            msg += fmt(" @![@{yf}None@|@!]@|: ")
         else:
-            msg += " @!['@{{yf}}{0}@|@!']@|: ".format(self.default)
-        return fmt(msg)
+            msg += fmt(" @!['@{yf}" + sanitize(self.default) + "@|@!']@|: ")
+        return msg
 
 DEFAULT_TEMPLATE = {
     'name': PromptEntry('Repository Name',

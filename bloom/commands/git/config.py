@@ -142,28 +142,53 @@ def check_git_init():
         execute_command('git commit -m "initial commit" --allow-empty')
 
 
-def new(args):
+def new_cmd(args):
+    new(args.track, args.template)
+
+
+def new(track, template=None, copy_track=None, overrides={}):
+    """
+    Creates a new track
+
+    :param track: Name of the track to create
+    :param template: Template to base new track off
+    :param copy_track: Track to copy values of,
+        if '' then use any availabe track if one exists
+    :param overrides: dict of entries to override default values
+    """
     tracks_dict = get_tracks_dict_raw()
-    if args.track in tracks_dict['tracks']:
-        error("Cannot create track '{0}' beause it exists.".format(args.track))
-        error("Run `git-bloom-config edit {0}` instead.".format(args.track),
+    if track in tracks_dict['tracks']:
+        error("Cannot create track '{0}' beause it exists.".format(track))
+        error("Run `git-bloom-config edit {0}` instead.".format(track),
             exit=True)
-    track = copy.copy(DEFAULT_TEMPLATE)
-    template = copy.copy(config_template[args.template])
+    track_dict = copy.copy(DEFAULT_TEMPLATE)
+    template_dict = copy.copy(config_template[template])
+    if copy_track is not None:
+        if template is not None:
+            error("You cannot specify both a template and track to copy.",
+                exit=True)
+        if copy_track == '' and len(tracks_dict['tracks']) != 0:
+            copy_track = tracks_dict['tracks'].keys()[0]
+        if copy_track and copy_track not in tracks_dict['tracks']:
+            error("Cannot copy a track which does not exist: '{0}'"
+                .format(copy_track), exit=True)
+        template_dict = tracks_dict['tracks'][copy_track]
     for key in template_entry_order:
-        if key in template:
-            track[key].default = template[key]
-        if track[key].default == ':name':
-            track[key].default = args.track
-        ret = raw_input(str(track[key]))
+        if key in template_dict:
+            track_dict[key].default = template_dict[key]
+        if key in overrides:
+            track_dict[key].default = overrides[key]
+        if track_dict[key].default == ':{name}':
+            track_dict[key].default = track
+        ret = raw_input(str(track_dict[key]))
         if ret:
-            track[key].default = ret  # This type checks against self.values
+            track_dict[key].default = ret  # This type checks against self.values
             if ret in [':{none}', 'None']:
-                track[key].default = None
-        track[key] = track[key].default
-    tracks_dict['tracks'][args.track] = track
+                track_dict[key].default = None
+        track_dict[key] = track_dict[key].default
+    tracks_dict['tracks'][track] = track_dict
     write_tracks_dict_raw(tracks_dict)
-    info("Created '{0}' track.".format(args.track))
+    info("Created '{0}' track.".format(track))
 
 
 def show(args):
@@ -188,24 +213,28 @@ def update_track(track_dict):
     return track_dict
 
 
-def edit(args):
+def edit_cmd(args):
+    edit(args.track)
+
+
+def edit(track):
     tracks_dict = get_tracks_dict_raw()
-    if args.track not in tracks_dict['tracks']:
-        error("Track '{0}' does not exist.".format(args.track), exit=True)
+    if track not in tracks_dict['tracks']:
+        error("Track '{0}' does not exist.".format(track), exit=True)
     # Ensure the track is complete
-    track_dict = tracks_dict['tracks'][args.track]
+    track_dict = tracks_dict['tracks'][track]
     update_track(track_dict)
     # Prompt for updates
     for key in template_entry_order:
         pe = DEFAULT_TEMPLATE[key]
-        pe.default = tracks_dict['tracks'][args.track][key]
+        pe.default = tracks_dict['tracks'][track][key]
         ret = raw_input(str(pe))
         if ret:
             pe.default = ret  # This type checks against self.values
             if ret in [':{none}', 'None']:
                 pe.default = None
-        tracks_dict['tracks'][args.track][key] = pe.default
-    tracks_dict['tracks'][args.track] = track_dict
+        tracks_dict['tracks'][track][key] = pe.default
+    tracks_dict['tracks'][track] = track_dict
     write_tracks_dict_raw(tracks_dict)
 
 
@@ -233,13 +262,13 @@ Call `git-bloom-config {0} -h` for additional help information on each command.
         help="tempate to base new track on",
         choices=[x for x in config_template.keys() if x is not None],
         default=None)
-    new_parser.set_defaults(func=new)
+    new_parser.set_defaults(func=new_cmd)
     new_parser = subparsers.add_parser('show')
     new_parser.add_argument('track', help="name of track to show")
     new_parser.set_defaults(func=show)
     new_parser = subparsers.add_parser('edit')
     new_parser.add_argument('track', help="name of track to edit")
-    new_parser.set_defaults(func=edit)
+    new_parser.set_defaults(func=edit_cmd)
     new_parser = subparsers.add_parser('delete')
     new_parser.add_argument('track', help="name of track to delete")
     new_parser.set_defaults(func=delete)
