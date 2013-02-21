@@ -226,4 +226,7 @@ def fmt(msg):
     msg = msg.replace('@_', '@{ulon}')
     msg = msg.replace('@|', '@{reset}')
     t = ColorTemplate(msg)
-    return t.substitute(_ansi) + ansi('reset')
+    msg = t.substitute(_ansi) + ansi('reset')
+    msg = msg.replace('{{', '{')
+    msg = msg.replace('}}', '}')
+    return msg
