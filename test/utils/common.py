@@ -108,8 +108,7 @@ class temporary_directory(object):
 
     def __exit__(self, exc_type, exc_value, traceback):
         if self.temp_path and os.path.exists(self.temp_path):
-            # shutil.rmtree(self.temp_path)
-            pass
+            shutil.rmtree(self.temp_path)
         if self.original_cwd and os.path.exists(self.original_cwd):
             os.chdir(self.original_cwd)
 

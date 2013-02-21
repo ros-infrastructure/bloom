@@ -146,7 +146,7 @@ def perform_release(repository, track, distro, new_track, interactive):
             # Convert to a track
             info("Old bloom.conf file detected.")
             info(fmt("@{gf}@!==> @|Converting to bloom.conf to track"))
-            convert_old_bloom_conf(distro)
+            convert_old_bloom_conf(None if new_track else distro)
         # Check that the track is valid
         tracks_dict = get_tracks_dict_raw()
         # If new_track, create the new track first
@@ -162,6 +162,7 @@ def perform_release(repository, track, distro, new_track, interactive):
                 # copying an existing track if possible,
                 # and overriding the ros_distro
                 new_track_cmd(track, copy_track='', overrides=overrides)
+                tracks_dict = get_tracks_dict_raw()
         if track and track not in tracks_dict['tracks']:
             error("Given track '{0}' does not exist in release repository."
                 .format(track))

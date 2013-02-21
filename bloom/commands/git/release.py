@@ -52,9 +52,10 @@ from bloom.config import template_str
 from bloom.config import verify_track
 from bloom.config import write_tracks_dict_raw
 
-from bloom.logging import fmt
 from bloom.logging import error
+from bloom.logging import fmt
 from bloom.logging import info
+from bloom.logging import sanitize
 from bloom.logging import warning
 
 from bloom.git import ensure_clean_working_env
@@ -165,7 +166,7 @@ def find_version_from_upstream(vcs_uri, vcs_type, devel_branch=None):
     # Try to clone the upstream repository
     info("Checking upstream devel branch for a package.xml(s) or stack.xml")
     upstream_repo = get_upstream_repo(vcs_uri, vcs_type)
-    if not upstream_repo.checkout(vcs_uri, devel_branch or '', shallow=True):
+    if not upstream_repo.checkout(vcs_uri, devel_branch or ''):
         error("Failed to checkout to the upstream branch "
             "'{0}' in the repository from '{1}'"
             .format(devel_branch or '<default>', vcs_uri), exit=True)
@@ -266,7 +267,7 @@ def execute_track(track, track_dict, release_inc, pretend=True):
     info("Executing release track '{0}'".format(track))
     for action in track_dict['actions']:
         templated_action = template_str(action, settings)
-        info(fmt("@{bf}@!==> @|@!" + str(templated_action)))
+        info(fmt("@{bf}@!==> @|@!" + sanitize(str(templated_action))))
         if pretend:
             continue
         stdout = None

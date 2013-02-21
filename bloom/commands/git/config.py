@@ -75,7 +75,8 @@ template_entry_order = [
 
 
 @inbranch('bloom')
-def convert_old_bloom_conf(prefix='convert'):
+def convert_old_bloom_conf(prefix=None):
+    prefix = prefix if prefix is not None else 'convert'
     tracks_dict = get_tracks_dict_raw()
     track = prefix
     track_count = 0
