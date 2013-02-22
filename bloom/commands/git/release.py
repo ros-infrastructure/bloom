@@ -333,4 +333,6 @@ def main(sysargs=None):
     info(fmt("@{gf}@!Everything went as expected, "
          "you should check that the new tags match your expectations, and "
          "then push to the release repo with:@|"))
-    info(fmt("  git push --all && git push --tags  @{kf}@!# You might have to add --force to the second command if you are over-writing existing flags"))
+    info(fmt("  git push --all && git push --tags  "
+        "@{kf}@!# You might have to add --force to the second command if you "
+        "are over-writing existing flags"))

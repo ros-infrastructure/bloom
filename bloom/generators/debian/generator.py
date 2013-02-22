@@ -164,21 +164,24 @@ class DebianGenerator(BloomGenerator):
     def get_branching_arguments(self):
         return self.branch_args
 
+    def update_rosdep(self):
+        info("Running 'rosdep update'...")
+        from rosdep2.catkin_support import update_rosdep
+        try:
+            update_rosdep()
+        except:
+            print_exc(traceback.format_exc())
+            error("Failed to update rosdep, did you run "
+                  "'rosdep init' first?")
+            return code.ROSDEP_FAILED
+        self.has_run_rosdep = True
+
     def pre_branch(self, destination, source):
         if destination in self.debian_branches:
             return
         # Run rosdep update is needed
         if not self.has_run_rosdep:
-            info("Running 'rosdep update'...")
-            from rosdep2.catkin_support import update_rosdep
-            try:
-                update_rosdep()
-            except:
-                print_exc(traceback.format_exc())
-                error("Failed to update rosdep, did you run "
-                      "'rosdep init' first?")
-                return code.ROSDEP_FAILED
-            self.has_run_rosdep = True
+            self.update_rosdep()
         # Determine the current package being generated
         name = destination.split('/')[-1]
         distro = destination.split('/')[-2]
@@ -439,34 +442,40 @@ class DebianGenerator(BloomGenerator):
         os_name = self.os_name
         rosdep_view = self.get_rosdep_view(debian_distro, os_name)
 
-        def resolve_rosdep_key(rosdep_key):
+        def resolve_rosdep_key(rosdep_key, view, try_again=True):
             from rosdep2.catkin_support import resolve_for_os
             from rosdep2.lookup import ResolutionError
             try:
-                return resolve_for_os(rosdep_key, rosdep_view,
+                return resolve_for_os(rosdep_key, view,
                                       self.apt_installer, os_name,
                                       debian_distro)
             except (KeyError, ResolutionError) as err:
-                if rosdep_key not in self.packages:
-                    if type(err) == KeyError:
-                        error(
-                            "Could not resolve rosdep key '" + rosdep_key + "'"
-                        )
-                        self.exit(code.DEBIAN_NO_SUCH_ROSDEP_KEY)
-                    else:
-                        error(
-                            "Could not resolve the rosdep key '" + rosdep_key +
-                            "' for distro '" + debian_distro + "': \n"
-                        )
-                        print(str(err))
-                        self.exit(code.DEBIAN_NO_ROSDEP_KEY_FOR_DISTRO)
-                return [sanitize_package_name(
-                    'ros-{0}-{1}'.format(self.rosdistro, rosdep_key)
-                )]
+                if rosdep_key in self.packages:
+                    return [sanitize_package_name(
+                        'ros-{0}-{1}'.format(self.rosdistro, rosdep_key)
+                    )]
+                if type(err) == KeyError:
+                    error(
+                        "Could not resolve rosdep key '" + rosdep_key + "'"
+                    )
+                else:
+                    error(
+                        "Could not resolve the rosdep key '" + rosdep_key +
+                        "' for distro '" + debian_distro + "': \n"
+                    )
+                    print(str(err))
+                if try_again:
+                    error("Resolve problem with rosdep and then continue to try again.")
+                    if maybe_continue():
+                        self.update_rosdep()
+                        new_view = self.get_rosdep_view(debian_distro, os_name)
+                        return resolve_rosdep_key(rosdep_key, new_view)
+                self.exit("Failed to resolve rosdep key '{0}', aborting."
+                    .format(rosdep_key))
 
         resolved_depends = {}
         for rosdep_key in set([d.name for d in depends]):
-            resolved_depends[rosdep_key] = resolve_rosdep_key(rosdep_key)
+            resolved_depends[rosdep_key] = resolve_rosdep_key(rosdep_key, rosdep_view)
         return resolved_depends
 
     def get_rosdep_view(self, debian_distro, os_name):
