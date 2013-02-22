@@ -34,6 +34,7 @@ from __future__ import print_function
 
 import argparse
 import atexit
+import difflib
 import os
 import shutil
 import subprocess
@@ -50,6 +51,7 @@ from bloom.commands.git.config import update_track
 from bloom.config import get_tracks_dict_raw
 from bloom.config import write_tracks_dict_raw
 
+from bloom.git import inbranch
 from bloom.git import ls_tree
 
 from bloom.logging import error
@@ -81,15 +83,19 @@ def exit_cleanup():
             shutil.rmtree(repo_path)
 
 
-def get_repo_uri(repository, distro, distro_file_url=ROS_DISTRO_FILE):
-    # Fetch the distro file
-    distro_file_url = distro_file_url.format(distro)
+def fetch_distro_file(distro_file_url):
     try:
         raw_distro_file = urllib2.urlopen(distro_file_url)
     except urllib2.HTTPError as e:
         error("Failed to fetch ROS distro file at '{0}': {1}"
             .format(distro_file_url, e), exit=True)
-    distro_file = yaml.load(raw_distro_file.read())
+    return raw_distro_file.read()
+
+
+def get_repo_uri(repository, distro, distro_file_url=ROS_DISTRO_FILE):
+    # Fetch the distro file
+    distro_file_url = distro_file_url.format(distro)
+    distro_file = yaml.load(fetch_distro_file(distro_file_url))
     if repository not in distro_file['repositories']:
         error("Specified repository '{0}' is not in the distro file located at '{1}'".format(repository, distro_file_url),
             exit=True)
@@ -130,6 +136,53 @@ def list_tracks(repository):
             else:
                 error("Release repository has no tracks nor an old style bloom.conf file.", exit=True)
     return tracks_dict['tracks'].keys() if tracks_dict else None
+
+
+def generate_ros_distro_diff(track, repository, distro, distro_file_url=ROS_DISTRO_FILE):
+    distro_file_url = distro_file_url.format(distro)
+    distro_file_raw = fetch_distro_file(distro_file_url)
+    distro_file = yaml.load(distro_file_raw)
+    with inbranch('upstream'):
+        # Check for package.xml(s)
+        try:
+            from catkin_pkg.packages import find_packages
+        except ImportError:
+            error("catkin_pkg was not detected, please install it.",
+                  file=sys.stderr, exit=True)
+        packages = find_packages(os.getcwd())
+        if len(packages) == 0:
+            warning("Could not generate ros distro diff, no packages found.")
+        track_dict = get_tracks_dict_raw()['tracks'][track]
+        last_version = track_dict['last_version']
+        release_inc = track_dict['release_inc']
+        distro_file['repositories'][repository]['version'] = '{0}-{1}'.format(last_version, release_inc)
+        if len(packages) > 1 or packages.keys()[0] != '.':
+            distro_file['repositories'][repository]['packages'] = {}
+            for path, package in packages.iteritems():
+                distro_file['repositories'][repository]['packages'][package.name] = path
+    distro_file_name = distro_file_url.split('/')[-1]
+    # distro_dump_orig = yaml.dump(distro_file_orig, indent=2, default_flow_style=False)
+    distro_dump = yaml.dump(distro_file, indent=2, default_flow_style=False)
+    udiff = difflib.unified_diff(distro_file_raw.splitlines(), distro_dump.splitlines(),
+        fromfile=distro_file_name, tofile=distro_file_name)
+    if udiff:
+        info("Unified diff for the ROS distro file located at '{0}':".format(distro_file_url))
+        for line in udiff:
+            if line.startswith('@@'):
+                line = fmt('@{cf}' + line)
+            if line.startswith('+'):
+                if not line.startswith('+++'):
+                    line += '\n'
+                line = fmt('@{gf}' + line)
+            if line.startswith('-'):
+                if not line.startswith('---'):
+                    line += '\n'
+                line = fmt('@{rf}' + line)
+            if line.startswith(' '):
+                line += '\n'
+            info(line, use_prefix=False, end='')
+    else:
+        warning("This release resulted in no changes to the ROS distro file...")
 
 
 def perform_release(repository, track, distro, new_track, interactive):
@@ -224,7 +277,7 @@ def perform_release(repository, track, distro, new_track, interactive):
         info(fmt("@{gf}@!==> @|") +
             "Pushing tags to release repository for '{0}'"
             .format(repository))
-        cmd = 'git push --all'
+        cmd = 'git push --tags'
         info(fmt("@{bf}@!==> @|@!" + str(cmd)))
         try:
             subprocess.check_call(cmd, shell=True)
@@ -234,7 +287,8 @@ def perform_release(repository, track, distro, new_track, interactive):
         # Propose github pull request
         info(fmt("@{gf}@!==> @|") +
             "Generating pull request to distro file located at '{0}'"
-            .format(ROS_DISTRO_FILE))
+            .format(ROS_DISTRO_FILE).format(distro))
+        generate_ros_distro_diff(track, repository, distro)
         info("In the future this will create a pull request for you, done for now...")
         info(fmt("@{gf}<== @|") + "Pull request opened at: '{0}'".format('Not yet Implemented'))
 
