@@ -39,7 +39,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import traceback
 
 # try:
 #     from urllib.parse import urlparse
@@ -59,25 +58,19 @@ from bloom.logging import sanitize
 from bloom.logging import warning
 
 from bloom.git import ensure_clean_working_env
+from bloom.git import get_current_branch
 
 import bloom.util
 from bloom.util import add_global_arguments
+from bloom.util import change_directory
+from bloom.util import get_package_data
 from bloom.util import handle_global_arguments
-from bloom.util import print_exc
 
 try:
     from vcstools.vcs_abstraction import get_vcs_client
 except ImportError:
     error("vcstools was not detected, please install it.", file=sys.stderr,
         exit=True)
-
-has_rospkg = False
-try:
-    import rospkg
-    has_rospkg = True
-except ImportError:
-    warning("rospkg was not detected, stack.xml discovery is disabled",
-            file=sys.stderr)
 
 upstream_repos = {}
 
@@ -105,56 +98,21 @@ def clean_up_repositories():
 #     return None
 
 
-def get_upstream_meta(upstream_dir):
+def get_upstream_meta(upstream_dir, ros_distro):
     meta = None
-    # Check for stack.xml
-    stack_path = os.path.join(upstream_dir, 'stack.xml')
-    info("Checking for package.xml(s)... ", end='')
-    # Check for package.xml(s)
-    try:
-        from catkin_pkg.packages import find_packages
-        from catkin_pkg.packages import verify_equal_package_versions
-    except ImportError:
-        error("catkin_pkg was not detected, please install it.",
-              file=sys.stderr, exit=True)
-    packages = find_packages(basepath=upstream_dir)
-    if packages == {}:
-        if has_rospkg:
-            info("package.xml(s) not found, looking for stack.xml... ",
-                use_prefix=False, end='')
-            if os.path.exists(stack_path):
-                info("stack.xml found", use_prefix=False)
-                # Assumes you are at the top of the repo
-                stack = rospkg.stack.parse_stack_file(stack_path)
-                meta = {}
-                meta['name'] = [stack.name]
-                meta['version'] = stack.version
-                meta['type'] = 'stack.xml'
-            else:
-                info('', use_prefix=False)
-                error("Neither stack.xml, nor package.xml(s) were detected.",
-                    exit=True)
-        else:
-            info('', use_prefix=False)
-            error("Package.xml(s) were not detected.",
-                    exit=True)
-    else:
-        info("package.xml(s) found", use_prefix=False)
-        try:
-            version = verify_equal_package_versions(packages.values())
-        except RuntimeError as err:
-            info('', use_prefix=False)
-            print_exc(traceback.format_exc())
-            error("Releasing multiple packages with different versions is "
-                  "not supported: " + str(err), exit=True)
-        meta = {}
-        meta['version'] = version
-        meta['name'] = [p.name for p in packages.values()]
-        meta['type'] = 'package.xml'
+    with change_directory(upstream_dir):
+        print(ros_distro)
+        name, version, stackages = get_package_data(get_current_branch(),
+            quiet=False, fuerte=(ros_distro == 'fuerte'))
+    meta = {
+        'name': name,
+        'version': version,
+        'type': 'package.xml' if isinstance(stackages, dict) else 'stack.xml'
+    }
     return meta
 
 
-def find_version_from_upstream(vcs_uri, vcs_type, devel_branch=None):
+def find_version_from_upstream(vcs_uri, vcs_type, devel_branch=None, ros_distro='groovy'):
     # Check for github.com
     # if vcs_uri.startswith('http') and 'github.com' in vcs_uri:
     #     info("Detected github.com repository, checking for package.xml "
@@ -170,7 +128,7 @@ def find_version_from_upstream(vcs_uri, vcs_type, devel_branch=None):
         error("Failed to checkout to the upstream branch "
             "'{0}' in the repository from '{1}'"
             .format(devel_branch or '<default>', vcs_uri), exit=True)
-    meta = get_upstream_meta(upstream_repo.get_path())
+    meta = get_upstream_meta(upstream_repo.get_path(), ros_distro)
     if not meta:
         error("Failed to find any package.xml(s) or a stack.xml in the "
             "upstream devel branch '{0}' in the repository from '{1}'"
@@ -210,7 +168,7 @@ def process_track_settings(track_dict, release_inc_override):
         and devel_branch.lower() == ':{none}':
             devel_branch = None
         version, repo = find_version_from_upstream(vcs_uri,
-            vcs_type, devel_branch)
+            vcs_type, devel_branch, track_dict['ros_distro'])
         if version is None:
             warning("Could not determine the version automatically.")
     if version is None or version == ':{ask}':

@@ -59,7 +59,8 @@ Please checkout the release branch and then create a tag manually with:"""
             warning("  git tag -f " + destination + "/<version>")
             return
         with inbranch(destination):
-            name, version, packages = get_package_data(destination)
+            name, version, packages = get_package_data(destination,
+                fuerte=(self.rosdistro == 'fuerte'))
         # Execute git tag
         execute_command('git tag -f ' + destination + '/' + version +
             '-' + str(self.release_inc))
@@ -70,7 +71,8 @@ Please checkout the release branch and then create a tag manually with:"""
             if self.name is not None:
                 self.packages = [self.name]
                 return [self.name]
-            package_data = get_package_data(self.src)
+            package_data = get_package_data(self.src,
+                fuerte=(self.rosdistro == 'fuerte'))
             if type(package_data) not in [list, tuple]:
                 return package_data
             name, version, packages = package_data

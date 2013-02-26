@@ -54,6 +54,7 @@ from bloom.logging import debug
 from bloom.logging import disable_ANSI_colors
 from bloom.logging import enable_debug
 from bloom.logging import error
+from bloom.logging import info
 from bloom.logging import warning
 
 try:
@@ -139,22 +140,29 @@ class temporary_directory(object):
             os.chdir(self.original_cwd)
 
 
-def get_package_data(branch_name, directory=None, quiet=False):
+def get_package_data(branch_name, directory=None, quiet=True, fuerte=False):
     """
     Gets package data about the package(s) in the current branch.
 
     :param branch_name: name of the branch you are searching on (log use only)
     """
-    debug("Looking for packages in '{0}'... ".format(branch_name), end='')
-    ## Check for package.xml(s)
+    log = debug if quiet else info
     repo_dir = directory if directory else os.getcwd()
-    packages = find_packages(repo_dir)
+    stack_path = os.path.join(repo_dir, 'stack.xml')
+    if os.path.exists(stack_path) and not fuerte:
+            warning("stack.xml is present but going to be ignored because this is not a release for Fuerte.")
+    log("Looking for packages in '{0}' branch... ".format(branch_name), end='')
+    ## Check for package.xml(s)
+    if not fuerte:
+        packages = find_packages(repo_dir)
+    else:
+        packages = None
     if type(packages) == dict and packages != {}:
         if len(packages) > 1:
-            debug("found " + str(len(packages)) + " packages.",
+            log("found " + str(len(packages)) + " packages.",
                  use_prefix=False)
         else:
-            debug("found '" + packages.values()[0].name + "'.",
+            log("found '" + packages.values()[0].name + "'.",
                  use_prefix=False)
         version = verify_equal_package_versions(packages.values())
         return [p.name for p in packages.values()], version, packages
@@ -164,19 +172,18 @@ def get_package_data(branch_name, directory=None, quiet=False):
         import rospkg
         has_rospkg = True
     except ImportError:
-        debug(ansi('redf') + "failed." + ansi('reset'), use_prefix=False)
+        log(ansi('redf') + "failed." + ansi('reset'), use_prefix=False)
         warning("rospkg was not detected, stack.xml discovery is disabled",
                 file=sys.stderr)
     if not has_rospkg:
         error("no package.xml(s) found, and no name specified with "
               "'--package-name', aborting.", use_prefix=False, exit=True)
-    stack_path = os.path.join(repo_dir, 'stack.xml')
     if os.path.exists(stack_path):
-        debug("found stack.xml.", use_prefix=False)
+        log("found stack.xml.", use_prefix=False)
         stack = rospkg.stack.parse_stack_file(stack_path)
         return stack.name, stack.version, stack
     # Otherwise we have a problem
-    debug("failed.", use_prefix=False)
+    log("failed.", use_prefix=False)
     error("no package.xml(s) or stack.xml found, and not name "
           "specified with '--package-name', aborting.",
           use_prefix=False, exit=True)
