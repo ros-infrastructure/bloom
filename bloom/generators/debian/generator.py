@@ -401,15 +401,19 @@ class DebianGenerator(BloomGenerator):
             self.create_from_template('rules.metapackage', data, debian_dir,
                                       chmod=0755, outfile='rules')
         else:
-            error("Unrecognized BuildType (" + data['BuildType'] + \
+            error("Unrecognized BuildType (" + data['BuildType'] +
                   ") for package: " + data['Name'])
             return code.DEBIAN_UNRECOGNIZED_BUILD_TYPE
         # Generate the gbp.conf file
+        data['release_tag'] = self.get_release_tag(data)
         self.create_from_template('gbp.conf', data, debian_dir)
         # Commit results
         execute_command('git add ' + debian_dir)
-        execute_command('git commit -m "Generated debian files for ' + \
+        execute_command('git commit -m "Generated debian files for ' +
                         debian_distro + '"')
+
+    def get_release_tag(self, data):
+        return 'release/{0}/{1}-{2}'.format(data['Name'], data['Version'], self.debian_inc)
 
     def create_from_template(self, template_name, data, directory,
                              chmod=None, outfile=None):

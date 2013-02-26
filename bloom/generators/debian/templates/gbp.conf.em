@@ -1,3 +1,3 @@
 [git-buildpackage]
-upstream-branch=release/@(Name)/@(Version)
+upstream-branch=@(release_tag)
 upstream-tree=branch

@@ -58,3 +58,7 @@ class RosDebianGenerator(DebianGenerator):
             ['debian/' + r + '/' + d + '/' + n, b, False] for d in ds
         ])
         return args
+
+    def get_release_tag(self, data):
+        return 'release/{0}/{1}/{2}-{3}'\
+            .format(self.rosdistro, data['Name'], data['Version'], self.debian_inc)
