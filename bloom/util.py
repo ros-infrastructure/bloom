@@ -156,7 +156,7 @@ def get_package_data(branch_name, directory=None, quiet=True, fuerte=False):
     if not fuerte:
         packages = find_packages(repo_dir)
     else:
-        packages = None
+        packages = {}
     if type(packages) == dict and packages != {}:
         if len(packages) > 1:
             log("found " + str(len(packages)) + " packages.",
@@ -184,7 +184,7 @@ def get_package_data(branch_name, directory=None, quiet=True, fuerte=False):
         return stack.name, stack.version, stack
     # Otherwise we have a problem
     log("failed.", use_prefix=False)
-    error("no package.xml(s) or stack.xml found, and not name "
+    error("no package.xml(s) or stack.xml found, and no name "
           "specified with '--package-name', aborting.",
           use_prefix=False, exit=True)
 

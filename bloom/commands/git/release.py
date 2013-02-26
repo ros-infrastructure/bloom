@@ -101,7 +101,6 @@ def clean_up_repositories():
 def get_upstream_meta(upstream_dir, ros_distro):
     meta = None
     with change_directory(upstream_dir):
-        print(ros_distro)
         name, version, stackages = get_package_data(get_current_branch(),
             quiet=False, fuerte=(ros_distro == 'fuerte'))
     meta = {
@@ -157,6 +156,7 @@ def process_track_settings(track_dict, release_inc_override):
     settings['vcs_type'] = vcs_type
     # Is the version set to auto?
     version = track_dict['version']
+    track_dict['ros_distro'] = str(track_dict['ros_distro'].lower())
     repo = None
     if version.lower() == ':{auto}':
         # Is the vcs_type either hg, git, or svn?
@@ -164,7 +164,7 @@ def process_track_settings(track_dict, release_inc_override):
             error("Auto detection of version is not supported for '{0}'"
                 .format(vcs_type), exit=True)
         devel_branch = track_dict['devel_branch']
-        if type(devel_branch) in [str, unicode]\
+        if type(devel_branch) in [str, unicode] \
         and devel_branch.lower() == ':{none}':
             devel_branch = None
         version, repo = find_version_from_upstream(vcs_uri,

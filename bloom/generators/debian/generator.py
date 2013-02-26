@@ -65,9 +65,9 @@ def match_branches_with_prefix(prefix, get_branches):
     return list(set(branches))
 
 
-def get_stackage_from_branch(branch):
+def get_stackage_from_branch(branch, rosdistro):
     with inbranch(branch):
-        package_data = get_package_data(branch)
+        package_data = get_package_data(branch, fuerte=(rosdistro == 'fuerte'))
         if type(package_data) not in [list, tuple]:
             # It is a ret code
             DebianGenerator.exit(package_data)
@@ -148,7 +148,7 @@ class DebianGenerator(BloomGenerator):
         self.branch_args = []
         self.debian_branches = []
         for branch in self.branches:
-            stackage, kind = get_stackage_from_branch(branch)
+            stackage, kind = get_stackage_from_branch(branch, self.rosdistro)
             self.packages[stackage.name] = (stackage, kind)
             self.names.append(stackage.name)
             args = self.generate_branching_arguments(stackage, branch)
