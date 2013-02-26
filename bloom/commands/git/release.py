@@ -218,7 +218,7 @@ def execute_track(track, track_dict, release_inc, pretend=True):
     # setup extra settings
     archive_dir_path = tempfile.mkdtemp()
     settings['archive_dir_path'] = archive_dir_path
-    archive_file = '{name}-{version}.tar.gz'.format(**settings)
+    archive_file = '{name}-{release_tag}.tar.gz'.format(**settings)
     settings['archive_path'] = os.path.join(archive_dir_path, archive_file)
     # execute actions
     info("", use_prefix=False)
