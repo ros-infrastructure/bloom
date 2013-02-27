@@ -1,6 +1,8 @@
 0.3.1
 -----
 
+- Fixed handling of non-standard archive names in git-bloom-import-upstream.
+  This was a bug where if the archive only had the name of the package then it would fail to be processed by import-upstream.
 - Fixed an issue when blooming from svn upstream.
   This issue was caused by improperly handling the release_tag configuration when dealing with svn
 

@@ -195,7 +195,7 @@ def handle_tree(tree, directory, root_path, version):
 
 
 def import_patches(patches_path, patches_path_dict, target_branch, version):
-    info("Overlaying files from 'bloom:{0}' into '{1}' branch..."
+    info("Overlaying files from patched folder '{0}' on the 'bloom' branch into the '{1}' branch..."
         .format(patches_path, target_branch))
     with inbranch(target_branch):
         handle_tree(patches_path_dict, '', patches_path, version)
@@ -220,14 +220,22 @@ def import_upstream(tarball_path, patches_path, version, name, replace):
         elif tarball_file.endswith('.zip'):
             ending = '.zip'
         else:
-            error("Cannot detect name and/or version from archive: '{0}'"
+            error("Cannot detect type of archive: '{0}'"
                 .format(tarball_file), exit=True)
         tarball_file = tarball_file[:-len(ending)]
         split_tarball_file = tarball_file.split('-')
-        if len(split_tarball_file) < 2:
+        if len(split_tarball_file) < 2 and not version \
+        or len(split_tarball_file) < 1:
             error("Cannot detect name and/or version from archive: '{0}'"
                 .format(tarball_file), exit=True)
-    name = name if name else '-'.join(split_tarball_file[:-1])
+    if not name and len(split_tarball_file) == 1:
+        name = split_tarball_file[0]
+    elif not name and len(split_tarball_file) == 1:
+        name = '-'.join(split_tarball_file[:-1])
+    if not version and len(split_tarball_file) < 2:
+        error("Cannot detect version from archive: '{0}'"
+            .format(tarball_file) + " and the version was not spcified.",
+            exit=True)
     version = version if version else split_tarball_file[-1]
 
     # Check if the patches_path (if given) exists

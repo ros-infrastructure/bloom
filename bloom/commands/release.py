@@ -302,7 +302,8 @@ def get_argument_parser():
     add('track', nargs='?', default=None, help="track to run")
     add('--non-interactive', '-y', action='store_true', default=False)
     add('--ros-distro', '-r', default='groovy', help="determines the ROS distro file used")
-    add('--new-track', '-n', action='store_true', default=False, help="if used, a new track will be created before running bloom")
+    add('--new-track', '-n', action='store_true', default=False,
+        help="if used, a new track will be created before running bloom")
     return parser
 
 _quiet = False
