@@ -91,6 +91,7 @@ def calculate_file_md5(path, block_size=2 ** 20):
 
 
 def export_upstream(uri, tag, vcs_type, output_dir, show_uri, name):
+    tag = tag if tag != ':{none}' else None
     output_dir = output_dir or os.getcwd()
     if uri.startswith('git@'):
         uri_is_path = False
@@ -105,8 +106,9 @@ def export_upstream(uri, tag, vcs_type, output_dir, show_uri, name):
         if uri_is_path:
             upstream_repo = get_vcs_client(vcs_type, uri)
         else:
-            upstream_repo = get_vcs_client(vcs_type, tmp_dir)
-            if not upstream_repo.checkout(uri, tag):
+            repo_path = os.path.join(tmp_dir, 'upstream')
+            upstream_repo = get_vcs_client(vcs_type, repo_path)
+            if not upstream_repo.checkout(uri, tag or ''):
                 error("Failed to clone repository at '{0}'".format(uri) +
                     (" to reference '{0}'.".format(tag) if tag else '.'),
                     exit=True)

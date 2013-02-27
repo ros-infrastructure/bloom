@@ -1,3 +1,9 @@
+0.3.1
+-----
+
+- Fixed an issue when blooming from svn upstream.
+  This issue was caused by improperly handling the release_tag configuration when dealing with svn
+
 0.3.0
 -----
 - Generators can now be added using the distribute entry_points machanism
