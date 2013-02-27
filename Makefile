@@ -78,7 +78,7 @@ pre-release:
 	# Set the permissions
 	chmod 775 setup.py
 	# Commit bump
-	git commit -m "Releasing bloom version $(NEW_VERSION)" setup.py
+	git commit -m "$(NEW_VERSION)" setup.py
 	# Tag it
 	git tag -f $(NEW_VERSION)
 
