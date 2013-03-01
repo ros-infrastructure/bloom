@@ -1,8 +1,5 @@
 from __future__ import print_function
 
-import sys
-import argparse
-
 from bloom.commands.git.patch.common import get_patch_config
 from bloom.commands.git.patch.common import set_patch_config
 
@@ -28,7 +25,7 @@ def remove_patches(directory=None):
     # Ensure the current branch is valid
     if current_branch is None:
         error("Could not determine current branch, are you in a git repo?",
-            exit=True)
+              exit=True)
     # Construct the patches branch
     patches_branch = 'patches/' + current_branch
     try:
@@ -60,20 +57,17 @@ def remove_patches(directory=None):
             checkout(current_branch, directory=directory)
 
 
-def get_parser():
-    """Returns a parser.ArgumentParser with all arguments defined"""
-    parser = argparse.ArgumentParser(description="""
-Removes any applied patches from the working branch, including any un-exported
-patches, so use with caution.
-""")
+def add_parser(subparsers):
+    parser = subparsers.add_parser(
+        'remove',
+        description="Removes any applied patches from the working branch, "
+                    "including any un-exported patches, so use with caution."
+    )
+    parser.set_defaults(func=main)
+    add_global_arguments(parser)
     return parser
 
 
-def main():
-    # Assumptions: in a git repo, this command verb was passed, argv has enough
-    sysargs = sys.argv[2:]
-    parser = get_parser()
-    parser = add_global_arguments(parser)
-    args = parser.parse_args(sysargs)
+def main(args):
     handle_global_arguments(args)
     return remove_patches()
