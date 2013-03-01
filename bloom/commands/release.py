@@ -56,6 +56,7 @@ from bloom.git import ls_tree
 
 from bloom.logging import error
 from bloom.logging import fmt
+from bloom.logging import get_success_prefix
 from bloom.logging import info
 from bloom.logging import warning
 
@@ -67,11 +68,13 @@ try:
     from vcstools.vcs_abstraction import get_vcs_client
 except ImportError:
     error("vcstools was not detected, please install it.", file=sys.stderr,
-        exit=True)
+          exit=True)
 
 ROS_DISTRO_FILE = 'https://raw.github.com/ros/rosdistro/master/releases/{0}.yaml'
 
 _repositories = {}
+
+_success = get_success_prefix()
 
 
 @atexit.register
@@ -88,7 +91,7 @@ def fetch_distro_file(distro_file_url):
         raw_distro_file = urllib2.urlopen(distro_file_url)
     except urllib2.HTTPError as e:
         error("Failed to fetch ROS distro file at '{0}': {1}"
-            .format(distro_file_url, e), exit=True)
+              .format(distro_file_url, e), exit=True)
     return raw_distro_file.read()
 
 
@@ -98,7 +101,7 @@ def get_repo_uri(repository, distro, distro_file_url=ROS_DISTRO_FILE):
     distro_file = yaml.load(fetch_distro_file(distro_file_url))
     if repository not in distro_file['repositories']:
         error("Specified repository '{0}' is not in the distro file located at '{1}'".format(repository, distro_file_url),
-            exit=True)
+              exit=True)
     return distro_file['repositories'][repository]['url']
 
 
@@ -109,7 +112,7 @@ def get_release_repo(repository, distro):
         temp_dir = tempfile.mkdtemp()
         _repositories[repository] = get_vcs_client('git', temp_dir)
         info(fmt("@{gf}@!==> @|") +
-            "Fetching '{0}' repository from '{1}'".format(repository, uri))
+             "Fetching '{0}' repository from '{1}'".format(repository, uri))
         _repositories[repository].checkout(uri, 'master')
     return _repositories[repository]
 
@@ -118,7 +121,7 @@ def check_for_bloom_conf(repository):
     bloom_ls = ls_tree('bloom')
     if bloom_ls is None:
         error("Release repository '{0}' not initialized, please initialize the bloom repository before releasing from it."
-            .format(repository), exit=True)
+              .format(repository), exit=True)
     bloom_files = [f for f, t in bloom_ls.iteritems() if t == 'file']
     return 'bloom.conf' in bloom_files
 
@@ -164,7 +167,7 @@ def generate_ros_distro_diff(track, repository, distro, distro_file_url=ROS_DIST
     # distro_dump_orig = yaml.dump(distro_file_orig, indent=2, default_flow_style=False)
     distro_dump = yaml.dump(distro_file, indent=2, default_flow_style=False)
     udiff = difflib.unified_diff(distro_file_raw.splitlines(), distro_dump.splitlines(),
-        fromfile=distro_file_name, tofile=distro_file_name)
+                                 fromfile=distro_file_name, tofile=distro_file_name)
     if udiff:
         info("Unified diff for the ROS distro file located at '{0}':".format(distro_file_url))
         for line in udiff:
@@ -218,9 +221,9 @@ def perform_release(repository, track, distro, new_track, interactive):
                 tracks_dict = get_tracks_dict_raw()
         if track and track not in tracks_dict['tracks']:
             error("Given track '{0}' does not exist in release repository."
-                .format(track))
+                  .format(track))
             error("Available tracks: " + str(tracks_dict['tracks'].keys()),
-                exit=True)
+                  exit=True)
         elif not track:
             tracks = tracks_dict['tracks'].keys()
             # Error out if there are no tracks
@@ -235,7 +238,7 @@ def perform_release(repository, track, distro, new_track, interactive):
             if len(tracks) != 1:
                 error("No track specified and there is not just one track.")
                 error("Please specify one of the available tracks: " +
-                    str(tracks), exit=True)
+                      str(tracks), exit=True)
             # Get the only track
             track = tracks[0]
         # Ensure the track is complete
@@ -245,52 +248,52 @@ def perform_release(repository, track, distro, new_track, interactive):
         write_tracks_dict_raw(tracks_dict)
         # Run the release
         info(fmt("@{gf}@!==> @|") +
-            "Releasing '{0}' using release track '{1}'"
-            .format(repository, track))
+             "Releasing '{0}' using release track '{1}'"
+             .format(repository, track))
         cmd = 'git-bloom-release ' + str(track)
         info(fmt("@{bf}@!==> @|@!" + str(cmd)))
         try:
             subprocess.check_call(cmd, shell=True)
         except subprocess.CalledProcessError:
             error("Release failed, exiting.", exit=True)
-        info(fmt("@{gf}<== @|") +
-            "Released '{0}' using release track '{1}' successfully"
-            .format(repository, track))
+        info(fmt(_success) +
+             "Released '{0}' using release track '{1}' successfully"
+             .format(repository, track))
         # Check for pushing
         if interactive:
             info("Releasing complete, push?")
             if not maybe_continue():
                 error("User answered no to continue prompt, aborting.",
-                    exit=True)
+                      exit=True)
         # Push changes to the repository
         info(fmt("@{gf}@!==> @|") +
-            "Pushing changes to release repository for '{0}'"
-            .format(repository))
+             "Pushing changes to release repository for '{0}'"
+             .format(repository))
         cmd = 'git push --all'
         info(fmt("@{bf}@!==> @|@!" + str(cmd)))
         try:
             subprocess.check_call(cmd, shell=True)
         except subprocess.CalledProcessError:
             error("Pushing changes failed, exiting.", exit=True)
-        info(fmt("@{gf}<== @|") + "Pushed changes successfully")
+        info(fmt(_success) + "Pushed changes successfully")
         # Push tags to the repository
         info(fmt("@{gf}@!==> @|") +
-            "Pushing tags to release repository for '{0}'"
-            .format(repository))
+             "Pushing tags to release repository for '{0}'"
+             .format(repository))
         cmd = 'git push --tags'
         info(fmt("@{bf}@!==> @|@!" + str(cmd)))
         try:
             subprocess.check_call(cmd, shell=True)
         except subprocess.CalledProcessError:
             error("Pushing tags failed, exiting.", exit=True)
-        info(fmt("@{gf}<== @|") + "Pushed tags successfully")
+        info(fmt(_success) + "Pushed tags successfully")
         # Propose github pull request
         info(fmt("@{gf}@!==> @|") +
-            "Generating pull request to distro file located at '{0}'"
-            .format(ROS_DISTRO_FILE).format(distro))
+             "Generating pull request to distro file located at '{0}'"
+             .format(ROS_DISTRO_FILE).format(distro))
         generate_ros_distro_diff(track, repository, distro)
         info("In the future this will create a pull request for you, done for now...")
-        info(fmt("@{gf}<== @|") + "Pull request opened at: '{0}'".format('Not yet Implemented'))
+        info(fmt(_success) + "Pull request opened at: '{0}'".format('Not yet Implemented'))
 
 
 def get_argument_parser():

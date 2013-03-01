@@ -1,6 +1,10 @@
+# -*- coding: utf-8 -*-
+
 from __future__ import print_function
 
 import os
+from platform import mac_ver
+from pkg_resources import parse_version
 import string
 import sys
 
@@ -13,6 +17,10 @@ _log_prefix_stack = ['']
 _log_prefix = ''
 _log_indent = False
 _drop_first_log_prefix = False
+
+_emoji_check_mark = "✅  "
+_emoji_cross_mark = "❌  "
+_is_mac_lion_or_greater = parse_version(mac_ver()[0]) >= parse_version('10.7.0')
 
 
 def ansi(key):
@@ -71,6 +79,20 @@ def disable_ANSI_colors():
     global _ansi
     for key in _ansi:
         _ansi[key] = ''
+
+
+def is_mac_lion_or_greater():
+    global _is_mac_lion_or_greater
+    return _is_mac_lion_or_greater
+
+
+def get_success_prefix():
+    return _emoji_check_mark if _is_mac_lion_or_greater else "@{gf}<== @|"
+
+
+def get_error_prefix():
+    return _emoji_cross_mark if _is_mac_lion_or_greater else "@{rf}@!<== @|"
+
 
 # Default to ansi colors on
 enable_ANSI_colors()

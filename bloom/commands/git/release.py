@@ -53,6 +53,7 @@ from bloom.config import write_tracks_dict_raw
 
 from bloom.logging import error
 from bloom.logging import fmt
+from bloom.logging import get_error_prefix
 from bloom.logging import info
 from bloom.logging import sanitize
 from bloom.logging import warning
@@ -70,9 +71,11 @@ try:
     from vcstools.vcs_abstraction import get_vcs_client
 except ImportError:
     error("vcstools was not detected, please install it.", file=sys.stderr,
-        exit=True)
+          exit=True)
 
 upstream_repos = {}
+
+_error = get_error_prefix()
 
 
 def get_upstream_repo(uri, vcs_type):
@@ -102,7 +105,8 @@ def get_upstream_meta(upstream_dir, ros_distro):
     meta = None
     with change_directory(upstream_dir):
         name, version, stackages = get_package_data(get_current_branch(),
-            quiet=False, fuerte=(ros_distro == 'fuerte'))
+                                                    quiet=False,
+                                                    fuerte=(ros_distro == 'fuerte'))
     meta = {
         'name': name,
         'version': version,
@@ -125,15 +129,15 @@ def find_version_from_upstream(vcs_uri, vcs_type, devel_branch=None, ros_distro=
     upstream_repo = get_upstream_repo(vcs_uri, vcs_type)
     if not upstream_repo.checkout(vcs_uri, devel_branch or ''):
         error("Failed to checkout to the upstream branch "
-            "'{0}' in the repository from '{1}'"
-            .format(devel_branch or '<default>', vcs_uri), exit=True)
+              "'{0}' in the repository from '{1}'"
+              .format(devel_branch or '<default>', vcs_uri), exit=True)
     meta = get_upstream_meta(upstream_repo.get_path(), ros_distro)
     if not meta:
         error("Failed to find any package.xml(s) or a stack.xml in the "
-            "upstream devel branch '{0}' in the repository from '{1}'"
-            .format(devel_branch or '<default>', vcs_uri))
+              "upstream devel branch '{0}' in the repository from '{1}'"
+              .format(devel_branch or '<default>', vcs_uri))
     info("Detected version '{0}' from package(s): {1}"
-        .format(meta['version'], meta['name']))
+         .format(meta['version'], meta['name']))
     return meta['version'], upstream_repo
 
 
@@ -144,15 +148,15 @@ def process_track_settings(track_dict, release_inc_override):
     # Is the vcs_uri set?
     if vcs_uri is None or vcs_uri.lower() == ':{none}':
         error("The '{0}' must be set to something other than None."
-            .format(DEFAULT_TEMPLATE['vcs_uri'].name),
-            exit=True)
+              .format(DEFAULT_TEMPLATE['vcs_uri'].name),
+              exit=True)
     # Is the vcs_type set and valid?
     vcs_type = track_dict['vcs_type']
     vcs_type_prompt = DEFAULT_TEMPLATE['vcs_type']
     if vcs_type is None or vcs_type.lower() not in vcs_type_prompt.values:
         error("The '{0}' cannot be '{1}', valid values are: {2}"
-            .format(vcs_type_prompt.name, vcs_type, vcs_type_prompt.values),
-            exit=True)
+              .format(vcs_type_prompt.name, vcs_type, vcs_type_prompt.values),
+              exit=True)
     settings['vcs_type'] = vcs_type
     # Is the version set to auto?
     version = track_dict['version']
@@ -162,18 +166,20 @@ def process_track_settings(track_dict, release_inc_override):
         # Is the vcs_type either hg, git, or svn?
         if vcs_type not in ['git', 'hg', 'svn']:
             error("Auto detection of version is not supported for '{0}'"
-                .format(vcs_type), exit=True)
+                  .format(vcs_type), exit=True)
         devel_branch = track_dict['devel_branch']
         if type(devel_branch) in [str, unicode] \
-        and devel_branch.lower() == ':{none}':
+           and devel_branch.lower() == ':{none}':
             devel_branch = None
         version, repo = find_version_from_upstream(vcs_uri,
-            vcs_type, devel_branch, track_dict['ros_distro'])
+                                                   vcs_type,
+                                                   devel_branch,
+                                                   track_dict['ros_distro'])
         if version is None:
             warning("Could not determine the version automatically.")
     if version is None or version == ':{ask}':
         ret = raw_input('What version are you releasing '
-            '(version should normally be MAJOR.MINOR.PATCH)? ')
+                        '(version should normally be MAJOR.MINOR.PATCH)? ')
         if not ret:
             error("You must specify a version to continue.", exit=True)
         version = ret
@@ -194,7 +200,7 @@ def process_track_settings(track_dict, release_inc_override):
     elif release_tag is None or release_tag.lower() == ':{none}':
         if vcs_type not in ['svn', 'tar']:
             error("'{0}' can not be None unless '{1}' is either 'svn' or 'tar'"
-                .format(release_tag_prompt.name, vcs_type_prompt.name))
+                  .format(release_tag_prompt.name, vcs_type_prompt.name))
         release_tag = ':{none}'
     else:
         release_tag = release_tag.replace(':{version}', version)
@@ -237,14 +243,14 @@ def execute_track(track, track_dict, release_inc, pretend=True):
             stdout = subprocess.PIPE
             stderr = subprocess.STDOUT
         p = subprocess.Popen(templated_action, stdout=stdout, stderr=stderr,
-            shell=True)
+                             shell=True)
         out, err = p.communicate()
         if bloom.util._quiet:
             info(out, use_prefix=False)
         ret = p.returncode
         if ret > 0:
-            error(fmt("@{rf}@!<== @|Error running command '@!{0}@|'")
-                .format(templated_action), exit=True)
+            error(fmt(_error + "Error running command '@!{0}@|'")
+                  .format(templated_action), exit=True)
         print()
     if not pretend:
         # Update the release_inc
@@ -252,16 +258,17 @@ def execute_track(track, track_dict, release_inc, pretend=True):
         tracks_dict['tracks'][track]['release_inc'] = settings['release_inc']
         tracks_dict['tracks'][track]['last_version'] = settings['version']
         write_tracks_dict_raw(tracks_dict,
-            'Updating release inc to: ' + str(settings['release_inc']))
+                              'Updating release inc to: ' + str(settings['release_inc']))
 
 
 def get_argument_parser(tracks):
     parser = argparse.ArgumentParser(description="Executes a release track.")
-    parser.add_argument('track', choices=tracks,
+    add = parser.add_argument
+    add('track', choices=tracks,
         help="release track to execute")
-    parser.add_argument('--release-increment', '-i',
+    add('--release-increment', '-i',
         help="overrides the automatic release increment number")
-    parser.add_argument('--pretend', '-p', action="store_true", default=False,
+    add('--pretend', '-p', action="store_true", default=False,
         help="does everything but actually run the commands")
     return parser
 
@@ -274,7 +281,7 @@ def main(sysargs=None):
     tracks_dict = get_tracks_dict_raw()
     if not tracks_dict['tracks']:
         error("No tracks configured, first create a track with "
-            "'git-bloom-config new <track_name>'", exit=True)
+              "'git-bloom-config new <track_name>'", exit=True)
 
     # Do argparse stuff
     parser = get_argument_parser([str(t) for t in tracks_dict['tracks']])
@@ -285,7 +292,7 @@ def main(sysargs=None):
     verify_track(args.track, tracks_dict['tracks'][args.track])
 
     execute_track(args.track, tracks_dict['tracks'][args.track],
-        args.release_increment, args.pretend)
+                  args.release_increment, args.pretend)
 
     # Notify the user of success and next action suggestions
     print('\n\n')
@@ -295,5 +302,5 @@ def main(sysargs=None):
          "you should check that the new tags match your expectations, and "
          "then push to the release repo with:@|"))
     info(fmt("  git push --all && git push --tags  "
-        "@{kf}@!# You might have to add --force to the second command if you "
-        "are over-writing existing flags"))
+             "@{kf}@!# You might have to add --force to the second command if you "
+             "are over-writing existing flags"))
