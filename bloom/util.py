@@ -310,7 +310,7 @@ def extract_text(element):
 def segment_version(full_version):
     version_list = full_version.split('.')
     if len(version_list) != 3:
-        warning('Invalid version element in the stack.xml, expected: ' \
+        warning('Invalid version element in the stack.xml, expected: '
                 '<major>.<minor>.<patch>')
     if len(version_list) < 3:
         sys.exit(code.INVALID_VERSION)
@@ -334,13 +334,13 @@ def execute_command(cmd, shell=True, autofail=True, silent=True,
     result = p.returncode
     if result != 0:
         if not silent_error:
-            error("'execute_command' failed to call '{0}'".format(cmd) + \
+            error("'execute_command' failed to call '{0}'".format(cmd) +
                   " which had a return code ({0}):".format(result))
             error("```")
             print(out)
             error("```")
         if autofail:
-            raise CalledProcessError(cmd=cmd, output=out, returncode=result)
+            raise CalledProcessError(result, cmd)
     if return_io:
         return result, out, err
     else:

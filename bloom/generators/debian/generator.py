@@ -467,7 +467,7 @@ class DebianGenerator(BloomGenerator):
                         "Could not resolve the rosdep key '" + rosdep_key +
                         "' for distro '" + debian_distro + "': \n"
                     )
-                    print(str(err))
+                    info(str(err), use_prefix=False)
                 if try_again:
                     error("Resolve problem with rosdep and then continue to try again.")
                     if maybe_continue():

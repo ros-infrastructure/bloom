@@ -4,7 +4,11 @@ from __future__ import print_function
 
 import os
 from platform import mac_ver
-from pkg_resources import parse_version
+try:
+    from pkg_resources import parse_version
+except OSError:
+    os.chdir(os.path.expanduser('~'))
+    from pkg_resources import parse_version
 import string
 import sys
 

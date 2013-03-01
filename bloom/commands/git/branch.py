@@ -81,16 +81,16 @@ def execute_branch(src, dst, interactive, directory=None):
     if interactive:
         info("Summary of changes:")
         if create_dst_branch:
-            print(" " * 22 + "- The specified destination branch, " + \
-                  ansi('boldon') + dst + ansi('reset') + \
-                  ", does not exist; it will be created from the source "
-                  "branch " + ansi('boldon') + src + ansi('reset'))
+            info(" " * 22 + "- The specified destination branch, " +
+                 ansi('boldon') + dst + ansi('reset') +
+                 ", does not exist; it will be created from the source "
+                 "branch " + ansi('boldon') + src + ansi('reset'))
         if create_dst_patches_branch:
-            print(" " * 22 + "- The destination patches branch, " + \
-                  ansi('boldon') + dst_patches + ansi('reset') + \
-                  ", does not exist; it will be created")
-        print(" " * 22 + "- The working branch will be set to " + \
-              ansi('boldon') + dst + ansi('reset'))
+            info(" " * 22 + "- The destination patches branch, " +
+                 ansi('boldon') + dst_patches + ansi('reset') +
+                 ", does not exist; it will be created")
+        info(" " * 22 + "- The working branch will be set to " +
+             ansi('boldon') + dst + ansi('reset'))
         if not maybe_continue():
             error("Answered no to continue, aborting.", exit=True)
 

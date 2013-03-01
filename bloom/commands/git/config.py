@@ -132,15 +132,15 @@ def check_git_init():
     if get_root() is None:
         error("Not in a valid git repository", exit=True)
     cmd = 'git show-ref --heads'
-    result = execute_command(cmd, shell=True, autofail=False,
-        silent_error=True)
+    result = execute_command(cmd, autofail=False,
+                             silent_error=True)
     if result != 0:
         info("Freshly initialized git repository detected.")
         info("An initial empty commit is going to be made.")
         if not maybe_continue():
             error("Answered no to continue, exiting.", exit=True)
         # Make an initial empty commit
-        execute_command('git commit -m "initial commit" --allow-empty')
+        execute_command('git commit --allow-empty -m "Initial commit"', silent=True)
 
 
 def new_cmd(args):

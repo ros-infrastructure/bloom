@@ -40,11 +40,11 @@ def test_create_a_bloom_repository(directory=None):
         r = user('git-bloom-config new foo', return_io=True, silent=False)
         _, out, err = r
     assert out.count('ontinue') > 0, \
-           "git-bloom-config didn't ask about git init:\n```\n" + out + "\n```"
+        "git-bloom-config didn't ask about git init:\n```\n" + out + "\n```"
     assert branch_exists('bloom'), "branch 'bloom' does not exist"
     with inbranch('bloom'):
         assert os.path.exists('tracks.yaml'), \
-               "no tracks.yaml file in the 'bloom' branch"
+            "no tracks.yaml file in the 'bloom' branch"
         with open('tracks.yaml', 'r') as f:
             tracks_dict = yaml.load(f.read())
         assert 'tracks' in tracks_dict, "bad bloom configurations"
@@ -82,7 +82,7 @@ def setup_git_repo(directory=None):
     user('git init .')
     user('touch README.md')
     user('git add README.md')
-    user('git commit -m "Initial commit"')
+    user('git commit --allow-empty -m "Initial commit"')
 
 
 @in_temporary_directory

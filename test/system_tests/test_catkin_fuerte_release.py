@@ -34,7 +34,7 @@ def create_upstream_catkin_fuerte_repository(stack, directory=None):
         user('git init .')
         user('echo "readme stuff" >> README.md')
         user('git add README.md')
-        user('git commit -m "Initial commit"')
+        user('git commit -m "Initial commit" --allow-empty')
         user('git checkout -b fuerte_devel')
         stack_xml = """\
 <stack>
@@ -78,7 +78,7 @@ def create_upstream_catkin_fuerte_repository(stack, directory=None):
             f.write(package_xml)
         user('git add stack.xml')
         user('git add package.xml')
-        user('git commit -m "Releasing version 0.1.0"')
+        user('git commit -m "Releasing version 0.1.0" --allow-empty')
         user('git tag 0.1.0 -m "Releasing version 0.1.0"')
         url = 'file://' + os.getcwd()
     return url
@@ -92,7 +92,10 @@ def test_fuerte_package_repository(directory=None):
     directory = directory if directory is not None else os.getcwd()
     # Setup
     upstream_url = create_upstream_catkin_fuerte_repository('foo', directory)
-    release_url = create_release_repo(upstream_url, 'git', 'fuerte_devel',
+    release_url = create_release_repo(
+        upstream_url,
+        'git',
+        'fuerte_devel',
         'fuerte')
     release_dir = os.path.join(directory, 'foo_release_clone')
     release_client = get_vcs_client('git', release_dir)
@@ -100,7 +103,12 @@ def test_fuerte_package_repository(directory=None):
     with change_directory(release_dir):
         # First run everything
         with bloom_answer(bloom_answer.ASSERT_NO_QUESTION):
-            user('git-bloom-release --quiet fuerte', silent=False)
+            cmd = 'git-bloom-release{0} fuerte'
+            if 'BLOOM_VERBOSE' not in os.environ:
+                cmd = cmd.format(' --quiet')
+            else:
+                cmd = cmd.format('')
+            user(cmd, silent=False)
         ###
         ### Import upstream tests
         ###
@@ -112,8 +120,8 @@ def test_fuerte_package_repository(directory=None):
         # Is the package.xml from upstream in the upstream branch now?
         with inbranch('upstream'):
             assert os.path.exists('stack.xml'), \
-                   "upstream did not import: '" + os.getcwd() + "': " + \
-                   str(os.listdir(os.getcwd()))
+                "upstream did not import: '" + os.getcwd() + "': " + \
+                str(os.listdir(os.getcwd()))
             assert open('stack.xml').read().count('0.1.0'), "not right file"
 
         ###

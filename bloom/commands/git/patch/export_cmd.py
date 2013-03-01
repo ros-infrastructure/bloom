@@ -29,7 +29,7 @@ def export_patches(directory=None):
     patches_branch = 'patches/' + current_branch
     # Ensure the patches branch exists
     if not branch_exists(patches_branch, False, directory=directory):
-        error("The patches branch ({0}) does not ".format(patches_branch) + \
+        error("The patches branch ({0}) does not ".format(patches_branch) +
               "exist, did you use git-bloom-branch?", exit=True)
     try:
         # Get parent branch and base commit from patches branch
@@ -40,7 +40,7 @@ def export_patches(directory=None):
         checkout(patches_branch, directory=directory)
         # Notify the user
         debug("Exporting patches from "
-             "{0}...{1}".format(config['base'], current_branch))
+              "{0}...{1}".format(config['base'], current_branch))
         # Remove all the old patches
         if len(list_patches(directory)) > 0:
             cmd = 'git rm ./*.patch'

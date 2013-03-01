@@ -38,7 +38,7 @@ def create_upstream_repository(packages, directory=None):
         user('git init .')
         user('echo "readme stuff" >> README.md')
         user('git add README.md')
-        user('git commit -m "Initial commit"')
+        user('git commit -m "Initial commit" --allow-empty')
         user('git checkout -b groovy_devel')
         for package in packages:
             user('mkdir ' + package)
@@ -69,7 +69,7 @@ def create_upstream_repository(packages, directory=None):
                 user('mkdir -p include')
                 user('touch include/{0}.h'.format(package))
                 user('git add package.xml .cproject .project include')
-        user('git commit -m "Releasing version 0.1.0"')
+        user('git commit -m "Releasing version 0.1.0" --allow-empty')
         user('git tag 0.1.0 -m "Releasing version 0.1.0"')
         return os.getcwd()
 
@@ -79,7 +79,12 @@ def _test_unary_package_repository(release_dir, version, directory=None):
     with change_directory(release_dir):
         # First run everything
         with bloom_answer(bloom_answer.ASSERT_NO_QUESTION):
-            user('git-bloom-release --quiet groovy', silent=False)
+            cmd = 'git-bloom-release{0} groovy'
+            if 'BLOOM_VERBOSE' not in os.environ:
+                cmd = cmd.format(' --quiet')
+            else:
+                cmd = cmd.format('')
+            user(cmd, silent=False)
         ###
         ### Import upstream
         ###
@@ -91,8 +96,8 @@ def _test_unary_package_repository(release_dir, version, directory=None):
         # Is the package.xml from upstream in the upstream branch now?
         with inbranch('upstream'):
             assert os.path.exists('package.xml'), \
-                   "upstream did not import: '" + os.getcwd() + "': " + \
-                   str(os.listdir(os.getcwd()))
+                "upstream did not import: '" + os.getcwd() + "': " + \
+                str(os.listdir(os.getcwd()))
             with open('package.xml') as f:
                 package_xml = f.read()
                 assert package_xml.count(version), "not right file"
@@ -106,11 +111,11 @@ def _test_unary_package_repository(release_dir, version, directory=None):
         assert branch_exists('release/groovy/foo'), \
             "no release/groovy/foo branch"
         assert branch_exists('patches/release/groovy/foo'), \
-               "no patches/release/groovy/foo branch"
+            "no patches/release/groovy/foo branch"
         # was the release tag created?
         ret, out, err = user('git tag', return_io=True)
         assert out.count('release/groovy/foo/' + version + '-0') == 1, \
-               "no release tag created"
+            "no release tag created"
 
         ###
         ### Make patch
@@ -123,7 +128,7 @@ def _test_unary_package_repository(release_dir, version, directory=None):
                     os.makedirs('include')
                 user('touch include/foo.h')
                 user('git add include/foo.h')
-            user('git commit -m "A release patch"')
+            user('git commit -m "A release patch" --allow-empty')
 
         ###
         ### Test import and export
@@ -142,11 +147,11 @@ def _test_unary_package_repository(release_dir, version, directory=None):
         assert branch_exists('release/groovy/foo'), \
             "no release/groovy/foo branch"
         assert branch_exists('patches/release/groovy/foo'), \
-               "no patches/release/groovy/foo branch"
+            "no patches/release/groovy/foo branch"
         # was the release tag created?
         ret, out, err = user('git tag', return_io=True)
         assert out.count('release/groovy/foo/' + version) == 1, \
-               "no release tag created"
+            "no release tag created"
 
 
 @in_temporary_directory
@@ -158,7 +163,10 @@ def test_unary_package_repository(directory=None):
     # Setup
     upstream_dir = create_upstream_repository(['foo'], directory)
     upstream_url = 'file://' + upstream_dir
-    release_url = create_release_repo(upstream_url, 'git', 'groovy_devel',
+    release_url = create_release_repo(
+        upstream_url,
+        'git',
+        'groovy_devel',
         'groovy')
     release_dir = os.path.join(directory, 'foo_release_clone')
     release_client = get_vcs_client('git', release_dir)
@@ -182,7 +190,10 @@ def test_multi_package_repository(directory=None):
     pkgs = ['foo', 'bar', 'baz']
     upstream_dir = create_upstream_repository(pkgs, directory)
     upstream_url = 'file://' + upstream_dir
-    release_url = create_release_repo(upstream_url, 'git', 'groovy_devel',
+    release_url = create_release_repo(
+        upstream_url,
+        'git',
+        'groovy_devel',
         'groovy')
     release_dir = os.path.join(directory, 'foo_release_clone')
     release_client = get_vcs_client('git', release_dir)
@@ -190,7 +201,12 @@ def test_multi_package_repository(directory=None):
     with change_directory(release_dir):
         # First run everything
         with bloom_answer(bloom_answer.ASSERT_NO_QUESTION):
-            user('git-bloom-release --quiet groovy', silent=False)
+            cmd = 'git-bloom-release{0} groovy'
+            if 'BLOOM_VERBOSE' not in os.environ:
+                cmd = cmd.format(' --quiet')
+            else:
+                cmd = cmd.format('')
+            user(cmd, silent=False)
         ###
         ### Import upstream
         ###
@@ -204,7 +220,7 @@ def test_multi_package_repository(directory=None):
             for pkg in pkgs:
                 with change_directory(pkg):
                     assert os.path.exists('package.xml'), \
-                           "upstream did not import: " + os.listdir()
+                        "upstream did not import: " + os.listdir()
                     with open('package.xml') as f:
                         assert f.read().count('0.1.0'), "not right file"
 
@@ -216,26 +232,26 @@ def test_multi_package_repository(directory=None):
         for pkg in pkgs:
             # Does the release/pkg branch exist?
             assert branch_exists('release/groovy/' + pkg), \
-                   "no release/groovy/" + pkg + " branch"
+                "no release/groovy/" + pkg + " branch"
             # Does the patches/release/pkg branch exist?
             assert branch_exists('patches/release/groovy/' + pkg), \
-                   "no patches/release/groovy/" + pkg + " branch"
+                "no patches/release/groovy/" + pkg + " branch"
             # Did the release tag get created?
             assert out.count('release/groovy/' + pkg + '/0.1.0-0') == 1, \
-                   "no release tag created for " + pkg
+                "no release tag created for " + pkg
             # Is there a package.xml in the top level?
             with inbranch('release/groovy/' + pkg):
                 assert os.path.exists('package.xml'), "release branch invalid"
                 # Is it the correct package.xml for this pkg?
                 package_xml = open('package.xml', 'r').read()
                 assert package_xml.count('<name>' + pkg + '</name>'), \
-                       "incorrect package.xml for " + str(pkg)
+                    "incorrect package.xml for " + str(pkg)
 
         # Make a patch
         with inbranch('release/groovy/' + pkgs[0]):
             user('echo "This is a change" >> README.md')
             user('git add README.md')
-            user('git commit -m "added a readme"')
+            user('git commit -m "added a readme" --allow-empty')
 
         ###
         ### Release generator, again
@@ -249,20 +265,20 @@ def test_multi_package_repository(directory=None):
         for pkg in pkgs:
             # Does the release/pkg branch exist?
             assert branch_exists('release/groovy/' + pkg), \
-                   "no release/groovy/" + pkg + " branch"
+                "no release/groovy/" + pkg + " branch"
             # Does the patches/release/pkg branch exist?
             assert branch_exists('patches/release/groovy/' + pkg), \
-                   "no patches/release/groovy/" + pkg + " branch"
+                "no patches/release/groovy/" + pkg + " branch"
             # Did the release tag get created?
             assert out.count('release/groovy/' + pkg + '/0.1.0-0') == 1, \
-                   "no release tag created for " + pkg
+                "no release tag created for " + pkg
             # Is there a package.xml in the top level?
             with inbranch('release/groovy/' + pkg):
                 assert os.path.exists('package.xml'), "release branch invalid"
                 # Is it the correct package.xml for this pkg?
                 with open('package.xml', 'r') as f:
                     assert f.read().count('<name>' + pkg + '</name>'), \
-                       "incorrect package.xml for " + str(pkg)
+                        "incorrect package.xml for " + str(pkg)
 
         ###
         ### ROSDebian Generator
@@ -273,19 +289,19 @@ def test_multi_package_repository(directory=None):
             for distro in ['oneiric', 'precise', 'quantal']:
                 # Does the debian/distro/pkg branch exist?
                 assert branch_exists('debian/groovy/' + distro + '/' + pkg), \
-                       "no release/" + pkg + " branch"
+                    "no release/" + pkg + " branch"
                 # Does the patches/debian/distro/pkg branch exist?
                 patches_branch = 'patches/debian/groovy/' + distro + '/' + pkg
                 assert branch_exists(patches_branch), \
-                       "no patches/release/" + pkg + " branch"
+                    "no patches/release/" + pkg + " branch"
                 # Did the debian tag get created?
                 tag = 'debian/ros-groovy-' + pkg + '_0.1.0-0_' + distro
                 assert out.count(tag) == 1, \
-                   "no release tag created for '" + pkg + "': `" + out + "`"
+                    "no release tag created for '" + pkg + "': `" + out + "`"
             # Is there a package.xml in the top level?
             with inbranch('debian/groovy/' + distro + '/' + pkg):
                 assert os.path.exists('package.xml'), "release branch invalid"
                 # Is it the correct package.xml for this pkg?
                 with open('package.xml', 'r') as f:
                     assert f.read().count('<name>' + pkg + '</name>'), \
-                       "incorrect package.xml for " + str(pkg)
+                        "incorrect package.xml for " + str(pkg)

@@ -140,5 +140,5 @@ NOTE: The package manifest "%s" contains a comment besides the version tag:
 def change_upstream_version(upstream_dir, version):
     update_versions([upstream_dir], version)
     with change_directory(upstream_dir):
-        user('git commit -am "Version {0}"'.format(version))
+        user('git commit -am "Version {0}" --allow-empty'.format(version))
         user('git tag ' + version)

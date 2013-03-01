@@ -3,14 +3,20 @@ python:
   - "2.6"
   - "2.7"
   - "3.2"
+env:
+  - GIT=v1.7.9.5
 # command to install dependencies
 install:
-  - sudo python setup.py install
+  - pip install empy PyYAML argparse rosdep rospkg vcstools catkin-pkg python-dateutil distribute
+  - pip install nose coverage
+  - sudo pip install rosdep
   - sudo rosdep init
-  - sudo rosdep update
+  - rosdep update
+  - git config --global user.email "test@example.com"
+  - git config --global user.name "Test User"
 # command to run tests
 script:
-  - sudo python setup.py nosetests -s
+  - BLOOM_VERBOSE=1 python setup.py nosetests -s --tests test
 notifications:
   email: false
 matrix:

@@ -369,6 +369,8 @@ def has_changes(directory=None):
     out = check_output('git status', shell=True, cwd=directory)
     if 'nothing to commit (working directory clean)' in out:
         return False
+    if 'nothing to commit, working directory clean' in out:
+        return False
     if 'nothing added to commit' in out:
         return False
     return True
