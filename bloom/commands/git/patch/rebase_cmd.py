@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 import os
-import sys
 import argparse
 import shutil
 from tempfile import mkdtemp
@@ -22,7 +21,6 @@ from bloom.commands.git.patch.common import set_patch_config
 
 from bloom.util import add_global_arguments
 from bloom.util import execute_command
-from bloom.util import get_package_data
 from bloom.util import handle_global_arguments
 
 
@@ -162,16 +160,16 @@ def rebase_patches(without_git_rebase=True, directory=None):
     # If the current upstream commit hash is the same as the stored one, noop
     if upstream_commit_hash == config['previous']:
         debug(str(upstream_commit_hash) + ' ' + str(config['previous']))
-        debug("Nothing to do: The source branch (" + \
-                config['parent'] + ")'s commit hash has not changed.")
+        debug("Nothing to do: The source branch (" +
+              config['parent'] + ")'s commit hash has not changed.")
         debug("    Did you forget to update the parent branch first?")
         debug("    Updating the parent branch can be done by calling "
               "'git-bloom-patch rebase' on it, or 'git-bloom-import-upsteam'"
               " if the parent branch is the upstream branch.")
         return -1  # Indicates that rebase did nothing
     else:
-        debug("rebase_patches: " + upstream_commit_hash + " == " + \
-              config['previous'] + ": " + \
+        debug("rebase_patches: " + upstream_commit_hash + " == " +
+              config['previous'] + ": " +
               str(upstream_commit_hash == config['previous']))
 
     ### Execute the rebase
@@ -196,9 +194,9 @@ def rebase_patches(without_git_rebase=True, directory=None):
     set_patch_config(patches_branch, config, directory)
 
 
-def get_parser():
-    """Returns a parser.ArgumentParser with all arguments defined"""
-    parser = argparse.ArgumentParser(
+def add_parser(subparsers):
+    parser = subparsers.add_parser(
+        'rebase',
         description="""\
 This command sets the contents of the current branch to the contents of
 the parent (upstream) branch.
@@ -215,14 +213,11 @@ WARNING: make sure to export patches and commit local changes before rebasing\
 """.format(ansi('yellowf'), ansi('reset')),
         formatter_class=argparse.RawTextHelpFormatter
     )
+    parser.set_defaults(func=main)
+    add_global_arguments(parser)
     return parser
 
 
-def main():
-    # Assumptions: in a git repo, this command verb was passed, argv has enough
-    sysargs = sys.argv[2:]
-    parser = get_parser()
-    parser = add_global_arguments(parser)
-    args = parser.parse_args(sysargs)
+def main(args):
     handle_global_arguments(args)
     return rebase_patches()

@@ -4,7 +4,6 @@ import sys
 import os
 import tempfile
 import shutil
-from argparse import ArgumentParser
 
 from bloom.git import branch_exists
 from bloom.git import checkout
@@ -27,12 +26,12 @@ from bloom.commands.git.patch.common import set_patch_config
 
 
 def _set_trim_sub_dir(sub_dir, force, config, directory):
-    debug("_set_trim_sub_dir(" + str(sub_dir) + ", " + str(force) + ", " + \
+    debug("_set_trim_sub_dir(" + str(sub_dir) + ", " + str(force) + ", " +
           str(config) + ", " + str(directory) + ")")
     if sub_dir is not None:
         if config['trim'] != '' and config['trim'] != sub_dir:
-            warning("You are trying to set the trim sub directory to " + \
-                    sub_dir + ", but it is already set to " + \
+            warning("You are trying to set the trim sub directory to " +
+                    sub_dir + ", but it is already set to " +
                     config['trim'] + ".")
             if not force:
                 warning("Changing the sud directory is not advised. "
@@ -71,7 +70,7 @@ def _undo(config, directory):
 
 
 def _trim(config, force, directory):
-    debug("_trim(" + str(config) + ", " + str(force) + ", " + \
+    debug("_trim(" + str(config) + ", " + str(force) + ", " +
           str(directory) + ")")
     if config['trimbase'] != '':
         warning("It looks like the trim operation has already been done, "
@@ -144,7 +143,7 @@ def trim(sub_dir=None, force=False, undo=False, directory=None):
     # Ensure the current branch is valid
     if current_branch is None:
         error("Could not determine current branch, are you in a git repo?",
-            exit=True)
+              exit=True)
     # Construct the patches branch
     patches_branch = 'patches/' + current_branch
     try:
@@ -179,15 +178,16 @@ def trim(sub_dir=None, force=False, undo=False, directory=None):
             checkout(current_branch, directory=directory)
 
 
-def get_parser():
-    """Returns a parser.ArgumentParser with all arguments defined"""
-    parser = ArgumentParser(
+def add_parser(subparsers):
+    parser = subparsers.add_parser(
+        'trim',
         description="""\
 Moves a given sub directory into the root of the git repository.
 
 If you call trim on a patched branch (even --undo), bad things will happen...\
 """
     )
+    parser.set_defaults(func=main)
     add = parser.add_argument
     add('--sub-directory', '-s', metavar='SUB_DIRECTORY',
         help="the sub directory to move the root of the repository",
@@ -196,14 +196,10 @@ If you call trim on a patched branch (even --undo), bad things will happen...\
         action='store_true', default=False)
     add('--undo', '-u', help="reverses the the trim using 'git reset --hard'",
         action='store_true', default=False)
+    add_global_arguments(parser)
     return parser
 
 
-def main():
-    # Assumptions: in a git repo, this command verb was passed, argv has enough
-    sysargs = sys.argv[2:]
-    parser = get_parser()
-    parser = add_global_arguments(parser)
-    args = parser.parse_args(sysargs)
+def main(args):
     handle_global_arguments(args)
     return trim(args.sub_directory, args.force, args.undo)
