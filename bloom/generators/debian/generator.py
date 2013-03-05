@@ -231,7 +231,10 @@ class DebianGenerator(BloomGenerator):
         # Store it
         self.store_original_config(config, patches_branch)
         # Modify the base so import/export patch works
-        config['base'] = get_commit_hash(get_current_branch())
+        current_branch = get_current_branch()
+        if current_branch is None:
+            error("Could not determine current branch.", exit=True)
+        config['base'] = get_commit_hash(current_branch)
         # Set it
         set_patch_config(patches_branch, config)
 

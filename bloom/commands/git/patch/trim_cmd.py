@@ -61,7 +61,10 @@ def _undo(config, directory):
         debug("Branch has not been trimmed previously, undo not required.")
         return None
     # Reset with git-revert
-    cmt = get_commit_hash(get_current_branch(directory), directory)
+    current_branch = get_current_branch(directory)
+    if current_branch is None:
+        error("Could not determine current branch.", exit=True)
+    cmt = get_commit_hash(current_branch, directory)
     cmd = 'git revert --no-edit -Xtheirs ' + config['trimbase'] + '..' + cmt
     execute_command(cmd, cwd=directory)
     # Unset the trimbase
@@ -80,7 +83,10 @@ def _trim(config, force, directory):
         else:
             warning("If you would like to continue anyways use '--force'")
             return None
-    config['trimbase'] = get_commit_hash(get_current_branch(directory))
+    current_branch = get_current_branch(directory)
+    if current_branch is None:
+        error("Could not determine current branch.", exit=True)
+    config['trimbase'] = get_commit_hash(current_branch)
     tmp_dir = tempfile.mkdtemp()
     try:
         # Buckup trim sub directory
@@ -129,7 +135,10 @@ def _trim(config, force, directory):
               config['trim'] + ' sub directory"'
         execute_command(cmd, cwd=directory)
         # Update the patch base to be this commit
-        config['base'] = get_commit_hash(get_current_branch(directory))
+        current_branch = get_current_branch(directory)
+        if current_branch is None:
+            error("Could not determine current branch.", exit=True)
+        config['base'] = get_commit_hash(current_branch)
     finally:
         if os.path.exists(tmp_dir):
             shutil.rmtree(tmp_dir)

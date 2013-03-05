@@ -61,7 +61,7 @@ class GitClone(object):
         self.tmp_dir = None
         self.directory = directory if directory is not None else os.getcwd()
         if get_root(directory) is None:
-            raise RuntimeError("Provided directory, '" + str(directory) + \
+            raise RuntimeError("Provided directory, '" + str(directory) +
                                "', is not a git repository")
         self.track_all = track_all
         if self.track_all:
@@ -76,6 +76,10 @@ class GitClone(object):
         self.clean_up()
 
     def __enter__(self):
+        current_branch = get_current_branch()
+        if current_branch is None:
+            warning("Could not determine current branch, changing to the bloom branch")
+            execute_command('git checkout bloom')
         self.orig_cwd = os.getcwd()
         os.chdir(self.clone_dir)
         if self.track_all:
@@ -91,6 +95,9 @@ class GitClone(object):
             self.tmp_dir = None
 
     def commit(self):
+        current_branch = get_current_branch()
+        if current_branch is None:
+            error("Could not determine current branch.", exit=True)
         with inbranch(get_commit_hash(get_current_branch())):
             with change_directory(self.clone_dir):
                 new_branches = get_branches()
@@ -239,7 +246,7 @@ def checkout(reference, raise_exc=False, directory=None, show_git_status=True):
     def checkout_summarize(fail_msg, branch, directory):
         branch = '(no branch)' if branch is None else branch
         directory = os.getcwd() if directory is None else directory
-        error("Failed to checkout to '{0}'".format(str(reference)) + \
+        error("Failed to checkout to '{0}'".format(str(reference)) +
               " because the working directory {0}".format(str(fail_msg)))
         debug("  Working directory:   '{0}'".format(str(directory)))
         debug("  Working branch:      '{0}'".format(str(branch)))
@@ -259,7 +266,7 @@ def checkout(reference, raise_exc=False, directory=None, show_git_status=True):
     if git_root is not None:
         changes = has_changes(directory)
         untracked = has_untracked_files(directory)
-        branch = get_current_branch(directory)
+        branch = get_current_branch(directory) or 'could not determine branch'
     else:
         fail_msg = "is not a git repository"
     if fail_msg == '' and changes:
@@ -320,7 +327,10 @@ class inbranch(ContextDecorator):
         checkout(self.branch, raise_exc=True, directory=self.directory)
 
     def __exit__(self, exc_type, exc_value, traceback):
-        checkout(self.current_branch, raise_exc=True, directory=self.directory)
+        if self.current_branch is not None:
+            checkout(self.current_branch, raise_exc=True, directory=self.directory)
+        else:
+            warning("Could not determine branch to return to.")
 
 
 def get_commit_hash(reference, directory=None):
