@@ -41,6 +41,10 @@ import sys
 import xmlrpclib
 
 from bloom.logging import warning
+
+from bloom.util import add_global_arguments
+from bloom.util import handle_global_arguments
+
 from pkg_resources import parse_version
 from threading import Lock
 
@@ -80,8 +84,7 @@ def check_for_updates():
 
 def get_argument_parser():
     parser = argparse.ArgumentParser(description="Checks for updates")
-    add = parser.add_argument
-    add('--quiet', action='store_true', default=False)
+    add_global_arguments(parser)
     return parser
 
 _quiet = False
@@ -123,6 +126,7 @@ def main(sysargs=None):
     global _quiet
     parser = get_argument_parser()
     args = parser.parse_args(sysargs)
+    handle_global_arguments(args)
     _quiet = args.quiet
 
     user_bloom = os.path.join(os.path.expanduser('~'), '.bloom')

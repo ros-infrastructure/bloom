@@ -1,8 +1,5 @@
 from __future__ import print_function
 
-import sys
-from argparse import ArgumentParser
-
 from bloom.git import branch_exists
 from bloom.git import checkout
 from bloom.git import ensure_clean_working_env
@@ -13,7 +10,9 @@ from bloom.logging import debug
 from bloom.logging import error
 from bloom.logging import log_prefix
 
+from bloom.util import add_global_arguments
 from bloom.util import execute_command
+from bloom.util import handle_global_arguments
 
 from bloom.commands.git.patch.common import get_patch_config
 from bloom.commands.git.patch.common import list_patches
@@ -64,22 +63,21 @@ def export_patches(directory=None):
             checkout(current_branch, directory=directory)
 
 
-def get_parser():
+def add_parser(subparsers):
     """Returns a parser.ArgumentParser with all arguments defined"""
-    parser = ArgumentParser(
+    parser = subparsers.add_parser(
+        'export',
         description="""\
 Exports the commits that have been made on the current branch since the
 original source branch (source branch from git-bloom-branch) to a patches
 branch, which is named 'patches/<current branch name>', using git format-patch.
 """
     )
+    parser.set_defaults(func=main)
+    add_global_arguments(parser)
     return parser
 
 
-def main():
-    # Assumptions: in a git repo, this command verb was passed, argv has enough
-    sysargs = sys.argv[2:]
-    parser = get_parser()
-    args = parser.parse_args(sysargs)
-    args  # pylint
+def main(args):
+    handle_global_arguments(args)
     return export_patches()

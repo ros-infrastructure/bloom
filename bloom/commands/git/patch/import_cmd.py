@@ -5,7 +5,6 @@ import os
 import tempfile
 import shutil
 import subprocess
-from argparse import ArgumentParser
 
 from bloom.git import branch_exists
 from bloom.git import checkout
@@ -38,7 +37,7 @@ def import_patches(directory=None):
         if not branch_exists(patches_branch, True, directory=directory):
             track_branches(patches_branch, directory)
     else:
-        error("The patches branch ({0}) does not ".format(patches_branch) + \
+        error("The patches branch ({0}) does not ".format(patches_branch) +
               "exist, did you use git-bloom-branch?", exit=True)
     # Create a swap space
     tmp_dir = tempfile.mkdtemp()
@@ -120,22 +119,19 @@ def import_patches(directory=None):
             shutil.rmtree(tmp_dir)
 
 
-def get_parser():
-    """Returns a parser.ArgumentParser with all arguments defined"""
-    parser = ArgumentParser(
+def add_parser(subparsers):
+    parser = subparsers.add_parser(
+        'import',
         description="""\
 Imports the patches from the patches branch, which is named
 'patches/<current branch name>', onto the current working branch.
 """
     )
+    parser.set_defaults(func=main)
+    add_global_arguments(parser)
     return parser
 
 
-def main():
-    # Assumptions: in a git repo, this command verb was passed, argv has enough
-    sysargs = sys.argv[2:]
-    parser = get_parser()
-    parser = add_global_arguments(parser)
-    args = parser.parse_args(sysargs)
+def main(args):
     handle_global_arguments(args)
     return import_patches()
