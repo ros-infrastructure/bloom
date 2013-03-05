@@ -257,7 +257,7 @@ def import_upstream(tarball_path, patches_path, version, name, replace):
         warning("Removing tag: '{0}'".format(upstream_tag))
         delete_tag(upstream_tag)
         delete_remote_tag(upstream_tag)
-    name_tag = '{0}/{1}'.format(name, version)
+    name_tag = '{0}/{1}'.format(name or 'upstream', version)
     if name_tag != upstream_tag and tag_exists(name_tag):
         if not replace:
             error("Tag '{0}' already exists, use --replace to override it."
