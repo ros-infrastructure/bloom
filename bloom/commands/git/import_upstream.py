@@ -71,7 +71,7 @@ def version_check(version):
         return
     last_tag_version = last_tag.split('/')[-1]
     info(fmt("The latest upstream tag in the release repository is '@!{0}@|'."
-        .format(last_tag)))
+         .format(last_tag)))
     # Ensure the new version is greater than the last tag
     if parse_version(version) < parse_version(last_tag_version):
         warning("""\
@@ -155,37 +155,37 @@ def handle_tree(tree, directory, root_path, version):
             # If it is a file, error
             if os.path.isfile(rel_path):
                 error("In patches path '{0}' is a directory".format(rel_path) +
-                    ", but it exists in the upstream branch as a file.",
-                    exit=True)
+                      ", but it exists in the upstream branch as a file.",
+                      exit=True)
             # If it is not already a directory, create it
             if not os.path.isdir(rel_path):
                 info("  Createing directory... '{0}'".format(rel_path))
                 os.mkdir(rel_path)
             # Recurse on the directory
             handle_tree(ls_tree('bloom', os.path.join(root_path, rel_path)),
-                rel_path, root_path, version)
+                        rel_path, root_path, version)
         if kind == 'file':
             # Path relative to start path
             rel_path = os.path.join(directory, path)
             # If the local version is a directory, error
             if os.path.isdir(rel_path):
                 error("In patches path '{0}' is a file, ".format(rel_path) +
-                    "but it exists in the upstream branch as a directory.",
-                    exit=True)
+                      "but it exists in the upstream branch as a directory.",
+                      exit=True)
             # If the file already exists, warn
             if os.path.isfile(rel_path):
                 warning("  File '{0}' already exists, overwriting..."
-                    .format(rel_path))
+                        .format(rel_path))
                 execute_command('git rm {0}'.format(rel_path), shell=True)
             # If package.xml tempalte in version, else grab data
             if path == 'package.xml':
                 info("  Templating '{0}' into upstream branch..."
-                    .format(rel_path))
+                     .format(rel_path))
                 file_data = show('bloom', os.path.join(root_path, rel_path))
                 file_data = file_data.replace(':{version}', version)
             else:
                 info("  Overlaying '{0}' into upstream branch..."
-                    .format(rel_path))
+                     .format(rel_path))
                 file_data = show('bloom', os.path.join(root_path, rel_path))
             # Write file
             with open(rel_path, 'wb') as f:
@@ -196,11 +196,11 @@ def handle_tree(tree, directory, root_path, version):
 
 def import_patches(patches_path, patches_path_dict, target_branch, version):
     info("Overlaying files from patched folder '{0}' on the 'bloom' branch into the '{1}' branch..."
-        .format(patches_path, target_branch))
+         .format(patches_path, target_branch))
     with inbranch(target_branch):
         handle_tree(patches_path_dict, '', patches_path, version)
         cmd = ('git commit --allow-empty -m "Overlaid patches from \'{0}\'"'
-            .format(patches_path))
+               .format(patches_path))
         execute_command(cmd, shell=True)
 
 
@@ -208,7 +208,7 @@ def import_upstream(tarball_path, patches_path, version, name, replace):
     # If there is not tarball at the given path, fail
     if not os.path.exists(tarball_path):
         error("Specified archive does not exists: '{0}'".format(tarball_path),
-            exit=True)
+              exit=True)
 
     # If either version or name are not provided, guess from archive name
     if not version or not name:
@@ -221,21 +221,20 @@ def import_upstream(tarball_path, patches_path, version, name, replace):
             ending = '.zip'
         else:
             error("Cannot detect type of archive: '{0}'"
-                .format(tarball_file), exit=True)
+                  .format(tarball_file), exit=True)
         tarball_file = tarball_file[:-len(ending)]
         split_tarball_file = tarball_file.split('-')
-        if len(split_tarball_file) < 2 and not version \
-        or len(split_tarball_file) < 1:
+        if len(split_tarball_file) < 2 and not version or len(split_tarball_file) < 1:
             error("Cannot detect name and/or version from archive: '{0}'"
-                .format(tarball_file), exit=True)
+                  .format(tarball_file), exit=True)
     if not name and len(split_tarball_file) == 1:
         name = split_tarball_file[0]
     elif not name and len(split_tarball_file) == 1:
         name = '-'.join(split_tarball_file[:-1])
     if not version and len(split_tarball_file) < 2:
         error("Cannot detect version from archive: '{0}'"
-            .format(tarball_file) + " and the version was not spcified.",
-            exit=True)
+              .format(tarball_file) + " and the version was not spcified.",
+              exit=True)
     version = version if version else split_tarball_file[-1]
 
     # Check if the patches_path (if given) exists
@@ -244,7 +243,7 @@ def import_upstream(tarball_path, patches_path, version, name, replace):
         patches_path_dict = ls_tree('bloom', patches_path)
         if not patches_path_dict:
             error("Given patches path '{0}' does not exist in bloom branch."
-                .format(patches_path), exit=True)
+                  .format(patches_path), exit=True)
 
     # Do version checking
     version_check(version)
@@ -254,7 +253,7 @@ def import_upstream(tarball_path, patches_path, version, name, replace):
     if tag_exists(upstream_tag):
         if not replace:
             error("Tag '{0}' already exists, use --replace to override it."
-                .format(upstream_tag), exit=True)
+                  .format(upstream_tag), exit=True)
         warning("Removing tag: '{0}'".format(upstream_tag))
         delete_tag(upstream_tag)
         delete_remote_tag(upstream_tag)
@@ -262,7 +261,7 @@ def import_upstream(tarball_path, patches_path, version, name, replace):
     if name_tag != upstream_tag and tag_exists(name_tag):
         if not replace:
             error("Tag '{0}' already exists, use --replace to override it."
-                .format(name_tag), exit=True)
+                  .format(name_tag), exit=True)
         warning("Removing tag: '{0}'".format(name_tag))
         delete_tag(name_tag)
         delete_remote_tag(name_tag)
@@ -313,7 +312,7 @@ or uncommitted local changes.
         help="version being imported (defaults to guessing from archive name)")
     add('-n', '--name',
         help="name of the repository being imported "
-            "(defaults to guessing from archive name)")
+             "(defaults to guessing from archive name)")
     add('-r', '--replace', action="store_true",
         help="""\
 allows replacement of an existing upstream import of the same version
@@ -336,8 +335,12 @@ def main(sysargs=None):
 
     git_clone = GitClone()
     with git_clone:
-        import_upstream(args.archive_path, args.patches_path,
-            args.release_version, args.name, args.replace)
+        import_upstream(
+            args.archive_path,
+            args.patches_path,
+            args.release_version,
+            args.name,
+            args.replace)
     git_clone.commit()
 
     info("I'm happy.  You should be too.")
