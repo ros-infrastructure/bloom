@@ -22,6 +22,8 @@ from bloom.util import handle_global_arguments
 def remove_patches(directory=None):
     # Get the current branch
     current_branch = get_current_branch(directory)
+    if current_branch is None:
+        error("Could not determine current branch.", exit=True)
     # Ensure the current branch is valid
     if current_branch is None:
         error("Could not determine current branch, are you in a git repo?",

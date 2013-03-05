@@ -49,6 +49,8 @@ def execute_branch(src, dst, interactive, directory=None):
     :raises: subprocess.CalledProcessError if any git calls fail
     """
     # Determine if the srouce branch exists
+    if src is None:
+        error("No source specified and/or not a branch currently", exit=True)
     if branch_exists(src, local_only=False, directory=directory):
         if not branch_exists(src, local_only=True, directory=directory):
             debug("Tracking source branch: {0}".format(src))
@@ -57,7 +59,7 @@ def execute_branch(src, dst, interactive, directory=None):
         pass
     else:
         error("Specified source branch does not exist: {0}".format(src),
-            exit=True)
+              exit=True)
 
     # Determine if the destination branch needs to be created
     create_dst_branch = False
@@ -123,7 +125,7 @@ def execute_branch(src, dst, interactive, directory=None):
             config = get_patch_config(dst_patches, directory=directory)
             if config['parent'] != src:
                 warning("Updated parent to '{0}' from '{1}'"
-                    .format(src, config['parent']))
+                        .format(src, config['parent']))
                 config['parent'] = src
                 config['base'] = get_commit_hash(dst, directory=directory)
             set_patch_config(dst_patches, config, directory=directory)

@@ -24,6 +24,8 @@ def export_patches(directory=None):
     ensure_clean_working_env(git_status=True, directory=directory)
     # Get current branch
     current_branch = get_current_branch(directory)
+    if current_branch is None:
+        error("Could not determine current branch.", exit=True)
     # Construct the patches branch name
     patches_branch = 'patches/' + current_branch
     # Ensure the patches branch exists

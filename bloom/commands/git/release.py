@@ -104,9 +104,13 @@ def clean_up_repositories():
 def get_upstream_meta(upstream_dir, ros_distro):
     meta = None
     with change_directory(upstream_dir):
-        name, version, stackages = get_package_data(get_current_branch(),
-                                                    quiet=False,
-                                                    fuerte=(ros_distro == 'fuerte'))
+        current_branch = get_current_branch()
+        if current_branch is None:
+            error("Could not determine current branch.", exit=True)
+        name, version, stackages = get_package_data(
+            current_branch,
+            quiet=False,
+            fuerte=(ros_distro == 'fuerte'))
     meta = {
         'name': name,
         'version': version,

@@ -14,6 +14,7 @@ from bloom.git import inbranch
 
 from bloom.logging import ansi
 from bloom.logging import debug
+from bloom.logging import error
 from bloom.logging import log_prefix
 
 from bloom.commands.git.patch.common import get_patch_config
@@ -40,7 +41,7 @@ def non_git_rebase(upstream_branch, directory=None):
                 shutil.copytree(git_root, parent_source,
                                 ignore=shutil.ignore_patterns(*ignores))
             except shutil.Error as e:
-                for src, dst, error in e.args[0]:
+                for src, dst, err in e.args[0]:
                     if not os.path.islink(src):
                         raise
                     else:
@@ -151,6 +152,8 @@ def rebase_patches(without_git_rebase=True, directory=None):
     ### Make sure we need to actually call this
     # Get the current branch
     current_branch = get_current_branch(directory)
+    if current_branch is None:
+        error("Could not determine current branch.", exit=True)
     # Get the patches branch
     patches_branch = 'patches/' + current_branch
     # Get the current patches.conf
@@ -182,8 +185,9 @@ def rebase_patches(without_git_rebase=True, directory=None):
     # Get the latest configs
     config = get_patch_config(patches_branch, directory)
     # Set the base to the current hash (before patches)
-    debug('Current branch: ' + get_current_branch(directory))
-    config['base'] = get_commit_hash(get_current_branch(directory), directory)
+    current_branch_ = get_current_branch(directory)
+    debug('Current branch: ' + current_branch_ or 'could not determine branch')
+    config['base'] = get_commit_hash(current_branch_, directory)
     debug('New current commit hash after rebase: ' + config['base'])
     # Set the new upstream hash to the previous upstream hash
     config['previous'] = get_commit_hash(config['parent'], directory)

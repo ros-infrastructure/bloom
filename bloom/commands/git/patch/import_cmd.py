@@ -30,6 +30,8 @@ from bloom.commands.git.patch.common import list_patches
 def import_patches(directory=None):
     # Get current branch
     current_branch = get_current_branch(directory)
+    if current_branch is None:
+        error("Could not determine current branch.", exit=True)
     # Construct the patches branch name
     patches_branch = 'patches/' + current_branch
     # Ensure the patches branch exists and is tracked
