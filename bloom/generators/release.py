@@ -5,6 +5,7 @@ from bloom.generators import BloomGenerator
 from bloom.git import inbranch
 from bloom.git import get_current_branch
 
+from bloom.logging import error
 from bloom.logging import info
 from bloom.logging import warning
 
@@ -39,7 +40,13 @@ each package in the upstream repository, so the source branch should be set to
     def handle_arguments(self, args):
         self.interactive = args.interactive
         self.prefix = args.prefix
-        self.src = args.src if args.src is not None else get_current_branch()
+        if args.src is None:
+            current_branch = get_current_branch()
+            if current_branch is None:
+                error("Could not determine current branch.", exit=True)
+            self.src = current_branch
+        else:
+            self.src = args.src
         self.name = args.name
         self.release_inc = args.release_increment
 
@@ -47,11 +54,8 @@ each package in the upstream repository, so the source branch should be set to
         self.branch_list = self.detect_branches()
         if type(self.branch_list) not in [list, tuple]:
             self.exit(self.branch_list if self.branch_list is not None else 1)
-        info(
-            "Releasing package" + \
-            ('' if len(self.branch_list) == 1 else 's') + ": " + \
-            str(self.branch_list)
-        )
+        info("Releasing package" +
+             ('' if len(self.branch_list) == 1 else 's') + ": " + str(self.branch_list))
 
     def get_branching_arguments(self):
         p, s, i = self.prefix, self.src, self.interactive
