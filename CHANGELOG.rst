@@ -1,6 +1,17 @@
+0.3.2
+-----
+- Fixed a bug in vcs url templating.
+- Improved the performance of git-bloom-config.
+- Added an --unsafe global option which will disable some of the safety mechanisms in bloom, making releasing about twice as fast but at the expense of errors putting the local release repository in an inconsistent state. Use with caution.
+- Added support for templating stack.xml files like package.xml files in the import-upstream step.
+- Fixed a bug where bloom failed if you call it and you were not on a branch
+- Added global arguments to some commands which were still lacking them
+- Fixed a bug where bloom would create None/<version> tags (these should be deleted manually if found)
+- Got the automated tests fixed and running in travis again
+- Added emoji icons for OS X users with lion or greater
+
 0.3.1
 -----
-
 - Fixed handling of non-standard archive names in git-bloom-import-upstream.
   This was a bug where if the archive only had the name of the package then it would fail to be processed by import-upstream.
 - Fixed an issue when blooming from svn upstream.
