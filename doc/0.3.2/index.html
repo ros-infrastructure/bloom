@@ -1,0 +1,139 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Bloom &mdash; bloom 0.3 documentation</title>
+    
+    <link rel="stylesheet" href="static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.3',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="static/jquery.js"></script>
+    <script type="text/javascript" src="static/underscore.js"></script>
+    <script type="text/javascript" src="static/doctools.js"></script>
+    <link rel="top" title="bloom 0.3 documentation" href="#" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li><a href="#">bloom 0.3 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="#">
+              <img class="logo" src="static/ros.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Bloom</a><ul>
+<li><a class="reference internal" href="#what-is-bloom">What is bloom?</a></li>
+<li><a class="reference internal" href="#how-does-it-work">How does it work?</a></li>
+<li><a class="reference internal" href="#what-can-i-release-with-bloom">What can I release with bloom?</a></li>
+<li><a class="reference internal" href="#how-do-i-install-bloom">How do I install bloom?</a></li>
+<li><a class="reference internal" href="#how-do-i-release-something-with-bloom">How do I release something with bloom?</a></li>
+</ul>
+</li>
+</ul>
+
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="bloom">
+<h1>Bloom<a class="headerlink" href="#bloom" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="what-is-bloom">
+<h2>What is bloom?<a class="headerlink" href="#what-is-bloom" title="Permalink to this headline">¶</a></h2>
+<p>Bloom is a release automation tool, designed to make generating platform specific release artifacts from source projects easier. Bloom is designed to work best with <a class="reference external" href="https://github.com/ros/catkin">catkin</a> projects, but can also accommodate other types of projects.</p>
+</div>
+<div class="section" id="how-does-it-work">
+<h2>How does it work?<a class="headerlink" href="#how-does-it-work" title="Permalink to this headline">¶</a></h2>
+<p>Bloom works by importing your upstream source tree into a git repository, where it is manipulated and used to generate build artifacts for different platforms like Debian or Fedora.</p>
+<p>First bloom gathers information about your source repository and creates an archive for the version you want to release. Then the archive is imported into the release repository, and the source tree is run through a release track where it is tagged, can be patched, and has platform specific artifacts generated for it.</p>
+<p>The individual stages of these release tracks are tagged with git and those tags are used by build infrastructure and deployment systems.</p>
+</div>
+<div class="section" id="what-can-i-release-with-bloom">
+<h2>What can I release with bloom?<a class="headerlink" href="#what-can-i-release-with-bloom" title="Permalink to this headline">¶</a></h2>
+<p>Bloom supports releasing arbitrary software packages, but is optimized for use with <a class="reference external" href="https://github.com/ros/catkin">catkin</a> projects.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">For <a class="reference internal" href="glossary.html#term-dry"><em class="xref std std-term">dry</em></a> ROS stacks, you should use the legacy <a class="reference external" href="http://www.ros.org/wiki/release">ros-release</a> system.</p>
+</div>
+</div>
+<div class="section" id="how-do-i-install-bloom">
+<h2>How do I install bloom?<a class="headerlink" href="#how-do-i-install-bloom" title="Permalink to this headline">¶</a></h2>
+<p>On Ubuntu the recommend method is to use apt:</p>
+<div class="highlight-python"><pre>$ sudo apt-get install python-bloom</pre>
+</div>
+<p>On other systems you can install bloom via pypi:</p>
+<div class="highlight-python"><pre>$ sudo pip install -U bloom</pre>
+</div>
+<p>Note: pip will not notify you of updates, but bloom will notify you when you are using a version of bloom that is not the latest released.</p>
+</div>
+<div class="section" id="how-do-i-release-something-with-bloom">
+<h2>How do I release something with bloom?<a class="headerlink" href="#how-do-i-release-something-with-bloom" title="Permalink to this headline">¶</a></h2>
+<p>Please refer to the documentation and tutorials on the <a class="reference external" href="http://ros.org/wiki/bloom">bloom</a> ROS wiki page.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li><a href="#">bloom 0.3 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Willow Garage --  Version 9570dd9d6368b2f41433c9f1f77de24caf0a6945, Wed, 6 Mar 2013.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>
