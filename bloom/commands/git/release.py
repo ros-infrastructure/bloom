@@ -188,6 +188,7 @@ def process_track_settings(track_dict, release_inc_override):
             error("You must specify a version to continue.", exit=True)
         version = ret
     settings['version'] = version
+    vcs_uri = vcs_uri.replace(':{version}', version)
     settings['vcs_local_uri'] = repo.get_path() if repo else vcs_uri
     # Now that we have a version, template the vcs_uri if needed
     if ':{version}' in vcs_uri:
