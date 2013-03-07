@@ -222,7 +222,7 @@ def process_track_settings(track_dict, release_inc_override):
     return settings
 
 
-def execute_track(track, track_dict, release_inc, pretend=True):
+def execute_track(track, track_dict, release_inc, pretend=True, debug=False, fast=False):
     info("Processing release track settings for '{0}'".format(track))
     settings = process_track_settings(track_dict, release_inc)
     # setup extra settings
@@ -246,8 +246,12 @@ def execute_track(track, track_dict, release_inc, pretend=True):
         if bloom.util._quiet:
             stdout = subprocess.PIPE
             stderr = subprocess.STDOUT
+        if debug and 'DEBUG' not in os.environ:
+            os.environ['DEBUG'] = '1'
+        if fast and 'BLOOM_UNSAFE' not in os.environ:
+            os.environ['BLOOM_UNSAFE'] = '1'
         p = subprocess.Popen(templated_action, stdout=stdout, stderr=stderr,
-                             shell=True)
+                             shell=True, env=os.environ.copy())
         out, err = p.communicate()
         if bloom.util._quiet:
             info(out, use_prefix=False)
@@ -296,7 +300,7 @@ def main(sysargs=None):
     verify_track(args.track, tracks_dict['tracks'][args.track])
 
     execute_track(args.track, tracks_dict['tracks'][args.track],
-                  args.release_increment, args.pretend)
+                  args.release_increment, args.pretend, args.debug, args.unsafe)
 
     # Notify the user of success and next action suggestions
     print('\n\n')

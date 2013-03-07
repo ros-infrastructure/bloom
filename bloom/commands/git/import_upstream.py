@@ -256,7 +256,6 @@ def import_upstream(tarball_path, patches_path, version, name, replace):
                   .format(upstream_tag), exit=True)
         warning("Removing tag: '{0}'".format(upstream_tag))
         delete_tag(upstream_tag)
-        delete_remote_tag(upstream_tag)
     name_tag = '{0}/{1}'.format(name or 'upstream', version)
     if name_tag != upstream_tag and tag_exists(name_tag):
         if not replace:
@@ -264,7 +263,6 @@ def import_upstream(tarball_path, patches_path, version, name, replace):
                   .format(name_tag), exit=True)
         warning("Removing tag: '{0}'".format(name_tag))
         delete_tag(name_tag)
-        delete_remote_tag(name_tag)
 
     # If there is not upstream branch, create one
     if not branch_exists('upstream'):

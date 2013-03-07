@@ -35,7 +35,6 @@
 from __future__ import print_function
 
 import os
-import sys
 import functools
 import shutil
 import tempfile
@@ -52,12 +51,17 @@ from bloom.logging import warning
 from bloom.util import change_directory
 from bloom.util import check_output
 from bloom.util import execute_command
+from bloom.util import get_git_clone_state
 from bloom.util import pdb_hook
 import bloom.util
 
 
 class GitClone(object):
     def __init__(self, directory=None, track_all=True):
+        self.disabled = get_git_clone_state()
+        if self.disabled:
+            warning('Skipping transactional safety mechanism, be careful...')
+            return
         self.tmp_dir = None
         self.directory = directory if directory is not None else os.getcwd()
         if get_root(directory) is None:
@@ -73,9 +77,13 @@ class GitClone(object):
         execute_command('git clone ' + self.repo_url + ' ' + self.clone_dir)
 
     def __del__(self):
+        if self.disabled:
+            return
         self.clean_up()
 
     def __enter__(self):
+        if self.disabled:
+            return
         current_branch = get_current_branch()
         if current_branch is None:
             warning("Could not determine current branch, changing to the bloom branch")
@@ -87,14 +95,20 @@ class GitClone(object):
         return os.getcwd()
 
     def __exit__(self, exc_type, exc_value, traceback):
+        if self.disabled:
+            return
         os.chdir(self.orig_cwd)
 
     def clean_up(self):
+        if self.disabled:
+            return
         if self.tmp_dir is not None and os.path.exists(self.tmp_dir):
             shutil.rmtree(self.tmp_dir)
             self.tmp_dir = None
 
     def commit(self):
+        if self.disabled:
+            return
         current_branch = get_current_branch()
         if current_branch is None:
             error("Could not determine current branch.", exit=True)
@@ -434,7 +448,7 @@ def delete_remote_tag(tag, remote='origin', directory=None):
     :raises: subprocess.CalledProcessError if any git calls fail
     """
     execute_command('git push {0} :{1}'.format(remote, tag), shell=True,
-        cwd=directory)
+                    cwd=directory)
 
 
 def get_tags(directory=None):

@@ -160,10 +160,10 @@ def get_package_data(branch_name, directory=None, quiet=True, fuerte=False):
     if type(packages) == dict and packages != {}:
         if len(packages) > 1:
             log("found " + str(len(packages)) + " packages.",
-                 use_prefix=False)
+                use_prefix=False)
         else:
             log("found '" + packages.values()[0].name + "'.",
-                 use_prefix=False)
+                use_prefix=False)
         version = verify_equal_package_versions(packages.values())
         return [p.name for p in packages.values()], version, packages
     ## Check for stack.xml
@@ -190,32 +190,46 @@ def get_package_data(branch_name, directory=None, quiet=True, fuerte=False):
 
 
 def add_global_arguments(parser):
-    group = parser.add_argument_group('global')
-    group.add_argument('-d', '--debug', help='enable debug messages',
-                       action='store_true', default=False)
-    group.add_argument('--pdb', help=argparse.SUPPRESS,
-                       action='store_true', default=False)
     from bloom import __version__
-    group.add_argument('--version', action='version', version=__version__,
-                       help="prints the bloom version")
-    group.add_argument('--no-color', action='store_true', default=False,
-                       dest='no_color', help=argparse.SUPPRESS)
+    group = parser.add_argument_group('global')
     add = group.add_argument
+    add('-d', '--debug', help='enable debug messages',
+        action='store_true', default=False)
+    add('--pdb', help=argparse.SUPPRESS,
+        action='store_true', default=False)
+    add('--version', action='version', version=__version__,
+        help="prints the bloom version")
+    add('--no-color', action='store_true', default=False,
+        dest='no_color', help=argparse.SUPPRESS)
     add('--quiet', help=argparse.SUPPRESS,
         default=False, action='store_true')
+    add('--unsafe', default=False, action='store_true',
+        help="Makes bloom faster, but if there is an error then you could run into trouble.")
     return parser
 
 _pdb = False
 _quiet = False
+_disable_git_clone = False
+
+
+def disable_git_clone(state=True):
+    global _disable_git_clone
+    _disable_git_clone = state
+
+
+def get_git_clone_state():
+    global _disable_git_clone
+    return _disable_git_clone
 
 
 def handle_global_arguments(args):
     global _pdb, _quiet
-    enable_debug(args.debug)
+    enable_debug(args.debug or 'DEBUG' in os.environ)
     _pdb = args.pdb
     _quiet = args.quiet
     if args.no_color:
         disable_ANSI_colors()
+    disable_git_clone(args.unsafe or 'BLOOM_UNSAFE' in os.environ)
 
 
 def print_exc(exc):

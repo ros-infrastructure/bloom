@@ -297,10 +297,7 @@ def main(sysargs=None):
     # Getting here means we mean to do something, first check we have an env
     ensure_clean_working_env()
     # Then call the verb
-    git_clone = GitClone()
     try:
-        with git_clone:
-            args.func(args)
-        git_clone.commit()
+        args.func(args)
     except (KeyboardInterrupt, EOFError):
         error("\nUser sent a Keyboard Interrupt, aborting.", exit=True)
