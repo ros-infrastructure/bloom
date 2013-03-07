@@ -236,6 +236,7 @@ def edit(track):
                 pe.default = None
         tracks_dict['tracks'][track][key] = pe.default
     tracks_dict['tracks'][track] = track_dict
+    info("Saving '{0}' track.".format(track))
     write_tracks_dict_raw(tracks_dict)
 
 
