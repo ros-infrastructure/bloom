@@ -1,11 +1,14 @@
 from __future__ import print_function
 
 from bloom.generators.release import ReleaseGenerator
+from bloom.generators import check_metapackage_for_valid_cmake
+from bloom.generators import is_metapackage
 
 from bloom.git import inbranch
 
 from bloom.logging import warning
 
+from bloom.util import change_directory
 from bloom.util import execute_command
 from bloom.util import get_package_data
 
@@ -50,20 +53,19 @@ prefix set to 'release'.
         # Figure out the version of the given package
         if self.name is not None:
             warning("""\
-Cannot automatically tag the release because this is not a catkin project."""
-            )
+Cannot automatically tag the release because this is not a catkin project.""")
             warning("""\
-Please checkout the release branch and then create a tag manually with:"""
-            )
+Please checkout the release branch and then create a tag manually with:""")
             warning("  git checkout " + destination)
             warning("  git tag -f " + destination + "/<version>")
             return
         with inbranch(destination):
-            name, version, packages = get_package_data(destination,
+            name, version, packages = get_package_data(
+                destination,
                 fuerte=(self.rosdistro == 'fuerte'))
         # Execute git tag
         execute_command('git tag -f ' + destination + '/' + version +
-            '-' + str(self.release_inc))
+                        '-' + str(self.release_inc))
 
     def detect_branches(self):
         self.packages = None
@@ -71,10 +73,17 @@ Please checkout the release branch and then create a tag manually with:"""
             if self.name is not None:
                 self.packages = [self.name]
                 return [self.name]
-            package_data = get_package_data(self.src,
+            package_data = get_package_data(
+                self.src,
                 fuerte=(self.rosdistro == 'fuerte'))
             if type(package_data) not in [list, tuple]:
                 return package_data
             name, version, packages = package_data
             self.packages = packages
+            # Check meta packages for valid CMakeLists.txt
+            if isinstance(self.packages, dict):
+                for path, pkg in self.packages.iteritems():
+                    with change_directory(path):
+                        if is_metapackage(pkg):
+                            check_metapackage_for_valid_cmake(pkg.name)
             return name if type(name) is list else [name]

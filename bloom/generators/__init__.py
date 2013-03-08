@@ -36,8 +36,12 @@ from .common import BloomGenerator
 from .common import GeneratorError
 from .common import list_generators
 from .common import load_generator
+from .common import check_metapackage_for_valid_cmake
+from .common import is_metapackage
 
 __all__ = [
     'BloomGenerator', 'GeneratorError',
-    'list_generators', 'load_generator'
+    'list_generators', 'load_generator',
+    'check_metapackage_for_valid_cmake',
+    'is_metapackage'
 ]

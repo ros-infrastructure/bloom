@@ -10,6 +10,8 @@ import sys
 import traceback
 
 from bloom.generators import BloomGenerator
+from bloom.generators import check_metapackage_for_valid_cmake
+from bloom.generators import is_metapackage
 
 from bloom.git import inbranch
 from bloom.git import get_branches
@@ -41,8 +43,12 @@ try:
     from rosdep2.platforms.debian import APT_INSTALLER
     from rosdep2.catkin_support import get_ubuntu_targets
 except ImportError as err:
-    error("rosdep was not detected, please install it.")
-    sys.exit(code.ROSDEP_NOT_FOUND)
+    error("rosdep was not detected, please install it.", exit=True)
+
+try:
+    from catkin_pkg.package import Dependency
+except ImportError as err:
+    error("catkin_pkg was not detected, please install it.", exit=True)
 
 try:
     import em
@@ -52,7 +58,7 @@ except ImportError:
 
 
 def match_branches_with_prefix(prefix, get_branches):
-    debug("match_branches_with_prefix(" + str(prefix) + ", " + \
+    debug("match_branches_with_prefix(" + str(prefix) + ", " +
           str(get_branches()) + ")")
     branches = []
     # Match branches
@@ -89,14 +95,6 @@ def debianize_string(value):
     value = re.sub('\s+', ' ', value)
     value = value.strip()
     return value
-
-
-def is_meta_package(package):
-    metapack = [True for e in package.exports if e.tagname == 'metapackage']
-    if len(metapack) > 0:
-        return True
-    else:
-        return False
 
 
 def sanitize_package_name(name):
@@ -200,17 +198,25 @@ class DebianGenerator(BloomGenerator):
                 set_patch_config(patches_branch, config)
 
     def post_rebase(self, destination):
+        name = destination.split('/')[-1]
+        # Retrieve the stackage
+        stackage, kind = self.packages[name]
+        # Handle differently if this is a debian vs distro branch
         if destination in self.debian_branches:
+            info("Placing debian template files into '{0}' branch.".format(destination))
+            # Check for valid CMakeLists.txt if a metapackage
+            if kind == 'package' and is_metapackage(stackage):
+                check_metapackage_for_valid_cmake(name)
             # Then this is a debian branch
             # Place the raw template files
             self.place_tempalte_files()
         else:
+            # Check for valid CMakeLists.txt if a metapackage
+            if kind == 'package' and is_metapackage(stackage):
+                check_metapackage_for_valid_cmake(name)
             # This is a distro specific debian branch
             # Determine the current package being generated
-            name = destination.split('/')[-1]
             distro = destination.split('/')[-2]
-            # Retrieve the stackage
-            stackage, kind = self.packages[name]
             ### Start debian generation
             # Get time of day
             from dateutil import tz
@@ -262,12 +268,12 @@ class DebianGenerator(BloomGenerator):
         distro = destination.split('/')[-2]
         info(ansi(color) + "####" + ansi('reset'), use_prefix=False)
         info(
-            ansi(color) + "#### " + ansi('greenf') + "Successfully" + \
-            ansi(color) + " generated '" + ansi('boldon') + distro + \
-            ansi('boldoff') + "' debian for " + kind + \
-            " '" + ansi('boldon') + stackage.name + ansi('boldoff') + "'" + \
-            " at version '" + ansi('boldon') + stackage.version + \
-            "-" + str(self.debian_inc) + ansi('boldoff') + "'" + \
+            ansi(color) + "#### " + ansi('greenf') + "Successfully" +
+            ansi(color) + " generated '" + ansi('boldon') + distro +
+            ansi('boldoff') + "' debian for " + kind +
+            " '" + ansi('boldon') + stackage.name + ansi('boldoff') + "'" +
+            " at version '" + ansi('boldon') + stackage.version +
+            "-" + str(self.debian_inc) + ansi('boldoff') + "'" +
             ansi('reset'),
             use_prefix=False
         )
@@ -297,13 +303,13 @@ class DebianGenerator(BloomGenerator):
         template = "  " + ansi('cyanf') + "{0:<20} " + ansi('purplef') + \
                    "=> " + ansi('cyanf') + "{1}" + ansi('reset')
         if len(deps) != 0:
-            info(ansi('purplef') + "Run Dependencies:" + \
+            info(ansi('purplef') + "Run Dependencies:" +
                  ansi('reset'))
             info(header)
             for key in [d.name for d in deps]:
                 info(template.format(key, resolved_deps[key]))
         if len(build_deps) != 0:
-            info(ansi('purplef') + \
+            info(ansi('purplef') +
                  "Build and Build Tool Dependencies:" + ansi('reset'))
             info(header)
             for key in [d.name for d in build_deps]:
@@ -330,8 +336,7 @@ class DebianGenerator(BloomGenerator):
             'changelog.em',
             'control.em',
             'gbp.conf.em',
-            'rules.cmake.em',
-            'rules.metapackage.em'
+            'rules.em'
         ]
         for template_file in templates:
             template_path = os.path.join('templates', template_file)
@@ -397,11 +402,8 @@ class DebianGenerator(BloomGenerator):
         # Generate the changelog file
         self.create_from_template('changelog', data, debian_dir)
         # Generate the rules file
-        if data['BuildType'] == 'cmake':
-            self.create_from_template('rules.cmake', data, debian_dir,
-                                      chmod=0755, outfile='rules')
-        elif data['BuildType'] == 'metapackage':
-            self.create_from_template('rules.metapackage', data, debian_dir,
+        if data['BuildType'] in ['cmake', 'metapackage']:
+            self.create_from_template('rules', data, debian_dir,
                                       chmod=0755, outfile='rules')
         else:
             error("Unrecognized BuildType (" + data['BuildType'] +
@@ -410,8 +412,12 @@ class DebianGenerator(BloomGenerator):
         # Generate the gbp.conf file
         data['release_tag'] = self.get_release_tag(data)
         self.create_from_template('gbp.conf', data, debian_dir)
-        # Commit results
+        # Remove any residual template files
+        if [x for x in os.listdir(debian_dir) if x.endswith('.em')]:
+            execute_command('git rm {0}/*.em'.format(debian_dir))
+        # Add changes to the debian folder
         execute_command('git add ' + debian_dir)
+        # Commit changes
         execute_command('git commit -m "Generated debian files for ' +
                         debian_distro + '"')
 
@@ -434,7 +440,7 @@ class DebianGenerator(BloomGenerator):
             execute_command('git rm ' + template_file)
         # Expand template
         outfile = outfile if outfile is not None else template_name
-        info("Expanding template: '" + template_file + "' to '" + \
+        info("Expanding template: '" + template_file + "' to '" +
              outfile + "'")
         result = em.expand(template, **data)
         # Write the template out
@@ -503,7 +509,7 @@ class DebianGenerator(BloomGenerator):
             warning("No homepage set, defaulting to ''")
         data['Homepage'] = homepage
         # Build rule templates
-        if is_meta_package(package):
+        if is_metapackage(package):
             data['BuildType'] = 'metapackage'
         else:
             data['BuildType'] = 'cmake'
@@ -542,7 +548,6 @@ class DebianGenerator(BloomGenerator):
         # Installation prefix
         data['InstallationPrefix'] = self.install_prefix
         # Dependencies
-        from catkin_pkg.package import Dependency
         self.depends = list(set([d.name for d in stack.depends]))
         self.depends = [Dependency(d) for d in self.depends]
         self.build_depends = list(set([d.name for d in stack.build_depends]))
@@ -616,11 +621,11 @@ class DebianGenerator(BloomGenerator):
     def summarize_package(self, stackage, kind, distro, color='bluef'):
         info(ansi(color) + "\n####" + ansi('reset'), use_prefix=False)
         info(
-            ansi(color) + "#### Generating '" + ansi('boldon') + distro + \
-            ansi('boldoff') + "' debian for " + kind + \
-            " '" + ansi('boldon') + stackage.name + ansi('boldoff') + "'" + \
-            " at version '" + ansi('boldon') + stackage.version + \
-            "-" + str(self.debian_inc) + ansi('boldoff') + "'" + \
+            ansi(color) + "#### Generating '" + ansi('boldon') + distro +
+            ansi('boldoff') + "' debian for " + kind +
+            " '" + ansi('boldon') + stackage.name + ansi('boldoff') + "'" +
+            " at version '" + ansi('boldon') + stackage.version +
+            "-" + str(self.debian_inc) + ansi('boldoff') + "'" +
             ansi('reset'),
             use_prefix=False
         )
