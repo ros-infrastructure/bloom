@@ -51,15 +51,15 @@ from bloom.config import template_str
 from bloom.config import verify_track
 from bloom.config import write_tracks_dict_raw
 
+from bloom.git import ensure_clean_working_env
+from bloom.git import get_current_branch
+
 from bloom.logging import error
 from bloom.logging import fmt
 from bloom.logging import get_error_prefix
 from bloom.logging import info
 from bloom.logging import sanitize
 from bloom.logging import warning
-
-from bloom.git import ensure_clean_working_env
-from bloom.git import get_current_branch
 
 import bloom.util
 from bloom.util import add_global_arguments
@@ -258,7 +258,7 @@ def execute_track(track, track_dict, release_inc, pretend=True, debug=False, fas
             info(out, use_prefix=False)
         ret = p.returncode
         if ret > 0:
-            error(fmt(_error + "Error running command '@!{0}@|'")
+            error(fmt(_error + "Error running command '@!{0}'@|")
                   .format(templated_action), exit=True)
         print()
     if not pretend:
