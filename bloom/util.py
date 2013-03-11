@@ -140,7 +140,7 @@ class temporary_directory(object):
             os.chdir(self.original_cwd)
 
 
-def get_package_data(branch_name, directory=None, quiet=True, fuerte=False):
+def get_package_data(branch_name=None, directory=None, quiet=True, fuerte=False):
     """
     Gets package data about the package(s) in the current branch.
 
@@ -151,7 +151,10 @@ def get_package_data(branch_name, directory=None, quiet=True, fuerte=False):
     stack_path = os.path.join(repo_dir, 'stack.xml')
     if os.path.exists(stack_path) and not fuerte:
             warning("stack.xml is present but going to be ignored because this is not a release for Fuerte.")
-    log("Looking for packages in '{0}' branch... ".format(branch_name), end='')
+    if branch_name:
+        log("Looking for packages in '{0}' branch... ".format(branch_name), end='')
+    else:
+        log("Looking for packages in '{0}'... ".format(directory or os.getcwd()), end='')
     ## Check for package.xml(s)
     if not fuerte:
         packages = find_packages(repo_dir)

@@ -53,6 +53,7 @@ from bloom.config import write_tracks_dict_raw
 
 from bloom.git import ensure_clean_working_env
 from bloom.git import get_current_branch
+from bloom.git import get_root
 
 from bloom.logging import error
 from bloom.logging import fmt
@@ -104,9 +105,10 @@ def clean_up_repositories():
 def get_upstream_meta(upstream_dir, ros_distro):
     meta = None
     with change_directory(upstream_dir):
-        current_branch = get_current_branch()
-        if current_branch is None:
-            error("Could not determine current branch.", exit=True)
+        if get_root() is not None:  # If in a git repo
+            current_branch = get_current_branch()
+        else:
+            current_branch = None
         name, version, stackages = get_package_data(
             current_branch,
             quiet=False,
