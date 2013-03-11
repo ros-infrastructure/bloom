@@ -41,11 +41,12 @@ def main(sysargs=None):
     add_global_arguments(parser)
     args = parser.parse_args(sysargs)
     handle_global_arguments(args)
-    if get_root() is not None:
-        error("This command must be run in a valid git repository.")
+    retcode = "command not run"
+    if get_root() is None:
         parser.print_help()
+        error("This command must be run in a valid git repository.", exit=True)
     try:
-        args.func(args)
+        retcode = args.func(args) or 0
     except CalledProcessError as err:
         # Problem calling out to git probably
         print_exc(traceback.format_exc())
