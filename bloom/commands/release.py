@@ -126,8 +126,8 @@ def check_for_bloom_conf(repository):
     return 'bloom.conf' in bloom_files
 
 
-def list_tracks(repository):
-    release_repo = get_release_repo(repository)
+def list_tracks(repository, distro):
+    release_repo = get_release_repo(repository, distro)
     tracks_dict = None
     with change_directory(release_repo.get_path()):
         if check_for_bloom_conf(repository):
@@ -317,7 +317,7 @@ def main(sysargs=None):
     args = parser.parse_args(sysargs)
 
     if args.list_tracks:
-        list_tracks(args.repository)
+        list_tracks(args.repository, args.ros_distro)
         return
 
     perform_release(args.repository, args.track, args.ros_distro, args.new_track, not args.non_interactive)
