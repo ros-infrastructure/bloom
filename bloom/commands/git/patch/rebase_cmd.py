@@ -158,22 +158,6 @@ def rebase_patches(without_git_rebase=True, directory=None):
     patches_branch = 'patches/' + current_branch
     # Get the current patches.conf
     config = get_patch_config(patches_branch, directory=directory)
-    # Get the current upstream commit hash
-    upstream_commit_hash = get_commit_hash(config['parent'], directory)
-    # If the current upstream commit hash is the same as the stored one, noop
-    if upstream_commit_hash == config['previous']:
-        debug(str(upstream_commit_hash) + ' ' + str(config['previous']))
-        debug("Nothing to do: The source branch (" +
-              config['parent'] + ")'s commit hash has not changed.")
-        debug("    Did you forget to update the parent branch first?")
-        debug("    Updating the parent branch can be done by calling "
-              "'git-bloom-patch rebase' on it, or 'git-bloom-import-upsteam'"
-              " if the parent branch is the upstream branch.")
-        return -1  # Indicates that rebase did nothing
-    else:
-        debug("rebase_patches: " + upstream_commit_hash + " == " +
-              config['previous'] + ": " +
-              str(upstream_commit_hash == config['previous']))
 
     ### Execute the rebase
     if without_git_rebase:
