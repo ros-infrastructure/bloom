@@ -100,7 +100,8 @@ def get_repo_uri(repository, distro, distro_file_url=ROS_DISTRO_FILE):
     distro_file_url = distro_file_url.format(distro)
     distro_file = yaml.load(fetch_distro_file(distro_file_url))
     if repository not in distro_file['repositories']:
-        error("Specified repository '{0}' is not in the distro file located at '{1}'".format(repository, distro_file_url),
+        error("Specified repository '{0}' is not in the distro file located at '{1}'"
+              .format(repository, distro_file_url),
               exit=True)
     return distro_file['repositories'][repository]['url']
 
@@ -120,8 +121,9 @@ def get_release_repo(repository, distro):
 def check_for_bloom_conf(repository):
     bloom_ls = ls_tree('bloom')
     if bloom_ls is None:
-        error("Release repository '{0}' not initialized, please initialize the bloom repository before releasing from it."
-              .format(repository), exit=True)
+        error("Release repository '{0}' not initialized,".format(repository) +
+              " please initialize the bloom repository before releasing from it.",
+              exit=True)
     bloom_files = [f for f, t in bloom_ls.iteritems() if t == 'file']
     return 'bloom.conf' in bloom_files
 
