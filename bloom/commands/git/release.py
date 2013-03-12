@@ -83,15 +83,16 @@ def get_upstream_repo(uri, vcs_type):
     global upstream_repos
     if uri not in upstream_repos:
         temp_dir = tempfile.mkdtemp()
-        upstream_repos[uri] = get_vcs_client(vcs_type, temp_dir)
-    return upstream_repos[uri]
+        upstream_dir = os.path.join(temp_dir, 'upstream')
+        upstream_repos[uri] = (temp_dir, get_vcs_client(vcs_type, upstream_dir))
+    return upstream_repos[uri][1]
 
 
 @atexit.register
 def clean_up_repositories():
     global upstream_repos
     for uri in upstream_repos:
-        path = upstream_repos[uri].get_path()
+        path = upstream_repos[uri][0]
         if os.path.exists(path):
             shutil.rmtree(path)
 
