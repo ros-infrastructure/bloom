@@ -47,7 +47,7 @@ from bloom.config import write_tracks_dict_raw
 from bloom.git import branch_exists
 from bloom.git import ls_tree
 from bloom.git import ensure_clean_working_env
-from bloom.git import GitClone
+from bloom.git import ensure_git_root
 from bloom.git import get_root
 from bloom.git import inbranch
 
@@ -125,7 +125,7 @@ def show_current():
         bloom_files = [f for f, t in bloom_ls.iteritems() if t == 'file']
     if 'tracks.yaml' in bloom_files:
         info(yaml.dump(get_tracks_dict_raw(), indent=2,
-            default_flow_style=False))
+             default_flow_style=False))
 
 
 def check_git_init():
@@ -161,18 +161,18 @@ def new(track, template=None, copy_track=None, overrides={}):
     if track in tracks_dict['tracks']:
         error("Cannot create track '{0}' beause it exists.".format(track))
         error("Run `git-bloom-config edit {0}` instead.".format(track),
-            exit=True)
+              exit=True)
     track_dict = copy.copy(DEFAULT_TEMPLATE)
     template_dict = copy.copy(config_template[template])
     if copy_track is not None:
         if template is not None:
             error("You cannot specify both a template and track to copy.",
-                exit=True)
+                  exit=True)
         if copy_track == '' and len(tracks_dict['tracks']) != 0:
             copy_track = tracks_dict['tracks'].keys()[0]
         if copy_track and copy_track not in tracks_dict['tracks']:
             error("Cannot copy a track which does not exist: '{0}'"
-                .format(copy_track), exit=True)
+                  .format(copy_track), exit=True)
         template_dict = tracks_dict['tracks'][copy_track]
     for key in template_entry_order:
         if key in template_dict:
@@ -197,15 +197,16 @@ def show(args):
     if args.track not in tracks_dict['tracks']:
         error("Track '{0}' does not exist.".format(args.track), exit=True)
     info(yaml.dump({args.track: tracks_dict['tracks'][args.track]}, indent=2,
-        default_flow_style=False))
+         default_flow_style=False))
 
 
 def update_track(track_dict):
     for key, value in DEFAULT_TEMPLATE.iteritems():
         if key in ['actions']:
             if track_dict[key] != DEFAULT_TEMPLATE[key]:
-                warning("Your track's '{0}' configuration is not the same as the default, should it be updated to the default setting?"
-                    .format(key))
+                warning("""\
+Your track's '{0}' configuration is not the same as the default, should it be updated to the default setting?"""
+                        .format(key))
                 if maybe_continue('n'):
                     track_dict[key] = DEFAULT_TEMPLATE[key]
         elif key not in track_dict:
@@ -254,25 +255,29 @@ def get_argument_parser():
 Configures the bloom repository with information in groups called tracks.
 """)
     metavar = "[new|show|edit|delete]"
-    subparsers = parser.add_subparsers(title="Commands", metavar=metavar,
-        description="""\
+    subparsers = parser.add_subparsers(
+        title="Commands", metavar=metavar, description="""\
 Call `git-bloom-config {0} -h` for additional help information on each command.
 """.format(metavar))
     new_parser = subparsers.add_parser('new')
-    new_parser.add_argument('track', help="name of track to create")
-    new_parser.add_argument('--template', '-t',
+    add = new_parser.add_argument
+    add('track', help="name of track to create")
+    add('--template', '-t',
         help="tempate to base new track on",
         choices=[x for x in config_template.keys() if x is not None],
         default=None)
     new_parser.set_defaults(func=new_cmd)
     new_parser = subparsers.add_parser('show')
-    new_parser.add_argument('track', help="name of track to show")
+    add = new_parser.add_argument
+    add('track', help="name of track to show")
     new_parser.set_defaults(func=show)
     new_parser = subparsers.add_parser('edit')
-    new_parser.add_argument('track', help="name of track to edit")
+    add = new_parser.add_argument
+    add('track', help="name of track to edit")
     new_parser.set_defaults(func=edit_cmd)
     new_parser = subparsers.add_parser('delete')
-    new_parser.add_argument('track', help="name of track to delete")
+    add = new_parser.add_argument
+    add('track', help="name of track to delete")
     new_parser.set_defaults(func=delete)
     return parser
 
@@ -294,8 +299,13 @@ def main(sysargs=None):
 
     # Also check to see if git has been init'ed
     check_git_init()
-    # Getting here means we mean to do something, first check we have an env
-    ensure_clean_working_env()
+    # Check that the current directory is a serviceable git/bloom repo
+    try:
+        ensure_clean_working_env()
+        ensure_git_root()
+    except SystemExit:
+        parser.print_usage()
+        raise
     # Then call the verb
     try:
         args.func(args)

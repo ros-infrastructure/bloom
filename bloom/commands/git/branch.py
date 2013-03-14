@@ -6,6 +6,7 @@ from bloom.git import branch_exists
 from bloom.git import checkout
 from bloom.git import create_branch
 from bloom.git import ensure_clean_working_env
+from bloom.git import ensure_git_root
 from bloom.git import get_commit_hash
 from bloom.git import get_current_branch
 from bloom.git import ls_tree
@@ -163,8 +164,13 @@ def main(sysargs=None):
     args = parser.parse_args(sysargs)
     handle_global_arguments(args)
 
-    # Check environment
-    ensure_clean_working_env()
+    # Check that the current directory is a serviceable git/bloom repo
+    try:
+        ensure_clean_working_env()
+        ensure_git_root()
+    except SystemExit:
+        parser.print_usage()
+        raise
 
     # If the src argument isn't set, use the current branch
     if args.src is None:

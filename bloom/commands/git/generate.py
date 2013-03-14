@@ -44,6 +44,8 @@ from bloom.generators import GeneratorError
 from bloom.generators import list_generators
 from bloom.generators import load_generator
 
+from bloom.git import ensure_clean_working_env
+from bloom.git import ensure_git_root
 from bloom.git import GitClone
 
 from bloom.logging import debug
@@ -228,6 +230,14 @@ def main(sysargs=None):
     handle_global_arguments(args)
 
     generator = generators[args.generator]
+
+    # Check that the current directory is a serviceable git/bloom repo
+    try:
+        ensure_clean_working_env()
+        ensure_git_root()
+    except SystemExit:
+        parser.print_usage()
+        raise
 
     # Run the generator that was selected in a clone
     # The clone protects the release repo state from mid change errors

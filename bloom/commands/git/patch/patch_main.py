@@ -5,6 +5,7 @@ import sys
 import traceback
 from subprocess import CalledProcessError
 
+from bloom.git import ensure_git_root
 from bloom.git import get_root
 
 from bloom.logging import error
@@ -45,6 +46,7 @@ def main(sysargs=None):
     if get_root() is None:
         parser.print_help()
         error("This command must be run in a valid git repository.", exit=True)
+    ensure_git_root()
     try:
         retcode = args.func(args) or 0
     except CalledProcessError as err:
