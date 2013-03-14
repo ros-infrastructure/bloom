@@ -223,7 +223,7 @@ def ensure_clean_working_env(force=False, git_status=True, directory=None):
         error(code, exit=True)
     # Is it a git repo
     if get_root(directory) is None:
-        error("Not is a valid git repository", exit=True)
+        error("Not in a valid git repository", exit=True)
     # Are we on a branch?
     current_branch = get_current_branch(directory)
     if current_branch is None:
@@ -548,6 +548,21 @@ def create_branch(branch, orphaned=False, changeto=False, directory=None):
     finally:
         if current_branch is not None:
             checkout(current_branch, directory=directory)
+
+
+def ensure_git_root():
+    """
+    Checks that you are in the root of the git repository, else exit.
+
+    :raises: SystemExit if this is not a valid git repository.
+    :raises: SystemExit if not in the root of a git repository.
+    """
+    root = get_root()
+    if root is None:
+        error("Not in a git repository.", exit=True)
+    if os.getcwd() != root:
+        error("Must call from the top folder of the git repository",
+              exit=True)
 
 
 def get_root(directory=None):

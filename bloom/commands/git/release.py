@@ -52,6 +52,7 @@ from bloom.config import verify_track
 from bloom.config import write_tracks_dict_raw
 
 from bloom.git import ensure_clean_working_env
+from bloom.git import ensure_git_root
 from bloom.git import get_current_branch
 from bloom.git import get_root
 
@@ -288,6 +289,7 @@ def get_argument_parser(tracks):
 def main(sysargs=None):
     # Check that the current directory is a serviceable git/bloom repo
     ensure_clean_working_env()
+    ensure_git_root()
 
     # Get tracks
     tracks_dict = get_tracks_dict_raw()
