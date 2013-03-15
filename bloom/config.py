@@ -118,7 +118,7 @@ version being released.'''
 
 class PromptEntry(object):
     def __init__(self, name, default=None, values=None, prompt='', spec=None):
-        object.__setattr__(self, 'values', values)
+        self.values = values
         self.name = name
         self.default = default
         self.prompt = prompt
@@ -151,22 +151,16 @@ class PromptEntry(object):
         return msg
 
 DEFAULT_TEMPLATE = {
-    'name': PromptEntry('Repository Name',
-        spec=config_spec['name'], default='upstream'),
-    'vcs_uri': PromptEntry('Upstream Repository URI',
-        spec=config_spec['vcs_uri']),
-    'vcs_type': PromptEntry('Upstream VCS Type', default='git',
-        spec=config_spec['vcs_type'], values=['git', 'hg', 'svn', 'tar']),
-    'version': PromptEntry('Version', default=':{auto}',
-        spec=config_spec['version']),
-    'release_tag': PromptEntry('Release Tag', default=':{version}',
-        spec=config_spec['release_tag']),
-    'devel_branch': PromptEntry('Upstream Devel Branch',
-        spec=config_spec['devel_branch']),
-    'patches': PromptEntry('Patches Directory',
-        spec=config_spec['patches']),
-    'ros_distro': PromptEntry('ROS Distro', default='groovy',
-        spec=config_spec['ros_distro']),
+    'name': PromptEntry('Repository Name', spec=config_spec['name'], default='upstream'),
+    'vcs_uri': PromptEntry('Upstream Repository URI', spec=config_spec['vcs_uri']),
+    'vcs_type': PromptEntry(
+        'Upstream VCS Type', default='git', spec=config_spec['vcs_type'],
+        values=['git', 'hg', 'svn', 'tar']),
+    'version': PromptEntry('Version', default=':{auto}', spec=config_spec['version']),
+    'release_tag': PromptEntry('Release Tag', default=':{version}', spec=config_spec['release_tag']),
+    'devel_branch': PromptEntry('Upstream Devel Branch', spec=config_spec['devel_branch']),
+    'patches': PromptEntry('Patches Directory', spec=config_spec['patches']),
+    'ros_distro': PromptEntry('ROS Distro', default='groovy', spec=config_spec['ros_distro']),
     'release_inc': -1,
     'actions': [
         'bloom-export-upstream :{vcs_local_uri} :{vcs_type}'
@@ -195,8 +189,9 @@ config_template = {
 def verify_track(track_name, track):
     for entry in DEFAULT_TEMPLATE:
         if entry not in track:
-            error("Track '{0}' is missing configuration '{1}', it may be out of date, please run 'git-bloom-config edit {0}'."
-                .format(track_name, entry), exit=True)
+            error("Track '{0}' is missing configuration ".format(track_name) +
+                  "'{1}', it may be out of date, please run 'git-bloom-config edit {0}'."
+                  .format(entry), exit=True)
 
 
 class ConfigTemplate(string.Template):
@@ -215,7 +210,7 @@ def write_tracks_dict_raw(tracks_dict, cmt_msg=None, directory=None):
             f.write(yaml.dump(tracks_dict, indent=2, default_flow_style=False))
         execute_command('git add tracks.yaml', cwd=directory)
         execute_command('git commit --allow-empty -m "{0}"'.format(cmt_msg),
-            cwd=directory)
+                        cwd=directory)
 
 
 def get_tracks_dict_raw(directory=None):

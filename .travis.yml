@@ -8,7 +8,7 @@ env:
 # command to install dependencies
 install:
   - pip install empy PyYAML argparse rosdep rospkg vcstools catkin-pkg python-dateutil distribute
-  - pip install nose coverage
+  - pip install nose coverage pep8
   - sudo pip install rosdep
   - sudo rosdep init
   - rosdep update

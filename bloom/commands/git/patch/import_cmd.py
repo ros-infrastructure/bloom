@@ -104,7 +104,9 @@ def import_patches(directory=None):
             if 'bash' in os.environ['SHELL']:
                 ret = subprocess.call([
                     "/bin/bash", "-l", "-c",
-                    """/bin/bash --rcfile <(echo "if [ -f /etc/bashrc ]; then source /etc/bashrc; fi; if [ -f ~/.bashrc ]; then source ~/.bashrc; fi;PS1='(bloom)$PS1'") -i"""
+                    """\
+/bin/bash --rcfile <(echo "if [ -f /etc/bashrc ]; then source /etc/bashrc; fi; \
+if [ -f ~/.bashrc ]; then source ~/.bashrc; fi;PS1='(bloom)$PS1'") -i"""
                 ])
             else:
                 ret = subprocess.call("$SHELL", shell=True)
