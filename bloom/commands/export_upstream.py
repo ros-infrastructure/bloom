@@ -58,7 +58,7 @@ try:
     from vcstools.vcs_abstraction import get_vcs_client
 except ImportError:
     error("vcstools was not detected, please install it.", file=sys.stderr,
-        exit=True)
+          exit=True)
 
 
 def get_argument_parser():
@@ -110,23 +110,23 @@ def export_upstream(uri, tag, vcs_type, output_dir, show_uri, name):
             upstream_repo = get_vcs_client(vcs_type, repo_path)
             if not upstream_repo.checkout(uri, tag or ''):
                 error("Failed to clone repository at '{0}'".format(uri) +
-                    (" to reference '{0}'.".format(tag) if tag else '.'),
-                    exit=True)
+                      (" to reference '{0}'.".format(tag) if tag else '.'),
+                      exit=True)
         tarball_prefix = '{0}-{1}'.format(name, tag) if tag else name
         tarball_path = os.path.join(output_dir, tarball_prefix)
         full_tarball_path = tarball_path + '.tar.gz'
         info("Exporting to archive: '{0}'".format(full_tarball_path))
         if not upstream_repo.export_repository(tag or '', tarball_path):
             error("Failed to create archive of upstream repository at '{0}'"
-                .format(show_uri))
+                  .format(show_uri))
             if tag:
                 with change_directory(upstream_repo.get_path()):
                     if not tag_exists(tag):
                         warning("'{0}' is not a tag in the upstream repository..."
-                            .format(tag))
+                                .format(tag))
                     if not branch_exists(tag):
                         warning("'{0}' is not a branch in the upstream repository..."
-                            .format(tag))
+                                .format(tag))
         if not os.path.exists(full_tarball_path):
             error("Tarball was not created.", exit=True)
         info("md5: {0}".format(calculate_file_md5(full_tarball_path)))
@@ -139,4 +139,4 @@ def main(sysargs=None):
     handle_global_arguments(args)
 
     export_upstream(args.uri, args.tag, args.type, args.output_dir,
-        args.display_uri, args.name)
+                    args.display_uri, args.name)

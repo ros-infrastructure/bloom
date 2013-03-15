@@ -42,9 +42,9 @@ from pkg_resources import parse_version
 from bloom.git import branch_exists
 from bloom.git import create_branch
 from bloom.git import create_tag
-from bloom.git import delete_remote_tag
 from bloom.git import delete_tag
 from bloom.git import ensure_clean_working_env
+from bloom.git import ensure_git_root
 from bloom.git import get_last_tag_by_version
 from bloom.git import GitClone
 from bloom.git import has_changes
@@ -327,6 +327,7 @@ def main(sysargs=None):
     # Check that the current directory is a serviceable git/bloom repo
     try:
         ensure_clean_working_env()
+        ensure_git_root()
     except SystemExit:
         parser.print_usage()
         raise

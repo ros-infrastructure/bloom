@@ -3,6 +3,7 @@ from __future__ import print_function
 from bloom.git import branch_exists
 from bloom.git import checkout
 from bloom.git import ensure_clean_working_env
+from bloom.git import ensure_git_root
 from bloom.git import get_current_branch
 from bloom.git import has_changes
 
@@ -82,4 +83,7 @@ branch, which is named 'patches/<current branch name>', using git format-patch.
 
 def main(args):
     handle_global_arguments(args)
+
+    ensure_git_root()
+
     return export_patches()
