@@ -42,6 +42,7 @@ from pkg_resources import parse_version
 from bloom.git import branch_exists
 from bloom.git import create_branch
 from bloom.git import create_tag
+from bloom.git import delete_remote_tag
 from bloom.git import delete_tag
 from bloom.git import ensure_clean_working_env
 from bloom.git import ensure_git_root
@@ -62,6 +63,7 @@ from bloom.logging import warning
 
 from bloom.util import add_global_arguments
 from bloom.util import execute_command
+from bloom.util import get_git_clone_state
 from bloom.util import handle_global_arguments
 
 
@@ -76,7 +78,7 @@ def version_check(version):
     if parse_version(version) < parse_version(last_tag_version):
         warning("""\
 Version discrepancy:
-The upstream version '{0}' isn't newer than upstream version, '{1}'.
+The upstream version '{0}' isn't newer than upstream version '{1}'.
 """.format(version, last_tag_version))
 
 
@@ -256,6 +258,8 @@ def import_upstream(tarball_path, patches_path, version, name, replace):
                   .format(upstream_tag), exit=True)
         warning("Removing tag: '{0}'".format(upstream_tag))
         delete_tag(upstream_tag)
+        if not get_git_clone_state():
+            delete_remote_tag(upstream_tag)
     name_tag = '{0}/{1}'.format(name or 'upstream', version)
     if name_tag != upstream_tag and tag_exists(name_tag):
         if not replace:
@@ -263,6 +267,8 @@ def import_upstream(tarball_path, patches_path, version, name, replace):
                   .format(name_tag), exit=True)
         warning("Removing tag: '{0}'".format(name_tag))
         delete_tag(name_tag)
+        if not get_git_clone_state():
+            delete_remote_tag(name_tag)
 
     # If there is not upstream branch, create one
     if not branch_exists('upstream'):
