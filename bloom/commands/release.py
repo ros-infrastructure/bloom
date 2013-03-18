@@ -156,12 +156,12 @@ def generate_ros_distro_diff(track, repository, distro, distro_file_url=ROS_DIST
                   file=sys.stderr, exit=True)
         packages = find_packages(os.getcwd())
         if len(packages) == 0:
-            warning("Could not generate ros distro diff, no packages found.")
+            warning("No packages found, will not generate 'package: path' entries for rosdistro.")
         track_dict = get_tracks_dict_raw()['tracks'][track]
         last_version = track_dict['last_version']
         release_inc = track_dict['release_inc']
         distro_file['repositories'][repository]['version'] = '{0}-{1}'.format(last_version, release_inc)
-        if len(packages) > 1 or packages.keys()[0] != '.':
+        if packages and (len(packages) > 1 or packages.keys()[0] != '.'):
             distro_file['repositories'][repository]['packages'] = {}
             for path, package in packages.iteritems():
                 distro_file['repositories'][repository]['packages'][package.name] = path
@@ -276,7 +276,15 @@ def perform_release(repository, track, distro, new_track, interactive):
         try:
             subprocess.check_call(cmd, shell=True)
         except subprocess.CalledProcessError:
-            error("Pushing changes failed, exiting.", exit=True)
+            error("Pushing changes failed, would you like to add '--force' to 'git push --all'?")
+            if not maybe_continue():
+                error("Pushing changes failed, exiting.", exit=True)
+            cmd += ' --force'
+            info(fmt("@{bf}@!==> @|@!" + str(cmd)))
+            try:
+                subprocess.check_call(cmd, shell=True)
+            except subprocess.CalledProcessError:
+                error("Pushing changes failed, exiting.", exit=True)
         info(fmt(_success) + "Pushed changes successfully")
         # Push tags to the repository
         info(fmt("@{gf}@!==> @|") +
@@ -287,7 +295,15 @@ def perform_release(repository, track, distro, new_track, interactive):
         try:
             subprocess.check_call(cmd, shell=True)
         except subprocess.CalledProcessError:
-            error("Pushing tags failed, exiting.", exit=True)
+            error("Pushing changes failed, would you like to add '--force' to 'git push --tags'?")
+            if not maybe_continue():
+                error("Pushing tags failed, exiting.", exit=True)
+            cmd += ' --force'
+            info(fmt("@{bf}@!==> @|@!" + str(cmd)))
+            try:
+                subprocess.check_call(cmd, shell=True)
+            except subprocess.CalledProcessError:
+                error("Pushing tags failed, exiting.", exit=True)
         info(fmt(_success) + "Pushed tags successfully")
         # Propose github pull request
         info(fmt("@{gf}@!==> @|") +
