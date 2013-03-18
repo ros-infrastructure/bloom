@@ -242,19 +242,47 @@ def edit(track):
 
 
 def delete(args):
+    delete_cmd(args.track)
+
+
+def delete_cmd(track):
     tracks_dict = get_tracks_dict_raw()
-    if args.track not in tracks_dict['tracks']:
-        error("Track '{0}' does not exist.".format(args.track), exit=True)
-    del tracks_dict['tracks'][args.track]
-    info("Deleted track '{0}'.".format(args.track))
+    if track not in tracks_dict['tracks']:
+        error("Track '{0}' does not exist.".format(track), exit=True)
+    del tracks_dict['tracks'][track]
+    info("Deleted track '{0}'.".format(track))
     write_tracks_dict_raw(tracks_dict)
+
+
+def copy_cmd(args):
+    copy_track(args.dst, args.src)
+
+
+def copy_track(src, dst):
+    tracks_dict = get_tracks_dict_raw()
+    if src not in tracks_dict['tracks']:
+        error("Track '{0}' does not exist.".format(src), exit=True)
+    if dst in tracks_dict['tracks']:
+        error("Track '{0}' already exists.".format(dst), exit=True)
+    tracks_dict['tracks'][dst] = copy.deepcopy(tracks_dict['tracks'][src])
+    info("Saving '{0}' track.".format(dst))
+    write_tracks_dict_raw(tracks_dict)
+
+
+def rename_cmd(args):
+    rename_track(args.src, args.dst)
+
+
+def rename_track(src, dst):
+    copy_track(src, dst)
+    delete_cmd(src)
 
 
 def get_argument_parser():
     parser = argparse.ArgumentParser(description="""\
 Configures the bloom repository with information in groups called tracks.
 """)
-    metavar = "[new|show|edit|delete]"
+    metavar = "[new|show|edit|delete|copy|rename]"
     subparsers = parser.add_subparsers(
         title="Commands", metavar=metavar, description="""\
 Call `git-bloom-config {0} -h` for additional help information on each command.
@@ -279,6 +307,16 @@ Call `git-bloom-config {0} -h` for additional help information on each command.
     add = new_parser.add_argument
     add('track', help="name of track to delete")
     new_parser.set_defaults(func=delete)
+    new_parser = subparsers.add_parser('copy')
+    add = new_parser.add_argument
+    add('src', help="name of track to copy from")
+    add('dst', help="name of track to copy to")
+    new_parser.set_defaults(func=copy_cmd)
+    new_parser = subparsers.add_parser('rename')
+    add = new_parser.add_argument
+    add('src', help="name of track to rename")
+    add('dst', help="new name of track")
+    new_parser.set_defaults(func=rename_cmd)
     return parser
 
 
