@@ -84,3 +84,4 @@ pre-release:
 
 release: pre-release publish_docs push upload
 	@echo "Now push the result with git push --all"
+butts lol
