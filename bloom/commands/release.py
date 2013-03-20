@@ -45,6 +45,7 @@ import subprocess
 import sys
 import tempfile
 import urllib2
+import webbrowser
 import yaml
 
 from bloom.commands.git.config import convert_old_bloom_conf
@@ -62,13 +63,13 @@ from bloom.git import track_branches
 
 from bloom.logging import error
 from bloom.logging import fmt
+from bloom.logging import get_error_prefix
 from bloom.logging import get_success_prefix
 from bloom.logging import info
 from bloom.logging import warning
 
 from bloom.util import change_directory
 from bloom.util import check_output
-from bloom.util import execute_command
 from bloom.util import maybe_continue
 
 try:
@@ -82,6 +83,7 @@ ROS_DISTRO_FILE = 'https://raw.github.com/ros/rosdistro/master/releases/{0}.yaml
 _repositories = {}
 
 _success = get_success_prefix()
+_error = get_error_prefix()
 
 
 @atexit.register
@@ -171,9 +173,9 @@ def generate_ros_distro_diff(track, repository, distro, distro_file_url, distro_
                 distro_file['repositories'][repository]['packages'][package.name] = path
     distro_file_name = os.path.join('release', distro_file_url.split('/')[-1])
     distro_dump = yaml.dump(distro_file, indent=2, default_flow_style=False)
-    udiff = difflib.unified_diff(distro_file_raw.splitlines(), distro_dump.splitlines(),
-                                 fromfile=distro_file_name, tofile=distro_file_name)
-    if udiff:
+    if distro_file_raw != distro_dump:
+        udiff = difflib.unified_diff(distro_file_raw.splitlines(), distro_dump.splitlines(),
+                                     fromfile=distro_file_name, tofile=distro_file_name)
         temp_dir = tempfile.mkdtemp()
         version = distro_file['repositories'][repository]['version']
         udiff_file = os.path.join(temp_dir, repository + '-' + version + '.patch')
@@ -202,6 +204,7 @@ def generate_ros_distro_diff(track, repository, distro, distro_file_url, distro_
         return udiff_file, distro_dump
     else:
         warning("This release resulted in no changes to the ROS distro file...")
+    return None, None
 
 
 def get_gh_info(url):
@@ -230,7 +233,8 @@ def fetch_github_api(url, data=None):
 
 
 def create_fork(org, repo, user, password):
-    info("Creating fork: {0}:{1} => {2}:{1}".format(org, repo, user))
+    msg = "Creating fork: {0}:{1} => {2}:{1}".format(org, repo, user)
+    info(fmt("@{bf}@!==> @|@!" + str(msg)))
     headers = {}
     headers["Authorization"] = "Basic {0}".format(base64.b64encode('{0}:{1}'.format(user, password)))
     conn = httplib.HTTPSConnection('api.github.com')
@@ -267,6 +271,9 @@ def open_pull_request(track, repository, distro, distro_file_url=ROS_DISTRO_FILE
     udiff_patch_file, updated_distro_file = generate_ros_distro_diff(track, repository, distro,
                                                                      distro_file_url, distro_file,
                                                                      distro_file_raw)
+    if None in [udiff_patch_file, updated_distro_file]:
+        # There were no changes, no pull request required
+        return None
     version = distro_file['repositories'][repository]['version']
     # Determine if the distro file is hosted on github...
     distro_file_url = distro_file_url.format(distro)
@@ -291,7 +298,7 @@ def open_pull_request(track, repository, distro, distro_file_url=ROS_DISTRO_FILE
             warning("Skipping the pull request...")
             return
     # Check for fork
-    info("Checking for rosdistro fork on github...")
+    info(fmt("@{bf}@!==> @|@!Checking for rosdistro fork on github..."))
     gh_user_repos = fetch_github_api('https://api.github.com/users/{0}/repos'.format(gh_username))
     if gh_user_repos is None:
         error("Failed to get a list of repositories for user: '{0}'".format(gh_username))
@@ -306,16 +313,21 @@ def open_pull_request(track, repository, distro, distro_file_url=ROS_DISTRO_FILE
         # Create a fork
         create_fork(gh_org, gh_repo, gh_username, gh_password)
     # Clone the fork
-    info("Cloning {0}:{1}...".format(gh_username, gh_repo))
+    info(fmt("@{bf}@!==> @|@!" + "Cloning {0}/{1}...".format(gh_username, gh_repo)))
     temp_dir = tempfile.mkdtemp()
     new_branch = None
     title = "{0}: update version to {1} in {2} [bloom]".format(repository, version, gh_path)
     with change_directory(temp_dir):
-        execute_command('git clone https://github.com/{0}/{1}.git'.format(gh_username, gh_repo))
+        def _my_run(cmd):
+            info(fmt("@{bf}@!==> @|@!" + str(cmd)))
+            out = check_output(cmd, stderr=subprocess.STDOUT, shell=True)
+            if out:
+                info(out, use_prefix=False)
+        _my_run('git clone https://github.com/{0}/{1}.git'.format(gh_username, gh_repo))
         with change_directory(gh_repo):
-            execute_command('git remote add bloom https://github.com/{0}/{1}.git'.format(gh_org, gh_repo))
-            execute_command('git remote update')
-            execute_command('git fetch')
+            _my_run('git remote add bloom https://github.com/{0}/{1}.git'.format(gh_org, gh_repo))
+            _my_run('git remote update')
+            _my_run('git fetch')
             track_branches()
             branches = get_branches()
             new_branch = 'bloom-patch-{0}'
@@ -323,15 +335,20 @@ def open_pull_request(track, repository, distro, distro_file_url=ROS_DISTRO_FILE
             while new_branch.format(count) in branches:
                 count += 1
             new_branch = new_branch.format(count)
-            execute_command('git checkout -b {0} bloom/{1}'.format(new_branch, gh_branch))
+            _my_run('git checkout -b {0} bloom/{1}'.format(new_branch, gh_branch))
             with open('{0}'.format(gh_path), 'w') as f:
+                info(fmt("@{bf}@!==> @|@!Writing new distribution file: ") + str(gh_path))
                 f.write(updated_distro_file)
-            execute_command('git add {0}'.format(gh_path))
-            execute_command('git commit -m "{0}"'.format(title))
-            execute_command('git push origin {0}'.format(new_branch))
+            _my_run('git add {0}'.format(gh_path))
+            _my_run('git commit -m "{0}"'.format(title))
+            _my_run('git push origin {0}'.format(new_branch))
     # Final check
-    info("Opening a pull request from {gh_username}/{gh_repo}:{new_branch} into {gh_org}/{gh_repo}:{gh_branch}"
-         .format(**locals()))
+    msg = fmt("@!Open a @{cf}pull request@| @!@{kf}from@| @!'@|@{bf}" +
+              "{gh_username}/{gh_repo}:{new_branch}".format(**locals()) +
+              "@|@!' @!@{kf}into@| @!'@|@{bf}" +
+              "{gh_org}/{gh_repo}:{gh_branch}".format(**locals()) +
+              "@|@!'?")
+    info(msg)
     if not maybe_continue():
         warning("Skipping the pull request...")
         return
@@ -466,7 +483,11 @@ def perform_release(repository, track, distro, new_track, interactive, pretend):
              .format(ROS_DISTRO_FILE).format(distro))
         try:
             pull_request_url = open_pull_request(track, repository, distro)
-            info(fmt(_success) + "Pull request opened at: '{0}'".format(pull_request_url))
+            if pull_request_url:
+                info(fmt(_success) + "Pull request opened at: '{0}'".format(pull_request_url))
+                webbrowser.open(pull_request_url)
+            else:
+                info(fmt(_error) + "No pull request opened.")
         except Exception as e:
             error("Failed to open pull request: {0}".format(e), exit=True)
 
