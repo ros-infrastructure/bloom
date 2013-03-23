@@ -274,7 +274,7 @@ def checkout(reference, raise_exc=False, directory=None, show_git_status=True):
     debug("Checking out to " + str(reference))
     if reference == get_current_branch(directory):
         debug("Requested checkout reference is the same as the current branch")
-        return 0
+        return True
     fail_msg = ''
     git_root = get_root(directory)
     if git_root is not None:
