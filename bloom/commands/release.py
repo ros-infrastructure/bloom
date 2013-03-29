@@ -170,7 +170,10 @@ def generate_ros_distro_diff(track, repository, distro, distro_file_url, distro_
         if packages and (len(packages) > 1 or packages.keys()[0] != '.'):
             distro_file['repositories'][repository]['packages'] = {}
             for path, package in packages.iteritems():
-                distro_file['repositories'][repository]['packages'][package.name] = path
+                if os.path.dirname(path) == package.name:
+                    distro_file['repositories'][repository]['packages'][package.name] = None
+                else:
+                    distro_file['repositories'][repository]['packages'][package.name] = path
     distro_file_name = os.path.join('release', distro_file_url.split('/')[-1])
     distro_dump = yaml.dump(distro_file, indent=2, default_flow_style=False)
     if distro_file_raw != distro_dump:
