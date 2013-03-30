@@ -37,6 +37,7 @@ from __future__ import print_function
 import os
 import functools
 import shutil
+import subprocess
 import tempfile
 
 from subprocess import PIPE
@@ -123,8 +124,14 @@ class GitClone(object):
                         with inbranch(branch):
                             cmd = 'git pull --rebase origin ' + branch
                             execute_command(cmd)
-                execute_command('git push --all')
-                execute_command('git push --tags')
+                execute_command('git push --all', silent=False)
+                try:
+                    execute_command('git push --tags', silent=False)
+                except subprocess.CalledProcessError:
+                    warning("Force pushing tags from clone to working repository, "
+                            "you will have to force push back to origin...")
+                    execute_command('git push --force --tags', silent=False)
+
         self.clean_up()
 
 

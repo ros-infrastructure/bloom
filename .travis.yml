@@ -3,8 +3,6 @@ python:
   - "2.6"
   - "2.7"
   - "3.2"
-env:
-  - GIT=v1.7.9.5
 # command to install dependencies
 install:
   - pip install empy PyYAML argparse rosdep rospkg vcstools catkin-pkg python-dateutil distribute
