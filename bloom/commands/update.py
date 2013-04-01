@@ -78,7 +78,7 @@ def check_for_updates():
             return
         version_dict = json.loads(raw)
         os.remove(user_bloom)  # Remove only on successful parse
-        if type(version_dict) == dict and len(version_dict) == 2:
+        if type(version_dict) == dict and len(version_dict) == 2 and version_dict['current'] == bloom.__version__:
             warning(UPDATE_MSG.format(**version_dict))
 
 
