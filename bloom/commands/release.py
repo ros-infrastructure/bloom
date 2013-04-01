@@ -76,6 +76,8 @@ _repositories = {}
 
 _success = get_success_prefix()
 
+_user_provided_release_url = None
+
 
 @atexit.register
 def exit_cleanup():
@@ -99,11 +101,26 @@ def get_repo_uri(repository, distro, distro_file_url=ROS_DISTRO_FILE):
     # Fetch the distro file
     distro_file_url = distro_file_url.format(distro)
     distro_file = yaml.load(fetch_distro_file(distro_file_url))
+    url = None
     if repository not in distro_file['repositories']:
         error("Specified repository '{0}' is not in the distro file located at '{1}'"
-              .format(repository, distro_file_url),
-              exit=True)
-    return distro_file['repositories'][repository]['url']
+              .format(repository, distro_file_url))
+    elif 'url' not in distro_file['repositories'][repository] or not distro_file['repositories'][repository]['url']:
+        error("'url' is not set for the given repository in the distro file located at '{0}'".format(distro_file_url))
+    else:
+        url = distro_file['repositories'][repository]['url']
+    if not url:
+        info("You can continue the release process by manually specifying the location of the RELEASE repository.")
+        info("To be clear this is the url of the RELEASE repository not the upstream repository.")
+        try:
+            url = raw_input('Release repository url [press enter to abort]: ')
+        except (KeyboardInterrupt, EOFError):
+            url = None
+        if not url:
+            error("No release repository url given, aborting.", exit=True)
+        global _user_provided_release_url
+        _user_provided_release_url = url
+    return url
 
 
 def get_release_repo(repository, distro):
@@ -160,6 +177,9 @@ def generate_ros_distro_diff(track, repository, distro, distro_file_url=ROS_DIST
         track_dict = get_tracks_dict_raw()['tracks'][track]
         last_version = track_dict['last_version']
         release_inc = track_dict['release_inc']
+        if repository not in distro_file['repositories']:
+            global _user_provided_release_url
+            distro_file['repositories'][repository] = {'url': _user_provided_release_url or ''}
         distro_file['repositories'][repository]['version'] = '{0}-{1}'.format(last_version, release_inc)
         if packages and (len(packages) > 1 or packages.keys()[0] != '.'):
             distro_file['repositories'][repository]['packages'] = {}
