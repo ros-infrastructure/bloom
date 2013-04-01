@@ -1,3 +1,18 @@
+0.3.3
+-----
+- bloom no longer allows users to release metapackages which do not have a CMakeLists.txt. See: `REP-0127 <http://ros.org/reps/rep-0127.html#metapackage>`_
+- Fixed a bug related to gathering of package meta data on hg and svn repositories. #111
+- Fixed a bug in git-bloom-patch which prevented users from running it directly. #110
+- Fixed a bug where patches would not get applied after exporting them manually. #107
+- Worked around a bug in vcstools which would not allow hg repositories to checkout to existing, empty directories. #112
+- All git-bloom-* scripts now assert that they are in the root of a git repository. #113
+- Added PEP8 check to the automated tests.
+- bloom-release will now offer the user a git push --force if non-force fails.
+- Added git-bloom-config [copy|rename] commands.
+- Fixed a bug in the bloom.git.checkout api where it would return 0 on success, but should return True. #122
+- bloom-release will now prompt the user for the release repository url if it is not in the rosdistro file. #125
+- bloom-release will now offer to automatically open a pull-request for the user, if the user's .netrc file is setup for github. #126
+
 0.3.2
 -----
 - Fixed a bug in vcs url templating.
