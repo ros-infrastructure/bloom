@@ -68,8 +68,10 @@ from bloom.logging import get_success_prefix
 from bloom.logging import info
 from bloom.logging import warning
 
+from bloom.util import add_global_arguments
 from bloom.util import change_directory
 from bloom.util import check_output
+from bloom.util import handle_global_arguments
 from bloom.util import maybe_continue
 
 try:
@@ -535,7 +537,9 @@ _quiet = False
 
 def main(sysargs=None):
     parser = get_argument_parser()
+    parser = add_global_arguments(parser)
     args = parser.parse_args(sysargs)
+    handle_global_arguments(args)
 
     if args.list_tracks:
         list_tracks(args.repository, args.ros_distro)
