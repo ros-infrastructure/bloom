@@ -13,8 +13,8 @@ setup(
     include_package_data=True,
     install_requires=[
         'empy',
-        'PyYAML >= 3.09',
-        'argparse >= 1.2.1',
+        'PyYAML',
+        'argparse',
         'rosdep >= 0.10.3',
         'rospkg >= 1.0.6',
         'vcstools >= 0.1.22',
