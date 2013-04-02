@@ -47,6 +47,7 @@ from pkg_resources import parse_version
 
 from bloom.logging import debug
 from bloom.logging import error
+from bloom.logging import info
 from bloom.logging import warning
 
 from bloom.util import change_directory
@@ -110,6 +111,7 @@ class GitClone(object):
     def commit(self):
         if self.disabled:
             return
+        info("Command successful, committing changes to working copy")
         current_branch = get_current_branch()
         if current_branch is None:
             error("Could not determine current branch.", exit=True)
