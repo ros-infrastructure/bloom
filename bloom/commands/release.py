@@ -318,10 +318,10 @@ def open_pull_request(track, repository, distro, distro_file_url=ROS_DISTRO_FILE
         if 'github.com' in host:
             gh_username = netrc_hosts[host][0]
             gh_password = netrc_hosts[host][2]
-        if None in [gh_username, gh_password]:
-            error("Either github username or github password is not set in the netrc.")
-            warning("Skipping the pull request...")
-            return
+    if None in [gh_username, gh_password]:
+        error("Either the github username or github password is not set in the ~/.netrc file.")
+        warning("Skipping the pull request...")
+        return
     # Check for fork
     info(fmt("@{bf}@!==> @|@!Checking for rosdistro fork on github..."))
     gh_user_repos = fetch_github_api('https://api.github.com/users/{0}/repos'.format(gh_username))
