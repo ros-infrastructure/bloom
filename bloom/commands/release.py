@@ -192,7 +192,7 @@ def generate_ros_distro_diff(track, repository, distro, distro_file_url, distro_
         if packages and (len(packages) > 1 or packages.keys()[0] != '.'):
             distro_file['repositories'][repository]['packages'] = {}
             for path, package in packages.iteritems():
-                if os.path.dirname(path) == package.name:
+                if os.path.basename(path) == package.name:
                     distro_file['repositories'][repository]['packages'][package.name] = None
                 else:
                     distro_file['repositories'][repository]['packages'][package.name] = path
@@ -318,10 +318,10 @@ def open_pull_request(track, repository, distro, distro_file_url=ROS_DISTRO_FILE
         if 'github.com' in host:
             gh_username = netrc_hosts[host][0]
             gh_password = netrc_hosts[host][2]
-        if None in [gh_username, gh_password]:
-            error("Either github username or github password is not set in the netrc.")
-            warning("Skipping the pull request...")
-            return
+    if None in [gh_username, gh_password]:
+        error("Either the github username or github password is not set in the ~/.netrc file.")
+        warning("Skipping the pull request...")
+        return
     # Check for fork
     info(fmt("@{bf}@!==> @|@!Checking for rosdistro fork on github..."))
     gh_user_repos = fetch_github_api('https://api.github.com/users/{0}/repos'.format(gh_username))
@@ -512,6 +512,9 @@ def perform_release(repository, track, distro, new_track, interactive, pretend):
                 info(fmt(_success) + "Pull request opened at: '{0}'".format(pull_request_url))
                 webbrowser.open(pull_request_url)
             else:
+                info("The release of your packages was successful, but the pull request failed.")
+                info("Please manually open a pull request by editing the file here: '{0}'"
+                     .format(ROS_DISTRO_FILE).format(distro))
                 info(fmt(_error) + "No pull request opened.")
         except Exception as e:
             error("Failed to open pull request: {0}".format(e), exit=True)
