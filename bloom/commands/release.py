@@ -48,6 +48,8 @@ import urllib2
 import webbrowser
 import yaml
 
+import bloom
+
 from bloom.commands.git.config import convert_old_bloom_conf
 from bloom.commands.git.config import edit as edit_track_cmd
 from bloom.commands.git.config import new as new_track_cmd
@@ -269,13 +271,13 @@ def create_fork(org, repo, user, password):
         error("Failed to create fork: {0} {1}".format(resp.status, resp.reason), exit=True)
 
 
-def create_pull_request(org, repo, user, password, base_branch, head_branch, title):
+def create_pull_request(org, repo, user, password, base_branch, head_branch, title, body=""):
     headers = {}
     headers["Authorization"] = "Basic {0}".format(base64.b64encode('{0}:{1}'.format(user, password)))
     conn = httplib.HTTPSConnection('api.github.com')
     data = {
         'title': title,
-        'body': "",
+        'body': body,
         'head': "{0}:{1}".format(user, head_branch),
         'base': base_branch
     }
@@ -293,6 +295,10 @@ def open_pull_request(track, repository, distro, distro_file_url=ROS_DISTRO_FILE
     distro_file_url = distro_file_url.format(distro)
     distro_file_raw = fetch_distro_file(distro_file_url)
     distro_file = yaml.load(distro_file_raw)
+    if repository in distro_file['repositories']:
+        orig_version = distro_file['repositories'][repository].get('version', None)
+    else:
+        orig_version = None
     udiff_patch_file, updated_distro_file = generate_ros_distro_diff(track, repository, distro,
                                                                      distro_file_url, distro_file,
                                                                      distro_file_raw)
@@ -341,7 +347,14 @@ def open_pull_request(track, repository, distro, distro_file_url=ROS_DISTRO_FILE
     info(fmt("@{bf}@!==> @|@!" + "Cloning {0}/{1}...".format(gh_username, gh_repo)))
     temp_dir = tempfile.mkdtemp()
     new_branch = None
-    title = "{0}: update version to {1} in {2} [bloom]".format(repository, version, gh_path)
+    title = "{0}: {1} in '{2}' [bloom]".format(repository, version, os.path.basename(gh_path))
+    body = """\
+Increasing version of package(s) in repository `{0}`:
+- previous version: `{1}`
+- new version: `{2}`
+- distro file: `{3}`
+- bloom version: `{4}`
+""".format(repository, orig_version or 'null', version, gh_path, bloom.__version__)
     with change_directory(temp_dir):
         def _my_run(cmd):
             info(fmt("@{bf}@!==> @|@!" + str(cmd)))
@@ -360,6 +373,18 @@ def open_pull_request(track, repository, distro, distro_file_url=ROS_DISTRO_FILE
             while new_branch.format(count) in branches:
                 count += 1
             new_branch = new_branch.format(count)
+            # Final check
+            info(fmt("@{cf}Pull Request Title: @{yf}" + title))
+            info(fmt("@{cf}Pull Request Body : \n@{yf}" + body))
+            msg = fmt("@!Open a @|@{cf}pull request@| @!@{kf}from@| @!'@|@!@{bf}" +
+                      "{gh_username}/{gh_repo}:{new_branch}".format(**locals()) +
+                      "@|@!' @!@{kf}into@| @!'@|@!@{bf}" +
+                      "{gh_org}/{gh_repo}:{gh_branch}".format(**locals()) +
+                      "@|@!'?")
+            info(msg)
+            if not maybe_continue():
+                warning("Skipping the pull request...")
+                return
             _my_run('git checkout -b {0} bloom/{1}'.format(new_branch, gh_branch))
             with open('{0}'.format(gh_path), 'w') as f:
                 info(fmt("@{bf}@!==> @|@!Writing new distribution file: ") + str(gh_path))
@@ -367,18 +392,8 @@ def open_pull_request(track, repository, distro, distro_file_url=ROS_DISTRO_FILE
             _my_run('git add {0}'.format(gh_path))
             _my_run('git commit -m "{0}"'.format(title))
             _my_run('git push origin {0}'.format(new_branch))
-    # Final check
-    msg = fmt("@!Open a @{cf}pull request@| @!@{kf}from@| @!'@|@{bf}" +
-              "{gh_username}/{gh_repo}:{new_branch}".format(**locals()) +
-              "@|@!' @!@{kf}into@| @!'@|@{bf}" +
-              "{gh_org}/{gh_repo}:{gh_branch}".format(**locals()) +
-              "@|@!'?")
-    info(msg)
-    if not maybe_continue():
-        warning("Skipping the pull request...")
-        return
     # Open the pull request
-    return create_pull_request(gh_org, gh_repo, gh_username, gh_password, gh_branch, new_branch, title)
+    return create_pull_request(gh_org, gh_repo, gh_username, gh_password, gh_branch, new_branch, title, body)
 
 
 def perform_release(repository, track, distro, new_track, interactive, pretend):
@@ -517,7 +532,7 @@ def perform_release(repository, track, distro, new_track, interactive, pretend):
                      .format(ROS_DISTRO_FILE).format(distro))
                 info(fmt(_error) + "No pull request opened.")
         except Exception as e:
-            error("Failed to open pull request: {0}".format(e), exit=True)
+            error("Failed to open pull request: {0} - {1}".format(type(e), e), exit=True)
 
 
 def get_argument_parser():
