@@ -32,25 +32,10 @@
 
 from __future__ import print_function
 
-import os
 import pkg_resources
 
 from bloom.logging import debug
-from bloom.logging import error
 from bloom.logging import info
-from bloom.logging import warning
-
-try:
-    import catkin_pkg
-    from pkg_resources import parse_version
-    if parse_version(catkin_pkg.__version__) < parse_version('0.1.10'):
-        error("This version of bloom requires catkin_pkg version >= '0.1.10',"
-              " the used version of catkin_pkg is '{0}'".format(catkin_pkg.__version__),
-              exit=True)
-    from catkin_pkg.cmake import configure_file
-    from catkin_pkg.cmake import get_metapackage_cmake_template_path
-except ImportError as err:
-    error("catkin_pkg was not detected, please install it.", exit=True)
 
 BLOOM_GROUP = 'bloom.generators'
 
@@ -66,38 +51,6 @@ def load_generator(generator_name):
     for entry_point in pkg_resources.iter_entry_points(group=BLOOM_GROUP):
         if entry_point.name == generator_name:
             return entry_point.load()
-
-
-def check_metapackage_for_valid_cmake(name):
-    if not os.path.exists('CMakeLists.txt'):
-        warning("See: http://ros.org/reps/rep-0127.html#metapackage")
-        error("Metapackage '{0}' does not have a CMakeLists.txt, refusing to release."
-              .format(name),
-              exit=True)
-    template_path = get_metapackage_cmake_template_path()
-    env = {'name': name, 'metapackage_arguments': ''}
-    expected_cmake = configure_file(template_path, env)
-    with open('CMakeLists.txt', 'r') as f:
-        actual_cmake = f.read()
-    if expected_cmake != actual_cmake:
-        error("Metapackage '{0}' has a non-compliant CMakeLists.txt, expected:"
-              .format(name))
-        for line in expected_cmake.splitlines():
-            info("  " + line)
-        error("But got instead:")
-        for line in actual_cmake.splitlines():
-            info("  " + line)
-        warning("See: http://ros.org/reps/rep-0127.html#metapackage")
-        error("Metapackage '{0}' has a non-compliant CMakeLists.txt".format(name),
-              exit=True)
-
-
-def is_metapackage(package):
-    metapack = [True for e in package.exports if e.tagname == 'metapackage']
-    if len(metapack) > 0:
-        return True
-    else:
-        return False
 
 
 class GeneratorError(Exception):

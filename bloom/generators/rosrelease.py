@@ -1,14 +1,11 @@
 from __future__ import print_function
 
 from bloom.generators.release import ReleaseGenerator
-from bloom.generators import check_metapackage_for_valid_cmake
-from bloom.generators import is_metapackage
 
 from bloom.git import inbranch
 
 from bloom.logging import warning
 
-from bloom.util import change_directory
 from bloom.util import execute_command
 from bloom.util import get_package_data
 
@@ -83,7 +80,6 @@ Please checkout the release branch and then create a tag manually with:""")
             # Check meta packages for valid CMakeLists.txt
             if isinstance(self.packages, dict):
                 for path, pkg in self.packages.iteritems():
-                    with change_directory(path):
-                        if is_metapackage(pkg):
-                            check_metapackage_for_valid_cmake(pkg.name)
+                    # Check for valid CMakeLists.txt if a metapackage
+                    self.metapackage_check(path, pkg)
             return name if type(name) is list else [name]
