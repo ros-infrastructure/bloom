@@ -47,6 +47,7 @@ from pkg_resources import parse_version
 
 from bloom.logging import debug
 from bloom.logging import error
+from bloom.logging import fmt
 from bloom.logging import info
 from bloom.logging import warning
 
@@ -76,6 +77,7 @@ class GitClone(object):
         self.tmp_dir = tempfile.mkdtemp()
         self.clone_dir = os.path.join(self.tmp_dir, 'clone')
         self.repo_url = 'file://' + os.path.abspath(self.directory)
+        info(fmt("@!@{gf}+++@| Cloning working copy for safety"))
         execute_command('git clone ' + self.repo_url + ' ' + self.clone_dir)
 
     def __del__(self):
@@ -111,7 +113,7 @@ class GitClone(object):
     def commit(self):
         if self.disabled:
             return
-        info("Command successful, committing changes to working copy")
+        info(fmt("@{bf}<==@| Command successful, committing changes to working copy"))
         current_branch = get_current_branch()
         if current_branch is None:
             error("Could not determine current branch.", exit=True)
