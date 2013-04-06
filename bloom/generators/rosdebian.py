@@ -1,20 +1,19 @@
 from __future__ import print_function
 
-import sys
+import traceback
 
 from bloom.generators.debian import DebianGenerator
 from bloom.generators.debian import sanitize_package_name
 
+from bloom.logging import debug
 from bloom.logging import error
 from bloom.logging import info
-
-from bloom.util import code
 
 try:
     from rosdep2.catkin_support import get_ubuntu_targets
 except ImportError:
-    error("rosdep was not detected, please install it.")
-    sys.exit(code.ROSDEP_NOT_FOUND)
+    debug(traceback.format_exc())
+    error("rosdep was not detected, please install it.", exit=True)
 
 
 class RosDebianGenerator(DebianGenerator):

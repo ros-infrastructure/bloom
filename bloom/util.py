@@ -41,6 +41,7 @@ import os
 import shutil
 import sys
 import tempfile
+import traceback
 
 from subprocess import CalledProcessError
 from subprocess import PIPE
@@ -61,9 +62,9 @@ try:
     from catkin_pkg.packages import find_packages
     from catkin_pkg.packages import verify_equal_package_versions
 except ImportError:
+    debug(traceback.format_exc())
     error("catkin_pkg was not detected, please install it.",
-          file=sys.stderr)
-    sys.exit(1)
+          file=sys.stderr, exit=True)
 
 
 # Convention: < 0 is a warning exit, 0 is normal, > 0 is an error

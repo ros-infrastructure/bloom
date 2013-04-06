@@ -39,6 +39,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import traceback
 
 # try:
 #     from urllib.parse import urlparse
@@ -56,6 +57,7 @@ from bloom.git import ensure_git_root
 from bloom.git import get_current_branch
 from bloom.git import get_root
 
+from bloom.logging import debug
 from bloom.logging import error
 from bloom.logging import fmt
 from bloom.logging import get_error_prefix
@@ -72,6 +74,7 @@ from bloom.util import handle_global_arguments
 try:
     from vcstools.vcs_abstraction import get_vcs_client
 except ImportError:
+    debug(traceback.format_exc())
     error("vcstools was not detected, please install it.", file=sys.stderr,
           exit=True)
 

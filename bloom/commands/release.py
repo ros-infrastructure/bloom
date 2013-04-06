@@ -44,6 +44,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import traceback
 import urllib2
 import webbrowser
 import yaml
@@ -63,6 +64,7 @@ from bloom.git import inbranch
 from bloom.git import ls_tree
 from bloom.git import track_branches
 
+from bloom.logging import debug
 from bloom.logging import error
 from bloom.logging import fmt
 from bloom.logging import get_error_prefix
@@ -79,6 +81,7 @@ from bloom.util import maybe_continue
 try:
     from vcstools.vcs_abstraction import get_vcs_client
 except ImportError:
+    debug(traceback.format_exc())
     error("vcstools was not detected, please install it.", file=sys.stderr,
           exit=True)
 
@@ -179,6 +182,7 @@ def generate_ros_distro_diff(track, repository, distro, distro_file_url, distro_
         try:
             from catkin_pkg.packages import find_packages
         except ImportError:
+            debug(traceback.format_exc())
             error("catkin_pkg was not detected, please install it.",
                   file=sys.stderr, exit=True)
         packages = find_packages(os.getcwd())

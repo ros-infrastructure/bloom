@@ -36,12 +36,14 @@ import argparse
 import hashlib
 import os
 import sys
+import traceback
 
 try:
     from urllib.parse import urlparse
 except ImportError:
     from urlparse import urlparse
 
+from bloom.logging import debug
 from bloom.logging import error
 from bloom.logging import info
 from bloom.logging import warning
@@ -57,6 +59,7 @@ from bloom.util import temporary_directory
 try:
     from vcstools.vcs_abstraction import get_vcs_client
 except ImportError:
+    debug(traceback.format_exc())
     error("vcstools was not detected, please install it.", file=sys.stderr,
           exit=True)
 
