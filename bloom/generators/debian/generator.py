@@ -46,7 +46,6 @@ except ImportError as err:
 
 try:
     from catkin_pkg.package import Dependency
-    from catkin_pkg import metapackage
 except ImportError as err:
     debug(traceback.format_exc())
     error("catkin_pkg was not detected, please install it.", exit=True)
@@ -398,13 +397,8 @@ class DebianGenerator(BloomGenerator):
         # Generate the changelog file
         self.create_from_template('changelog', data, debian_dir)
         # Generate the rules file
-        if data['BuildType'] in ['cmake', 'metapackage']:
-            self.create_from_template('rules', data, debian_dir,
-                                      chmod=0755, outfile='rules')
-        else:
-            error("Unrecognized BuildType (" + data['BuildType'] +
-                  ") for package: " + data['Name'])
-            return code.DEBIAN_UNRECOGNIZED_BUILD_TYPE
+        self.create_from_template('rules', data, debian_dir,
+                                  chmod=0755, outfile='rules')
         # Generate the gbp.conf file
         data['release_tag'] = self.get_release_tag(data)
         self.create_from_template('gbp.conf', data, debian_dir)
@@ -504,11 +498,6 @@ class DebianGenerator(BloomGenerator):
         if homepage == '':
             warning("No homepage set, defaulting to ''")
         data['Homepage'] = homepage
-        # Build rule templates
-        if package.is_metapackage():
-            data['BuildType'] = 'metapackage'
-        else:
-            data['BuildType'] = 'cmake'
         # Debian Increment Number
         data['DebianInc'] = self.debian_inc
         # Package name
@@ -533,8 +522,6 @@ class DebianGenerator(BloomGenerator):
         data['Description'] = debianize_string(stack.description)
         # Website
         data['Homepage'] = stack.url
-        # Build rule template
-        data['BuildType'] = 'cmake'
         # Copyright
         data['Copyright'] = stack.copyright
         # Debian Increment Number
