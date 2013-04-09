@@ -10,8 +10,6 @@ import sys
 import traceback
 
 from bloom.generators import BloomGenerator
-from bloom.generators import check_metapackage_for_valid_cmake
-from bloom.generators import is_metapackage
 
 from bloom.git import inbranch
 from bloom.git import get_branches
@@ -43,16 +41,19 @@ try:
     from rosdep2.platforms.debian import APT_INSTALLER
     from rosdep2.catkin_support import get_ubuntu_targets
 except ImportError as err:
+    debug(traceback.format_exc())
     error("rosdep was not detected, please install it.", exit=True)
 
 try:
     from catkin_pkg.package import Dependency
 except ImportError as err:
+    debug(traceback.format_exc())
     error("catkin_pkg was not detected, please install it.", exit=True)
 
 try:
     import em
 except ImportError:
+    debug(traceback.format_exc())
     error("empy was not detected, please install it.")
     sys.exit(code.EMPY_NOT_FOUND)
 
@@ -204,16 +205,10 @@ class DebianGenerator(BloomGenerator):
         # Handle differently if this is a debian vs distro branch
         if destination in self.debian_branches:
             info("Placing debian template files into '{0}' branch.".format(destination))
-            # Check for valid CMakeLists.txt if a metapackage
-            if kind == 'package' and is_metapackage(stackage):
-                check_metapackage_for_valid_cmake(name)
             # Then this is a debian branch
             # Place the raw template files
             self.place_tempalte_files()
         else:
-            # Check for valid CMakeLists.txt if a metapackage
-            if kind == 'package' and is_metapackage(stackage):
-                check_metapackage_for_valid_cmake(name)
             # This is a distro specific debian branch
             # Determine the current package being generated
             distro = destination.split('/')[-2]
@@ -402,13 +397,8 @@ class DebianGenerator(BloomGenerator):
         # Generate the changelog file
         self.create_from_template('changelog', data, debian_dir)
         # Generate the rules file
-        if data['BuildType'] in ['cmake', 'metapackage']:
-            self.create_from_template('rules', data, debian_dir,
-                                      chmod=0755, outfile='rules')
-        else:
-            error("Unrecognized BuildType (" + data['BuildType'] +
-                  ") for package: " + data['Name'])
-            return code.DEBIAN_UNRECOGNIZED_BUILD_TYPE
+        self.create_from_template('rules', data, debian_dir,
+                                  chmod=0755, outfile='rules')
         # Generate the gbp.conf file
         data['release_tag'] = self.get_release_tag(data)
         self.create_from_template('gbp.conf', data, debian_dir)
@@ -508,11 +498,6 @@ class DebianGenerator(BloomGenerator):
         if homepage == '':
             warning("No homepage set, defaulting to ''")
         data['Homepage'] = homepage
-        # Build rule templates
-        if is_metapackage(package):
-            data['BuildType'] = 'metapackage'
-        else:
-            data['BuildType'] = 'cmake'
         # Debian Increment Number
         data['DebianInc'] = self.debian_inc
         # Package name
@@ -537,8 +522,6 @@ class DebianGenerator(BloomGenerator):
         data['Description'] = debianize_string(stack.description)
         # Website
         data['Homepage'] = stack.url
-        # Build rule template
-        data['BuildType'] = 'cmake'
         # Copyright
         data['Copyright'] = stack.copyright
         # Debian Increment Number
