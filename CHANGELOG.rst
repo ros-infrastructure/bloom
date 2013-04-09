@@ -1,3 +1,14 @@
+0.3.4
+-----
+- Fixed a bug in the update notifier where the first run after updating still reports that bloom is out of date. #129
+- bloom-release now respects global arguments like --version and --debug
+- Improved messages around the cloning/pushing back of the working copy which takes a long time on large repos.
+- Improved pull request failure message, indicating that the release was successful, but the pr was not. #131
+- Fixed versioned dependencies in debians and setup.py. #130
+- Fixed a bug with empty ~/.netrc files. #131
+- General improvements with the automated pull request mechanism. #135
+- Checks for valid metapackages using catkin_pkg now, adds version dependency of catkin_pkg at 0.1.11. #134
+
 0.3.3
 -----
 - bloom no longer allows users to release metapackages which do not have a CMakeLists.txt. See: `REP-0127 <http://ros.org/reps/rep-0127.html#metapackage>`_
