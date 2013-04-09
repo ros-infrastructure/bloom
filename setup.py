@@ -18,7 +18,7 @@ setup(
         'rosdep >= 0.10.3',
         'rospkg >= 1.0.6',
         'vcstools >= 0.1.22',
-        'catkin-pkg >= 0.1.10',
+        'catkin-pkg >= 0.1.11',
         'python-dateutil',
         'distribute'
     ],
