@@ -1,5 +1,5 @@
-0.3.4
------
+0.3.4 (2013-04-09 16:36:55 -0700)
+---------------------------------
 - Fixed a bug in the update notifier where the first run after updating still reports that bloom is out of date. #129
 - bloom-release now respects global arguments like --version and --debug
 - Improved messages around the cloning/pushing back of the working copy which takes a long time on large repos.
@@ -9,8 +9,8 @@
 - General improvements with the automated pull request mechanism. #135
 - Checks for valid metapackages using catkin_pkg now, adds version dependency of catkin_pkg at 0.1.11. #134
 
-0.3.3
------
+0.3.3 (2013-04-01 14:04:00 -0700)
+---------------------------------
 - bloom no longer allows users to release metapackages which do not have a CMakeLists.txt. See: `REP-0127 <http://ros.org/reps/rep-0127.html#metapackage>`_
 - Fixed a bug related to gathering of package meta data on hg and svn repositories. #111
 - Fixed a bug in git-bloom-patch which prevented users from running it directly. #110
@@ -24,8 +24,8 @@
 - bloom-release will now prompt the user for the release repository url if it is not in the rosdistro file. #125
 - bloom-release will now offer to automatically open a pull-request for the user, if the user's .netrc file is setup for github. #126
 
-0.3.2
------
+0.3.2 (2013-03-06 17:49:51 -0800)
+---------------------------------
 - Fixed a bug in vcs url templating.
 - Improved the performance of git-bloom-config.
 - Added an --unsafe global option which will disable some of the safety mechanisms in bloom, making releasing about twice as fast but at the expense of errors putting the local release repository in an inconsistent state. Use with caution.
@@ -36,15 +36,15 @@
 - Got the automated tests fixed and running in travis again
 - Added emoji icons for OS X users with lion or greater
 
-0.3.1
------
+0.3.1 (2013-02-26 18:00:47 -0800)
+---------------------------------
 - Fixed handling of non-standard archive names in git-bloom-import-upstream.
   This was a bug where if the archive only had the name of the package then it would fail to be processed by import-upstream.
 - Fixed an issue when blooming from svn upstream.
   This issue was caused by improperly handling the release_tag configuration when dealing with svn
 
-0.3.0
------
+0.3.0 (2013-02-26 14:04:21 -0800)
+---------------------------------
 - Generators can now be added using the distribute entry_points machanism
 - There is now a debian/<rosdistro>/<package_name> branch before forking into debian/<rosdistro>/<debian_distro>/<package_name>
   The debian/<rosdistro> branch now contains the untemplated debain files, so that they can be patched before being templated.
