@@ -121,6 +121,9 @@ def get_repo_uri(repository, distro, distro_file_url=ROS_DISTRO_FILE):
     if repository not in distro_file['repositories']:
         error("Specified repository '{0}' is not in the distro file located at '{1}'"
               .format(repository, distro_file_url))
+        matches = difflib.get_close_matches(repository, distro_file['repositories'].keys())
+        if matches:
+            info(fmt("@{yf}Did you mean one of these: '" + "', '".join([m for m in matches]) + "'?"))
     elif 'url' not in distro_file['repositories'][repository] or not distro_file['repositories'][repository]['url']:
         error("'url' is not set for the given repository in the distro file located at '{0}'".format(distro_file_url))
     else:
@@ -132,6 +135,7 @@ def get_repo_uri(repository, distro, distro_file_url=ROS_DISTRO_FILE):
             url = raw_input('Release repository url [press enter to abort]: ')
         except (KeyboardInterrupt, EOFError):
             url = None
+            info('', use_prefix=False)
         if not url:
             error("No release repository url given, aborting.", exit=True)
         global _user_provided_release_url
