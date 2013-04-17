@@ -143,7 +143,7 @@ def import_tarball(tarball_path, target_branch, version, name):
         # (not true if the upstream didn't change any files)
         if has_changes():
             msg = "Imported upstream version '{0}' of '{1}'"
-            msg = msg.format(version, name)
+            msg = msg.format(version, name or 'upstream')
             cmd = 'git commit -m "{0}"'.format(msg)
             execute_command(cmd)
     # with inbranch(target_branch):
