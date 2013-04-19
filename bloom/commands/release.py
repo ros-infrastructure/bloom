@@ -38,7 +38,7 @@ import base64
 import difflib
 import httplib
 import json
-import netrc
+# import netrc
 import os
 import shutil
 import subprocess
@@ -46,10 +46,10 @@ import sys
 import tempfile
 import traceback
 import urllib2
-import webbrowser
+# import webbrowser
 import yaml
 
-import bloom
+# import bloom
 
 from bloom.commands.git.config import convert_old_bloom_conf
 from bloom.commands.git.config import edit as edit_track_cmd
@@ -59,10 +59,10 @@ from bloom.commands.git.config import update_track
 from bloom.config import get_tracks_dict_raw
 from bloom.config import write_tracks_dict_raw
 
-from bloom.git import get_branches
+# from bloom.git import get_branches
 from bloom.git import inbranch
 from bloom.git import ls_tree
-from bloom.git import track_branches
+# from bloom.git import track_branches
 
 from bloom.logging import debug
 from bloom.logging import error
@@ -85,7 +85,12 @@ except ImportError:
     error("vcstools was not detected, please install it.", file=sys.stderr,
           exit=True)
 
-ROS_DISTRO_FILE = 'https://raw.github.com/ros/rosdistro/master/releases/{0}.yaml'
+try:
+    import rosdistro
+except ImportError:
+    debug(traceback.format_exc())
+    error("rosdistro was not detected, please install it.", file=sys.stderr,
+          exit=True)
 
 _repositories = {}
 
@@ -104,31 +109,26 @@ def exit_cleanup():
             shutil.rmtree(repo_path)
 
 
-def fetch_distro_file(distro_file_url):
-    try:
-        raw_distro_file = urllib2.urlopen(distro_file_url)
-    except urllib2.HTTPError as e:
-        error("Failed to fetch ROS distro file at '{0}': {1}"
-              .format(distro_file_url, e), exit=True)
-    return raw_distro_file.read()
-
-
-def get_repo_uri(repository, distro, distro_file_url=ROS_DISTRO_FILE):
-    # Fetch the distro file
-    distro_file_url = distro_file_url.format(distro)
-    distro_file = yaml.load(fetch_distro_file(distro_file_url))
+def get_repo_uri(repository, distro):
     url = None
-    if repository not in distro_file['repositories']:
-        error("Specified repository '{0}' is not in the distro file located at '{1}'"
-              .format(repository, distro_file_url))
-        matches = difflib.get_close_matches(repository, distro_file['repositories'].keys())
-        if matches:
-            info(fmt("@{yf}Did you mean one of these: '" + "', '".join([m for m in matches]) + "'?"))
-    elif 'url' not in distro_file['repositories'][repository] or not distro_file['repositories'][repository]['url']:
-        error("'url' is not set for the given repository in the distro file located at '{0}'".format(distro_file_url))
+    # Fetch the distro file
+    index = rosdistro.get_index(rosdistro.get_index_url())
+    release_file_url = index.distributions[distro].get('release', None)
+    if release_file_url is not None:
+        release_file = rosdistro.get_release_file(index, distro)
+        if repository in release_file.repositories:
+            url = release_file.repositories[repository].url
+        else:
+            error("Specified repository '{0}' is not in the release file located at '{1}'"
+                  .format(repository, release_file_url))
+            matches = difflib.get_close_matches(repository, release_file.repositories)
+            if matches:
+                info(fmt("@{yf}Did you mean one of these: '" + "', '".join([m for m in matches]) + "'?"))
     else:
-        url = distro_file['repositories'][repository]['url']
+        warning("No release file found for distribution: '{0}'".format(distro))
     if not url:
+        info("Could not determine release repository url for repository '{0}' of distro '{1}'"
+             .format(repository, distro))
         info("You can continue the release process by manually specifying the location of the RELEASE repository.")
         info("To be clear this is the url of the RELEASE repository not the upstream repository.")
         try:
@@ -145,13 +145,13 @@ def get_repo_uri(repository, distro, distro_file_url=ROS_DISTRO_FILE):
 
 def get_release_repo(repository, distro):
     global _repositories
-    uri = get_repo_uri(repository, distro)
+    url = get_repo_uri(repository, distro)
     if repository not in _repositories.values():
         temp_dir = tempfile.mkdtemp()
         _repositories[repository] = get_vcs_client('git', temp_dir)
         info(fmt("@{gf}@!==> @|") +
-             "Fetching '{0}' repository from '{1}'".format(repository, uri))
-        _repositories[repository].checkout(uri, 'master')
+             "Fetching '{0}' repository from '{1}'".format(repository, url))
+        _repositories[repository].checkout(url, 'master')
     return _repositories[repository]
 
 
@@ -298,110 +298,110 @@ def create_pull_request(org, repo, user, password, base_branch, head_branch, tit
     return api_dict['html_url']
 
 
-def open_pull_request(track, repository, distro, distro_file_url=ROS_DISTRO_FILE):
-    # Get the diff
-    distro_file_url = distro_file_url.format(distro)
-    distro_file_raw = fetch_distro_file(distro_file_url)
-    distro_file = yaml.load(distro_file_raw)
-    if repository in distro_file['repositories']:
-        orig_version = distro_file['repositories'][repository].get('version', None)
-    else:
-        orig_version = None
-    udiff_patch_file, updated_distro_file = generate_ros_distro_diff(track, repository, distro,
-                                                                     distro_file_url, distro_file,
-                                                                     distro_file_raw)
-    if None in [udiff_patch_file, updated_distro_file]:
-        # There were no changes, no pull request required
-        return None
-    version = distro_file['repositories'][repository]['version']
-    # Determine if the distro file is hosted on github...
-    distro_file_url = distro_file_url.format(distro)
-    gh_org, gh_repo, gh_branch, gh_path = get_gh_info(distro_file_url)
-    if None in [gh_org, gh_repo, gh_branch, gh_path]:
-        warning("Automated pull request only available via github.com")
-        return
-    # Determine if we have a .netrc file
-    gh_username = None
-    try:
-        netrc_hosts = netrc.netrc().hosts
-    except Exception as e:
-        error("Failed to parse ~/.netrc file: {0}".format(e))
-        warning("Skipping the pull request...")
-        return
-    for host in netrc_hosts.keys():
-        if 'github.com' in host:
-            gh_username = netrc_hosts[host][0]
-            gh_password = netrc_hosts[host][2]
-    if None in [gh_username, gh_password]:
-        error("Either the github username or github password is not set in the ~/.netrc file.")
-        warning("Skipping the pull request...")
-        return
-    # Check for fork
-    info(fmt("@{bf}@!==> @|@!Checking for rosdistro fork on github..."))
-    gh_user_repos = fetch_github_api('https://api.github.com/users/{0}/repos'.format(gh_username))
-    if gh_user_repos is None:
-        error("Failed to get a list of repositories for user: '{0}'".format(gh_username))
-        warning("Skipping the pull request...")
-        return
-    if 'rosdistro' not in [x['name'] for x in gh_user_repos if 'name' in x]:
-        warning("Github user '{0}' does not have a fork ".format(gh_username) +
-                "of the {0}:{1} repository, create one?".format(gh_org, gh_repo))
-        if not maybe_continue():
-            warning("Skipping the pull request...")
-            return
-        # Create a fork
-        create_fork(gh_org, gh_repo, gh_username, gh_password)
-    # Clone the fork
-    info(fmt("@{bf}@!==> @|@!" + "Cloning {0}/{1}...".format(gh_username, gh_repo)))
-    temp_dir = tempfile.mkdtemp()
-    new_branch = None
-    title = "{0}: {1} in '{2}' [bloom]".format(repository, version, os.path.basename(gh_path))
-    body = """\
-Increasing version of package(s) in repository `{0}`:
-- previous version: `{1}`
-- new version: `{2}`
-- distro file: `{3}`
-- bloom version: `{4}`
-""".format(repository, orig_version or 'null', version, gh_path, bloom.__version__)
-    with change_directory(temp_dir):
-        def _my_run(cmd):
-            info(fmt("@{bf}@!==> @|@!" + str(cmd)))
-            out = check_output(cmd, stderr=subprocess.STDOUT, shell=True)
-            if out:
-                info(out, use_prefix=False)
-        _my_run('git clone https://github.com/{0}/{1}.git'.format(gh_username, gh_repo))
-        with change_directory(gh_repo):
-            _my_run('git remote add bloom https://github.com/{0}/{1}.git'.format(gh_org, gh_repo))
-            _my_run('git remote update')
-            _my_run('git fetch')
-            track_branches()
-            branches = get_branches()
-            new_branch = 'bloom-patch-{0}'
-            count = 0
-            while new_branch.format(count) in branches:
-                count += 1
-            new_branch = new_branch.format(count)
-            # Final check
-            info(fmt("@{cf}Pull Request Title: @{yf}" + title))
-            info(fmt("@{cf}Pull Request Body : \n@{yf}" + body))
-            msg = fmt("@!Open a @|@{cf}pull request@| @!@{kf}from@| @!'@|@!@{bf}" +
-                      "{gh_username}/{gh_repo}:{new_branch}".format(**locals()) +
-                      "@|@!' @!@{kf}into@| @!'@|@!@{bf}" +
-                      "{gh_org}/{gh_repo}:{gh_branch}".format(**locals()) +
-                      "@|@!'?")
-            info(msg)
-            if not maybe_continue():
-                warning("Skipping the pull request...")
-                return
-            _my_run('git checkout -b {0} bloom/{1}'.format(new_branch, gh_branch))
-            with open('{0}'.format(gh_path), 'w') as f:
-                info(fmt("@{bf}@!==> @|@!Writing new distribution file: ") + str(gh_path))
-                f.write(updated_distro_file)
-            _my_run('git add {0}'.format(gh_path))
-            _my_run('git commit -m "{0}"'.format(title))
-            _my_run('git push origin {0}'.format(new_branch))
-    # Open the pull request
-    return create_pull_request(gh_org, gh_repo, gh_username, gh_password, gh_branch, new_branch, title, body)
+# def open_pull_request(track, repository, distro):
+#     # Get the diff
+#     distro_file_url = distro_file_url.format(distro)
+#     distro_file_raw = fetch_distro_file(distro_file_url)
+#     distro_file = yaml.load(distro_file_raw)
+#     if repository in distro_file['repositories']:
+#         orig_version = distro_file['repositories'][repository].get('version', None)
+#     else:
+#         orig_version = None
+#     udiff_patch_file, updated_distro_file = generate_ros_distro_diff(track, repository, distro,
+#                                                                      distro_file_url, distro_file,
+#                                                                      distro_file_raw)
+#     if None in [udiff_patch_file, updated_distro_file]:
+#         # There were no changes, no pull request required
+#         return None
+#     version = distro_file['repositories'][repository]['version']
+#     # Determine if the distro file is hosted on github...
+#     distro_file_url = distro_file_url.format(distro)
+#     gh_org, gh_repo, gh_branch, gh_path = get_gh_info(distro_file_url)
+#     if None in [gh_org, gh_repo, gh_branch, gh_path]:
+#         warning("Automated pull request only available via github.com")
+#         return
+#     # Determine if we have a .netrc file
+#     gh_username = None
+#     try:
+#         netrc_hosts = netrc.netrc().hosts
+#     except Exception as e:
+#         error("Failed to parse ~/.netrc file: {0}".format(e))
+#         warning("Skipping the pull request...")
+#         return
+#     for host in netrc_hosts.keys():
+#         if 'github.com' in host:
+#             gh_username = netrc_hosts[host][0]
+#             gh_password = netrc_hosts[host][2]
+#     if None in [gh_username, gh_password]:
+#         error("Either the github username or github password is not set in the ~/.netrc file.")
+#         warning("Skipping the pull request...")
+#         return
+#     # Check for fork
+#     info(fmt("@{bf}@!==> @|@!Checking for rosdistro fork on github..."))
+#     gh_user_repos = fetch_github_api('https://api.github.com/users/{0}/repos'.format(gh_username))
+#     if gh_user_repos is None:
+#         error("Failed to get a list of repositories for user: '{0}'".format(gh_username))
+#         warning("Skipping the pull request...")
+#         return
+#     if 'rosdistro' not in [x['name'] for x in gh_user_repos if 'name' in x]:
+#         warning("Github user '{0}' does not have a fork ".format(gh_username) +
+#                 "of the {0}:{1} repository, create one?".format(gh_org, gh_repo))
+#         if not maybe_continue():
+#             warning("Skipping the pull request...")
+#             return
+#         # Create a fork
+#         create_fork(gh_org, gh_repo, gh_username, gh_password)
+#     # Clone the fork
+#     info(fmt("@{bf}@!==> @|@!" + "Cloning {0}/{1}...".format(gh_username, gh_repo)))
+#     temp_dir = tempfile.mkdtemp()
+#     new_branch = None
+#     title = "{0}: {1} in '{2}' [bloom]".format(repository, version, os.path.basename(gh_path))
+#     body = """\
+# Increasing version of package(s) in repository `{0}`:
+# - previous version: `{1}`
+# - new version: `{2}`
+# - distro file: `{3}`
+# - bloom version: `{4}`
+# """.format(repository, orig_version or 'null', version, gh_path, bloom.__version__)
+#     with change_directory(temp_dir):
+#         def _my_run(cmd):
+#             info(fmt("@{bf}@!==> @|@!" + str(cmd)))
+#             out = check_output(cmd, stderr=subprocess.STDOUT, shell=True)
+#             if out:
+#                 info(out, use_prefix=False)
+#         _my_run('git clone https://github.com/{0}/{1}.git'.format(gh_username, gh_repo))
+#         with change_directory(gh_repo):
+#             _my_run('git remote add bloom https://github.com/{0}/{1}.git'.format(gh_org, gh_repo))
+#             _my_run('git remote update')
+#             _my_run('git fetch')
+#             track_branches()
+#             branches = get_branches()
+#             new_branch = 'bloom-patch-{0}'
+#             count = 0
+#             while new_branch.format(count) in branches:
+#                 count += 1
+#             new_branch = new_branch.format(count)
+#             # Final check
+#             info(fmt("@{cf}Pull Request Title: @{yf}" + title))
+#             info(fmt("@{cf}Pull Request Body : \n@{yf}" + body))
+#             msg = fmt("@!Open a @|@{cf}pull request@| @!@{kf}from@| @!'@|@!@{bf}" +
+#                       "{gh_username}/{gh_repo}:{new_branch}".format(**locals()) +
+#                       "@|@!' @!@{kf}into@| @!'@|@!@{bf}" +
+#                       "{gh_org}/{gh_repo}:{gh_branch}".format(**locals()) +
+#                       "@|@!'?")
+#             info(msg)
+#             if not maybe_continue():
+#                 warning("Skipping the pull request...")
+#                 return
+#             _my_run('git checkout -b {0} bloom/{1}'.format(new_branch, gh_branch))
+#             with open('{0}'.format(gh_path), 'w') as f:
+#                 info(fmt("@{bf}@!==> @|@!Writing new distribution file: ") + str(gh_path))
+#                 f.write(updated_distro_file)
+#             _my_run('git add {0}'.format(gh_path))
+#             _my_run('git commit -m "{0}"'.format(title))
+#             _my_run('git push origin {0}'.format(new_branch))
+#     # Open the pull request
+#     return create_pull_request(gh_org, gh_repo, gh_username, gh_password, gh_branch, new_branch, title, body)
 
 
 def perform_release(repository, track, distro, new_track, interactive, pretend):
@@ -525,22 +525,30 @@ def perform_release(repository, track, distro, new_track, interactive, pretend):
             except subprocess.CalledProcessError:
                 error("Pushing tags failed, exiting.", exit=True)
         info(fmt(_success) + "Pushed tags successfully")
+        # Until the new rosdistro file format is fully deployed, disable automated pull requests
+        info("Automated pull requests are disabled until the new rosdistro format has been deployed.")
+        info("Sorry for the inconvenience, bloom will provide automated pull request again in the next version.")
+        info("In the mean time continue to open pull requests against this file:")
+        info("  https://github.com/ros/rosdistro/blob/master/releases/{0}.yaml".format(distro))
+        info("")
+        info("If this file no longer exists, then the rosdistro roll out is complete.")
+        info("In that case please update bloom, as there should be automated pull requests again.")
         # Propose github pull request
-        info(fmt("@{gf}@!==> @|") +
-             "Generating pull request to distro file located at '{0}'"
-             .format(ROS_DISTRO_FILE).format(distro))
-        try:
-            pull_request_url = open_pull_request(track, repository, distro)
-            if pull_request_url:
-                info(fmt(_success) + "Pull request opened at: '{0}'".format(pull_request_url))
-                webbrowser.open(pull_request_url)
-            else:
-                info("The release of your packages was successful, but the pull request failed.")
-                info("Please manually open a pull request by editing the file here: '{0}'"
-                     .format(ROS_DISTRO_FILE).format(distro))
-                info(fmt(_error) + "No pull request opened.")
-        except Exception as e:
-            error("Failed to open pull request: {0} - {1}".format(type(e), e), exit=True)
+        # info(fmt("@{gf}@!==> @|") +
+        #      "Generating pull request to distro file located at '{0}'"
+        #      .format(ROS_DISTRO_FILE).format(distro))
+        # try:
+        #     pull_request_url = open_pull_request(track, repository, distro)
+        #     if pull_request_url:
+        #         info(fmt(_success) + "Pull request opened at: '{0}'".format(pull_request_url))
+        #         webbrowser.open(pull_request_url)
+        #     else:
+        #         info("The release of your packages was successful, but the pull request failed.")
+        #         info("Please manually open a pull request by editing the file here: '{0}'"
+        #              .format(ROS_DISTRO_FILE).format(distro))
+        #         info(fmt(_error) + "No pull request opened.")
+        # except Exception as e:
+        #     error("Failed to open pull request: {0} - {1}".format(type(e), e), exit=True)
 
 
 def get_argument_parser():
