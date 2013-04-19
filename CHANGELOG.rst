@@ -1,3 +1,8 @@
+0.3.5 (2013-04-17 11:03:50 -0700)
+---------------------------------
+- Temporarly disable automated pull requests while the new rosdistro format is being deployed.
+- bloom now suggests likely alternatives when a repository is not found in the release file.
+
 0.3.4 (2013-04-09 16:36:55 -0700)
 ---------------------------------
 - Fixed a bug in the update notifier where the first run after updating still reports that bloom is out of date. #129
