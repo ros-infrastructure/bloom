@@ -50,13 +50,18 @@ generation of platform specific source packages, like debian's src-debs.""",
             'git-bloom-release = bloom.commands.git.release:main',
             'bloom-export-upstream = bloom.commands.export_upstream:main',
             'bloom-update = bloom.commands.update:main',
-            'bloom-release = bloom.commands.release:main'
+            'bloom-release = bloom.commands.release:main',
+            'bloom-generate = bloom.commands.generate:main'
         ],
         'bloom.generators': [
             'release = bloom.generators.release:ReleaseGenerator',
             'rosrelease = bloom.generators.rosrelease:RosReleaseGenerator',
             'debian = bloom.generators.debian:DebianGenerator',
             'rosdebian = bloom.generators.rosdebian:RosDebianGenerator'
+        ],
+        'bloom.generate_cmds': [
+            'debian = bloom.generators.debian.generate_cmd:description',
+            'rosdebian = bloom.generators.rosdebian:description'
         ]
     }
 )

@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import os
 import traceback
 
 from bloom.generators.debian import DebianGenerator
@@ -61,3 +62,47 @@ class RosDebianGenerator(DebianGenerator):
     def get_release_tag(self, data):
         return 'release/{0}/{1}/{2}-{3}'\
             .format(self.rosdistro, data['Name'], data['Version'], self.debian_inc)
+
+
+def prepare_arguments(parser):
+    add = parser.add_argument
+    add('package_path', nargs='?', help="path to or containing the package.xml of a package")
+    action = parser.add_mutually_exclusive_group(required=False)
+    add = action.add_argument
+    add('--place-template-files', action='store_true', help="places debian/* template files only")
+    add('--process-template-files', action='store_true', help="processes templates in debian/* only")
+    return parser
+
+
+def main(args=None):
+    if args is None:
+        package_path = os.getcwd()
+        place_template_files = False
+        process_template_files = False
+    else:
+        package_path = args.package_path or os.getcwd()
+        place_template_files = args.place_template_files
+        process_template_files = args.process_template_files
+
+    if not place_template_files and not process_template_files:
+        # Do both
+        pass
+    elif place_template_files:
+        # Just place template files
+        pass
+    elif process_template_files:
+        # Just process existing template files
+        pass
+    else:
+        assert False, "This should not happen..."
+
+    print(package_path)
+
+
+# This describes this command to the loader
+description = dict(
+    title='rosdebian',
+    description="Generates ROS style debian packaging files for a catkin package",
+    main=main,
+    prepare_arguments=prepare_arguments
+)
