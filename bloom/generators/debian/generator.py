@@ -165,14 +165,13 @@ class DebianGenerator(BloomGenerator):
 
     def update_rosdep(self):
         info("Running 'rosdep update'...")
-        from rosdep2.catkin_support import update_rosdep
+        from rosdep2.catkin_support import update_rosdep as _update_rosdep
         try:
-            update_rosdep()
+            _update_rosdep()
         except:
             print_exc(traceback.format_exc())
             error("Failed to update rosdep, did you run "
-                  "'rosdep init' first?")
-            return code.ROSDEP_FAILED
+                  "'rosdep init' first?", exit=True)
         self.has_run_rosdep = True
 
     def pre_branch(self, destination, source):
