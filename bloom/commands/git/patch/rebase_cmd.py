@@ -25,6 +25,29 @@ from bloom.util import execute_command
 from bloom.util import handle_global_arguments
 
 
+def my_copytree(tree, destination, ignores=None):
+    ignores = ignores or []
+    if os.path.exists(destination):
+        if not os.path.isdir(destination):
+            raise RuntimeError("Destination exists and is not a directory: '{0}'".format(destination))
+    else:
+        os.makedirs(destination)
+    for item in os.listdir(tree):
+        if item in ignores:
+            continue
+        src = os.path.join(tree, item)
+        dst = os.path.join(destination, item)
+        if os.path.islink(src):
+            linkto = os.readlink(src)
+            os.symlink(linkto, dst)
+        elif os.path.isdir(src):
+            my_copytree(src, dst, ignores)
+        elif os.path.isfile(src):
+            shutil.copy(src, dst)
+        else:
+            raise RuntimeError("Unknown file type for element: '{0}'".format(src))
+
+
 def non_git_rebase(upstream_branch, directory=None):
     # Create a temporary storage directory
     tmp_dir = mkdtemp()
@@ -35,20 +58,7 @@ def non_git_rebase(upstream_branch, directory=None):
         with inbranch(upstream_branch):
             ignores = ('.git', '.gitignore', '.svn', '.hgignore', '.hg', 'CVS')
             parent_source = os.path.join(tmp_dir, 'parent_source')
-            try:
-                # Try catch this to handle dangling symbolic links
-                # See: http://bugs.python.org/issue6547
-                shutil.copytree(git_root, parent_source,
-                                ignore=shutil.ignore_patterns(*ignores))
-            except shutil.Error as e:
-                for src, dst, err in e.args[0]:
-                    if not os.path.islink(src):
-                        raise
-                    else:
-                        linkto = os.readlink(src)
-                        if os.path.exists(linkto):
-                            raise
-                    # dangling symlink found.. ignoring..
+            my_copytree(git_root, parent_source, ignores)
 
         # Clear out the local branch
         execute_command('git rm -rf *', cwd=directory)
@@ -66,13 +76,7 @@ def non_git_rebase(upstream_branch, directory=None):
         execute_command('git clean -fdx', cwd=directory)  # for good measure?
 
         # Copy the parent source into the newly cleaned directory
-        for item in os.listdir(parent_source):
-            src = os.path.join(parent_source, item)
-            dst = os.path.join(git_root, item)
-            if os.path.isdir(src):
-                shutil.copytree(src, dst)
-            else:
-                shutil.copy(src, dst)
+        my_copytree(parent_source, git_root)
 
         # Commit changes to the repository
         execute_command('git add ./*', cwd=directory)
