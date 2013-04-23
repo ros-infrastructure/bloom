@@ -66,8 +66,9 @@ def create_upstream_repository(packages, directory=None):
                     f.write(package_xml)
                 user('touch .cproject')
                 user('touch .project')
-                user('mkdir -p include')
+                user('mkdir -p include/sym')
                 user('touch include/{0}.h'.format(package))
+                os.symlink('../{0}.h'.format(package), 'include/sym/{0}.h'.format(package))
                 user('git add package.xml .cproject .project include')
         user('git commit -m "Releasing version 0.1.0" --allow-empty')
         user('git tag 0.1.0 -m "Releasing version 0.1.0"')
@@ -121,6 +122,7 @@ def _test_unary_package_repository(release_dir, version, directory=None):
         ### Make patch
         ###
         with inbranch('release/groovy/foo'):
+            assert os.path.islink('include/sym/foo.h'), "Symbolic link lost during pipeline"
             if os.path.exists('include/foo.h'):
                 user('git rm include/foo.h')
             else:
