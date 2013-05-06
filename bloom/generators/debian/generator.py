@@ -510,7 +510,8 @@ class DebianGenerator(BloomGenerator):
         maintainers = []
         for m in package.maintainers:
             maintainers.append(str(m))
-        data['Maintainer'] = ', '.join(maintainers)
+        data['Maintainer'] = maintainers[0]
+        data['Maintainers'] = ', '.join(maintainers)
         return data
 
     def convert_stack_to_debian_data(self, stack):
