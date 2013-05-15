@@ -542,7 +542,8 @@ class DebianGenerator(BloomGenerator):
             if m.email:
                 maintainer += ' <%s>' % m.email
             maintainers.append(maintainer)
-        data['Maintainer'] = ', '.join(maintainers)
+        data['Maintainer'] = maintainers[0] if maintainers else 'No Maintainer'
+        data['Maintainers'] = ', '.join(maintainers)
         ### Augment Description with Package list
         # Go over the different subfolders and find all the packages
         package_descriptions = {}
