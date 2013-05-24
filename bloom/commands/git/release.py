@@ -114,14 +114,11 @@ def get_upstream_meta(upstream_dir, ros_distro):
             current_branch = get_current_branch()
         else:
             current_branch = None
-        name, version, stackages = get_package_data(
-            current_branch,
-            quiet=False,
-            fuerte=(ros_distro == 'fuerte'))
+        name, version, stackages = get_package_data(current_branch, quiet=False)
     meta = {
         'name': name,
         'version': version,
-        'type': 'package.xml' if isinstance(stackages, dict) else 'stack.xml'
+        'type': 'package.xml'
     }
     return meta
 
@@ -136,7 +133,7 @@ def find_version_from_upstream(vcs_uri, vcs_type, devel_branch=None, ros_distro=
     #         return version, None
     #     warning("  Failed to find the version using raw.github.com.")
     # Try to clone the upstream repository
-    info("Checking upstream devel branch for a package.xml(s) or stack.xml")
+    info("Checking upstream devel branch for package.xml(s)")
     upstream_repo = get_upstream_repo(vcs_uri, vcs_type)
     if not upstream_repo.checkout(vcs_uri, devel_branch or ''):
         error("Failed to checkout to the upstream branch "

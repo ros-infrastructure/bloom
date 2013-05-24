@@ -7,8 +7,10 @@ setup(
     version='0.3.5',
     packages=find_packages(exclude=['test']),
     package_data={
-        'bloom.generators.debian':
-            ['bloom/generators/debian/templates/*.em']
+        'bloom.generators.debian': [
+            'bloom/generators/debian/templates/*',
+            'bloom/generators/debian/templates/source/*'
+        ]
     },
     include_package_data=True,
     install_requires=[
@@ -23,9 +25,9 @@ setup(
         'distribute'
     ],
     author='Tully Foote, William Woodall',
-    author_email='tfoote@willowgarage.com, wwoodall@willowgarage.com',
+    author_email='tfoote@willowgarage.com, william@osrfoundation.org',
     maintainer='William Woodall',
-    maintainer_email='wwoodall@willowgarage.com',
+    maintainer_email='william@osrfoundation.org',
     url='http://www.ros.org/wiki/bloom',
     download_url='http://pr.willowgarage.com/downloads/bloom/',
     keywords=['ROS'],
@@ -34,7 +36,7 @@ setup(
     description="Bloom is a release automation tool.",
     long_description="""\
 Bloom provides tools for releasing software on top of a git repository \
-and leverages tools and patterns from git-buildpackage.  Additionally, \
+and leverages tools and patterns from git-buildpackage. Additionally, \
 bloom leverages meta and build information from catkin \
 (https://github.com/ros/catkin) to automate release branching and the \
 generation of platform specific source packages, like debian's src-debs.""",

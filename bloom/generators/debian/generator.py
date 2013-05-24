@@ -41,7 +41,11 @@ import shutil
 import sys
 import traceback
 
+from dateutil import tz
+
 from bloom.generators import BloomGenerator
+from bloom.generators import resolve_dependencies
+from bloom.generators import update_rosdep
 
 from bloom.git import inbranch
 from bloom.git import get_branches
@@ -56,38 +60,211 @@ from bloom.logging import debug
 from bloom.logging import enable_drop_first_log_prefix
 enable_drop_first_log_prefix(True)
 from bloom.logging import error
+from bloom.logging import fmt
 from bloom.logging import info
 from bloom.logging import warning
 
 from bloom.commands.git.patch.common import get_patch_config
 from bloom.commands.git.patch.common import set_patch_config
 
-from bloom.util import change_directory
-from bloom.util import code
 from bloom.util import execute_command
 from bloom.util import get_package_data
 from bloom.util import maybe_continue
-from bloom.util import print_exc
 
 try:
-    from rosdep2.platforms.debian import APT_INSTALLER
     from rosdep2.catkin_support import get_ubuntu_targets
 except ImportError as err:
     debug(traceback.format_exc())
     error("rosdep was not detected, please install it.", exit=True)
 
 try:
-    from catkin_pkg.package import Dependency
-except ImportError as err:
-    debug(traceback.format_exc())
-    error("catkin_pkg was not detected, please install it.", exit=True)
-
-try:
     import em
 except ImportError:
     debug(traceback.format_exc())
-    error("empy was not detected, please install it.")
-    sys.exit(code.EMPY_NOT_FOUND)
+    error("empy was not detected, please install it.", exit=True)
+
+TEMPLATE_EXTENSION = '.em'
+
+
+def __place_template_folder(group, src, dst, gbp=False):
+    template_files = pkg_resources.resource_listdir(group, src)
+    # For each tempalte, place
+    for template_file in template_files:
+        if not gbp and os.path.basename(template_file) == 'gbp.conf.em':
+            debug("Skipping template '{0}'".format(template_file))
+            continue
+        template_path = os.path.join(src, template_file)
+        template_dst = os.path.join(dst, template_file)
+        if pkg_resources.resource_isdir(group, template_path):
+            debug("Recursing on folder '{0}'".format(template_path))
+            __place_template_folder(group, template_path, template_dst, gbp)
+        else:
+            try:
+                debug("Placing temaplte '{0}'".format(template_path))
+                template = pkg_resources.resource_string(group, template_path)
+            except IOError as err:
+                error("Failed to load template "
+                      "'{0}': {1}".format(template_file, str(err)), exit=True)
+            if not os.path.exists(dst):
+                os.makedirs(dst)
+            if os.path.exists(template_dst):
+                debug("Removing existing file '{0}'".format(template_dst))
+                os.remove(template_dst)
+            with open(template_dst, 'w') as f:
+                f.write(template)
+
+
+def place_template_files(path, gbp=False):
+    info(fmt("@!@{bf}==>@| Placing templates files in the 'debian' folder."))
+    debian_path = os.path.join(path, 'debian')
+    # Create/Clean the debian folder
+    if not os.path.exists(debian_path):
+        os.makedirs(debian_path)
+    # Place template files
+    group = 'bloom.generators.debian'
+    __place_template_folder(group, 'templates', debian_path, gbp)
+
+
+def summarize_dependency_mapping(data, deps, build_deps, resolved_deps):
+    if len(deps) == 0 and len(build_deps) == 0:
+        return
+    info("Package '" + data['Package'] + "' has dependencies:")
+    header = "  " + ansi('boldoff') + ansi('ulon') + \
+             "rosdep key           => " + data['Distribution'] + \
+             " key" + ansi('reset')
+    template = "  " + ansi('cyanf') + "{0:<20} " + ansi('purplef') + \
+               "=> " + ansi('cyanf') + "{1}" + ansi('reset')
+    if len(deps) != 0:
+        info(ansi('purplef') + "Run Dependencies:" +
+             ansi('reset'))
+        info(header)
+        for key in [d.name for d in deps]:
+            info(template.format(key, resolved_deps[key]))
+    if len(build_deps) != 0:
+        info(ansi('purplef') +
+             "Build and Build Tool Dependencies:" + ansi('reset'))
+        info(header)
+        for key in [d.name for d in build_deps]:
+            info(template.format(key, resolved_deps[key]))
+
+
+def format_depends(depends, resolved_deps):
+    versions = {
+        'version_lt': '<<',
+        'version_lte': '<=',
+        'version_eq': '=',
+        'version_gte': '>=',
+        'version_gt': '>>'
+    }
+    formatted = []
+    for d in depends:
+        for resolved_dep in resolved_deps[d.name]:
+            version_depends = [k
+                               for k in versions.keys()
+                               if getattr(d, k, None) is not None]
+            if not version_depends:
+                formatted.append(resolved_dep)
+            else:
+                for v in version_depends:
+                    formatted.append("{0} ({1} {2})".format(
+                        resolved_dep, versions[v], getattr(d, v)))
+    return formatted
+
+
+def generate_substitutions_from_package(
+    package,
+    os_name,
+    os_version,
+    ros_distro,
+    installation_prefix='/usr',
+    deb_inc=0,
+    peer_packages=None
+):
+    peer_packages = peer_packages or []
+    data = {}
+    # Name, Version, Description
+    data['Name'] = package.name
+    data['Version'] = package.version
+    data['Description'] = debianize_string(package.description)
+    # Websites
+    websites = [str(url) for url in package.urls if url.type == 'website']
+    homepage = websites[0] if websites else ''
+    if homepage == '':
+        warning("No homepage set, defaulting to ''")
+    data['Homepage'] = homepage
+    # Debian Increment Number
+    data['DebianInc'] = deb_inc
+    # Package name
+    data['Package'] = package.name
+    # Installation prefix
+    data['InstallationPrefix'] = installation_prefix
+    # Resolve dependencies
+    depends = package.run_depends
+    build_depends = package.build_depends + package.buildtool_depends
+    unresolved_keys = depends + build_depends
+    resolved_deps = resolve_dependencies(unresolved_keys, os_name,
+                                         os_version, ros_distro,
+                                         peer_packages)
+    data['Depends'] = sorted(
+        set(format_depends(depends, resolved_deps))
+    )
+    data['BuildDepends'] = sorted(
+        set(format_depends(build_depends, resolved_deps))
+    )
+    # Set the distribution
+    data['Distribution'] = os_version
+    # Use the time stamp to set the date strings
+    stamp = datetime.datetime.now(tz.tzlocal())
+    data['Date'] = stamp.strftime('%a, %d %b %Y %T %z')
+    data['YYYY'] = stamp.strftime('%Y')
+    # Maintainers
+    maintainers = []
+    for m in package.maintainers:
+        maintainers.append(str(m))
+    data['Maintainer'] = maintainers[0]
+    data['Maintainers'] = ', '.join(maintainers)
+    # Summarize dependencies
+    summarize_dependency_mapping(data, depends, build_depends, resolved_deps)
+    return data
+
+
+def __process_template_folder(path, subs):
+    items = os.listdir(path)
+    processed_items = []
+    for item in list(items):
+        item = os.path.abspath(os.path.join(path, item))
+        if os.path.basename(item) in ['.', '..', '.git', '.svn']:
+            continue
+        if os.path.isdir(item):
+            sub_items = __process_template_folder(item, subs)
+            processed_items.extend([os.path.join(item, s) for s in sub_items])
+        if not item.endswith(TEMPLATE_EXTENSION):
+            continue
+        with open(item, 'r') as f:
+            template = f.read()
+        # Remove extension
+        template_path = item[:-len(TEMPLATE_EXTENSION)]
+        # Expand template
+        info("Expanding '{0}' -> '{1}'".format(
+            os.path.relpath(item),
+            os.path.relpath(template_path)))
+        result = em.expand(template, **subs)
+        # Write the result
+        with open(template_path, 'w') as f:
+            f.write(result)
+        # Copy the permissions
+        shutil.copymode(item, template_path)
+        processed_items.append(item)
+    return processed_items
+
+
+def process_template_files(path, subs):
+    info(fmt("@!@{bf}==>@| In place processing templates in 'debian' folder."))
+    debian_dir = os.path.join(path, 'debian')
+    if not os.path.exists(debian_dir):
+        sys.exit("No debian directory found at '{0}', cannot process templates."
+                 .format(debian_dir))
+    return __process_template_folder(path, subs)
 
 
 def match_branches_with_prefix(prefix, get_branches):
@@ -104,22 +281,21 @@ def match_branches_with_prefix(prefix, get_branches):
     return list(set(branches))
 
 
-def get_stackage_from_branch(branch, rosdistro):
+def get_package_from_branch(branch):
     with inbranch(branch):
-        package_data = get_package_data(branch, fuerte=(rosdistro == 'fuerte'))
+        package_data = get_package_data(branch)
         if type(package_data) not in [list, tuple]:
             # It is a ret code
             DebianGenerator.exit(package_data)
-    name, version, packages = package_data
-    if type(name) is list and len(name) > 1:
-        error("Debian generator does not support generating "
-              "from branches with multiple packages in them, use "
-              "the release generator first to split packages into "
-              "individual branches.")
-        DebianGenerator.exit(code.DEBIAN_MULTIPLE_PACKAGES_FOUND)
+    names, version, packages = package_data
+    if type(names) is list and len(names) > 1:
+        DebianGenerator.exit(
+            "Debian generator does not support generating "
+            "from branches with multiple packages in them, use "
+            "the release generator first to split packages into "
+            "individual branches.")
     if type(packages) is dict:
-        return packages.values()[0], 'package'
-    return packages, 'stack'
+        return packages.values()[0]
 
 
 def debianize_string(value):
@@ -138,9 +314,8 @@ class DebianGenerator(BloomGenerator):
     title = 'debian'
     description = "Generates debians from the catkin meta data"
     has_run_rosdep = False
-    default_install_prefix = '/usr/local'
-    # TODO: defaults to 'groovy' rosdistro, make it rosdistro independent
-    rosdistro = 'groovy'
+    default_install_prefix = '/usr'
+    rosdistro = os.environ.get('ROS_DISTRO', 'groovy')
 
     def prepare_arguments(self, parser):
         # Add command line arguments for this generator
@@ -179,10 +354,10 @@ class DebianGenerator(BloomGenerator):
         self.branch_args = []
         self.debian_branches = []
         for branch in self.branches:
-            stackage, kind = get_stackage_from_branch(branch, self.rosdistro)
-            self.packages[stackage.name] = (stackage, kind)
-            self.names.append(stackage.name)
-            args = self.generate_branching_arguments(stackage, branch)
+            package = get_package_from_branch(branch)
+            self.packages[package.name] = package
+            self.names.append(package.name)
+            args = self.generate_branching_arguments(package, branch)
             # First branch is debian/[<rosdistro>/]<package>
             self.debian_branches.append(args[0][0])
             self.branch_args.extend(args)
@@ -196,14 +371,7 @@ class DebianGenerator(BloomGenerator):
         return self.branch_args
 
     def update_rosdep(self):
-        info("Running 'rosdep update'...")
-        from rosdep2.catkin_support import update_rosdep as _update_rosdep
-        try:
-            _update_rosdep()
-        except:
-            print_exc(traceback.format_exc())
-            error("Failed to update rosdep, did you run "
-                  "'rosdep init' first?", exit=True)
+        update_rosdep()
         self.has_run_rosdep = True
 
     def pre_branch(self, destination, source):
@@ -215,10 +383,10 @@ class DebianGenerator(BloomGenerator):
         # Determine the current package being generated
         name = destination.split('/')[-1]
         distro = destination.split('/')[-2]
-        # Retrieve the stackage
-        stackage, kind = self.packages[name]
+        # Retrieve the package
+        package = self.packages[name]
         # Report on this package
-        self.summarize_package(stackage, kind, distro)
+        self.summarize_package(package, distro)
 
     def pre_rebase(self, destination):
         # Get the stored configs is any
@@ -231,30 +399,22 @@ class DebianGenerator(BloomGenerator):
 
     def post_rebase(self, destination):
         name = destination.split('/')[-1]
-        # Retrieve the stackage
-        stackage, kind = self.packages[name]
+        # Retrieve the package
+        package = self.packages[name]
         # Handle differently if this is a debian vs distro branch
         if destination in self.debian_branches:
-            info("Placing debian template files into '{0}' branch.".format(destination))
+            info("Placing debian template files into '{0}' branch."
+                 .format(destination))
             # Then this is a debian branch
             # Place the raw template files
-            self.place_tempalte_files()
+            self.place_template_files()
         else:
             # This is a distro specific debian branch
             # Determine the current package being generated
             distro = destination.split('/')[-2]
-            ### Start debian generation
-            # Get time of day
-            from dateutil import tz
-            stamp = datetime.datetime.now(tz.tzlocal())
-            # Convert stackage to debian data
-            data = self.convert_stackage_to_debian_data(stackage, kind)
-            # Get apt_installer from rosdep
-            from rosdep2.catkin_support import get_installer
-            self.apt_installer = get_installer(APT_INSTALLER)
             # Create debians for each distro
             with inbranch(destination):
-                self.generate_debian(data, stamp, distro)
+                data = self.generate_debian(package, distro)
                 # Create the tag name for later
                 self.tag_names[destination] = self.generate_tag_name(data)
         # Update the patch configs
@@ -290,15 +450,15 @@ class DebianGenerator(BloomGenerator):
             execute_command('git tag -f ' + tag_name)
         # Report of success
         name = destination.split('/')[-1]
-        stackage, kind = self.packages[name]
+        package = self.packages[name]
         distro = destination.split('/')[-2]
         info(ansi(color) + "####" + ansi('reset'), use_prefix=False)
         info(
             ansi(color) + "#### " + ansi('greenf') + "Successfully" +
             ansi(color) + " generated '" + ansi('boldon') + distro +
-            ansi('boldoff') + "' debian for " + kind +
-            " '" + ansi('boldon') + stackage.name + ansi('boldoff') + "'" +
-            " at version '" + ansi('boldon') + stackage.version +
+            ansi('boldoff') + "' debian for package"
+            " '" + ansi('boldon') + package.name + ansi('boldoff') + "'" +
+            " at version '" + ansi('boldon') + package.version +
             "-" + str(self.debian_inc) + ansi('boldoff') + "'" +
             ansi('reset'),
             use_prefix=False
@@ -319,311 +479,63 @@ class DebianGenerator(BloomGenerator):
             return config_store
         return json.loads(config_store)
 
-    def summarize_dependency_mapping(self, data, deps, build_deps, resolved_deps):
-        if len(deps) == 0 and len(build_deps) == 0:
-            return
-        info("Package '" + data['Package'] + "' has dependencies:")
-        header = "  " + ansi('boldoff') + ansi('ulon') + \
-                 "rosdep key           => " + data['Distribution'] + \
-                 " key" + ansi('reset')
-        template = "  " + ansi('cyanf') + "{0:<20} " + ansi('purplef') + \
-                   "=> " + ansi('cyanf') + "{1}" + ansi('reset')
-        if len(deps) != 0:
-            info(ansi('purplef') + "Run Dependencies:" +
-                 ansi('reset'))
-            info(header)
-            for key in [d.name for d in deps]:
-                info(template.format(key, resolved_deps[key]))
-        if len(build_deps) != 0:
-            info(ansi('purplef') +
-                 "Build and Build Tool Dependencies:" + ansi('reset'))
-            info(header)
-            for key in [d.name for d in build_deps]:
-                info(template.format(key, resolved_deps[key]))
-
-    def place_tempalte_files(self, debian_dir='debian'):
+    def place_template_files(self, debian_dir='debian'):
         # Create/Clean the debian folder
         if os.path.exists(debian_dir):
             if self.interactive:
                 warning("Debian directory exists: " + debian_dir)
                 warning("Do you wish to overwrite it?")
                 if not maybe_continue('y'):
-                    error("Answered no to continue, aborting.")
-                    return code.ANSWERED_NO_TO_CONTINUE
+                    error("Answered no to continue, aborting.", exit=True)
             else:
                 warning("Overwriting Debian directory: " + debian_dir)
             execute_command('git rm -rf ' + debian_dir)
             execute_command('git commit -m "Clearing previous debian folder"')
             if os.path.exists(debian_dir):
                 shutil.rmtree(debian_dir)
-        os.makedirs(debian_dir)
-        # Place template files
-        templates = [
-            'changelog.em',
-            'control.em',
-            'gbp.conf.em',
-            'rules.em'
-        ]
-        for template_file in templates:
-            template_path = os.path.join('templates', template_file)
-            # Get the template contents using pkg_resources
-            group = 'bloom.generators.debian'
-            # info("Looking for template: " + group + ':' + template_path)
-            try:
-                template = pkg_resources.resource_string(group, template_path)
-            except IOError as err:
-                error("Failed to load template "
-                      "'{0}': {1}".format(template_file, str(err)))
-                self.exit(code.DEBIAN_FAILED_TO_LOAD_TEMPLATE)
-            with open(os.path.join(debian_dir, template_file), 'w') as f:
-                f.write(template)
-        # Create the compat file
-        compat_path = os.path.join(debian_dir, 'compat')
-        with open(compat_path, 'w+') as f:
-            print("7", file=f)
-        # Create the source/format file
-        source_dir = os.path.join(debian_dir, 'source')
-        os.makedirs(source_dir)
-        format_path = os.path.join(source_dir, 'format')
-        with open(format_path, 'w+') as f:
-            print("3.0 (quilt)", file=f)
+        # Use generic place template files command
+        place_template_files('.', gbp=True)
         # Commit results
         execute_command('git add ' + debian_dir)
         execute_command('git commit -m "Placing debian template files"')
 
-    def generate_debian(self, data, stamp, debian_distro, debian_dir='debian'):
+    def generate_debian(self, package, debian_distro):
         info("Generating debian for {0}...".format(debian_distro))
-        # Resolve dependencies
-        self.resolved_dependencies = self.resolve_dependencies(self.depends + self.build_depends, debian_distro)
-        # Set the distribution
-        data['Distribution'] = debian_distro
-        # Use the time stamp to set the date strings
-        data['Date'] = stamp.strftime('%a, %d %b %Y %T %z')
-        data['YYYY'] = stamp.strftime('%Y')
-        self.summarize_dependency_mapping(data, self.depends, self.build_depends, self.resolved_dependencies)
-
-        def format_depends(depends, resolved_deps):
-            versions = {
-                'version_lt': '<<',
-                'version_lte': '<=',
-                'version_eq': '=',
-                'version_gte': '>=',
-                'version_gt': '>>'
-            }
-            formatted = []
-            for d in depends:
-                for resolved_d in resolved_deps[d.name]:
-                    version_depends = [k for k in versions.keys() if getattr(d, k, None) is not None]
-                    if not version_depends:
-                        formatted.append(resolved_d)
-                    else:
-                        for v in version_depends:
-                            formatted.append('%s (%s %s)' % (resolved_d, versions[v], getattr(d, v)))
-            return formatted
-
-        data['Depends'] = sorted(set(format_depends(self.depends, self.resolved_dependencies)))
-        data['BuildDepends'] = sorted(set(format_depends(self.build_depends, self.resolved_dependencies)))
-        # Generate the control file from the template
-        self.create_from_template('control', data, debian_dir)
-        # Generate the changelog file
-        self.create_from_template('changelog', data, debian_dir)
-        # Generate the rules file
-        self.create_from_template('rules', data, debian_dir,
-                                  chmod=0755, outfile='rules')
-        # Generate the gbp.conf file
-        data['release_tag'] = self.get_release_tag(data)
-        self.create_from_template('gbp.conf', data, debian_dir)
+        # Generate substitution values
+        subs = generate_substitutions_from_package(
+            package,
+            self.os_name,
+            debian_distro,
+            self.rosdistro,
+            self.install_prefix,
+            self.debian_inc,
+            [p.name for p in self.packages.values()]
+        )
+        # Handle gbp.conf
+        subs['release_tag'] = self.get_release_tag(subs)
+        # Template files
+        template_files = process_template_files('.', subs)
         # Remove any residual template files
-        if [x for x in os.listdir(debian_dir) if x.endswith('.em')]:
-            execute_command('git rm {0}/*.em'.format(debian_dir))
+        execute_command('git rm -rf ' + ' '.join(template_files))
         # Add changes to the debian folder
-        execute_command('git add ' + debian_dir)
+        execute_command('git add debian')
         # Commit changes
         execute_command('git commit -m "Generated debian files for ' +
                         debian_distro + '"')
+        # Return the subs for other use
+        return subs
 
     def get_release_tag(self, data):
-        return 'release/{0}/{1}-{2}'.format(data['Name'], data['Version'], self.debian_inc)
-
-    def create_from_template(self, template_name, data, directory,
-                             chmod=None, outfile=None):
-        # Configure template name
-        extention = '.em'
-        if not template_name.endswith(extention):
-            template_file = template_name + extention
-        else:
-            template_file = template_name
-            template_name = template_name[:len(extention)]
-        # Open the template
-        with change_directory(directory):
-            with open(template_file, 'r') as f:
-                template = f.read()
-            execute_command('git rm ' + template_file)
-        # Expand template
-        outfile = outfile if outfile is not None else template_name
-        info("Expanding template: '" + template_file + "' to '" +
-             outfile + "'")
-        result = em.expand(template, **data)
-        # Write the template out
-        with change_directory(directory):
-            with open(outfile, 'w+') as f:
-                f.write(result)
-            # Set permissions if needed
-            if chmod is not None:
-                os.chmod(outfile, chmod)
-
-    def resolve_dependencies(self, depends, debian_distro):
-        os_name = self.os_name
-        rosdep_view = self.get_rosdep_view(debian_distro, os_name)
-
-        def resolve_rosdep_key(rosdep_key, view, try_again=True):
-            from rosdep2.catkin_support import resolve_for_os
-            from rosdep2.lookup import ResolutionError
-            try:
-                return resolve_for_os(rosdep_key, view,
-                                      self.apt_installer, os_name,
-                                      debian_distro)
-            except (KeyError, ResolutionError) as err:
-                if rosdep_key in self.packages:
-                    return [sanitize_package_name(
-                        'ros-{0}-{1}'.format(self.rosdistro, rosdep_key)
-                    )]
-                if type(err) == KeyError:
-                    error(
-                        "Could not resolve rosdep key '" + rosdep_key + "'"
-                    )
-                else:
-                    error(
-                        "Could not resolve the rosdep key '" + rosdep_key +
-                        "' for distro '" + debian_distro + "': \n"
-                    )
-                    info(str(err), use_prefix=False)
-                if try_again:
-                    error("Resolve problem with rosdep and then continue to try again.")
-                    if maybe_continue():
-                        self.update_rosdep()
-                        new_view = self.get_rosdep_view(debian_distro, os_name)
-                        return resolve_rosdep_key(rosdep_key, new_view)
-                self.exit("Failed to resolve rosdep key '{0}', aborting."
-                    .format(rosdep_key))
-
-        resolved_depends = {}
-        for rosdep_key in set([d.name for d in depends]):
-            resolved_depends[rosdep_key] = resolve_rosdep_key(rosdep_key, rosdep_view)
-        return resolved_depends
-
-    def get_rosdep_view(self, debian_distro, os_name):
-        rosdistro = self.rosdistro
-        from rosdep2.catkin_support import get_catkin_view
-        return get_catkin_view(rosdistro, os_name, debian_distro, update=False)
-
-    def convert_package_to_debian_data(self, package):
-        data = {}
-        # Name, Version, Description
-        data['Name'] = package.name
-        data['Version'] = package.version
-        data['Description'] = debianize_string(package.description)
-        # Websites
-        websites = [str(url) for url in package.urls if url.type == 'website']
-        homepage = websites[0] if websites else ''
-        if homepage == '':
-            warning("No homepage set, defaulting to ''")
-        data['Homepage'] = homepage
-        # Debian Increment Number
-        data['DebianInc'] = self.debian_inc
-        # Package name
-        data['Package'] = self.get_stackage_name(package)
-        # Installation prefix
-        data['InstallationPrefix'] = self.install_prefix
-        # Dependencies
-        self.depends = package.run_depends
-        self.build_depends = package.build_depends + package.buildtool_depends
-        # Maintainers
-        maintainers = []
-        for m in package.maintainers:
-            maintainers.append(str(m))
-        data['Maintainer'] = maintainers[0]
-        data['Maintainers'] = ', '.join(maintainers)
-        return data
-
-    def convert_stack_to_debian_data(self, stack):
-        data = {}
-        # Name, Version, Description
-        data['Name'] = stack.name
-        data['Version'] = stack.version
-        data['Description'] = debianize_string(stack.description)
-        # Website
-        data['Homepage'] = stack.url
-        # Copyright
-        data['Copyright'] = stack.copyright
-        # Debian Increment Number
-        data['DebianInc'] = self.debian_inc
-        # Package name
-        data['Package'] = self.get_stackage_name(stack)
-        # Installation prefix
-        data['InstallationPrefix'] = self.install_prefix
-        # Dependencies
-        self.depends = list(set([d.name for d in stack.depends]))
-        self.depends = [Dependency(d) for d in self.depends]
-        self.build_depends = list(set([d.name for d in stack.build_depends]))
-        self.build_depends = [Dependency(d) for d in self.build_depends]
-        # Maintainers
-        maintainers = []
-        for m in stack.maintainers:
-            maintainer = m.name
-            if m.email:
-                maintainer += ' <%s>' % m.email
-            maintainers.append(maintainer)
-        data['Maintainer'] = maintainers[0] if maintainers else 'No Maintainer'
-        data['Maintainers'] = ', '.join(maintainers)
-        ### Augment Description with Package list
-        # Go over the different subfolders and find all the packages
-        package_descriptions = {}
-        # search for manifest in current folder and direct subfolders
-        cwd = os.getcwd()
-        for dir_name in [cwd] + os.listdir(cwd):
-            if not os.path.isdir(dir_name):
-                continue
-            dir_path = os.path.join('.', dir_name)
-            for file_name in os.listdir(dir_path):
-                if file_name == 'manifest.xml':
-                    # Can cold import,
-                    # because bloom.util already checked for rospkg
-                    import rospkg
-                    # parse the manifest, in case it is not valid
-                    manifest = rospkg.parse_manifest_file(dir_path, file_name)
-                    # remove markups
-                    if manifest.description is None:
-                        manifest.description = ''
-                    description = debianize_string(manifest.description)
-                    if dir_name == '.':
-                        dir_name = stack.name
-                    package_descriptions[dir_name] = description
-        # Enhance the description with the list of packages in the stack
-        if package_descriptions:
-            if data['Description']:
-                data['Description'] += '\n .\n'
-            data['Description'] += ' This stack contains the packages:'
-            for name, description in package_descriptions.items():
-                data['Description'] += '\n * %s: %s' % (name, description)
-        return data
-
-    def get_stackage_name(self, stackage):
-        return sanitize_package_name(str(stackage.name))
-
-    def convert_stackage_to_debian_data(self, stackage, kind):
-        if kind == 'package':
-            return self.convert_package_to_debian_data(stackage)
-        if kind == 'stack':
-            return self.convert_stack_to_debian_data(stackage)
+        return 'release/{0}/{1}-{2}'.format(data['Name'], data['Version'],
+                                            self.debian_inc)
 
     def generate_tag_name(self, data):
         tag_name = '{Package}_{Version}-{DebianInc}_{Distribution}'
         tag_name = 'debian/' + tag_name.format(**data)
         return tag_name
 
-    def generate_branching_arguments(self, stackage, branch):
-        n = stackage.name
+    def generate_branching_arguments(self, package, branch):
+        n = package.name
         # Debian branch
         deb_branch = 'debian/' + n
         # Branch first to the debian branch
@@ -634,13 +546,13 @@ class DebianGenerator(BloomGenerator):
         ])
         return args
 
-    def summarize_package(self, stackage, kind, distro, color='bluef'):
+    def summarize_package(self, package, distro, color='bluef'):
         info(ansi(color) + "\n####" + ansi('reset'), use_prefix=False)
         info(
             ansi(color) + "#### Generating '" + ansi('boldon') + distro +
-            ansi('boldoff') + "' debian for " + kind +
-            " '" + ansi('boldon') + stackage.name + ansi('boldoff') + "'" +
-            " at version '" + ansi('boldon') + stackage.version +
+            ansi('boldoff') + "' debian for package"
+            " '" + ansi('boldon') + package.name + ansi('boldoff') + "'" +
+            " at version '" + ansi('boldon') + package.version +
             "-" + str(self.debian_inc) + ansi('boldoff') + "'" +
             ansi('reset'),
             use_prefix=False

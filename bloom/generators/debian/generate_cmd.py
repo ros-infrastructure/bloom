@@ -34,48 +34,105 @@
 from __future__ import print_function
 
 import os
+import sys
+import traceback
+
+from bloom.logging import debug
+from bloom.logging import error
+from bloom.logging import fmt
+from bloom.logging import info
+
+from bloom.generators.debian.generator import generate_substitutions_from_package
+from bloom.generators.debian.generator import place_template_files
+from bloom.generators.debian.generator import process_template_files
+
+try:
+    from rosdep2 import create_default_installer_context
+except ImportError:
+    debug(traceback.format_exc())
+    error("rosdep was not detected, please install it.", exit=True)
+
+try:
+    from catkin_pkg.packages import find_packages
+except ImportError:
+    debug(traceback.format_exc())
+    error("catkin_pkg was not detected, please install it.", exit=True)
 
 
 def prepare_arguments(parser):
     add = parser.add_argument
-    add('package_path', nargs='?', help="path to or containing the package.xml of a package")
+    add('package_path', nargs='?',
+        help="path to or containing the package.xml of a package")
     action = parser.add_mutually_exclusive_group(required=False)
     add = action.add_argument
-    add('--place-template-files', action='store_true', help="places debian/* template files only")
-    add('--process-template-files', action='store_true', help="processes templates in debian/* only")
+    add('--place-template-files', action='store_true',
+        help="places debian/* template files only")
+    add('--process-template-files', action='store_true',
+        help="processes templates in debian/* only")
+    add = parser.add_argument
+    add('--os-name', help='OS name, e.g. ubuntu, debian')
+    add('--os-version', help='OS version or codename, e.g. precise, wheezy')
+    add('--ros-distro', help='ROS distro, e.g. groovy, hydro (used for rosdep)')
     return parser
 
 
-def place_template_files():
-    pass
-
-
-def process_template_files():
-    pass
-
-
 def main(args=None):
-    if args is None:
-        package_path = os.getcwd()
-        do_place_template_files = True
-        do_process_template_files = True
-    else:
+    _place_template_files = True
+    _process_template_files = True
+    package_path = os.getcwd()
+    if args is not None:
         package_path = args.package_path or os.getcwd()
-        do_place_template_files = args.place_template_files
-        do_process_template_files = args.process_template_files
-        # If neither, do both
-        if not do_place_template_files and not do_process_template_files:
-            do_place_template_files = True
-            do_process_template_files = True
+        _place_template_files = args.place_template_files
+        _process_template_files = args.process_template_files
 
-    if do_place_template_files:
-        # Place template files
-        place_template_files()
-    if do_process_template_files:
-        # Just process existing template files
-        process_template_files()
+    pkgs_dict = find_packages(package_path)
+    if len(pkgs_dict) == 0:
+        sys.exit("No packages found in path: '{0}'".format(package_path))
+    if len(pkgs_dict) > 1:
+        sys.exit("Multiple packages found, "
+                 "this tool only supports one package at a time.")
 
-    print(package_path)
+    os_data = create_default_installer_context().get_os_name_and_version()
+    os_name, os_version = os_data
+    ros_distro = os.environ.get('ROS_DISTRO', 'groovy')
+
+    # Allow args overrides
+    os_name = args.os_name or os_name
+    os_version = args.os_version or os_version
+    ros_distro = args.ros_distro or ros_distro
+
+    # Summarize
+    info(fmt("@!@{gf}==> @|") +
+         fmt("Generating debs for @{cf}%s:%s@| for package(s) %s" %
+            (os_name, os_version, [p.name for p in pkgs_dict.values()])))
+
+    for path, pkg in pkgs_dict.items():
+        template_files = None
+        try:
+            subs = generate_substitutions_from_package(
+                pkg,
+                os_name,
+                os_version,
+                ros_distro
+            )
+            if _place_template_files:
+                # Place template files
+                place_template_files(path)
+            if _process_template_files:
+                # Just process existing template files
+                template_files = process_template_files(path, subs)
+            if not _place_template_files and not _process_template_files:
+                # If neither, do both
+                place_template_files(path)
+                template_files = process_template_files(path, subs)
+            if template_files is not None:
+                for template_file in template_files:
+                    os.remove(os.path.normpath(template_file))
+        except Exception as exc:
+            debug(traceback.format_exc())
+            error(str(exc), exit=True)
+        except (KeyboardInterrupt, EOFError):
+            sys.exit(1)
 
 # This describes this command to the loader
 description = dict(
