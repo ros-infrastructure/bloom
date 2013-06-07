@@ -25,7 +25,7 @@ class RosDebianGenerator(DebianGenerator):
     def prepare_arguments(self, parser):
         # Add command line arguments for this generator
         add = parser.add_argument
-        add('rosdistro', help="ROS distro to target (fuerte, groovy, etc...)")
+        add('rosdistro', help="ROS distro to target (groovy, hydro, etc...)")
         return DebianGenerator.prepare_arguments(self, parser)
 
     def handle_arguments(self, args):
@@ -41,19 +41,15 @@ class RosDebianGenerator(DebianGenerator):
         info("Releasing for rosdistro: " + self.rosdistro)
         return ret
 
-    def get_stackage_name(self, stackage):
-        name = 'ros-{0}-{1}'.format(self.rosdistro, str(stackage.name))
-        return sanitize_package_name(name)
-
     def generate_tag_name(self, data):
         tag_name = '{Package}_{Version}-{DebianInc}_{Distribution}'
         tag_name = 'debian/' + tag_name.format(**data)
         return tag_name
 
-    def generate_branching_arguments(self, stackage, branch):
-        deb_branch = 'debian/' + self.rosdistro + '/' + stackage.name
+    def generate_branching_arguments(self, package, branch):
+        deb_branch = 'debian/' + self.rosdistro + '/' + package.name
         args = [[deb_branch, branch, False]]
-        n, r, b, ds = stackage.name, self.rosdistro, deb_branch, self.distros
+        n, r, b, ds = package.name, self.rosdistro, deb_branch, self.distros
         args.extend([
             ['debian/' + r + '/' + d + '/' + n, b, False] for d in ds
         ])

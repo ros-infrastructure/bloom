@@ -114,7 +114,7 @@ def get_upstream_meta(upstream_dir, ros_distro):
             current_branch = get_current_branch()
         else:
             current_branch = None
-        name, version, stackages = get_package_data(current_branch, quiet=False)
+        name, version, packages = get_package_data(current_branch, quiet=False)
     meta = {
         'name': name,
         'version': version,
@@ -141,7 +141,7 @@ def find_version_from_upstream(vcs_uri, vcs_type, devel_branch=None, ros_distro=
               .format(devel_branch or '<default>', vcs_uri), exit=True)
     meta = get_upstream_meta(upstream_repo.get_path(), ros_distro)
     if not meta:
-        error("Failed to find any package.xml(s) or a stack.xml in the "
+        error("Failed to find any package.xml(s) in the "
               "upstream devel branch '{0}' in the repository from '{1}'"
               .format(devel_branch or '<default>', vcs_uri))
     info("Detected version '{0}' from package(s): {1}"

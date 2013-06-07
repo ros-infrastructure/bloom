@@ -134,6 +134,5 @@ upload: html
 	chmod -R g+w _build/html/
 	# set sticky-bit for group on folders so that the group "www" is kept when overwriting existing files on the webserver
 	find _build/html/ -type d | xargs chmod g+s
-	#scp -pr _build/html/ wgs32.willowgarage.com:/var/www/www.ros.org/html/doc/api/bloom
-	scp -pr _build/html/ wgs32.willowgarage.com:/var/www/www.ros.org/html/doc/fuerte/api/bloom
+	scp -pr _build/html/ wgs32.willowgarage.com:/var/www/www.ros.org/html/doc/api/bloom
 
