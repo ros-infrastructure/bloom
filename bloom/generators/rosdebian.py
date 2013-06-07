@@ -1,10 +1,10 @@
 from __future__ import print_function
 
-import os
 import traceback
 
 from bloom.generators.debian import DebianGenerator
-from bloom.generators.debian import sanitize_package_name
+from bloom.generators.debian.generator import generate_substitutions_from_package
+from bloom.generators.debian.generate_cmd import main as debian_main
 
 from bloom.logging import debug
 from bloom.logging import error
@@ -41,10 +41,18 @@ class RosDebianGenerator(DebianGenerator):
         info("Releasing for rosdistro: " + self.rosdistro)
         return ret
 
-    def generate_tag_name(self, data):
-        tag_name = '{Package}_{Version}-{DebianInc}_{Distribution}'
-        tag_name = 'debian/' + tag_name.format(**data)
-        return tag_name
+    def get_subs(self, package, debian_distro):
+        subs = generate_substitutions_from_package(
+            package,
+            self.os_name,
+            debian_distro,
+            self.rosdistro,
+            self.install_prefix,
+            self.debian_inc,
+            [p.name for p in self.packages.values()]
+        )
+        subs['Package'] = rosify_package_name(subs['Package'], self.rosdistro)
+        return subs
 
     def generate_branching_arguments(self, package, branch):
         deb_branch = 'debian/' + self.rosdistro + '/' + package.name
@@ -70,29 +78,23 @@ def prepare_arguments(parser):
     return parser
 
 
+def rosify_package_name(name, rosdistro):
+    return 'ros-{0}-{1}'.format(rosdistro, name)
+
+
+def get_subs(pkg, os_name, os_version, ros_distro):
+    subs = generate_substitutions_from_package(
+        pkg,
+        os_name,
+        os_version,
+        ros_distro
+    )
+    subs['Package'] = rosify_package_name(subs['Package'])
+    return subs
+
+
 def main(args=None):
-    if args is None:
-        package_path = os.getcwd()
-        place_template_files = False
-        process_template_files = False
-    else:
-        package_path = args.package_path or os.getcwd()
-        place_template_files = args.place_template_files
-        process_template_files = args.process_template_files
-
-    if not place_template_files and not process_template_files:
-        # Do both
-        pass
-    elif place_template_files:
-        # Just place template files
-        pass
-    elif process_template_files:
-        # Just process existing template files
-        pass
-    else:
-        assert False, "This should not happen..."
-
-    print(package_path)
+    debian_main(args, get_subs)
 
 
 # This describes this command to the loader

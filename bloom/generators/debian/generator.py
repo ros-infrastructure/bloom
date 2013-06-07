@@ -195,7 +195,7 @@ def generate_substitutions_from_package(
     # Debian Increment Number
     data['DebianInc'] = deb_inc
     # Package name
-    data['Package'] = package.name
+    data['Package'] = sanitize_package_name(package.name)
     # Installation prefix
     data['InstallationPrefix'] = installation_prefix
     # Resolve dependencies
@@ -499,10 +499,8 @@ class DebianGenerator(BloomGenerator):
         execute_command('git add ' + debian_dir)
         execute_command('git commit -m "Placing debian template files"')
 
-    def generate_debian(self, package, debian_distro):
-        info("Generating debian for {0}...".format(debian_distro))
-        # Generate substitution values
-        subs = generate_substitutions_from_package(
+    def get_subs(self, package, debian_distro):
+        return generate_substitutions_from_package(
             package,
             self.os_name,
             debian_distro,
@@ -511,6 +509,11 @@ class DebianGenerator(BloomGenerator):
             self.debian_inc,
             [p.name for p in self.packages.values()]
         )
+
+    def generate_debian(self, package, debian_distro):
+        info("Generating debian for {0}...".format(debian_distro))
+        # Generate substitution values
+        subs = self.get_subs(package, debian_distro)
         # Handle gbp.conf
         subs['release_tag'] = self.get_release_tag(subs)
         # Template files

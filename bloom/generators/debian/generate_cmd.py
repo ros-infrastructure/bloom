@@ -76,7 +76,17 @@ def prepare_arguments(parser):
     return parser
 
 
-def main(args=None):
+def get_subs(pkg, os_name, os_version, ros_distro):
+    return generate_substitutions_from_package(
+        pkg,
+        os_name,
+        os_version,
+        ros_distro
+    )
+
+
+def main(args=None, get_subs_fn=None):
+    get_subs_fn = get_subs_fn or get_subs
     _place_template_files = True
     _process_template_files = True
     package_path = os.getcwd()
@@ -109,12 +119,7 @@ def main(args=None):
     for path, pkg in pkgs_dict.items():
         template_files = None
         try:
-            subs = generate_substitutions_from_package(
-                pkg,
-                os_name,
-                os_version,
-                ros_distro
-            )
+            subs = get_subs_fn(pkg, os_name, os_version, ros_distro)
             if _place_template_files:
                 # Place template files
                 place_template_files(path)
