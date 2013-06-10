@@ -425,14 +425,15 @@ def perform_release(repository, track, distro, new_track, interactive, pretend):
         if new_track:
             if not track:
                 error("You must specify a track when creating a new one.", exit=True)
-            overrides = {'ros_distro': distro}
             if track in tracks_dict['tracks']:
                 warning("Track '{0}' exists, editing instead...".format(track))
                 edit_track_cmd(track)
+                tracks_dict = get_tracks_dict_raw()
             else:
                 # Create a new track called <track>,
                 # copying an existing track if possible,
                 # and overriding the ros_distro
+                overrides = {'ros_distro': distro}
                 new_track_cmd(track, copy_track='', overrides=overrides)
                 tracks_dict = get_tracks_dict_raw()
         if track and track not in tracks_dict['tracks']:
