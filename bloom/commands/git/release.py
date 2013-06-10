@@ -317,4 +317,4 @@ def main(sysargs=None):
          "then push to the release repo with:@|"))
     info(fmt("  git push --all && git push --tags  "
              "@{kf}@!# You might have to add --force to the second command if you "
-             "are over-writing existing flags"))
+             "are over-writing existing tags"))
