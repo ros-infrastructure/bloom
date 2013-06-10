@@ -180,7 +180,10 @@ def handle_tree(tree, directory, root_path, version):
                         .format(rel_path))
                 execute_command('git rm {0}'.format(rel_path), shell=True)
             # If package.xml tempalte in version, else grab data
-            if path in ['package.xml', 'stack.xml']:
+            if path in ['stack.xml']:
+                warning("  Skipping '{0}' templating, fuerte not supported"
+                        .format(rel_path))
+            if path in ['package.xml']:
                 info("  Templating '{0}' into upstream branch..."
                      .format(rel_path))
                 file_data = show('bloom', os.path.join(root_path, rel_path))

@@ -407,12 +407,6 @@ def create_pull_request(org, repo, user, password, base_branch, head_branch, tit
 def perform_release(repository, track, distro, new_track, interactive, pretend):
     release_repo = get_release_repo(repository, distro)
     with change_directory(release_repo.get_path()):
-        # Check for push permissions
-        try:
-            info(fmt("@{gf}@!==> @|Testing for push permission on release repository"))
-            check_output('git push', shell=True)
-        except subprocess.CalledProcessError:
-            error("Cannot push to remote release repository.", exit=True)
         # Check to see if the old bloom.conf exists
         if check_for_bloom_conf(repository):
             # Convert to a track
@@ -425,14 +419,15 @@ def perform_release(repository, track, distro, new_track, interactive, pretend):
         if new_track:
             if not track:
                 error("You must specify a track when creating a new one.", exit=True)
-            overrides = {'ros_distro': distro}
             if track in tracks_dict['tracks']:
                 warning("Track '{0}' exists, editing instead...".format(track))
                 edit_track_cmd(track)
+                tracks_dict = get_tracks_dict_raw()
             else:
                 # Create a new track called <track>,
                 # copying an existing track if possible,
                 # and overriding the ros_distro
+                overrides = {'ros_distro': distro}
                 new_track_cmd(track, copy_track='', overrides=overrides)
                 tracks_dict = get_tracks_dict_raw()
         if track and track not in tracks_dict['tracks']:
@@ -459,8 +454,34 @@ def perform_release(repository, track, distro, new_track, interactive, pretend):
             track = tracks[0]
         # Ensure the track is complete
         track_dict = tracks_dict['tracks'][track]
-        update_track(track_dict)
+        track_dict = update_track(track_dict)
         tracks_dict['tracks'][track] = track_dict
+        # Set the release repositories' remote if given
+        release_repo_url = track_dict.get('release_repo_url', None)
+        if release_repo_url is not None:
+            info(fmt("@{gf}@!==> @|") +
+                 "Setting release repository remote url to '{0}'"
+                 .format(release_repo_url))
+            cmd = 'git remote set-url origin ' + release_repo_url
+            info(fmt("@{bf}@!==> @|@!") + str(cmd))
+            try:
+                subprocess.check_call(cmd, shell=True)
+            except subprocess.CalledProcessError:
+                error("Setting the remote url failed, exiting.", exit=True)
+        # Check for push permissions
+        try:
+            info(fmt(
+                "@{gf}@!==> @|Testing for push permission on release repository"
+            ))
+            cmd = 'git remote -v'
+            info(fmt("@{bf}@!==> @|@!") + str(cmd))
+            subprocess.check_call(cmd, shell=True)
+            cmd = 'git push'
+            info(fmt("@{bf}@!==> @|@!") + str(cmd))
+            subprocess.check_call(cmd, shell=True)
+        except subprocess.CalledProcessError:
+            error("Cannot push to remote release repository.", exit=True)
+        # Write the track config before releasing
         write_tracks_dict_raw(tracks_dict)
         # Run the release
         info(fmt("@{gf}@!==> @|") +

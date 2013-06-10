@@ -141,26 +141,20 @@ class temporary_directory(object):
             os.chdir(self.original_cwd)
 
 
-def get_package_data(branch_name=None, directory=None, quiet=True, fuerte=False):
+def get_package_data(branch_name=None, directory=None, quiet=True):
     """
     Gets package data about the package(s) in the current branch.
 
     :param branch_name: name of the branch you are searching on (log use only)
     """
     log = debug if quiet else info
-    repo_dir = directory if directory else os.getcwd()
-    stack_path = os.path.join(repo_dir, 'stack.xml')
-    if os.path.exists(stack_path) and not fuerte:
-            warning("stack.xml is present but going to be ignored because this is not a release for Fuerte.")
+    repo_dir = directory or os.getcwd()
     if branch_name:
         log("Looking for packages in '{0}' branch... ".format(branch_name), end='')
     else:
         log("Looking for packages in '{0}'... ".format(directory or os.getcwd()), end='')
     ## Check for package.xml(s)
-    if not fuerte:
-        packages = find_packages(repo_dir)
-    else:
-        packages = {}
+    packages = find_packages(repo_dir)
     if type(packages) == dict and packages != {}:
         if len(packages) > 1:
             log("found " + str(len(packages)) + " packages.",
@@ -170,26 +164,9 @@ def get_package_data(branch_name=None, directory=None, quiet=True, fuerte=False)
                 use_prefix=False)
         version = verify_equal_package_versions(packages.values())
         return [p.name for p in packages.values()], version, packages
-    ## Check for stack.xml
-    has_rospkg = False
-    try:
-        import rospkg
-        has_rospkg = True
-    except ImportError:
-        log(ansi('redf') + "failed." + ansi('reset'), use_prefix=False)
-        warning("rospkg was not detected, stack.xml discovery is disabled",
-                file=sys.stderr)
-    if not has_rospkg:
-        error("no package.xml(s) found, and no name specified with "
-              "'--package-name', aborting.", use_prefix=False, exit=True)
-    if os.path.exists(stack_path):
-        log("found stack.xml.", use_prefix=False)
-        stack = rospkg.stack.parse_stack_file(stack_path)
-        return stack.name, stack.version, stack
     # Otherwise we have a problem
     log("failed.", use_prefix=False)
-    error("no package.xml(s) or stack.xml found, and no name "
-          "specified with '--package-name', aborting.",
+    error("No package.xml(s) found, and '--package-name' not given, aborting.",
           use_prefix=False, exit=True)
 
 
@@ -328,7 +305,7 @@ def extract_text(element):
 def segment_version(full_version):
     version_list = full_version.split('.')
     if len(version_list) != 3:
-        warning('Invalid version element in the stack.xml, expected: '
+        warning('Invalid version element, expected: '
                 '<major>.<minor>.<patch>')
     if len(version_list) < 3:
         sys.exit(code.INVALID_VERSION)

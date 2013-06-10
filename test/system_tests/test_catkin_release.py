@@ -30,6 +30,8 @@ from bloom.commands.git.patch import export_cmd
 from bloom.commands.git.patch import import_cmd
 from bloom.commands.git.patch import remove_cmd
 
+from bloom.generators.debian.generator import sanitize_package_name
+
 
 def create_upstream_repository(packages, directory=None):
     upstream_dir = 'upstream_repo_groovy'
@@ -115,8 +117,9 @@ def _test_unary_package_repository(release_dir, version, directory=None):
             "no patches/release/groovy/foo branch"
         # was the release tag created?
         ret, out, err = user('git tag', return_io=True)
-        assert out.count('release/groovy/foo/' + version + '-0') == 1, \
-            "no release tag created"
+        expected = 'release/groovy/foo/' + version + '-0'
+        assert out.count(expected) == 1, \
+            "no release tag created, expected: '{0}'".format(expected)
 
         ###
         ### Make patch
@@ -189,7 +192,7 @@ def test_multi_package_repository(directory=None):
     """
     directory = directory if directory is not None else os.getcwd()
     # Setup
-    pkgs = ['foo', 'bar', 'baz']
+    pkgs = ['foo', 'bar_ros', 'baz']
     upstream_dir = create_upstream_repository(pkgs, directory)
     upstream_url = 'file://' + upstream_dir
     release_url = create_release_repo(
@@ -289,17 +292,19 @@ def test_multi_package_repository(directory=None):
         ret, out, err = user('git tag', return_io=True)
         for pkg in pkgs:
             for distro in ['oneiric', 'precise', 'quantal']:
+                pkg_san = sanitize_package_name(pkg)
                 # Does the debian/distro/pkg branch exist?
                 assert branch_exists('debian/groovy/' + distro + '/' + pkg), \
-                    "no release/" + pkg + " branch"
+                    "no debian/groovy/" + pkg + " branch"
                 # Does the patches/debian/distro/pkg branch exist?
                 patches_branch = 'patches/debian/groovy/' + distro + '/' + pkg
                 assert branch_exists(patches_branch), \
-                    "no patches/release/" + pkg + " branch"
+                    "no " + patches_branch + " branch"
                 # Did the debian tag get created?
-                tag = 'debian/ros-groovy-' + pkg + '_0.1.0-0_' + distro
+                tag = 'debian/ros-groovy-' + pkg_san + '_0.1.0-0_' + distro
                 assert out.count(tag) == 1, \
-                    "no release tag created for '" + pkg + "': `" + out + "`"
+                    "no '" + tag + "'' tag created for '" + pkg + "': `\n" + \
+                    out + "\n`"
             # Is there a package.xml in the top level?
             with inbranch('debian/groovy/' + distro + '/' + pkg):
                 assert os.path.exists('package.xml'), "release branch invalid"

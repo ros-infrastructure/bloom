@@ -112,6 +112,17 @@ of this folder will be overlaid onto the upstream branch after each
 import-upstream.  Additionally, any package.xml files found in the
 overlay will have the :{version} string replaced with the current
 version being released.'''
+    },
+    'release_repo_url': {
+        '<url>': '''\
+(optional) Used when pushing to remote release repositories. This is only
+needed when the release uri which is in the rosdistro file is not writable.
+This is useful, for example, when a releaser would like to use a ssh url
+to push rather than a https:// url.
+''',
+    ':{none}': '''\
+This indicates that the default release url should be used.
+'''
     }
 }
 
@@ -161,6 +172,7 @@ DEFAULT_TEMPLATE = {
     'devel_branch': PromptEntry('Upstream Devel Branch', spec=config_spec['devel_branch']),
     'patches': PromptEntry('Patches Directory', spec=config_spec['patches']),
     'ros_distro': PromptEntry('ROS Distro', default='groovy', spec=config_spec['ros_distro']),
+    'release_repo_url': PromptEntry('Release Repository Push URL', spec=config_spec['release_repo_url']),
     'release_inc': -1,
     'actions': [
         'bloom-export-upstream :{vcs_local_uri} :{vcs_type}'

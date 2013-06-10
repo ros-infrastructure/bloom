@@ -70,7 +70,8 @@ template_entry_order = [
     'release_tag',
     'devel_branch',
     'ros_distro',
-    'patches'
+    'patches',
+    'release_repo_url'
 ]
 
 

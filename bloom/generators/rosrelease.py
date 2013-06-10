@@ -23,7 +23,7 @@ prefix set to 'release'.
     def prepare_arguments(self, parser):
         # Add command line arguments for this generator
         add = parser.add_argument
-        add('rosdistro', help="ROS distro to target (fuerte, groovy, etc...)")
+        add('rosdistro', help="ROS distro to target (groovy, hydro, etc...)")
         return ReleaseGenerator.prepare_arguments(self, parser)
 
     def handle_arguments(self, args):
@@ -57,9 +57,7 @@ Please checkout the release branch and then create a tag manually with:""")
             warning("  git tag -f " + destination + "/<version>")
             return
         with inbranch(destination):
-            name, version, packages = get_package_data(
-                destination,
-                fuerte=(self.rosdistro == 'fuerte'))
+            name, version, packages = get_package_data(destination)
         # Execute git tag
         execute_command('git tag -f ' + destination + '/' + version +
                         '-' + str(self.release_inc))
@@ -70,9 +68,7 @@ Please checkout the release branch and then create a tag manually with:""")
             if self.name is not None:
                 self.packages = [self.name]
                 return [self.name]
-            package_data = get_package_data(
-                self.src,
-                fuerte=(self.rosdistro == 'fuerte'))
+            package_data = get_package_data(self.src)
             if type(package_data) not in [list, tuple]:
                 return package_data
             name, version, packages = package_data

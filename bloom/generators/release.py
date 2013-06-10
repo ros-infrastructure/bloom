@@ -120,10 +120,6 @@ each package in the upstream repository, so the source branch should be set to
         return 0 if ret < 0 else ret  # Ret < 0 indicates nothing was done
 
     def post_rebase(self, destination):
-        # If self.packages is not a dict then this is a stack
-        # and therefore no trim is needed
-        if type(self.packages) is not dict:
-            return 0
         # Figure out the trim sub dir
         name = destination.split('/')[-1]
         trim_d = [k for k, v in self.packages.iteritems() if v.name == name][0]
