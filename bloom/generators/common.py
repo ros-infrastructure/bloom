@@ -33,11 +33,28 @@
 from __future__ import print_function
 
 import pkg_resources
+import traceback
 
 from bloom.logging import debug
+from bloom.logging import error
 from bloom.logging import info
 
+from bloom.util import maybe_continue
+from bloom.util import print_exc
+
+try:
+    from rosdep2.catkin_support import default_installers
+    from rosdep2.catkin_support import get_catkin_view
+    from rosdep2.catkin_support import get_installer
+    from rosdep2.catkin_support import resolve_for_os
+    from rosdep2.lookup import ResolutionError
+    import rosdep2.catkin_support
+except ImportError as err:
+    debug(traceback.format_exc())
+    error("rosdep was not detected, please install it.", exit=True)
+
 BLOOM_GROUP = 'bloom.generators'
+DEFAULT_ROS_DISTRO = 'groovy'
 
 
 def list_generators():
@@ -52,11 +69,102 @@ def load_generator(generator_name):
         if entry_point.name == generator_name:
             return entry_point.load()
 
+view_cache = {}
+
+
+def get_view(os_name, os_version, ros_distro):
+    global view_cache
+    key = os_name + os_version + ros_distro
+    if key not in view_cache:
+        value = get_catkin_view(ros_distro, os_name, os_version, False)
+        view_cache[key] = value
+    return view_cache[key]
+
+
+def invalidate_view_cache():
+    global view_cache
+    view_cache = {}
+
+
+def update_rosdep():
+    info("Running 'rosdep update'...")
+    try:
+        rosdep2.catkin_support.update_rosdep()
+    except:
+        print_exc(traceback.format_exc())
+        error("Failed to update rosdep, did you run 'rosdep init' first?",
+              exit=True)
+
+
+def resolve_rosdep_key(
+    key,
+    os_name,
+    os_version,
+    ros_distro=None,
+    ignored=None,
+    retry=True
+):
+    ignored = ignored or []
+    if os_name not in default_installers:
+        BloomGenerator.exit("Could not determine the installer for '{0}'"
+                            .format(os_name))
+    installer = get_installer(default_installers[os_name][0])
+    ros_distro = ros_distro or DEFAULT_ROS_DISTRO
+    view = get_view(os_name, os_version, ros_distro)
+    try:
+        return resolve_for_os(key, view, installer, os_name, os_version)
+    except (KeyError, ResolutionError) as exc:
+        debug(traceback.format_exc())
+        if key in ignored:
+            return None
+        if isinstance(exc, KeyError):
+            error("Could not resolve rosdep key '{0}'".format(key))
+        else:
+            error("Could not resolve rosdep key '{0}' for distro '{1}':"
+                  .format(key, os_version))
+            info(str(exc), use_prefix=False)
+        if retry:
+            error("Try to resolve the problem with rosdep and then continue.")
+            if maybe_continue():
+                update_rosdep()
+                invalidate_view_cache()
+                return resolve_rosdep_key(key, os_name, os_version, ros_distro,
+                                          ignored, retry=True)
+        BloomGenerator.exit("Failed to resolve rosdep key '{0}', aborting."
+                            .format(key))
+
+
+def default_fallback_resolver(key, peer_packages):
+    BloomGenerator.exit("Failed to resolve rosdep key '{0}', aborting."
+                        .format(key))
+
+
+def resolve_dependencies(
+    keys,
+    os_name,
+    os_version,
+    ros_distro=None,
+    peer_packages=None,
+    fallback_resolver=None
+):
+    ros_distro = ros_distro or DEFAULT_ROS_DISTRO
+    peer_packages = peer_packages or []
+    fallback_resolver = fallback_resolver or default_fallback_resolver
+
+    resolved_keys = {}
+    keys = [k.name for k in keys]
+    for key in keys:
+        resolved_key = resolve_rosdep_key(key, os_name, os_version, ros_distro,
+                                          peer_packages, retry=True)
+        if resolved_key is None:
+            resolved_key = fallback_resolver(key, peer_packages)
+        resolved_keys[key] = resolved_key
+    return resolved_keys
+
 
 class GeneratorError(Exception):
-    def __init__(self, retcode):
-        super(GeneratorError, self).__init__("Error running generator")
-        self.retcode = retcode
+    def __init__(self, msg):
+        super(GeneratorError, self).__init__("Error running generator: " + msg)
 
 
 class BloomGenerator(object):

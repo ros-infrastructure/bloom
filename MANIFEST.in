@@ -1,1 +1,1 @@
-recursive-include bloom *.em
+recursive-include bloom/generators/debian/templates *
