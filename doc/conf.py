@@ -50,8 +50,8 @@ dochash = subprocess.Popen('git log -n1 --pretty=format:%H'.split(),
                            stdout=subprocess.PIPE).communicate()[0]
 
 print "dochash=", dochash
-copyright = u'2013, Willow Garage -- ' + ' Version ' + dochash + ", " \
-           + ' '.join(lastmod.split(' ')[:4])
+copyright = u'2013, Willow Garage -- ' + ' Version ' + dochash + ", " + \
+            ' '.join(lastmod.split(' ')[:4])
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -193,10 +193,13 @@ htmlhelp_basename = 'catkin-cmakedoc'
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual])
-latex_documents = [
-  ('index', 'catkin.tex', ur'Catkin',
-   ur'troy d. straszheim', 'manual'),
-]
+latex_documents = [(
+    'index',
+    'catkin.tex',
+    ur'Catkin',
+    ur'troy d. straszheim',
+    'manual'
+)]
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
@@ -219,9 +222,8 @@ intersphinx_mapping = {
     'genmsg': ('http://ros.org/doc/api/genmsg/html', None),
     'vcstools': ('http://ros.org/doc/api/vcstools/html', None),
     'rosinstall': ('http://ros.org/doc/api/rosinstall/html', None),
-    'rospkg': ('http://ros.org/doc/api/rospkg/html', None),
     'rosdep2': ('http://ros.org/doc/api/rosdep2/html', None),
-    }
+}
 
 rst_epilog = """
 
