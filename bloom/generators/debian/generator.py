@@ -184,7 +184,11 @@ def get_rfc_2822_date(date):
     return formatdate(float(date.strftime("%s")), date.tzinfo)
 
 
-def get_changelogs(package):
+def get_changelogs(package, releaser_history=None):
+    if releaser_history is None:
+        warning("No historical releaser history, using current maintainer name "
+                "and email for each versioned changelog entry.")
+        releaser_history = {}
     if is_debug():
         import logging
         logging.basicConfig()
@@ -195,12 +199,17 @@ def get_changelogs(package):
     if os.path.exists(changelog_path):
         changelog = get_changelog_from_path(changelog_path)
         changelogs = []
+        maintainer = (package.maintainers[0].name, package.maintainers[0].email)
         for version, date, changes in changelog.foreach_version(reverse=True):
             changes_str = []
             date_str = get_rfc_2822_date(date)
             for item in changes:
                 changes_str.extend(['  ' + i for i in str(item).splitlines()])
-            changelogs.append((version, date_str, '\n'.join(changes_str)))
+            # Each entry has (version, date, changes, releaser, releaser_email)
+            releaser, email = releaser_history.get(version, maintainer)
+            changelogs.append((
+                version, date_str, '\n'.join(changes_str), releaser, email
+            ))
         return changelogs
     else:
         warning("No {0} found for package '{1}'"
@@ -215,7 +224,8 @@ def generate_substitutions_from_package(
     ros_distro,
     installation_prefix='/usr',
     deb_inc=0,
-    peer_packages=None
+    peer_packages=None,
+    releaser_history=None
 ):
     peer_packages = peer_packages or []
     data = {}
@@ -261,7 +271,7 @@ def generate_substitutions_from_package(
     data['Maintainer'] = maintainers[0]
     data['Maintainers'] = ', '.join(maintainers)
     # Changelog
-    data['changelogs'] = get_changelogs(package)
+    data['changelogs'] = get_changelogs(package, releaser_history)
     # Summarize dependencies
     summarize_dependency_mapping(data, depends, build_depends, resolved_deps)
     return data
@@ -538,7 +548,24 @@ class DebianGenerator(BloomGenerator):
         execute_command('git add ' + debian_dir)
         execute_command('git commit -m "Placing debian template files"')
 
-    def get_subs(self, package, debian_distro):
+    def get_releaser_history(self):
+        # Assumes that this is called in the target branch
+        patches_branch = 'patches/' + get_current_branch()
+        raw = show(patches_branch, 'releaser_history.json')
+        return None if raw is None else json.loads(raw)
+
+    def set_releaser_history(self, history):
+        # Assumes that this is called in the target branch
+        patches_branch = 'patches/' + get_current_branch()
+        debug("Writing release history to '{0}' branch".format(patches_branch))
+        with inbranch(patches_branch):
+            with open('releaser_history.json', 'w') as f:
+                f.write(json.dumps(history))
+            execute_command('git add releaser_history.json')
+            if has_changes():
+                execute_command('git commit -m "Store releaser history"')
+
+    def get_subs(self, package, debian_distro, releaser_history=None):
         return generate_substitutions_from_package(
             package,
             self.os_name,
@@ -546,13 +573,19 @@ class DebianGenerator(BloomGenerator):
             self.rosdistro,
             self.install_prefix,
             self.debian_inc,
-            [p.name for p in self.packages.values()]
+            [p.name for p in self.packages.values()],
+            releaser_history=releaser_history
         )
 
     def generate_debian(self, package, debian_distro):
         info("Generating debian for {0}...".format(debian_distro))
+        # Try to retrieve the releaser_history
+        releaser_history = self.get_releaser_history()
         # Generate substitution values
-        subs = self.get_subs(package, debian_distro)
+        subs = self.get_subs(package, debian_distro, releaser_history)
+        # Use subs to create and store releaser history
+        releaser_history = [(v, (n, e)) for v, _, _, n, e in subs['changelogs']]
+        self.set_releaser_history(dict(releaser_history))
         # Handle gbp.conf
         subs['release_tag'] = self.get_release_tag(subs)
         # Template files
