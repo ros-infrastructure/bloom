@@ -62,6 +62,7 @@ enable_drop_first_log_prefix(True)
 from bloom.logging import error
 from bloom.logging import fmt
 from bloom.logging import info
+from bloom.logging import is_debug
 from bloom.logging import warning
 
 from bloom.commands.git.patch.common import get_patch_config
@@ -70,6 +71,13 @@ from bloom.commands.git.patch.common import set_patch_config
 from bloom.util import execute_command
 from bloom.util import get_package_data
 from bloom.util import maybe_continue
+
+try:
+    from catkin_pkg.changelog import get_changelog_from_path
+    from catkin_pkg.changelog import CHANGELOG_FILENAME
+except ImportError as err:
+    debug(traceback.format_exc())
+    error("rosdep was not detected, please install it.", exit=True)
 
 try:
     from rosdep2.catkin_support import get_ubuntu_targets
@@ -171,6 +179,35 @@ def format_depends(depends, resolved_deps):
     return formatted
 
 
+def get_rfc_2822_date(date):
+    from email.utils import formatdate
+    return formatdate(float(date.strftime("%s")), date.tzinfo)
+
+
+def get_changelogs(package):
+    if is_debug():
+        import logging
+        logging.basicConfig()
+        import catkin_pkg
+        catkin_pkg.changelog.log.setLevel(logging.DEBUG)
+    package_path = os.path.abspath(os.path.dirname(package.filename))
+    changelog_path = os.path.join(package_path, CHANGELOG_FILENAME)
+    if os.path.exists(changelog_path):
+        changelog = get_changelog_from_path(changelog_path)
+        changelogs = []
+        for version, date, changes in changelog.foreach_version(reverse=True):
+            changes_str = []
+            date_str = get_rfc_2822_date(date)
+            for item in changes:
+                changes_str.extend(['  ' + i for i in str(item).splitlines()])
+            changelogs.append((version, date_str, '\n'.join(changes_str)))
+        return changelogs
+    else:
+        warning("No {0} found for package '{1}'"
+                .format(CHANGELOG_FILENAME, package.name))
+        return []
+
+
 def generate_substitutions_from_package(
     package,
     os_name,
@@ -223,6 +260,8 @@ def generate_substitutions_from_package(
         maintainers.append(str(m))
     data['Maintainer'] = maintainers[0]
     data['Maintainers'] = ', '.join(maintainers)
+    # Changelog
+    data['changelogs'] = get_changelogs(package)
     # Summarize dependencies
     summarize_dependency_mapping(data, depends, build_depends, resolved_deps)
     return data
@@ -264,7 +303,7 @@ def process_template_files(path, subs):
     if not os.path.exists(debian_dir):
         sys.exit("No debian directory found at '{0}', cannot process templates."
                  .format(debian_dir))
-    return __process_template_folder(path, subs)
+    return __process_template_folder(debian_dir, subs)
 
 
 def match_branches_with_prefix(prefix, get_branches):
