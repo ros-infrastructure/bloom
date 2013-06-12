@@ -135,7 +135,7 @@ def main(args=None, get_subs_fn=None):
                     os.remove(os.path.normpath(template_file))
         except Exception as exc:
             debug(traceback.format_exc())
-            error(str(exc), exit=True)
+            error(type(exc).__name__ + ": " + str(exc), exit=True)
         except (KeyboardInterrupt, EOFError):
             sys.exit(1)
 
