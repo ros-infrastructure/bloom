@@ -10,6 +10,8 @@ from ..utils.common import in_temporary_directory
 from ..utils.common import bloom_answer
 from ..utils.common import user
 
+from bloom.config import BLOOM_CONFIG_BRANCH
+
 from bloom.git import branch_exists
 from bloom.git import inbranch
 
@@ -41,8 +43,9 @@ def test_create_a_bloom_repository(directory=None):
         _, out, err = r
     assert out.count('ontinue') > 0, \
         "git-bloom-config didn't ask about git init:\n```\n" + out + "\n```"
-    assert branch_exists('bloom'), "branch 'bloom' does not exist"
-    with inbranch('bloom'):
+    assert branch_exists(BLOOM_CONFIG_BRANCH), \
+        "branch '{0}' does not exist".format(BLOOM_CONFIG_BRANCH)
+    with inbranch(BLOOM_CONFIG_BRANCH):
         assert os.path.exists('tracks.yaml'), \
             "no tracks.yaml file in the 'bloom' branch"
         with open('tracks.yaml', 'r') as f:

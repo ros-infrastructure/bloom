@@ -39,6 +39,8 @@ import tarfile
 
 from pkg_resources import parse_version
 
+from bloom.config import BLOOM_CONFIG_BRANCH
+
 from bloom.git import branch_exists
 from bloom.git import create_branch
 from bloom.git import create_tag
@@ -164,7 +166,7 @@ def handle_tree(tree, directory, root_path, version):
                 info("  Createing directory... '{0}'".format(rel_path))
                 os.mkdir(rel_path)
             # Recurse on the directory
-            handle_tree(ls_tree('bloom', os.path.join(root_path, rel_path)),
+            handle_tree(ls_tree(BLOOM_CONFIG_BRANCH, os.path.join(root_path, rel_path)),
                         rel_path, root_path, version)
         if kind == 'file':
             # Path relative to start path
@@ -186,12 +188,12 @@ def handle_tree(tree, directory, root_path, version):
             if path in ['package.xml']:
                 info("  Templating '{0}' into upstream branch..."
                      .format(rel_path))
-                file_data = show('bloom', os.path.join(root_path, rel_path))
+                file_data = show(BLOOM_CONFIG_BRANCH, os.path.join(root_path, rel_path))
                 file_data = file_data.replace(':{version}', version)
             else:
                 info("  Overlaying '{0}' into upstream branch..."
                      .format(rel_path))
-                file_data = show('bloom', os.path.join(root_path, rel_path))
+                file_data = show(BLOOM_CONFIG_BRANCH, os.path.join(root_path, rel_path))
             # Write file
             with open(rel_path, 'wb') as f:
                 f.write(file_data)
@@ -200,8 +202,8 @@ def handle_tree(tree, directory, root_path, version):
 
 
 def import_patches(patches_path, patches_path_dict, target_branch, version):
-    info("Overlaying files from patched folder '{0}' on the 'bloom' branch into the '{1}' branch..."
-         .format(patches_path, target_branch))
+    info("Overlaying files from patched folder '{0}' on the '{2}' branch into the '{1}' branch..."
+         .format(patches_path, target_branch, BLOOM_CONFIG_BRANCH))
     with inbranch(target_branch):
         handle_tree(patches_path_dict, '', patches_path, version)
         cmd = ('git commit --allow-empty -m "Overlaid patches from \'{0}\'"'
@@ -245,7 +247,7 @@ def import_upstream(tarball_path, patches_path, version, name, replace):
     # Check if the patches_path (if given) exists
     patches_path_dict = None
     if patches_path:
-        patches_path_dict = ls_tree('bloom', patches_path)
+        patches_path_dict = ls_tree(BLOOM_CONFIG_BRANCH, patches_path)
         if not patches_path_dict:
             error("Given patches path '{0}' does not exist in bloom branch."
                   .format(patches_path), exit=True)
@@ -313,8 +315,9 @@ or uncommitted local changes.
     add = parser.add_argument
     add('archive_path', help="path to the archive to be imported")
     add('patches_path', nargs='?', default='',
-        help="relative path in the 'bloom' branch to a folder to be"
-        " overlaid after import of upstream sources (optional)")
+        help="relative path in the '{0}' branch to a folder to be"
+             .format(BLOOM_CONFIG_BRANCH) +
+             " overlaid after import of upstream sources (optional)")
     add('-v', '--release-version',
         help="version being imported (defaults to guessing from archive name)")
     add('-n', '--name',

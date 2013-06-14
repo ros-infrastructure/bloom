@@ -38,10 +38,12 @@ import yaml
 import subprocess
 import sys
 
+from bloom.config import BLOOM_CONFIG_BRANCH
 from bloom.config import config_template
 from bloom.config import DEFAULT_TEMPLATE
 from bloom.config import get_tracks_dict_raw
 from bloom.config import PromptEntry
+from bloom.config import upconvert_bloom_to_config_branch
 from bloom.config import write_tracks_dict_raw
 
 from bloom.git import branch_exists
@@ -75,7 +77,7 @@ template_entry_order = [
 ]
 
 
-@inbranch('bloom')
+@inbranch(BLOOM_CONFIG_BRANCH)
 def convert_old_bloom_conf(prefix=None):
     prefix = prefix if prefix is not None else 'convert'
     tracks_dict = get_tracks_dict_raw()
@@ -114,15 +116,17 @@ def convert_old_bloom_conf(prefix=None):
     write_tracks_dict_raw(tracks_dict)
     execute_command('git rm bloom.conf', shell=True)
     execute_command('git commit -m "Removed bloom.conf"', shell=True)
+    # Now move the old bloom branch into master
+    upconvert_bloom_to_config_branch()
 
 
 def show_current():
-    bloom_ls = ls_tree('bloom')
+    bloom_ls = ls_tree(BLOOM_CONFIG_BRANCH)
     bloom_files = [f for f, t in bloom_ls.iteritems() if t == 'file']
     if 'bloom.conf' in bloom_files:
         info("Old bloom.conf file detected, up converting...")
         convert_old_bloom_conf()
-        bloom_ls = ls_tree('bloom')
+        bloom_ls = ls_tree(BLOOM_CONFIG_BRANCH)
         bloom_files = [f for f, t in bloom_ls.iteritems() if t == 'file']
     if 'tracks.yaml' in bloom_files:
         info(yaml.dump(get_tracks_dict_raw(), indent=2,
@@ -325,8 +329,8 @@ def main(sysargs=None):
     if len(sysargs if sysargs is not None else sys.argv[1:]) == 0:
         # This means show me the current config, first check we have an env
         ensure_clean_working_env()
-        if not branch_exists('bloom'):
-            sys.exit("No bloom branch found")
+        if not branch_exists(BLOOM_CONFIG_BRANCH):
+            sys.exit("No {0} branch found".format(BLOOM_CONFIG_BRANCH))
         show_current()
         info("See: 'git-bloom-config -h' on how to change the configs")
         return 0

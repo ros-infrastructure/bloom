@@ -32,12 +32,20 @@
 
 from __future__ import print_function
 
-import yaml
+import os
+import shutil
 import string
+import yaml
 
-from bloom.git import inbranch
+from tempfile import mkdtemp
+
+from bloom.commands.git.patch.rebase_cmd import my_copytree
+
 from bloom.git import branch_exists
 from bloom.git import create_branch
+from bloom.git import has_changes
+from bloom.git import get_root
+from bloom.git import inbranch
 from bloom.git import show
 
 from bloom.logging import error
@@ -46,6 +54,9 @@ from bloom.logging import info
 from bloom.logging import sanitize
 
 from bloom.util import execute_command
+
+BLOOM_CONFIG_BRANCH = 'master'
+PLACEHOLDER_FILE = 'CONTENT_MOVED_TO_{0}_BRANCH'.format(BLOOM_CONFIG_BRANCH.upper())
 
 config_spec = {
     'name': {
@@ -111,7 +122,9 @@ This can be any valid relative path in the bloom branch. The contents
 of this folder will be overlaid onto the upstream branch after each
 import-upstream.  Additionally, any package.xml files found in the
 overlay will have the :{version} string replaced with the current
-version being released.'''
+version being released.''',
+        ':{none}': '''\
+Use this if you want to disable overlaying of files.'''
     },
     'release_repo_url': {
         '<url>': '''\
@@ -199,6 +212,7 @@ config_template = {
 
 
 def verify_track(track_name, track):
+    upconvert_bloom_to_config_branch()
     for entry in DEFAULT_TEMPLATE:
         if entry not in track:
             error("Track '{0}' is missing configuration ".format(track_name) +
@@ -216,8 +230,9 @@ def template_str(line, settings):
 
 
 def write_tracks_dict_raw(tracks_dict, cmt_msg=None, directory=None):
+    upconvert_bloom_to_config_branch()
     cmt_msg = cmt_msg if cmt_msg is not None else 'Modified tracks.yaml'
-    with inbranch('bloom'):
+    with inbranch(BLOOM_CONFIG_BRANCH):
         with open('tracks.yaml', 'w') as f:
             f.write(yaml.dump(tracks_dict, indent=2, default_flow_style=False))
         execute_command('git add tracks.yaml', cwd=directory)
@@ -226,17 +241,70 @@ def write_tracks_dict_raw(tracks_dict, cmt_msg=None, directory=None):
 
 
 def get_tracks_dict_raw(directory=None):
-    if not branch_exists('bloom'):
-        info("Creating bloom branch.")
-        create_branch('bloom', orphaned=True, directory=directory)
-    tracks_yaml = show('bloom', 'tracks.yaml', directory=directory)
+    upconvert_bloom_to_config_branch()
+    if not branch_exists(BLOOM_CONFIG_BRANCH):
+        info("Creating '{0}' branch.".format(BLOOM_CONFIG_BRANCH))
+        create_branch(BLOOM_CONFIG_BRANCH, orphaned=True, directory=directory)
+    tracks_yaml = show(BLOOM_CONFIG_BRANCH, 'tracks.yaml', directory=directory)
     if not tracks_yaml:
         write_tracks_dict_raw(
             {'tracks': {}}, 'Initial tracks.yaml', directory=directory
         )
-        tracks_yaml = show('bloom', 'tracks.yaml', directory=directory)
+        tracks_yaml = show(BLOOM_CONFIG_BRANCH, 'tracks.yaml',
+                           directory=directory)
     try:
         return yaml.load(tracks_yaml)
     except:
         # TODO handle yaml errors
         raise
+
+_has_checked_bloom_branch = False
+
+
+def upconvert_bloom_to_config_branch():
+    global _has_checked_bloom_branch
+    if _has_checked_bloom_branch:
+        return
+    _has_checked_bloom_branch = True
+    if show('bloom', PLACEHOLDER_FILE) is not None:
+        return
+    if show('bloom', 'bloom.conf') is not None:
+        # Wait for the bloom.conf upconvert...
+        return
+    if not branch_exists('bloom'):
+        return
+    info("Moving configurations from deprecated 'bloom' branch "
+         "to the '{0}' branch.".format(BLOOM_CONFIG_BRANCH))
+    tmp_dir = mkdtemp()
+    git_root = get_root()
+    try:
+        # Copy the new upstream source into the temporary directory
+        with inbranch('bloom'):
+            ignores = ('.git', '.gitignore', '.svn', '.hgignore', '.hg', 'CVS')
+            configs = os.path.join(tmp_dir, 'configs')
+            my_copytree(git_root, configs, ignores)
+            execute_command('git rm -rf ./*')
+            with open(PLACEHOLDER_FILE, 'w') as f:
+                f.write("""\
+This branch ('bloom') has been deprecated in favor of storing settings and overlay files in the master branch.
+
+Please goto the master branch for anything which referenced the bloom branch.
+
+You can delete this branch at your convenience.
+""")
+            execute_command('git add ' + PLACEHOLDER_FILE)
+            if has_changes():
+                execute_command('git commit -m "DEPRECATING BRANCH"')
+        if not branch_exists(BLOOM_CONFIG_BRANCH):
+            info("Creating '{0}' branch.".format(BLOOM_CONFIG_BRANCH))
+            create_branch(BLOOM_CONFIG_BRANCH, orphaned=True)
+        with inbranch(BLOOM_CONFIG_BRANCH):
+            my_copytree(configs, git_root)
+            execute_command('git add ./*')
+            if has_changes():
+                execute_command('git commit -m '
+                                '"Moving configs from bloom branch"')
+    finally:
+        # Clean up
+        if os.path.exists(tmp_dir):
+            shutil.rmtree(tmp_dir)

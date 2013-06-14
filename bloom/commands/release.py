@@ -56,6 +56,7 @@ from bloom.commands.git.config import edit as edit_track_cmd
 from bloom.commands.git.config import new as new_track_cmd
 from bloom.commands.git.config import update_track
 
+from bloom.config import BLOOM_CONFIG_BRANCH
 from bloom.config import get_tracks_dict_raw
 from bloom.config import write_tracks_dict_raw
 
@@ -74,7 +75,6 @@ from bloom.logging import warning
 
 from bloom.util import add_global_arguments
 from bloom.util import change_directory
-from bloom.util import check_output
 from bloom.util import handle_global_arguments
 from bloom.util import maybe_continue
 
@@ -158,10 +158,8 @@ def get_release_repo(repository, distro):
 def check_for_bloom_conf(repository):
     bloom_ls = ls_tree('bloom')
     if bloom_ls is None:
-        error("Release repository '{0}' not initialized,".format(repository) +
-              " please initialize the bloom repository before releasing from it.",
-              exit=True)
-    bloom_files = [f for f, t in bloom_ls.iteritems() if t == 'file']
+        return False
+    bloom_files = [f for f, t in bloom_ls.items() if t == 'file']
     return 'bloom.conf' in bloom_files
 
 
