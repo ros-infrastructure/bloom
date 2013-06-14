@@ -62,6 +62,7 @@ enable_drop_first_log_prefix(True)
 from bloom.logging import error
 from bloom.logging import fmt
 from bloom.logging import info
+from bloom.logging import is_debug
 from bloom.logging import warning
 
 from bloom.commands.git.patch.common import get_patch_config
@@ -70,6 +71,13 @@ from bloom.commands.git.patch.common import set_patch_config
 from bloom.util import execute_command
 from bloom.util import get_package_data
 from bloom.util import maybe_continue
+
+try:
+    from catkin_pkg.changelog import get_changelog_from_path
+    from catkin_pkg.changelog import CHANGELOG_FILENAME
+except ImportError as err:
+    debug(traceback.format_exc())
+    error("rosdep was not detected, please install it.", exit=True)
 
 try:
     from rosdep2.catkin_support import get_ubuntu_targets
@@ -171,6 +179,44 @@ def format_depends(depends, resolved_deps):
     return formatted
 
 
+def get_rfc_2822_date(date):
+    from email.utils import formatdate
+    return formatdate(float(date.strftime("%s")), date.tzinfo)
+
+
+def get_changelogs(package, releaser_history=None):
+    if releaser_history is None:
+        warning("No historical releaser history, using current maintainer name "
+                "and email for each versioned changelog entry.")
+        releaser_history = {}
+    if is_debug():
+        import logging
+        logging.basicConfig()
+        import catkin_pkg
+        catkin_pkg.changelog.log.setLevel(logging.DEBUG)
+    package_path = os.path.abspath(os.path.dirname(package.filename))
+    changelog_path = os.path.join(package_path, CHANGELOG_FILENAME)
+    if os.path.exists(changelog_path):
+        changelog = get_changelog_from_path(changelog_path)
+        changelogs = []
+        maintainer = (package.maintainers[0].name, package.maintainers[0].email)
+        for version, date, changes in changelog.foreach_version(reverse=True):
+            changes_str = []
+            date_str = get_rfc_2822_date(date)
+            for item in changes:
+                changes_str.extend(['  ' + i for i in str(item).splitlines()])
+            # Each entry has (version, date, changes, releaser, releaser_email)
+            releaser, email = releaser_history.get(version, maintainer)
+            changelogs.append((
+                version, date_str, '\n'.join(changes_str), releaser, email
+            ))
+        return changelogs
+    else:
+        warning("No {0} found for package '{1}'"
+                .format(CHANGELOG_FILENAME, package.name))
+        return []
+
+
 def generate_substitutions_from_package(
     package,
     os_name,
@@ -178,7 +224,8 @@ def generate_substitutions_from_package(
     ros_distro,
     installation_prefix='/usr',
     deb_inc=0,
-    peer_packages=None
+    peer_packages=None,
+    releaser_history=None
 ):
     peer_packages = peer_packages or []
     data = {}
@@ -223,6 +270,8 @@ def generate_substitutions_from_package(
         maintainers.append(str(m))
     data['Maintainer'] = maintainers[0]
     data['Maintainers'] = ', '.join(maintainers)
+    # Changelog
+    data['changelogs'] = get_changelogs(package, releaser_history)
     # Summarize dependencies
     summarize_dependency_mapping(data, depends, build_depends, resolved_deps)
     return data
@@ -264,7 +313,7 @@ def process_template_files(path, subs):
     if not os.path.exists(debian_dir):
         sys.exit("No debian directory found at '{0}', cannot process templates."
                  .format(debian_dir))
-    return __process_template_folder(path, subs)
+    return __process_template_folder(debian_dir, subs)
 
 
 def match_branches_with_prefix(prefix, get_branches):
@@ -499,7 +548,24 @@ class DebianGenerator(BloomGenerator):
         execute_command('git add ' + debian_dir)
         execute_command('git commit -m "Placing debian template files"')
 
-    def get_subs(self, package, debian_distro):
+    def get_releaser_history(self):
+        # Assumes that this is called in the target branch
+        patches_branch = 'patches/' + get_current_branch()
+        raw = show(patches_branch, 'releaser_history.json')
+        return None if raw is None else json.loads(raw)
+
+    def set_releaser_history(self, history):
+        # Assumes that this is called in the target branch
+        patches_branch = 'patches/' + get_current_branch()
+        debug("Writing release history to '{0}' branch".format(patches_branch))
+        with inbranch(patches_branch):
+            with open('releaser_history.json', 'w') as f:
+                f.write(json.dumps(history))
+            execute_command('git add releaser_history.json')
+            if has_changes():
+                execute_command('git commit -m "Store releaser history"')
+
+    def get_subs(self, package, debian_distro, releaser_history=None):
         return generate_substitutions_from_package(
             package,
             self.os_name,
@@ -507,13 +573,19 @@ class DebianGenerator(BloomGenerator):
             self.rosdistro,
             self.install_prefix,
             self.debian_inc,
-            [p.name for p in self.packages.values()]
+            [p.name for p in self.packages.values()],
+            releaser_history=releaser_history
         )
 
     def generate_debian(self, package, debian_distro):
         info("Generating debian for {0}...".format(debian_distro))
+        # Try to retrieve the releaser_history
+        releaser_history = self.get_releaser_history()
         # Generate substitution values
-        subs = self.get_subs(package, debian_distro)
+        subs = self.get_subs(package, debian_distro, releaser_history)
+        # Use subs to create and store releaser history
+        releaser_history = [(v, (n, e)) for v, _, _, n, e in subs['changelogs']]
+        self.set_releaser_history(dict(releaser_history))
         # Handle gbp.conf
         subs['release_tag'] = self.get_release_tag(subs)
         # Template files

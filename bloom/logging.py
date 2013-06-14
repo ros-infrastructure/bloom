@@ -114,6 +114,11 @@ def enable_debug(state=True):
     global _debug
     _debug = state
 
+
+def is_debug():
+    global _debug
+    return _debug
+
 # Default to debug off
 enable_debug('DEBUG' in os.environ)
 

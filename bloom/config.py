@@ -202,8 +202,8 @@ def verify_track(track_name, track):
     for entry in DEFAULT_TEMPLATE:
         if entry not in track:
             error("Track '{0}' is missing configuration ".format(track_name) +
-                  "'{1}', it may be out of date, please run 'git-bloom-config edit {0}'."
-                  .format(entry), exit=True)
+                  "'{0}', it may be out of date, please run 'git-bloom-config edit {1}'."
+                  .format(entry, track_name), exit=True)
 
 
 class ConfigTemplate(string.Template):

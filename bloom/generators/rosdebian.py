@@ -41,7 +41,7 @@ class RosDebianGenerator(DebianGenerator):
         info("Releasing for rosdistro: " + self.rosdistro)
         return ret
 
-    def get_subs(self, package, debian_distro):
+    def get_subs(self, package, debian_distro, releaser_history):
         subs = generate_substitutions_from_package(
             package,
             self.os_name,
@@ -49,7 +49,8 @@ class RosDebianGenerator(DebianGenerator):
             self.rosdistro,
             self.install_prefix,
             self.debian_inc,
-            [p.name for p in self.packages.values()]
+            [p.name for p in self.packages.values()],
+            releaser_history=releaser_history
         )
         subs['Package'] = rosify_package_name(subs['Package'], self.rosdistro)
         return subs
