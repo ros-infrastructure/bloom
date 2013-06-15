@@ -23,29 +23,7 @@ from bloom.commands.git.patch.common import set_patch_config
 from bloom.util import add_global_arguments
 from bloom.util import execute_command
 from bloom.util import handle_global_arguments
-
-
-def my_copytree(tree, destination, ignores=None):
-    ignores = ignores or []
-    if os.path.exists(destination):
-        if not os.path.isdir(destination):
-            raise RuntimeError("Destination exists and is not a directory: '{0}'".format(destination))
-    else:
-        os.makedirs(destination)
-    for item in os.listdir(tree):
-        if item in ignores:
-            continue
-        src = os.path.join(tree, item)
-        dst = os.path.join(destination, item)
-        if os.path.islink(src):
-            linkto = os.readlink(src)
-            os.symlink(linkto, dst)
-        elif os.path.isdir(src):
-            my_copytree(src, dst, ignores)
-        elif os.path.isfile(src):
-            shutil.copy(src, dst)
-        else:
-            raise RuntimeError("Unknown file type for element: '{0}'".format(src))
+from bloom.util import my_copytree
 
 
 def non_git_rebase(upstream_branch, directory=None):

@@ -39,8 +39,6 @@ import yaml
 
 from tempfile import mkdtemp
 
-from bloom.commands.git.patch.rebase_cmd import my_copytree
-
 from bloom.git import branch_exists
 from bloom.git import create_branch
 from bloom.git import has_changes
@@ -54,6 +52,7 @@ from bloom.logging import info
 from bloom.logging import sanitize
 
 from bloom.util import execute_command
+from bloom.util import my_copytree
 
 BLOOM_CONFIG_BRANCH = 'master'
 PLACEHOLDER_FILE = 'CONTENT_MOVED_TO_{0}_BRANCH'.format(BLOOM_CONFIG_BRANCH.upper())

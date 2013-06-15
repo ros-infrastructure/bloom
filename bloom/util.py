@@ -141,6 +141,29 @@ class temporary_directory(object):
             os.chdir(self.original_cwd)
 
 
+def my_copytree(tree, destination, ignores=None):
+    ignores = ignores or []
+    if os.path.exists(destination):
+        if not os.path.isdir(destination):
+            raise RuntimeError("Destination exists and is not a directory: '{0}'".format(destination))
+    else:
+        os.makedirs(destination)
+    for item in os.listdir(tree):
+        if item in ignores:
+            continue
+        src = os.path.join(tree, item)
+        dst = os.path.join(destination, item)
+        if os.path.islink(src):
+            linkto = os.readlink(src)
+            os.symlink(linkto, dst)
+        elif os.path.isdir(src):
+            my_copytree(src, dst, ignores)
+        elif os.path.isfile(src):
+            shutil.copy(src, dst)
+        else:
+            raise RuntimeError("Unknown file type for element: '{0}'".format(src))
+
+
 def get_package_data(branch_name=None, directory=None, quiet=True):
     """
     Gets package data about the package(s) in the current branch.
