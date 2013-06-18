@@ -264,6 +264,9 @@ def upconvert_bloom_to_config_branch():
     global _has_checked_bloom_branch
     if _has_checked_bloom_branch:
         return
+    if get_root() is None:
+        # Not a git repository
+        return
     if show('bloom', PLACEHOLDER_FILE) is not None:
         return
     if show('bloom', 'bloom.conf') is not None:
