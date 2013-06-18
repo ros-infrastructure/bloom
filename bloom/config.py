@@ -264,7 +264,6 @@ def upconvert_bloom_to_config_branch():
     global _has_checked_bloom_branch
     if _has_checked_bloom_branch:
         return
-    _has_checked_bloom_branch = True
     if show('bloom', PLACEHOLDER_FILE) is not None:
         return
     if show('bloom', 'bloom.conf') is not None:
@@ -272,6 +271,7 @@ def upconvert_bloom_to_config_branch():
         return
     if not branch_exists('bloom'):
         return
+    _has_checked_bloom_branch = True
     info("Moving configurations from deprecated 'bloom' branch "
          "to the '{0}' branch.".format(BLOOM_CONFIG_BRANCH))
     tmp_dir = mkdtemp()

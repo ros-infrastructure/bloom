@@ -19,7 +19,7 @@ setup(
         'argparse',
         'rosdep >= 0.10.3',
         'vcstools >= 0.1.22',
-        'catkin-pkg >= 0.1.11',
+        'catkin-pkg >= 0.1.14',
         'python-dateutil',
         'distribute'
     ],

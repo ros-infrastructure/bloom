@@ -70,6 +70,7 @@ from bloom.commands.git.patch.common import set_patch_config
 
 from bloom.util import execute_command
 from bloom.util import get_package_data
+from bloom.util import get_rfc_2822_date
 from bloom.util import maybe_continue
 
 try:
@@ -177,11 +178,6 @@ def format_depends(depends, resolved_deps):
                     formatted.append("{0} ({1} {2})".format(
                         resolved_dep, versions[v], getattr(d, v)))
     return formatted
-
-
-def get_rfc_2822_date(date):
-    from email.utils import formatdate
-    return formatdate(float(date.strftime("%s")), date.tzinfo)
 
 
 def get_changelogs(package, releaser_history=None):
