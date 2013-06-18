@@ -35,12 +35,16 @@ from __future__ import print_function
 import argparse
 import atexit
 import base64
+import datetime
 import difflib
+import getpass
 import httplib
 import json
 # import netrc
 import os
+import pkg_resources
 import shutil
+import socket
 import subprocess
 import sys
 import tempfile
@@ -49,15 +53,15 @@ import urllib2
 # import webbrowser
 import yaml
 
-# import bloom
+import bloom
 
 from bloom.commands.git.config import convert_old_bloom_conf
 from bloom.commands.git.config import edit as edit_track_cmd
 from bloom.commands.git.config import new as new_track_cmd
 from bloom.commands.git.config import update_track
 
-from bloom.config import BLOOM_CONFIG_BRANCH
 from bloom.config import get_tracks_dict_raw
+from bloom.config import upconvert_bloom_to_config_branch
 from bloom.config import write_tracks_dict_raw
 
 # from bloom.git import get_branches
@@ -73,12 +77,17 @@ from bloom.logging import get_success_prefix
 from bloom.logging import info
 from bloom.logging import warning
 
+from bloom.summary import commit_summary
+from bloom.summary import get_summary_file
+
 from bloom.util import add_global_arguments
 from bloom.util import change_directory
+from bloom.util import get_rfc_2822_date
 from bloom.util import handle_global_arguments
 from bloom.util import maybe_continue
 
 try:
+    import vcstools.__version__
     from vcstools.vcs_abstraction import get_vcs_client
 except ImportError:
     debug(traceback.format_exc())
@@ -91,6 +100,21 @@ except ImportError:
     debug(traceback.format_exc())
     error("rosdistro was not detected, please install it.", file=sys.stderr,
           exit=True)
+
+try:
+    import rosdep2
+except ImportError:
+    debug(traceback.format_exc())
+    error("rosdep was not detected, please install it.",
+          file=sys.stderr, exit=True)
+
+try:
+    import catkin_pkg
+    from catkin_pkg.packages import find_packages
+except ImportError:
+    debug(traceback.format_exc())
+    error("catkin_pkg was not detected, please install it.",
+          file=sys.stderr, exit=True)
 
 _repositories = {}
 
@@ -108,14 +132,31 @@ def exit_cleanup():
         if os.path.exists(repo_path):
             shutil.rmtree(repo_path)
 
+_rosdistro_index = None
+_rosdistro_release_files = {}
+
+
+def get_index():
+    global _rosdistro_index
+    if _rosdistro_index is None:
+        _rosdistro_index = rosdistro.get_index(rosdistro.get_index_url())
+    return _rosdistro_index
+
+
+def get_release_file(distro):
+    global _rosdistro_release_files
+    if distro not in _rosdistro_release_files:
+        _rosdistro_release_files[distro] = rosdistro.get_release_file(get_index(), distro)
+    return _rosdistro_release_files[distro]
+
 
 def get_repo_uri(repository, distro):
     url = None
     # Fetch the distro file
-    index = rosdistro.get_index(rosdistro.get_index_url())
+    index = get_index()
     release_file_url = index.distributions[distro].get('release', None)
     if release_file_url is not None:
-        release_file = rosdistro.get_release_file(index, distro)
+        release_file = get_release_file(distro)
         if repository in release_file.repositories:
             url = release_file.repositories[repository].url
         else:
@@ -167,6 +208,7 @@ def list_tracks(repository, distro):
     release_repo = get_release_repo(repository, distro)
     tracks_dict = None
     with change_directory(release_repo.get_path()):
+        upconvert_bloom_to_config_branch()
         if check_for_bloom_conf(repository):
             info("No tracks, but old style bloom.conf available for conversion")
         else:
@@ -177,33 +219,36 @@ def list_tracks(repository, distro):
                 error("Release repository has no tracks nor an old style bloom.conf file.", exit=True)
     return tracks_dict['tracks'].keys() if tracks_dict else None
 
+_packages = None
+
+
+def get_packages():
+    global _packages
+    if _packages is None:
+        with inbranch('upstream'):
+            # Check for package.xml(s)
+            _packages = find_packages(os.getcwd())
+    return _packages
+
 
 def generate_ros_distro_diff(track, repository, distro, distro_file_url, distro_file, distro_file_raw):
-    with inbranch('upstream'):
-        # Check for package.xml(s)
-        try:
-            from catkin_pkg.packages import find_packages
-        except ImportError:
-            debug(traceback.format_exc())
-            error("catkin_pkg was not detected, please install it.",
-                  file=sys.stderr, exit=True)
-        packages = find_packages(os.getcwd())
-        if len(packages) == 0:
-            warning("No packages found, will not generate 'package: path' entries for rosdistro.")
-        track_dict = get_tracks_dict_raw()['tracks'][track]
-        last_version = track_dict['last_version']
-        release_inc = track_dict['release_inc']
-        if repository not in distro_file['repositories']:
-            global _user_provided_release_url
-            distro_file['repositories'][repository] = {'url': _user_provided_release_url or ''}
-        distro_file['repositories'][repository]['version'] = '{0}-{1}'.format(last_version, release_inc)
-        if packages and (len(packages) > 1 or packages.keys()[0] != '.'):
-            distro_file['repositories'][repository]['packages'] = {}
-            for path, package in packages.iteritems():
-                if os.path.basename(path) == package.name:
-                    distro_file['repositories'][repository]['packages'][package.name] = None
-                else:
-                    distro_file['repositories'][repository]['packages'][package.name] = path
+    packages = get_packages()
+    if len(packages) == 0:
+        warning("No packages found, will not generate 'package: path' entries for rosdistro.")
+    track_dict = get_tracks_dict_raw()['tracks'][track]
+    last_version = track_dict['last_version']
+    release_inc = track_dict['release_inc']
+    if repository not in distro_file['repositories']:
+        global _user_provided_release_url
+        distro_file['repositories'][repository] = {'url': _user_provided_release_url or ''}
+    distro_file['repositories'][repository]['version'] = '{0}-{1}'.format(last_version, release_inc)
+    if packages and (len(packages) > 1 or packages.keys()[0] != '.'):
+        distro_file['repositories'][repository]['packages'] = {}
+        for path, package in packages.iteritems():
+            if os.path.basename(path) == package.name:
+                distro_file['repositories'][repository]['packages'][package.name] = None
+            else:
+                distro_file['repositories'][repository]['packages'][package.name] = path
     distro_file_name = os.path.join('release', distro_file_url.split('/')[-1])
     distro_dump = yaml.dump(distro_file, indent=2, default_flow_style=False)
     if distro_file_raw != distro_dump:
@@ -401,16 +446,88 @@ def create_pull_request(org, repo, user, password, base_branch, head_branch, tit
 #     # Open the pull request
 #     return create_pull_request(gh_org, gh_repo, gh_username, gh_password, gh_branch, new_branch, title, body)
 
+_original_version = None
+
+
+def start_summary(track):
+    global _original_version
+    track_dict = get_tracks_dict_raw()['tracks'][track]
+    last_version = track_dict['last_version']  # Actually current version now
+    release_inc = track_dict['release_inc']
+    _original_version = "{0}-{1}".format(last_version, release_inc)
+
+
+def update_summary(track, repository, distro):
+    global _original_version
+    track_dict = get_tracks_dict_raw()['tracks'][track]
+    last_version = track_dict['last_version']  # Actually current version now
+    release_inc = track_dict['release_inc']
+    version = "{0}-{1}".format(last_version, release_inc)
+    summary_file = get_summary_file()
+    msg = """\
+## {version} - {date}
+
+User `{user}@{hostname}` ran `{cmd}` on `{date}`
+
+""".format(**{
+        'base_cmd': os.path.basename(sys.argv[0]),
+        'date': get_rfc_2822_date(datetime.datetime.now()),
+        'user': getpass.getuser(),
+        'hostname': socket.gethostname(),
+        'cmd': ' '.join(sys.argv),
+        'version': version
+    })
+    packages = get_packages()
+    if len(packages) > 1:
+        msg += "These packages were released:\n"
+        for p in sorted([p.name for p in packages.values()]):
+            msg += "- `{0}`\n".format(p)
+    else:
+        package_name = [p.name for p in packages.values()][0]
+        msg += "The `{0}` package was released.".format(package_name)
+    summary_file = get_summary_file()
+    release_file = get_release_file(distro)
+    reps = release_file.repositories
+    distro_version = reps[repository].version if repository in reps else None
+    msg += """
+
+Version of package(s) in repository `{repo}`:
+- rosdistro version: `{rosdistro_pv}`
+- old version: `{old_pv}`
+- new version: `{new_pv}`
+
+Versions of tools used:
+- bloom version: `{bloom_v}`
+- catkin_pkg version: `{catkin_pkg_v}`
+- rosdep version: `{rosdep_v}`
+- rosdistro version: `{rosdistro_v}`
+- vcstools version: `{vcstools_v}`
+""".format(**dict(
+        repo=repository,
+        rosdistro_pv=distro_version or 'null',
+        old_pv=_original_version,
+        new_pv=version,
+        bloom_v=bloom.__version__,
+        catkin_pkg_v=catkin_pkg.__version__,
+        # Until https://github.com/ros-infrastructure/rosdistro/issues/16
+        rosdistro_v=pkg_resources.require("rosdistro")[0].version,
+        rosdep_v=rosdep2.__version__,
+        vcstools_v=vcstools.__version__.version
+    ))
+    summary_file.write(msg)
+
 
 def perform_release(repository, track, distro, new_track, interactive, pretend):
     release_repo = get_release_repo(repository, distro)
     with change_directory(release_repo.get_path()):
+        start_summary(track)
         # Check to see if the old bloom.conf exists
         if check_for_bloom_conf(repository):
             # Convert to a track
             info("Old bloom.conf file detected.")
             info(fmt("@{gf}@!==> @|Converting to bloom.conf to track"))
             convert_old_bloom_conf(None if new_track else distro)
+        upconvert_bloom_to_config_branch()
         # Check that the track is valid
         tracks_dict = get_tracks_dict_raw()
         # If new_track, create the new track first
@@ -496,6 +613,9 @@ def perform_release(repository, track, distro, new_track, interactive, pretend):
         info(fmt(_success) +
              "Released '{0}' using release track '{1}' successfully"
              .format(repository, track))
+        # Commit the summary
+        update_summary(track, repository, distro)
+        commit_summary()
         # Check for pushing
         if interactive:
             info("Releasing complete, push?")

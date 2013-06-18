@@ -2,6 +2,7 @@
 
 from __future__ import print_function
 
+import atexit
 import os
 from platform import mac_ver
 try:
@@ -9,6 +10,7 @@ try:
 except OSError:
     os.chdir(os.path.expanduser('~'))
     from pkg_resources import parse_version
+import re
 import string
 import sys
 
@@ -31,6 +33,12 @@ def ansi(key):
     """Returns the escape sequence for a given ansi color key"""
     global _ansi
     return _ansi[key]
+
+_strip_ansi_re = re.compile(r'\033\[[0-9;m]*')
+
+
+def strip_ansi(msg):
+    return _strip_ansi_re.sub('', msg)
 
 
 def enable_ANSI_colors():
@@ -180,10 +188,12 @@ class log_prefix(ContextDecorator):
     def __exit__(self, exc_type, exc_value, traceback):
         pop_log_prefix()
 
+_file_log = None
+
 
 def debug(msg, file=None, end='\n', use_prefix=True):
     file = file if file is not None else sys.stdout
-    global _quiet, _debug, _log_prefix
+    global _quiet, _debug, _log_prefix, _file_log
     msg = str(msg)
     if use_prefix:
         msg = ansi('greenf') + _log_prefix + msg + ansi('reset')
@@ -191,22 +201,27 @@ def debug(msg, file=None, end='\n', use_prefix=True):
         msg = ansi('greenf') + msg + ansi('reset')
     if not _quiet and _debug:
         print(msg, file=file, end=end)
+    if _file_log is not None:
+        print(strip_ansi(msg), file=_file_log, end=end)
+    return msg
 
 
 def info(msg, file=None, end='\n', use_prefix=True):
     file = file if file is not None else sys.stdout
-    global _quiet
+    global _quiet, _log_prefix, _file_log
     msg = str(msg)
     if use_prefix:
         msg = _log_prefix + msg + ansi('reset')
     if not _quiet:
         print(msg, file=file, end=end)
+    if _file_log is not None:
+        print(strip_ansi(msg), file=_file_log, end=end)
     return msg
 
 
 def warning(msg, file=None, end='\n', use_prefix=True):
     file = file if file is not None else sys.stdout
-    global _quiet
+    global _quiet, _log_prefix, _file_log
     msg = str(msg)
     if use_prefix:
         msg = ansi('yellowf') + _log_prefix + msg \
@@ -215,22 +230,57 @@ def warning(msg, file=None, end='\n', use_prefix=True):
         msg = ansi('yellowf') + msg + ansi('reset')
     if not _quiet:
         print(msg, file=file, end=end)
+    if _file_log is not None:
+        print(strip_ansi(msg), file=_file_log, end=end)
     return msg
 
 
 def error(msg, file=None, end='\n', use_prefix=True, exit=False):
     file = file if file is not None else sys.stderr
-    global _quiet
+    global _quiet, _log_prefix, _file_log
     msg = str(msg)
     if use_prefix:
         msg = ansi('redf') + ansi('boldon') + _log_prefix + msg + ansi('reset')
     else:
         msg = ansi('redf') + ansi('boldon') + msg + ansi('reset')
+    if _file_log is not None:
+        print(strip_ansi(msg), file=_file_log, end=end)
     if exit:
+        if _file_log is not None:
+            print("SYS.EXIT", file=_file_log, end=end)
         sys.exit(msg)
     if not _quiet:
         print(msg, file=file, end=end)
     return msg
+
+try:
+    _log_id = os.environ.get('BLOOM_LOGGING_ID', str(os.getpid()))
+    os.environ['BLOOM_LOGGING_ID'] = _log_id  # Store in env for subprocess
+    _file_log_prefix = os.path.join(os.path.expanduser('~'), '.bloom_logs')
+    if not os.path.isdir(_file_log_prefix):
+        os.makedirs(_file_log_prefix)
+    _file_log_path = os.path.join(_file_log_prefix, _log_id + '.log')
+    _file_log = open(_file_log_path, 'w')
+except Exception as exc:
+    _file_log = None
+    debug(str(exc.__name__) + ": " + str(exc))
+
+_summary_file = None
+
+
+def _get_summary_file_path():
+    global _summary_file, _file_log_prefix, _log_id
+    if _summary_file is None:
+        _summary_file = os.path.join(_file_log_prefix, _log_id + '.summary')
+    return _summary_file
+
+
+@atexit.register
+def close_logging():
+    global _file_log, _summary_file
+    if _file_log is not None:
+        _file_log.close()
+        _file_log = None
 
 
 class ColorTemplate(string.Template):
