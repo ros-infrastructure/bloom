@@ -242,6 +242,10 @@ def execute_track(track, track_dict, release_inc, pretend=True, debug=False, fas
     info("", use_prefix=False)
     info("Executing release track '{0}'".format(track))
     for action in track_dict['actions']:
+        if 'bloom-export-upstream' in action and settings['vcs_type'] == 'tar':
+            warning("Explicitly skipping bloom-export-upstream for tar.")
+            settings['archive_path'] = settings['vcs_uri']
+            continue
         templated_action = template_str(action, settings)
         info(fmt("@{bf}@!==> @|@!" + sanitize(str(templated_action))))
         if pretend:

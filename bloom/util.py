@@ -39,9 +39,12 @@ from __future__ import print_function
 import argparse
 import os
 import shutil
+import socket
 import sys
 import tempfile
+import time
 import traceback
+import urllib2
 
 from email.utils import formatdate
 
@@ -145,6 +148,42 @@ class temporary_directory(object):
 
 def get_rfc_2822_date(date):
     return formatdate(float(date.strftime("%s")), date.tzinfo)
+
+
+def load_url_to_file_handle(url, retry=2, retry_period=1, timeout=10):
+    """Loads a given url with retries, retry_periods, and timeouts
+
+    Based on https://github.com/ros-infrastructure/rosdistro/blob/master/src/rosdistro/loader.py
+
+    :param url: URL to load and return contents of
+    :type url: str
+    :param retry: number of times to retry the url on 503 or timeout
+    :type retry: int
+    :param retry_period: time to wait between retries in seconds
+    :type: retry_period: float
+    :param timeout: timeout for opening the URL in seconds
+    :type timeout: float
+    """
+    try:
+        fh = urllib2.urlopen(url, timeout=timeout)
+    except urllib2.HTTPError as e:
+        if e.code == 503 and retry:
+            time.sleep(retry_period)
+            return load_url_to_file_handle(url,
+                                           retry=retry - 1,
+                                           retry_period=retry_period,
+                                           timeout=timeout)
+        e.msg += ' (%s)' % url
+        raise
+    except urllib2.URLError as e:
+        if isinstance(e.reason, socket.timeout) and retry:
+            time.sleep(retry_period)
+            return load_url_to_file_handle(url,
+                                           retry=retry - 1,
+                                           retry_period=retry_period,
+                                           timeout=timeout)
+        raise urllib2.URLError(str(e) + ' (%s)' % url)
+    return fh
 
 
 def my_copytree(tree, destination, ignores=None):
