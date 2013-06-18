@@ -36,8 +36,11 @@ import argparse
 import os
 import shutil
 import tarfile
+import tempfile
 
 from pkg_resources import parse_version
+
+from urlparse import urlparse
 
 from bloom.config import BLOOM_CONFIG_BRANCH
 
@@ -67,6 +70,7 @@ from bloom.util import add_global_arguments
 from bloom.util import execute_command
 from bloom.util import get_git_clone_state
 from bloom.util import handle_global_arguments
+from bloom.util import load_url_to_file_handle
 
 
 def version_check(version):
@@ -212,6 +216,25 @@ def import_patches(patches_path, patches_path_dict, target_branch, version):
 
 
 def import_upstream(tarball_path, patches_path, version, name, replace):
+    # Check for a url and download it
+    url = urlparse(tarball_path)
+    if url.scheme:  # Some scheme like http, https, or file...
+        tmp_dir = tempfile.mkdtemp()
+        try:
+            info("Fetching file from url: '{0}'".format(tarball_path))
+            req = load_url_to_file_handle(tarball_path)
+            tarball_path = os.path.join(tmp_dir, os.path.basename(url.path))
+            with open(tarball_path, 'wb') as f:
+                chunk_size = 16 * 1024
+                while True:
+                    chunk = req.read(chunk_size)
+                    if not chunk:
+                        break
+                    f.write(chunk)
+            return import_upstream(tarball_path, patches_path, version, name, replace)
+        finally:
+            shutil.rmtree(tmp_dir)
+
     # If there is not tarball at the given path, fail
     if not os.path.exists(tarball_path):
         error("Specified archive does not exists: '{0}'".format(tarball_path),
@@ -313,7 +336,7 @@ This command must be run in a clean git environment, i.e. no untracked
 or uncommitted local changes.
 """)
     add = parser.add_argument
-    add('archive_path', help="path to the archive to be imported")
+    add('archive_path', help="path or url to the archive to be imported")
     add('patches_path', nargs='?', default='',
         help="relative path in the '{0}' branch to a folder to be"
              .format(BLOOM_CONFIG_BRANCH) +
