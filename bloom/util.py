@@ -43,6 +43,8 @@ import sys
 import tempfile
 import traceback
 
+from email.utils import formatdate
+
 from subprocess import CalledProcessError
 from subprocess import PIPE
 from subprocess import STDOUT
@@ -139,6 +141,10 @@ class temporary_directory(object):
             shutil.rmtree(self.temp_path)
         if self.original_cwd and os.path.exists(self.original_cwd):
             os.chdir(self.original_cwd)
+
+
+def get_rfc_2822_date(date):
+    return formatdate(float(date.strftime("%s")), date.tzinfo)
 
 
 def my_copytree(tree, destination, ignores=None):
