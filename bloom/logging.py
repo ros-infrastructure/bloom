@@ -3,6 +3,7 @@
 from __future__ import print_function
 
 import atexit
+import datetime
 import os
 from platform import mac_ver
 try:
@@ -279,8 +280,11 @@ def _get_summary_file_path():
 def close_logging():
     global _file_log, _summary_file
     if _file_log is not None:
+        name = _file_log.name
         _file_log.close()
         _file_log = None
+        if os.getpid() == name.split('.')[0]:
+            os.rename(name, str(datetime.datetime.now()).replace(' ', '_').replace(':', '.') + '.log')
 
 
 class ColorTemplate(string.Template):
