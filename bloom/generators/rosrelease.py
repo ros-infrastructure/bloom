@@ -6,8 +6,9 @@ from bloom.git import inbranch
 
 from bloom.logging import warning
 
+from bloom.packages import get_package_data
+
 from bloom.util import execute_command
-from bloom.util import get_package_data
 
 
 class RosReleaseGenerator(ReleaseGenerator):

@@ -45,8 +45,9 @@ from bloom.logging import fmt
 from bloom.logging import info
 from bloom.logging import warning
 
+from bloom.packages import get_package_data
+
 from bloom.util import execute_command
-from bloom.util import get_package_data
 
 from bloom.commands.git.patch.trim_cmd import trim
 
