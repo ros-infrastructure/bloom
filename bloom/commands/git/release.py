@@ -65,10 +65,11 @@ from bloom.logging import info
 from bloom.logging import sanitize
 from bloom.logging import warning
 
+from bloom.packages import get_package_data
+
 import bloom.util
 from bloom.util import add_global_arguments
 from bloom.util import change_directory
-from bloom.util import get_package_data
 from bloom.util import handle_global_arguments
 
 try:

@@ -68,8 +68,9 @@ from bloom.logging import warning
 from bloom.commands.git.patch.common import get_patch_config
 from bloom.commands.git.patch.common import set_patch_config
 
+from bloom.packages import get_package_data
+
 from bloom.util import execute_command
-from bloom.util import get_package_data
 from bloom.util import get_rfc_2822_date
 from bloom.util import maybe_continue
 
@@ -338,7 +339,10 @@ def match_branches_with_prefix(prefix, get_branches):
 
 def get_package_from_branch(branch):
     with inbranch(branch):
-        package_data = get_package_data(branch)
+        try:
+            package_data = get_package_data(branch)
+        except SystemExit:
+            return None
         if type(package_data) not in [list, tuple]:
             # It is a ret code
             DebianGenerator.exit(package_data)
@@ -410,6 +414,9 @@ class DebianGenerator(BloomGenerator):
         self.debian_branches = []
         for branch in self.branches:
             package = get_package_from_branch(branch)
+            if package is None:
+                # This is an ignored package
+                continue
             self.packages[package.name] = package
             self.names.append(package.name)
             args = self.generate_branching_arguments(package, branch)

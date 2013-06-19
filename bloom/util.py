@@ -43,7 +43,6 @@ import socket
 import sys
 import tempfile
 import time
-import traceback
 import urllib2
 
 from email.utils import formatdate
@@ -60,16 +59,7 @@ from bloom.logging import debug
 from bloom.logging import disable_ANSI_colors
 from bloom.logging import enable_debug
 from bloom.logging import error
-from bloom.logging import info
 from bloom.logging import warning
-
-try:
-    from catkin_pkg.packages import find_packages
-    from catkin_pkg.packages import verify_equal_package_versions
-except ImportError:
-    debug(traceback.format_exc())
-    error("catkin_pkg was not detected, please install it.",
-          file=sys.stderr, exit=True)
 
 
 # Convention: < 0 is a warning exit, 0 is normal, > 0 is an error
@@ -207,35 +197,6 @@ def my_copytree(tree, destination, ignores=None):
             shutil.copy(src, dst)
         else:
             raise RuntimeError("Unknown file type for element: '{0}'".format(src))
-
-
-def get_package_data(branch_name=None, directory=None, quiet=True):
-    """
-    Gets package data about the package(s) in the current branch.
-
-    :param branch_name: name of the branch you are searching on (log use only)
-    """
-    log = debug if quiet else info
-    repo_dir = directory or os.getcwd()
-    if branch_name:
-        log("Looking for packages in '{0}' branch... ".format(branch_name), end='')
-    else:
-        log("Looking for packages in '{0}'... ".format(directory or os.getcwd()), end='')
-    ## Check for package.xml(s)
-    packages = find_packages(repo_dir)
-    if type(packages) == dict and packages != {}:
-        if len(packages) > 1:
-            log("found " + str(len(packages)) + " packages.",
-                use_prefix=False)
-        else:
-            log("found '" + packages.values()[0].name + "'.",
-                use_prefix=False)
-        version = verify_equal_package_versions(packages.values())
-        return [p.name for p in packages.values()], version, packages
-    # Otherwise we have a problem
-    log("failed.", use_prefix=False)
-    error("No package.xml(s) found, and '--package-name' not given, aborting.",
-          use_prefix=False, exit=True)
 
 
 def add_global_arguments(parser):
