@@ -758,6 +758,7 @@ def main(sysargs=None):
         return
 
     try:
+        os.environ['BLOOM_TRACK'] = args.track
         perform_release(args.repository, args.track, args.ros_distro,
                         args.new_track, not args.non_interactive, args.pretend)
     except (KeyboardInterrupt, EOFError) as exc:

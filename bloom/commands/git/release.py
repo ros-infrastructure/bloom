@@ -228,6 +228,14 @@ def process_track_settings(track_dict, release_inc_override):
     return settings
 
 
+def find_full_path(cmd):
+    for path in os.environ.get('PATH', '').split(os.pathsep):
+        full_path = os.path.join(path, cmd)
+        if os.path.isfile(full_path):
+            return full_path
+    raise OSError("[Errno 2] No such file or directory")
+
+
 def execute_track(track, track_dict, release_inc, pretend=True, debug=False, fast=False):
     info("Processing release track settings for '{0}'".format(track))
     settings = process_track_settings(track_dict, release_inc)
@@ -260,8 +268,10 @@ def execute_track(track, track_dict, release_inc, pretend=True, debug=False, fas
             os.environ['DEBUG'] = '1'
         if fast and 'BLOOM_UNSAFE' not in os.environ:
             os.environ['BLOOM_UNSAFE'] = '1'
+        templated_action = templated_action.split()
+        templated_action[0] = find_full_path(templated_action[0])
         p = subprocess.Popen(templated_action, stdout=stdout, stderr=stderr,
-                             shell=True, env=os.environ.copy())
+                             shell=False, env=os.environ.copy())
         out, err = p.communicate()
         if bloom.util._quiet:
             info(out, use_prefix=False)
@@ -307,6 +317,8 @@ def main(sysargs=None):
     parser = add_global_arguments(parser)
     args = parser.parse_args(sysargs)
     handle_global_arguments(args)
+
+    os.environ['BLOOM_TRACK'] = args.track
 
     verify_track(args.track, tracks_dict['tracks'][args.track])
 
