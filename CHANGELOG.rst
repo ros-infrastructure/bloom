@@ -1,6 +1,25 @@
+0.4.0 (2013-06-19 17:13:36 -0700)
+---------------------------------
+- Automated Pull Requests have been re-enabled, but now the .netrc file is **not** used.
+- REP-0132 CHANGELOG.rst files are now parsed and inserted into generated debian changes files.
+- bloom now summarizes activity on the master branch, which is useful for figuring out what has been released recently.
+- There is a new command bloom-generate, which allows generators to expose a stand alone generation command. For example, you can now run ``bloom-generate debian`` in a single catkin package and it will generate the needed files in the local ``debian`` folder. Addresses #121
+- The command line options for ``bloom-release`` have been changed to be more explicit.
+- The ``bloom`` branch is now deprecated, the ``master`` branch now holds all configurations and upstream overlay files. The ``bloom`` branch can be deleted after the automatic upgrade where bloom moves the needed files from the ``bloom`` branch to the ``master`` branch.
+- Fuerte is no longer supported; this is because supporting fuerte was complicating the code base, use an older version of bloom (0.3.5) for fuerte releases.
+- Packages can now be explicitly ignored by bloom by putting their names (separated by whitespace) in the <track>.ignored file in the master branch.
+- Deprecated rosdep calls have been replaced with rosdistro.
+- bloom now logs all output to log files in the ``~/.bloom_logs`` folder.
+- Fixed several bugs:
+
+    - Fixed use of tar as a vcs type #149
+    - Fixed a bug where ``--new-track``'s changes would not take affect #147
+    - bloom now allows a debian folder to already exist, overlaying other generated files #146
+    - bloom now allows for an alternative release repository url which is used for pushing #137
+
 0.3.5 (2013-04-17 11:03:50 -0700)
 ---------------------------------
-- Temporarly disable automated pull requests while the new rosdistro format is being deployed.
+- Temporarily disable automated pull requests while the new rosdistro format is being deployed.
 - bloom now suggests likely alternatives when a repository is not found in the release file.
 
 0.3.4 (2013-04-09 16:36:55 -0700)
