@@ -37,7 +37,7 @@ distro: setup clean_dist
 
 push: distro
 	python setup.py sdist register upload
-	scp dist/${NAME}-${VERSION}.tar.gz ${USERNAME}@ipr.willowgarage.com:/var/www/pr.willowgarage.com/html/downloads/${NAME}
+	scp dist/${NAME}-${VERSION}.tar.gz root@ipr.willowgarage.com:/var/www/pr.willowgarage.com/html/downloads/${NAME}
 
 clean: clean_dist
 	echo "clean"
@@ -50,7 +50,6 @@ deb_dist:
 	python setup.py --command-packages=stdeb.command sdist_dsc --workaround-548392=False bdist_deb
 
 upload-packages: deb_dist
-	dput -u -c dput.cf all-shadow ${OUTPUT_DIR}/${NAME}_${VERSION}-1_amd64.changes 
 	dput -u -c dput.cf all-shadow-fixed ${OUTPUT_DIR}/${NAME}_${VERSION}-1_amd64.changes 
 	dput -u -c dput.cf all-ros ${OUTPUT_DIR}/${NAME}_${VERSION}-1_amd64.changes 
 
