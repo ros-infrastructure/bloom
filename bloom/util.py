@@ -225,6 +225,7 @@ _disable_git_clone = False
 def disable_git_clone(state=True):
     global _disable_git_clone
     _disable_git_clone = state
+    os.environ['BLOOM_UNSAFE'] = "1"
 
 
 def get_git_clone_state():

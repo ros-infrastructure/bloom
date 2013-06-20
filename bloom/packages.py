@@ -59,7 +59,8 @@ except ImportError:
 
 
 def get_ignored_packages():
-    data = show(BLOOM_CONFIG_BRANCH, 'packages.ignored') or ''
+    prefix = os.environ.get('BLOOM_TRACK', 'packages')
+    data = show(BLOOM_CONFIG_BRANCH, '{0}.ignored'.format(prefix)) or ''
     return [p.strip() for p in data.split() if p.strip()]
 
 
@@ -90,8 +91,8 @@ def get_package_data(branch_name=None, directory=None, quiet=True):
         ignored_packages = get_ignored_packages()
         for k, v in dict(packages).items():
             if v.name in ignored_packages:
-                warning("Explicitly ignoring package '{0}' because it is in the `packages.ignored` file."
-                        .format(v.name))
+                warning("Explicitly ignoring package '{0}' because it is in the `{1}.ignored` file."
+                        .format(v.name, os.environ.get('BLOOM_TRACK', 'packages')))
                 del packages[k]
         if packages == {}:
             error("All packages that were found were also ignored, aborting.",
