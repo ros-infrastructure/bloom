@@ -425,7 +425,7 @@ def open_pull_request(track, repository, distro):
     info(fmt("@{bf}@!==> @|@!" + "Cloning {0}/{1}...".format(gh_username, gh_repo)))
     temp_dir = tempfile.mkdtemp()
     new_branch = None
-    title = "{0}: {1} in '{2}' [bloom]".format(repository, version, os.path.basename(gh_path))
+    title = "{0}: {1} in '{2}' [bloom]".format(repository, version, gh_path)
     body = """\
 Increasing version of package(s) in repository `{0}`:
 - previous version: `{1}`
