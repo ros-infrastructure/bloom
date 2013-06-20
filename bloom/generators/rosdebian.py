@@ -1,20 +1,11 @@
 from __future__ import print_function
 
-import traceback
 
 from bloom.generators.debian import DebianGenerator
 from bloom.generators.debian.generator import generate_substitutions_from_package
 from bloom.generators.debian.generate_cmd import main as debian_main
 
-from bloom.logging import debug
-from bloom.logging import error
 from bloom.logging import info
-
-try:
-    from rosdep2.catkin_support import get_ubuntu_targets
-except ImportError:
-    debug(traceback.format_exc())
-    error("rosdep was not detected, please install it.", exit=True)
 
 
 class RosDebianGenerator(DebianGenerator):
@@ -32,8 +23,6 @@ class RosDebianGenerator(DebianGenerator):
         self.rosdistro = args.rosdistro
         self.default_install_prefix += self.rosdistro
         ret = DebianGenerator.handle_arguments(self, args)
-        if args.distros in [None, []]:
-            args.distros = get_ubuntu_targets(self.rosdistro)
         return ret
 
     def summarize(self):

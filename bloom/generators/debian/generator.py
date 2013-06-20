@@ -82,10 +82,10 @@ except ImportError as err:
     error("rosdep was not detected, please install it.", exit=True)
 
 try:
-    from rosdep2.catkin_support import get_ubuntu_targets
+    import rosdistro
 except ImportError as err:
     debug(traceback.format_exc())
-    error("rosdep was not detected, please install it.", exit=True)
+    error("rosdistro was not detected, please install it.", exit=True)
 
 try:
     import em
@@ -384,11 +384,11 @@ class DebianGenerator(BloomGenerator):
             help="branch prefix to match, and from which create debians"
                  " hint: if you want to match 'release/foo' use 'release'")
         add('--distros', nargs='+', required=False, default=[],
-            help='A list of debian distros to generate for')
+            help='A list of debian (ubuntu) distros to generate for')
         add('--install-prefix', default=None,
-            help="overrides the default installation prefix")
+            help="overrides the default installation prefix (/usr)")
         add('--os-name', default='ubuntu',
-            help="overrides os_name, set to 'debian' for vanilla distros")
+            help="overrides os_name, set to 'ubuntu' by default")
 
     def handle_arguments(self, args):
         self.interactive = args.interactive
@@ -396,7 +396,12 @@ class DebianGenerator(BloomGenerator):
         self.os_name = args.os_name
         self.distros = args.distros
         if self.distros in [None, []]:
-            self.distros = get_ubuntu_targets(self.rosdistro)
+            index = rosdistro.get_index(rosdistro.get_index_url())
+            release_file = rosdistro.get_release_file(index, self.rosdistro)
+            if self.os_name not in release_file.platforms:
+                error("No platforms defined for os '{0}' in release file for the '{1}' distro."
+                      .format(self.os_name, self.rosdistro), exit=True)
+            self.distros = release_file.platforms[self.os_name]
         self.install_prefix = args.install_prefix
         if args.install_prefix is None:
             self.install_prefix = self.default_install_prefix
