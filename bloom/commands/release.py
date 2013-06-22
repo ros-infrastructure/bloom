@@ -486,9 +486,12 @@ _original_version = None
 def start_summary(track):
     global _original_version
     track_dict = get_tracks_dict_raw()['tracks'][track]
-    last_version = track_dict['last_version']  # Actually current version now
-    release_inc = track_dict['release_inc']
-    _original_version = "{0}-{1}".format(last_version, release_inc)
+    if 'last_version' not in track_dict or 'release_inc' not in track_dict:
+        _original_version = 'null'
+    else:
+        last_version = track_dict['last_version']  # Actually current version now
+        release_inc = track_dict['release_inc']
+        _original_version = "{0}-{1}".format(last_version, release_inc)
 
 
 def get_packages():
