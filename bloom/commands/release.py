@@ -260,7 +260,7 @@ def generate_ros_distro_diff(track, repository, distro):
     # Update the repository
     repo = release_dict['repositories'][repository]
     if 'tags' not in repo:
-        repo['tages'] = {}
+        repo['tags'] = {}
     repo['tags']['release'] = 'release/%s/{package}/{version}' % distro
     repo['version'] = version
     if 'packages' not in repo:
