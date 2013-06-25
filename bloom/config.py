@@ -45,6 +45,7 @@ from bloom.git import has_changes
 from bloom.git import get_root
 from bloom.git import inbranch
 from bloom.git import show
+from bloom.git import track_branches
 
 from bloom.logging import error
 from bloom.logging import fmt
@@ -267,6 +268,7 @@ def upconvert_bloom_to_config_branch():
     if get_root() is None:
         # Not a git repository
         return
+    track_branches(['bloom', BLOOM_CONFIG_BRANCH])
     if show('bloom', PLACEHOLDER_FILE) is not None:
         return
     if show('bloom', 'bloom.conf') is not None:

@@ -47,6 +47,8 @@ from bloom.generators import BloomGenerator
 from bloom.generators import resolve_dependencies
 from bloom.generators import update_rosdep
 
+from bloom.generators.common import default_fallback_resolver
+
 from bloom.git import inbranch
 from bloom.git import get_branches
 from bloom.git import get_commit_hash
@@ -214,6 +216,12 @@ def get_changelogs(package, releaser_history=None):
         return []
 
 
+def missing_dep_resolver(key, peer_packages):
+    if key in peer_packages:
+        return [key]
+    return default_fallback_resolver(key, peer_packages)
+
+
 def generate_substitutions_from_package(
     package,
     os_name,
@@ -222,7 +230,8 @@ def generate_substitutions_from_package(
     installation_prefix='/usr',
     deb_inc=0,
     peer_packages=None,
-    releaser_history=None
+    releaser_history=None,
+    fallback_resolver=None
 ):
     peer_packages = peer_packages or []
     data = {}
@@ -248,7 +257,7 @@ def generate_substitutions_from_package(
     unresolved_keys = depends + build_depends
     resolved_deps = resolve_dependencies(unresolved_keys, os_name,
                                          os_version, ros_distro,
-                                         peer_packages)
+                                         peer_packages, fallback_resolver)
     data['Depends'] = sorted(
         set(format_depends(depends, resolved_deps))
     )
@@ -592,7 +601,8 @@ class DebianGenerator(BloomGenerator):
             self.install_prefix,
             self.debian_inc,
             [p.name for p in self.packages.values()],
-            releaser_history=releaser_history
+            releaser_history=releaser_history,
+            fallback_resolver=missing_dep_resolver
         )
 
     def generate_debian(self, package, debian_distro):

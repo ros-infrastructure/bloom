@@ -641,7 +641,8 @@ def perform_release(repository, track, distro, new_track, interactive, pretend):
             cmd = 'git remote -v'
             info(fmt("@{bf}@!==> @|@!") + str(cmd))
             subprocess.check_call(cmd, shell=True)
-            cmd = 'git push'
+            # Dry run will authenticate, but not push
+            cmd = 'git push --dry-run'
             info(fmt("@{bf}@!==> @|@!") + str(cmd))
             subprocess.check_call(cmd, shell=True)
         except subprocess.CalledProcessError:
