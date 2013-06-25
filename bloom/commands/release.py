@@ -85,10 +85,12 @@ from bloom.summary import get_summary_file
 
 from bloom.util import add_global_arguments
 from bloom.util import change_directory
+from bloom.util import disable_git_clone
 from bloom.util import get_rfc_2822_date
 from bloom.util import handle_global_arguments
 from bloom.util import load_url_to_file_handle
 from bloom.util import maybe_continue
+from bloom.util import quiet_git_clone_warning
 
 try:
     import vcstools.__version__
@@ -762,6 +764,8 @@ def main(sysargs=None):
 
     try:
         os.environ['BLOOM_TRACK'] = args.track
+        disable_git_clone(True)
+        quiet_git_clone_warning(True)
         perform_release(args.repository, args.track, args.ros_distro,
                         args.new_track, not args.non_interactive, args.pretend)
     except (KeyboardInterrupt, EOFError) as exc:
