@@ -56,6 +56,7 @@ from bloom.git import ensure_clean_working_env
 from bloom.git import ensure_git_root
 from bloom.git import get_current_branch
 from bloom.git import get_root
+from bloom.git import GitClone
 
 from bloom.logging import debug
 from bloom.logging import error
@@ -70,7 +71,9 @@ from bloom.packages import get_package_data
 import bloom.util
 from bloom.util import add_global_arguments
 from bloom.util import change_directory
+from bloom.util import disable_git_clone
 from bloom.util import handle_global_arguments
+from bloom.util import quiet_git_clone_warning
 
 try:
     from vcstools.vcs_abstraction import get_vcs_client
@@ -322,8 +325,16 @@ def main(sysargs=None):
 
     verify_track(args.track, tracks_dict['tracks'][args.track])
 
-    execute_track(args.track, tracks_dict['tracks'][args.track],
-                  args.release_increment, args.pretend, args.debug, args.unsafe)
+    git_clone = GitClone()
+    with git_clone:
+        quiet_git_clone_warning(True)
+        disable_git_clone(True)
+        execute_track(args.track, tracks_dict['tracks'][args.track],
+                      args.release_increment, args.pretend, args.debug,
+                      args.unsafe)
+        disable_git_clone(False)
+        quiet_git_clone_warning(False)
+    git_clone.commit()
 
     # Notify the user of success and next action suggestions
     print('\n\n')
