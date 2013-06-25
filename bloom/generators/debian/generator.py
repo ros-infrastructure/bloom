@@ -218,7 +218,7 @@ def get_changelogs(package, releaser_history=None):
 
 def missing_dep_resolver(key, peer_packages):
     if key in peer_packages:
-        return key
+        return [key]
     return default_fallback_resolver(key, peer_packages)
 
 

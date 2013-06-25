@@ -67,7 +67,7 @@ class RosDebianGenerator(DebianGenerator):
     def get_subs(self, package, debian_distro, releaser_history):
         def fallback_resolver(key, peer_packages, rosdistro=self.rosdistro):
             if key in peer_packages:
-                return rosify_package_name(key, rosdistro)
+                return [rosify_package_name(key, rosdistro)]
             return default_fallback_resolver(key, peer_packages)
         subs = generate_substitutions_from_package(
             package,
