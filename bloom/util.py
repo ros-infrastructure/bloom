@@ -220,17 +220,35 @@ def add_global_arguments(parser):
 _pdb = False
 _quiet = False
 _disable_git_clone = False
+_disable_git_clone_quiet = False
 
 
 def disable_git_clone(state=True):
     global _disable_git_clone
     _disable_git_clone = state
-    os.environ['BLOOM_UNSAFE'] = "1"
+    if state:
+        os.environ['BLOOM_UNSAFE'] = "1"
+    elif 'BLOOM_UNSAFE' in os.environ:
+        del os.environ['BLOOM_UNSAFE']
+
+
+def quiet_git_clone_warning(state=True):
+    global _disable_git_clone_quiet
+    _disable_git_clone_quiet = state
+    if state:
+        os.environ['BLOOM_UNSAFE_QUIET'] = "1"
+    elif 'BLOOM_UNSAFE_QUIET' in os.environ:
+        del os.environ['BLOOM_UNSAFE_QUIET']
 
 
 def get_git_clone_state():
     global _disable_git_clone
     return _disable_git_clone
+
+
+def get_git_clone_state_quiet():
+    global _disable_git_clone_quiet
+    return _disable_git_clone_quiet
 
 
 def handle_global_arguments(args):
@@ -241,6 +259,7 @@ def handle_global_arguments(args):
     if args.no_color:
         disable_ANSI_colors()
     disable_git_clone(args.unsafe or 'BLOOM_UNSAFE' in os.environ)
+    quiet_git_clone_warning('BLOOM_UNSAFE_QUIET' in os.environ)
 
 
 def print_exc(exc):

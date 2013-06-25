@@ -55,6 +55,7 @@ from bloom.util import change_directory
 from bloom.util import check_output
 from bloom.util import execute_command
 from bloom.util import get_git_clone_state
+from bloom.util import get_git_clone_state_quiet
 from bloom.util import pdb_hook
 import bloom.util
 
@@ -62,8 +63,10 @@ import bloom.util
 class GitClone(object):
     def __init__(self, directory=None, track_all=True):
         self.disabled = get_git_clone_state()
+        self.disabled_quiet = get_git_clone_state_quiet()
         if self.disabled:
-            warning('Skipping transactional safety mechanism, be careful...')
+            if not self.disabled_quiet:
+                warning('Skipping transactional safety mechanism, be careful...')
             return
         self.tmp_dir = None
         self.directory = directory if directory is not None else os.getcwd()
