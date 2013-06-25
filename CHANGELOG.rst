@@ -1,3 +1,9 @@
+0.4.1 (2013-06-25 12:17:13 -0700)
+---------------------------------
+- Fixed a bug which occurred on repositories with no previous releases. #158
+- Fixed a bug where safety warnings were being printed when they should not have been. #159
+- Fixed a bug where repositories with multiple packages did not consider peer packages when resolving rosdep keys. #160
+
 0.4.0 (2013-06-19 17:13:36 -0700)
 ---------------------------------
 - Automated Pull Requests have been re-enabled, but now the .netrc file is **not** used.
