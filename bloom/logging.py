@@ -315,8 +315,14 @@ def close_logging():
         name = _file_log.name
         _file_log.close()
         _file_log = None
-        if os.getpid() == name.split('.')[0]:
-            os.rename(name, str(datetime.datetime.now()).replace(' ', '_').replace(':', '.') + '.log')
+        if str(os.getpid()) == os.path.basename(name).split('.')[0]:
+            new_name = str(datetime.datetime.now())
+            new_name = new_name.replace(' ', '_').replace(':', '.') + '.log'
+            new_name = os.path.basename(str(sys.argv[0])) + "_" + new_name
+            new_name = os.path.join(os.path.dirname(name), new_name)
+            os.rename(name, new_name)
+            if os.path.exists(name):
+                os.remove(name)
 
 
 class ColorTemplate(string.Template):
