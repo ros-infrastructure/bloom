@@ -35,6 +35,8 @@ from __future__ import print_function
 
 from bloom.generators.common import default_fallback_resolver
 
+from bloom.generators.debian.generator import sanitize_package_name
+
 from bloom.generators.debian import DebianGenerator
 from bloom.generators.debian.generator import generate_substitutions_from_package
 from bloom.generators.debian.generate_cmd import main as debian_main
@@ -67,7 +69,7 @@ class RosDebianGenerator(DebianGenerator):
     def get_subs(self, package, debian_distro, releaser_history):
         def fallback_resolver(key, peer_packages, rosdistro=self.rosdistro):
             if key in peer_packages:
-                return [rosify_package_name(key, rosdistro)]
+                return [sanitize_package_name(rosify_package_name(key, rosdistro))]
             return default_fallback_resolver(key, peer_packages)
         subs = generate_substitutions_from_package(
             package,
