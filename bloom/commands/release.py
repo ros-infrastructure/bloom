@@ -272,9 +272,10 @@ def generate_ros_distro_diff(track, repository, distro):
             repo['packages'][pkg.name] = {}
         repo['packages'][pkg.name]['subfolder'] = path  # This will be shortened
     # Remove any missing packages
-    for pkg_name in repo['packages']:
+    for pkg_name in dict(repo['packages']):
         if pkg_name not in [p.name for p in packages.values()]:
-            del repo['packages'][pkg_name]
+            if pkg_name in repo['packages']:
+                del repo['packages'][pkg_name]
     # Do the diff
     distro_file_name = get_relative_release_file_path(distro)
     updated_release_file = rosdistro.ReleaseFile('distro', release_dict)
