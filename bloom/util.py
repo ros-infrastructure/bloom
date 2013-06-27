@@ -59,6 +59,7 @@ from bloom.logging import debug
 from bloom.logging import disable_ANSI_colors
 from bloom.logging import enable_debug
 from bloom.logging import error
+from bloom.logging import info
 from bloom.logging import warning
 
 
@@ -273,7 +274,7 @@ def print_exc(exc):
                             TerminalFormatter())
     except ImportError:
         pass
-    print(exc_str, file=sys.stderr)
+    info(exc_str, file=sys.stderr, use_prefix=False)
 
 
 def custom_exception_handler(type, value, tb):
@@ -381,7 +382,7 @@ def execute_command(cmd, shell=True, autofail=True, silent=True,
             error("'execute_command' failed to call '{0}'".format(cmd) +
                   " which had a return code ({0}):".format(result))
             error("```")
-            print(out)
+            info(out, use_prefix=False)
             error("```")
         if autofail:
             raise CalledProcessError(result, cmd)

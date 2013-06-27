@@ -95,12 +95,12 @@ def import_patches(directory=None):
         except subprocess.CalledProcessError as e:
             warning("Failed to apply one or more patches for the "
                     "'{0}' branch.".format(str(e)))
-            print()
-            print()
-            print(">>> Resolve any conflicts and when you have resolved this "
-                  "problem run 'git am --resolved' and then exit the "
-                  "shell using 'exit 0'. <<<")
-            print("    To abort use 'exit 1'")
+            info('', use_prefix=False)
+            info('', use_prefix=False)
+            info(">>> Resolve any conflicts and when you have resolved this "
+                 "problem run 'git am --resolved' and then exit the "
+                 "shell using 'exit 0'. <<<", use_prefix=False)
+            info("    To abort use 'exit 1'", use_prefix=False)
             if 'bash' in os.environ['SHELL']:
                 ret = subprocess.call([
                     "/bin/bash", "-l", "-c",

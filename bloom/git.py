@@ -232,7 +232,7 @@ def ensure_clean_working_env(force=False, git_status=True, directory=None):
     """
     def ecwe_fail(code, show_git_status):
         if not bloom.util._quiet and show_git_status:
-            print('\n++ git status:\n')
+            info('\n++ git status:\n', use_prefix=False)
             os.system('git status')
         error(code, exit=True)
     # Is it a git repo
@@ -282,7 +282,7 @@ def checkout(reference, raise_exc=False, directory=None, show_git_status=True):
         debug("  Has untrakced files: '{0}'".format(str(untracked)))
         pdb_hook()
         if not bloom.util._quiet and show_git_status:
-            print('\n++ git status:\n')
+            info('\n++ git status:\n', use_prefix=False)
             os.system('git status')
         return False
     debug("Checking out to " + str(reference))

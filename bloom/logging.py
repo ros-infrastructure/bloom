@@ -235,7 +235,7 @@ def debug(msg, file=None, end='\n', use_prefix=True):
     if not _quiet and _debug:
         print(msg, file=file, end=end)
     if _file_log is not None:
-        print(strip_ansi(msg), file=_file_log, end=end)
+        print('[debug] ' + strip_ansi(msg), file=_file_log, end=end)
     return msg
 
 
@@ -248,7 +248,7 @@ def info(msg, file=None, end='\n', use_prefix=True):
     if not _quiet:
         print(msg, file=file, end=end)
     if _file_log is not None:
-        print(strip_ansi(msg), file=_file_log, end=end)
+        print('[info] ' + strip_ansi(msg), file=_file_log, end=end)
     return msg
 
 
@@ -264,7 +264,7 @@ def warning(msg, file=None, end='\n', use_prefix=True):
     if not _quiet:
         print(msg, file=file, end=end)
     if _file_log is not None:
-        print(strip_ansi(msg), file=_file_log, end=end)
+        print('[warning] ' + strip_ansi(msg), file=_file_log, end=end)
     return msg
 
 
@@ -277,10 +277,10 @@ def error(msg, file=None, end='\n', use_prefix=True, exit=False):
     else:
         msg = ansi('redf') + ansi('boldon') + msg + ansi('reset')
     if _file_log is not None:
-        print(strip_ansi(msg), file=_file_log, end=end)
+        print('[error] ' + strip_ansi(msg), file=_file_log, end=end)
     if exit:
         if _file_log is not None:
-            print("SYS.EXIT", file=_file_log, end=end)
+            print("[error] SYS.EXIT", file=_file_log, end=end)
         sys.exit(msg)
     if not _quiet:
         print(msg, file=file, end=end)
@@ -293,7 +293,10 @@ try:
     if not os.path.isdir(_file_log_prefix):
         os.makedirs(_file_log_prefix)
     _file_log_path = os.path.join(_file_log_prefix, _log_id + '.log')
-    _file_log = open(_file_log_path, 'w')
+    _file_log = open(_file_log_path, 'a')
+    if str(os.getpid()) == _log_id:
+        import bloom
+        _file_log.write("[bloom] bloom version " + bloom.__version__ + "\n")
 except Exception as exc:
     _file_log = None
     debug(str(exc.__name__) + ": " + str(exc))

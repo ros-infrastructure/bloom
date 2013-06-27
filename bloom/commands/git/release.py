@@ -282,7 +282,7 @@ def execute_track(track, track_dict, release_inc, pretend=True, debug=False, fas
         if ret > 0:
             error(fmt(_error + "Error running command '@!{0}'@|")
                   .format(templated_action), exit=True)
-        print()
+        info('', use_prefix=False)
     if not pretend:
         # Update the release_inc
         tracks_dict = get_tracks_dict_raw()
@@ -337,7 +337,7 @@ def main(sysargs=None):
     git_clone.commit()
 
     # Notify the user of success and next action suggestions
-    print('\n\n')
+    info('\n\n', use_prefix=False)
     warning("Tip: Check to ensure that the debian tags created have the same "
             "version as the upstream version you are releasing.")
     info(fmt("@{gf}@!Everything went as expected, "
