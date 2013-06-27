@@ -287,7 +287,8 @@ def upconvert_bloom_to_config_branch():
             ignores = ('.git', '.gitignore', '.svn', '.hgignore', '.hg', 'CVS')
             configs = os.path.join(tmp_dir, 'configs')
             my_copytree(git_root, configs, ignores)
-            execute_command('git rm -rf ./*')
+            if [x for x in os.listdir(os.getcwd()) if x not in ignores]:
+                execute_command('git rm -rf ./*')
             with open(PLACEHOLDER_FILE, 'w') as f:
                 f.write("""\
 This branch ('bloom') has been deprecated in favor of storing settings and overlay files in the master branch.
