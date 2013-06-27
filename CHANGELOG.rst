@@ -1,3 +1,11 @@
+0.4.2 (2013-06-27 11:20:25 -0700)
+---------------------------------
+- Improved logging system slightly.
+- Fixed the way logs are renamed after closing.
+- Fixed a bug where names were not debian'ized for packages which rosdep could not resolve. #163
+- Fixed a bug where a diff of the rosdistro file would fail when packages were being removed. #165
+- Fixed a bug where upconverting repository configs could fail if a track.yaml and a bloom.conf existed. #166
+
 0.4.1 (2013-06-25 12:17:13 -0700)
 ---------------------------------
 - Fixed a bug which occurred on repositories with no previous releases. #158
