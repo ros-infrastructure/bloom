@@ -100,7 +100,7 @@ TEMPLATE_EXTENSION = '.em'
 
 def __place_template_folder(group, src, dst, gbp=False):
     template_files = pkg_resources.resource_listdir(group, src)
-    # For each tempalte, place
+    # For each template, place
     for template_file in template_files:
         if not gbp and os.path.basename(template_file) == 'gbp.conf.em':
             debug("Skipping template '{0}'".format(template_file))
@@ -112,7 +112,7 @@ def __place_template_folder(group, src, dst, gbp=False):
             __place_template_folder(group, template_path, template_dst, gbp)
         else:
             try:
-                debug("Placing temaplte '{0}'".format(template_path))
+                debug("Placing template '{0}'".format(template_path))
                 template = pkg_resources.resource_string(group, template_path)
             except IOError as err:
                 error("Failed to load template "
