@@ -178,7 +178,10 @@ def new(track, template=None, copy_track=None, overrides={}):
         if copy_track and copy_track not in tracks_dict['tracks']:
             error("Cannot copy a track which does not exist: '{0}'"
                   .format(copy_track), exit=True)
-        template_dict = tracks_dict['tracks'][copy_track]
+        if copy_track:
+            template_dict = tracks_dict['tracks'][copy_track]
+        else:
+            template_dict = {}
     for key in template_entry_order:
         if key in template_dict:
             track_dict[key].default = template_dict[key]
