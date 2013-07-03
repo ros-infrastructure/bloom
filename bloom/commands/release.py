@@ -75,6 +75,7 @@ from bloom.logging import fmt
 from bloom.logging import get_error_prefix
 from bloom.logging import get_success_prefix
 from bloom.logging import info
+from bloom.logging import sanitize
 from bloom.logging import warning
 
 from bloom.packages import get_package_data
@@ -291,17 +292,17 @@ def generate_ros_distro_diff(track, repository, distro):
         for line in udiff:
             if line.startswith('@@'):
                 udiff_raw += line
-                line = fmt('@{cf}' + line)
+                line = fmt('@{cf}' + sanitize(line))
             if line.startswith('+'):
                 if not line.startswith('+++'):
                     line += '\n'
                 udiff_raw += line
-                line = fmt('@{gf}' + line)
+                line = fmt('@{gf}' + sanitize(line))
             if line.startswith('-'):
                 if not line.startswith('---'):
                     line += '\n'
                 udiff_raw += line
-                line = fmt('@{rf}' + line)
+                line = fmt('@{rf}' + sanitize(line))
             if line.startswith(' '):
                 line += '\n'
                 udiff_raw += line

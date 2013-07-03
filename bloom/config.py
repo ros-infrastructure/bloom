@@ -133,7 +133,7 @@ needed when the release uri which is in the rosdistro file is not writable.
 This is useful, for example, when a releaser would like to use a ssh url
 to push rather than a https:// url.
 ''',
-    ':{none}': '''\
+        ':{none}': '''\
 This indicates that the default release url should be used.
 '''
     }
