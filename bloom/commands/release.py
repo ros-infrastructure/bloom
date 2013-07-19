@@ -416,7 +416,7 @@ def open_pull_request(track, repository, distro):
         return
     # Check for fork
     info(fmt("@{bf}@!==> @|@!Checking for rosdistro fork on github..."))
-    gh_user_repos = fetch_github_api('https://api.github.com/users/{0}/repos'.format(gh_username))
+    gh_user_repos = fetch_github_api('https://api.github.com/users/{0}/repos?per_page=100'.format(gh_username))
     if gh_user_repos is None:
         error("Failed to get a list of repositories for user: '{0}'".format(gh_username))
         warning("Skipping the pull request...")
