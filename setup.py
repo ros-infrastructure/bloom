@@ -21,7 +21,7 @@ setup(
         'python-dateutil',
         'PyYAML',
         'rosdep >= 0.10.3',
-        'rosdistro >= 0.2.9',
+        'rosdistro >= 0.2.12',
         'vcstools >= 0.1.22',
     ],
     author='Tully Foote, William Woodall',
