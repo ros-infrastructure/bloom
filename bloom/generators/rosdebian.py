@@ -40,6 +40,7 @@ from bloom.generators.debian.generator import sanitize_package_name
 from bloom.generators.debian import DebianGenerator
 from bloom.generators.debian.generator import generate_substitutions_from_package
 from bloom.generators.debian.generate_cmd import main as debian_main
+from bloom.generators.debian.generate_cmd import prepare_arguments
 
 from bloom.logging import info
 
@@ -99,16 +100,6 @@ class RosDebianGenerator(DebianGenerator):
             .format(self.rosdistro, data['Name'], data['Version'], self.debian_inc)
 
 
-def prepare_arguments(parser):
-    add = parser.add_argument
-    add('package_path', nargs='?', help="path to or containing the package.xml of a package")
-    action = parser.add_mutually_exclusive_group(required=False)
-    add = action.add_argument
-    add('--place-template-files', action='store_true', help="places debian/* template files only")
-    add('--process-template-files', action='store_true', help="processes templates in debian/* only")
-    return parser
-
-
 def rosify_package_name(name, rosdistro):
     return 'ros-{0}-{1}'.format(rosdistro, name)
 
@@ -121,7 +112,7 @@ def get_subs(pkg, os_name, os_version, ros_distro):
         os_version,
         ros_distro
     )
-    subs['Package'] = rosify_package_name(subs['Package'])
+    subs['Package'] = rosify_package_name(subs['Package'], ros_distro)
     return subs
 
 
