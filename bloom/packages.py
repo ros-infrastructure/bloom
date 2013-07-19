@@ -91,6 +91,14 @@ def get_package_data(branch_name=None, directory=None, quiet=True):
         version = verify_equal_package_versions(packages.values())
         ignored_packages = get_ignored_packages()
         for k, v in dict(packages).items():
+            # Check for packages with upper case names
+            if v.name.lower() != v.name:
+                error("Cowardly refusing to release packages with uppercase characters in the name: " + v.name)
+                error("See:")
+                error("  https://github.com/ros-infrastructure/bloom/issues/191")
+                error("  https://github.com/ros-infrastructure/bloom/issues/76")
+                error("Invalid package names, aborting.", exit=True)
+            # Check for ignored packages
             if v.name in ignored_packages:
                 warning("Explicitly ignoring package '{0}' because it is in the `{1}.ignored` file."
                         .format(v.name, os.environ.get('BLOOM_TRACK', 'packages')))
