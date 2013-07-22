@@ -474,11 +474,11 @@ Increasing version of package(s) in repository `{0}`:
             _my_run('git fetch')
             track_branches()
             branches = get_branches()
-            new_branch = 'bloom-patch-{0}'
+            new_branch = 'bloom-{repository}-{count}'
             count = 0
-            while new_branch.format(count) in branches:
+            while new_branch.format(repository=repository, count=count) in branches:
                 count += 1
-            new_branch = new_branch.format(count)
+            new_branch = new_branch.format(repository=repository, count=count)
             # Final check
             info(fmt("@{cf}Pull Request Title: @{yf}" + title))
             info(fmt("@{cf}Pull Request Body : \n@{yf}" + body))
