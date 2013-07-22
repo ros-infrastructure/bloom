@@ -42,6 +42,7 @@ import httplib
 import json
 import os
 import pkg_resources
+import platform
 import shutil
 import socket
 import subprocess
@@ -741,8 +742,9 @@ def perform_release(repository, track, distro, new_track, interactive, pretend):
         try:
             pull_request_url = open_pull_request(track, repository, distro)
             if pull_request_url:
-                info(fmt(_success) + "Pull request opened at: '{0}'".format(pull_request_url))
-                webbrowser.open(pull_request_url)
+                info(fmt(_success) + "Pull request opened at: {0}".format(pull_request_url))
+                if 'BLOOM_NO_WEBBROWSER' in os.environ and platform.system() not in ['Darwin']:
+                    webbrowser.open(pull_request_url)
             else:
                 info("The release of your packages was successful, but the pull request failed.")
                 info("Please manually open a pull request by editing the file here: '{0}'"
@@ -767,6 +769,8 @@ def get_argument_parser():
         help="if used, a new track will be created before running bloom")
     add('--pretend', '-p', default=False, action='store_true',
         help="Pretends to push and release")
+    add('--no-web', default=False, action='store_true',
+        help="prevents a web browser from being opened at the end")
     return parser
 
 _quiet = False
@@ -781,6 +785,9 @@ def main(sysargs=None):
     if args.list_tracks:
         list_tracks(args.repository, args.ros_distro)
         return
+
+    if args.no_web:
+        os.environ['BLOOM_NO_WEBBROWSER'] = '1'
 
     try:
         os.environ['BLOOM_TRACK'] = args.track
