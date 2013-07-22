@@ -114,6 +114,7 @@ def __place_template_folder(group, src, dst, gbp=False):
             try:
                 debug("Placing template '{0}'".format(template_path))
                 template = pkg_resources.resource_string(group, template_path)
+                template_abs_path = pkg_resources.resource_filename(group, template_path)
             except IOError as err:
                 error("Failed to load template "
                       "'{0}': {1}".format(template_file, str(err)), exit=True)
@@ -124,6 +125,7 @@ def __place_template_folder(group, src, dst, gbp=False):
                 os.remove(template_dst)
             with open(template_dst, 'w') as f:
                 f.write(template)
+            shutil.copystat(template_abs_path, template_dst)
 
 
 def place_template_files(path, gbp=False):
