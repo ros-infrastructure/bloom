@@ -326,7 +326,7 @@ def get_gh_info(url):
     return url_paths[1], url_paths[2], url_paths[3], '/'.join(url_paths[4:])
 
 
-def fetch_github_api(url, data=None):
+def __fetch_github_api(url, data):
     try:
         if data is not None:
             req = urllib2.Request(url=url, data=data)
@@ -337,7 +337,24 @@ def fetch_github_api(url, data=None):
         error("Failed to fetch github API '{0}': {1}"
               .format(url, e))
         return None
-    return json.loads(raw_gh_api.read())
+    return json.load(raw_gh_api)
+
+
+def fetch_github_api(url, data=None, use_pagination=False, only_page=None):
+    if not use_pagination:
+        return __fetch_github_api(url, data)
+    items = []
+    page_count = only_page or 1
+    while True:
+        url_ = url + "?page=" + str(page_count)
+        page_count += 1
+        page_items = __fetch_github_api(url_, data)
+        if page_items is None:
+            return page_items
+        items.extend(page_items)
+        if not page_items or only_page:
+            break
+    return items
 
 
 def create_fork(org, repo, user, password):
@@ -416,7 +433,7 @@ def open_pull_request(track, repository, distro):
         return
     # Check for fork
     info(fmt("@{bf}@!==> @|@!Checking for rosdistro fork on github..."))
-    gh_user_repos = fetch_github_api('https://api.github.com/users/{0}/repos?per_page=100'.format(gh_username))
+    gh_user_repos = fetch_github_api('https://api.github.com/users/{0}/repos'.format(gh_username), use_pagination=True)
     if gh_user_repos is None:
         error("Failed to get a list of repositories for user: '{0}'".format(gh_username))
         warning("Skipping the pull request...")
