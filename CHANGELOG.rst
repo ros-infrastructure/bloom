@@ -1,3 +1,20 @@
+0.4.4 (2013-07-22 17:50:55 -0700)
+---------------------------------
+- Properly handle pagination of github pages #174
+- Made the pull request branch names more unique to avoid collisions in parallel releasing situations #178
+- Disabled automatic opening of the webbrowser on Linux and added an option to disable it otherwise #162
+- Fixed a problem where permissions where lost on templates, this applied specifically to loosing the executable flag on the debian rules file #179
+- Only put the first maintainer listed in the debian/control file to prevent lintian errors #183
+
+0.4.3 (2013-07-19 16:37:23 -0700)
+---------------------------------
+- Fixed a bug with creating new tracks
+- Fixed a bug where the debian changelog would be wrong if a CHANGELOG.rst existed for the package, but there was no entry for this version being release
+- Fixed a bug where the colorization of the diff could cause a crass to occur
+- Added a versioned dependency on rosdistro-0.2.12, which addresses a rosdistro file formatting bug
+- Fixed some issues with the stand alone rosdebian generator
+- Temporary fix for github pagination problems
+
 0.4.2 (2013-06-27 11:20:25 -0700)
 ---------------------------------
 - Improved logging system slightly.
