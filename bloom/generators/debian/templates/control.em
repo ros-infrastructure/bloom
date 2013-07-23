@@ -1,7 +1,7 @@
 Source: @(Package)
 Section: misc
 Priority: extra
-Maintainer: "@(Maintainers)"
+Maintainer: @(Maintainer)
 Build-Depends: debhelper (>= 7.0.50~), @(', '.join(BuildDepends))
 Homepage: @(Homepage)
 Standards-Version: 3.9.2
