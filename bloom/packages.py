@@ -59,13 +59,13 @@ except ImportError:
           file=sys.stderr, exit=True)
 
 
-def get_ignored_packages():
+def get_ignored_packages(release_directory=None):
     prefix = os.environ.get('BLOOM_TRACK', 'packages')
-    data = show(BLOOM_CONFIG_BRANCH, '{0}.ignored'.format(prefix)) or ''
+    data = show(BLOOM_CONFIG_BRANCH, '{0}.ignored'.format(prefix), directory=release_directory) or ''
     return [p.strip() for p in data.split() if p.strip()]
 
 
-def get_package_data(branch_name=None, directory=None, quiet=True):
+def get_package_data(branch_name=None, directory=None, quiet=True, release_directory=None):
     """
     Gets package data about the package(s) in the current branch.
 
@@ -89,7 +89,7 @@ def get_package_data(branch_name=None, directory=None, quiet=True):
             log("found '" + packages.values()[0].name + "'.",
                 use_prefix=False)
         version = verify_equal_package_versions(packages.values())
-        ignored_packages = get_ignored_packages()
+        ignored_packages = get_ignored_packages(release_directory=release_directory)
         for k, v in dict(packages).items():
             # Check for packages with upper case names
             if v.name.lower() != v.name:

@@ -113,12 +113,13 @@ def clean_up_repositories():
 
 def get_upstream_meta(upstream_dir, ros_distro):
     meta = None
+    directory = os.getcwd()
     with change_directory(upstream_dir):
         if get_root() is not None:  # If in a git repo
             current_branch = get_current_branch()
         else:
             current_branch = None
-        name, version, packages = get_package_data(current_branch, quiet=False)
+        name, version, packages = get_package_data(current_branch, quiet=False, release_directory=directory)
     meta = {
         'name': name,
         'version': version,
