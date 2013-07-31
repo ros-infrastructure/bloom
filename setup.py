@@ -2,6 +2,23 @@
 
 from setuptools import setup, find_packages
 
+install_requires = [
+    'catkin-pkg >= 0.1.14',
+    'distribute',
+    'empy',
+    'python-dateutil',
+    'PyYAML',
+    'rosdep >= 0.10.3',
+    'rosdistro >= 0.2.12',
+    'vcstools >= 0.1.22',
+]
+
+# argparse got moved into the stdlib in py2.7, so we only
+# need to install the pypi version if we're on an older
+# python.
+if sys.version_info[0] == 2 and sys.version_info[1] <= 6:
+    install_requires.append('argparse')
+
 setup(
     name='bloom',
     version='0.4.4',
@@ -13,17 +30,7 @@ setup(
         ]
     },
     include_package_data=True,
-    install_requires=[
-        'argparse',
-        'catkin-pkg >= 0.1.14',
-        'distribute',
-        'empy',
-        'python-dateutil',
-        'PyYAML',
-        'rosdep >= 0.10.3',
-        'rosdistro >= 0.2.12',
-        'vcstools >= 0.1.22',
-    ],
+    install_requires=install_requires,
     author='Tully Foote, William Woodall',
     author_email='tfoote@willowgarage.com, william@osrfoundation.org',
     maintainer='William Woodall',
