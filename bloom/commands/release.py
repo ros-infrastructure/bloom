@@ -148,6 +148,9 @@ def get_index():
     global _rosdistro_index
     if _rosdistro_index is None:
         _rosdistro_index = rosdistro.get_index(rosdistro.get_index_url())
+        if _rosdistro_index.version > 1:
+            error("This version of bloom does not support rosdistro version "
+                  "'{0}', please update bloom.".format(_rosdistro_index.version), exit=True)
     return _rosdistro_index
 
 
