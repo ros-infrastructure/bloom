@@ -33,6 +33,7 @@
 from __future__ import print_function
 
 import os
+import re
 import shutil
 import string
 import yaml
@@ -239,6 +240,19 @@ def write_tracks_dict_raw(tracks_dict, cmt_msg=None, directory=None):
         execute_command('git commit --allow-empty -m "{0}"'.format(cmt_msg),
                         cwd=directory)
 
+version_regex = re.compile(r'^\d+\.\d+\.\d+$')
+
+
+def validate_track_versions(tracks_dict):
+    for track in tracks_dict['tracks'].values():
+        if 'version' in track:
+            if track['version'] in [':{ask}', ':{auto}']:
+                continue
+            if version_regex.match(track['version']) is None:
+                raise ValueError(
+                    "Invalid version '{0}', it must be formatted as 'MAJOR.MINOR.PATCH'"
+                    .format(track['version']))
+
 
 def get_tracks_dict_raw(directory=None):
     upconvert_bloom_to_config_branch()
@@ -252,11 +266,9 @@ def get_tracks_dict_raw(directory=None):
         )
         tracks_yaml = show(BLOOM_CONFIG_BRANCH, 'tracks.yaml',
                            directory=directory)
-    try:
-        return yaml.load(tracks_yaml)
-    except:
-        # TODO handle yaml errors
-        raise
+    tracks_dict = yaml.load(tracks_yaml)
+    validate_track_versions(tracks_dict)
+    return tracks_dict
 
 _has_checked_bloom_branch = False
 
