@@ -94,18 +94,15 @@ def _trim(config, force, directory):
         sub_dir = os.path.join(git_root, config['trim'])
         storage = os.path.join(tmp_dir, config['trim'])
         shutil.copytree(sub_dir, storage)
-        # Clear out the git repo
-        execute_command('git rm -rf ./*', cwd=directory)
-        # Collect .* files (excluding .git)
-        dot_items = []
+        # Collect al files (excluding .git)
+        items = []
         for item in os.listdir(git_root):
             if item in ['.git', '..', '.']:
                 continue
-            if item.startswith('.'):
-                dot_items.append(item)
+            items.append(item)
         # Remove and .* files missed by 'git rm -rf *'
-        if len(dot_items) > 0:
-            execute_command('git rm -rf ' + ' '.join(dot_items), cwd=directory)
+        if len(items) > 0:
+            execute_command('git rm -rf ' + ' '.join(items), cwd=directory)
         # Clear out any untracked files
         execute_command('git clean -fdx', cwd=directory)
         # Copy the sub directory back
