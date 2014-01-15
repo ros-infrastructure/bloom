@@ -72,6 +72,7 @@ from bloom.commands.git.patch.common import set_patch_config
 
 from bloom.packages import get_package_data
 
+from bloom.util import to_unicode
 from bloom.util import execute_command
 from bloom.util import get_rfc_2822_date
 from bloom.util import maybe_continue
@@ -205,7 +206,7 @@ def get_changelogs(package, releaser_history=None):
             changes_str = []
             date_str = get_rfc_2822_date(date)
             for item in changes:
-                changes_str.extend(['  ' + i for i in str(item).splitlines()])
+                changes_str.extend(['  ' + i for i in to_unicode(item).splitlines()])
             # Each entry has (version, date, changes, releaser, releaser_email)
             releaser, email = releaser_history.get(version, maintainer)
             changelogs.append((

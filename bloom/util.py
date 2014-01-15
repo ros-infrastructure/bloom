@@ -62,6 +62,11 @@ from bloom.logging import error
 from bloom.logging import info
 from bloom.logging import warning
 
+try:
+    to_unicode = unicode
+except NameError:
+    to_unicode = str
+
 
 # Convention: < 0 is a warning exit, 0 is normal, > 0 is an error
 class code(object):
