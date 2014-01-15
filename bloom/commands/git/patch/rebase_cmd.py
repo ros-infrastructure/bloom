@@ -37,19 +37,15 @@ def non_git_rebase(upstream_branch, directory=None):
             ignores = ('.git', '.gitignore', '.svn', '.hgignore', '.hg', 'CVS')
             parent_source = os.path.join(tmp_dir, 'parent_source')
             my_copytree(git_root, parent_source, ignores)
-
-        # Clear out the local branch
-        execute_command('git rm -rf *', cwd=directory)
-        # Collect .* files (excluding .git)
-        dot_items = []
+        # Collect files (excluding .git)
+        items = []
         for item in os.listdir(git_root):
             if item in ['.git', '..', '.']:
                 continue
-            if item.startswith('.'):
-                dot_items.append(item)
-        # Remove and .* files missed by 'git rm -rf *'
-        if len(dot_items) > 0:
-            execute_command('git rm -rf ' + ' '.join(dot_items), cwd=directory)
+            items.append(item)
+        # Remove all files
+        if len(items) > 0:
+            execute_command('git rm -rf ' + ' '.join(items), cwd=directory)
         # Clear out any untracked files
         execute_command('git clean -fdx', cwd=directory)  # for good measure?
 
