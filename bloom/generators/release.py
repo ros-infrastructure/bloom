@@ -117,12 +117,12 @@ each package in the upstream repository, so the source branch should be set to
         )
         info(msg)
         ret = trim(undo=True)
-        return 0 if ret < 0 else ret  # Ret < 0 indicates nothing was done
+        return 0 if ret is None or ret < 0 else ret  # Ret < 0 indicates nothing was done
 
     def post_rebase(self, destination):
         # Figure out the trim sub dir
         name = destination.split('/')[-1]
-        trim_d = [k for k, v in self.packages.iteritems() if v.name == name][0]
+        trim_d = [k for k, v in self.packages.items() if v.name == name][0]
         # Execute trim
         if trim_d in ['', '.']:
             return
@@ -164,7 +164,7 @@ Please checkout the release branch and then create a tag manually with:""")
             self.packages = packages
             # Check meta packages for valid CMakeLists.txt
             if isinstance(self.packages, dict):
-                for path, pkg in self.packages.iteritems():
+                for path, pkg in self.packages.items():
                     # Check for valid CMakeLists.txt if a metapackage
                     self.metapackage_check(path, pkg)
             return name if type(name) is list else [name]

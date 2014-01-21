@@ -38,7 +38,13 @@ import bloom
 import json
 import os
 import sys
-import xmlrpclib
+
+try:
+    # Python2
+    from xmlrpclib import ServerProxy
+except ImportError:
+    # Python3
+    from xmlrpc.client import ServerProxy
 
 from bloom.logging import warning
 
@@ -100,7 +106,7 @@ def fetch_update(user_bloom):
     if os.path.exists(user_bloom):
         return
     open(user_bloom, 'w').close()  # Touch the file
-    pypi = xmlrpclib.ServerProxy('http://pypi.python.org/pypi')
+    pypi = ServerProxy('http://pypi.python.org/pypi')
     newest_version = pypi.package_releases('bloom')
     newest_version = newest_version[0] if newest_version else None
     current_version = bloom.__version__

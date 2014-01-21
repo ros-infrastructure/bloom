@@ -74,6 +74,7 @@ from bloom.util import change_directory
 from bloom.util import disable_git_clone
 from bloom.util import handle_global_arguments
 from bloom.util import quiet_git_clone_warning
+from bloom.util import safe_input
 
 try:
     from vcstools.vcs_abstraction import get_vcs_client
@@ -181,7 +182,11 @@ def process_track_settings(track_dict, release_inc_override):
             error("Auto detection of version is not supported for '{0}'"
                   .format(vcs_type), exit=True)
         devel_branch = track_dict['devel_branch']
-        if type(devel_branch) in [str, unicode] \
+        try:
+            string_types = [str, unicode]
+        except NameError:
+            string_types = [str]
+        if type(devel_branch) in string_types \
            and devel_branch.lower() == ':{none}':
             devel_branch = None
         version, repo = find_version_from_upstream(vcs_uri,
@@ -191,8 +196,8 @@ def process_track_settings(track_dict, release_inc_override):
         if version is None:
             warning("Could not determine the version automatically.")
     if version is None or version == ':{ask}':
-        ret = raw_input('What version are you releasing '
-                        '(version should normally be MAJOR.MINOR.PATCH)? ')
+        ret = safe_input('What version are you releasing '
+                         '(version should normally be MAJOR.MINOR.PATCH)? ')
         if not ret:
             error("You must specify a version to continue.", exit=True)
         version = ret
@@ -207,7 +212,7 @@ def process_track_settings(track_dict, release_inc_override):
     release_tag = track_dict['release_tag']
     release_tag_prompt = DEFAULT_TEMPLATE['release_tag']
     if release_tag is not None and release_tag == ':{ask}':
-        ret = raw_input('What upstream tag should bloom import from? ')
+        ret = safe_input('What upstream tag should bloom import from? ')
         if not ret:
             error("You must specify a release tag.", exit=True)
         release_tag = ret

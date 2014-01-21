@@ -57,7 +57,7 @@ def set_patch_config(patches_branch, config, directory=None):
         conf_path = 'patches.conf'
         if directory is not None:
             conf_path = os.path.join(directory, conf_path)
-        config_keys = config.keys()
+        config_keys = list(config.keys())
         config_keys.sort()
         if _patch_config_keys != config_keys:
             raise RuntimeError("Invalid config passed to set_patch_config")

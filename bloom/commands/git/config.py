@@ -63,6 +63,7 @@ from bloom.util import execute_command
 from bloom.util import check_output
 from bloom.util import handle_global_arguments
 from bloom.util import maybe_continue
+from bloom.util import safe_input
 
 template_entry_order = [
     'name',
@@ -122,12 +123,12 @@ def convert_old_bloom_conf(prefix=None):
 
 def show_current():
     bloom_ls = ls_tree(BLOOM_CONFIG_BRANCH)
-    bloom_files = [f for f, t in bloom_ls.iteritems() if t == 'file']
+    bloom_files = [f for f, t in bloom_ls.items() if t == 'file']
     if 'bloom.conf' in bloom_files:
         info("Old bloom.conf file detected, up converting...")
         convert_old_bloom_conf()
         bloom_ls = ls_tree(BLOOM_CONFIG_BRANCH)
-        bloom_files = [f for f, t in bloom_ls.iteritems() if t == 'file']
+        bloom_files = [f for f, t in bloom_ls.items() if t == 'file']
     if 'tracks.yaml' in bloom_files:
         info(yaml.dump(get_tracks_dict_raw(), indent=2,
              default_flow_style=False))
@@ -189,7 +190,7 @@ def new(track, template=None, copy_track=None, overrides={}):
             track_dict[key].default = overrides[key]
         if track_dict[key].default == ':{name}':
             track_dict[key].default = track
-        ret = raw_input(str(track_dict[key]))
+        ret = safe_input(str(track_dict[key]))
         if ret:
             track_dict[key].default = ret  # This type checks against self.values
             if ret in [':{none}', 'None']:
@@ -209,7 +210,7 @@ def show(args):
 
 
 def update_track(track_dict):
-    for key, value in DEFAULT_TEMPLATE.iteritems():
+    for key, value in DEFAULT_TEMPLATE.items():
         if key in ['actions']:
             if track_dict[key] != DEFAULT_TEMPLATE[key]:
                 warning("""\
@@ -238,7 +239,7 @@ def edit(track):
     for key in template_entry_order:
         pe = DEFAULT_TEMPLATE[key]
         pe.default = tracks_dict['tracks'][track][key]
-        ret = raw_input(str(pe))
+        ret = safe_input(str(pe))
         if ret:
             pe.default = ret  # This type checks against self.values
             if ret in [':{none}', 'None']:

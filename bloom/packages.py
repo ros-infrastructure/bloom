@@ -86,7 +86,7 @@ def get_package_data(branch_name=None, directory=None, quiet=True, release_direc
             log("found " + str(len(packages)) + " packages.",
                 use_prefix=False)
         else:
-            log("found '" + packages.values()[0].name + "'.",
+            log("found '" + list(packages.values())[0].name + "'.",
                 use_prefix=False)
         version = verify_equal_package_versions(packages.values())
         ignored_packages = get_ignored_packages(release_directory=release_directory)
