@@ -1,4 +1,4 @@
-.PHONY: all clean_dist clean
+.PHONY: all clean_dist clean doc
 
 VERSION=`./setup.py --version`
 
@@ -6,7 +6,6 @@ USERNAME ?= $(shell whoami)
 
 UNAME := $(shell uname)
 
-.PHONY: doc
 doc:
 	python setup.py build_sphinx
 ifeq ($(UNAME),Darwin)
@@ -26,11 +25,11 @@ clean_dist:
 clean: clean_dist
 	echo "clean"
 
-NEW_VERSION := $(shell python doc/bump_version.py setup.py --version_only)
+NEW_VERSION := $(shell python docs/bump_version.py setup.py --version_only)
 
 pre-release:
 	# Bump the version
-	python doc/bump_version.py setup.py > setup.py_tmp
+	python docs/bump_version.py setup.py > setup.py_tmp
 	mv setup.py_tmp setup.py
 	# Set the permissions
 	chmod 775 setup.py
