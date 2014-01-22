@@ -12,7 +12,12 @@ import shutil
 import sys
 import tempfile
 
-from StringIO import StringIO
+try:
+    # Python2
+    from StringIO import StringIO
+except ImportError:
+    # Python3
+    from io import StringIO
 
 from subprocess import Popen, PIPE, CalledProcessError
 
@@ -79,7 +84,7 @@ class bloom_answer(object):
         if msg is not None:
             print(msg)
         assert self.answer != self.ASSERT_NO_QUESTION, \
-               "bloom asked a question, and it should not have"
+            "bloom asked a question, and it should not have"
         if isinstance(self.answer, str):
             print(self.answer)
             return self.answer
@@ -94,12 +99,14 @@ class bloom_answer(object):
             assert False, "Invalid answers given to bloom_answer"
 
     def __enter__(self):
-        self.util_module.raw_input = self
-        self.config_module.raw_input = self
+        self.orig_util_module_input = self.util_module.safe_input
+        self.orig_config_module_input = self.config_module.safe_input
+        self.util_module.safe_input = self
+        self.config_module.safe_input = self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.util_module.raw_input = raw_input
-        self.config_module.raw_input = raw_input
+        self.util_module.safe_input = self.orig_util_module_input
+        self.config_module.safe_input = self.orig_config_module_input
 
 
 class change_directory(object):
@@ -165,13 +172,13 @@ def user_bloom(cmd, args=None, directory=None, auto_assert=True,
                return_io=True, silent=False):
     """Runs the given bloom cmd ('git-bloom-{cmd}') with the given args"""
     assert type(cmd) == str, \
-           "user_bloom cmd takes str only, got " + str(type(cmd))
+        "user_bloom cmd takes str only, got " + str(type(cmd))
     if args is None:
         args = cmd.split()[1:]
         cmd = cmd.split()[0]
     assert type(args) in [list, tuple, str], \
-           "user_bloom args takes [list, tuple, str] only, got " + \
-           str(type(args))
+        "user_bloom args takes [list, tuple, str] only, got " + \
+        str(type(args))
     from pkg_resources import load_entry_point
     from bloom import __version__ as ver
     if not cmd.startswith('git-bloom-'):
@@ -209,7 +216,7 @@ def user_cd(cmd, **kwargs):
         cmd = cmd.split()
     new_directory = cmd[0]
     assert os.path.exists(new_directory), \
-           "user tried to cd to '" + new_directory + "' which does not exist"
+        "user tried to cd to '" + new_directory + "' which does not exist"
     os.chdir(new_directory)
     return 0
 
@@ -225,7 +232,7 @@ def user_echo(cmd, **kwargs):
     elif len(cmd) == 3 and cmd[1] in ['>>', '>']:
         # echo into somefile
         assert not os.path.isdir(cmd[2]), \
-               "user tried to echo into a directory: '" + cmd[2] + "'"
+            "user tried to echo into a directory: '" + cmd[2] + "'"
         if cmd[1] == '>>':
             mode = 'a'
         else:
@@ -250,7 +257,7 @@ def user_mkdir(cmd, **kwargs):
         mkdir_cmd = os.mkdir
     new_dir = cmd[0]
     assert not os.path.exists(new_dir), \
-           "directory '" + new_dir + "' already exists"
+        "directory '" + new_dir + "' already exists"
     mkdir_cmd(new_dir)
     return 0
 
@@ -260,7 +267,7 @@ def user_touch(cmd, **kwargs):
     Used to emulat a user touching a file
     """
     assert not os.path.exists(cmd), \
-           "user tried to touch a file '" + cmd + "' but it exists"
+        "user tried to touch a file '" + cmd + "' but it exists"
     if os.path.exists(cmd):
         os.utime(cmd, None)
     else:
@@ -297,6 +304,10 @@ def user(cmd, directory=None, auto_assert=True, return_io=False,
     try:
         p = Popen(cmd, shell=True, cwd=directory, stdout=PIPE, stderr=PIPE)
         out, err = p.communicate()
+        if out is not None and not isinstance(out, str):
+            out = out.decode('utf-8')
+        if err is not None and not isinstance(err, str):
+            err = err.decode('utf-8')
         ret = p.returncode
     except CalledProcessError as err:
         ret = err.returncode
@@ -305,7 +316,7 @@ def user(cmd, directory=None, auto_assert=True, return_io=False,
         print(err, file=sys.stderr, end='')
     if auto_assert:
         assert ret == 0, \
-               "user command '" + cmd + "' returned " + str(p.returncode)
+            "user command '" + cmd + "' returned " + str(p.returncode)
     if return_io:
         return ret, out, err
     return ret

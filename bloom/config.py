@@ -162,7 +162,7 @@ class PromptEntry(object):
     def __str__(self):
         msg = fmt('@_' + sanitize(self.name) + ':@|')
         if self.spec is not None:
-            for key, val in self.spec.iteritems():
+            for key, val in self.spec.items():
                 msg += '\n  ' + key
                 for line in val.splitlines():
                     msg += '\n    ' + line

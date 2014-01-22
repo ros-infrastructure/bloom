@@ -40,7 +40,10 @@ import tempfile
 
 from pkg_resources import parse_version
 
-from urlparse import urlparse
+try:
+    from urlparse import urlparse
+except ImportError:
+    from urllib.parse import urlparse
 
 from bloom.config import BLOOM_CONFIG_BRANCH
 
@@ -156,7 +159,7 @@ def import_tarball(tarball_path, target_branch, version, name):
 
 
 def handle_tree(tree, directory, root_path, version):
-    for path, kind in tree.iteritems():
+    for path, kind in tree.items():
         if kind == 'directory':
             # Path relative to start path
             rel_path = os.path.join(directory, path)

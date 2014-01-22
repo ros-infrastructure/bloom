@@ -43,7 +43,17 @@ import socket
 import sys
 import tempfile
 import time
-import urllib2
+
+try:
+    # Python2
+    from urllib2 import HTTPError
+    from urllib2 import URLError
+    from urllib2 import urlopen
+except ImportError:
+    # Python3
+    from urllib.error import HTTPError
+    from urllib.error import URLError
+    from urllib.request import urlopen
 
 from email.utils import formatdate
 
@@ -52,7 +62,12 @@ from subprocess import PIPE
 from subprocess import STDOUT
 from subprocess import Popen
 
-from StringIO import StringIO
+try:
+    # Python2
+    from StringIO import StringIO
+except ImportError:
+    # Python3
+    from io import StringIO
 
 from bloom.logging import ansi
 from bloom.logging import debug
@@ -66,6 +81,13 @@ try:
     to_unicode = unicode
 except NameError:
     to_unicode = str
+
+try:
+    def safe_input(prompt=None):
+        return raw_input(prompt)
+except NameError:
+    def safe_input(prompt=None):
+        return input(prompt)
 
 
 # Convention: < 0 is a warning exit, 0 is normal, > 0 is an error
@@ -161,8 +183,8 @@ def load_url_to_file_handle(url, retry=2, retry_period=1, timeout=10):
     :type timeout: float
     """
     try:
-        fh = urllib2.urlopen(url, timeout=timeout)
-    except urllib2.HTTPError as e:
+        fh = urlopen(url, timeout=timeout)
+    except HTTPError as e:
         if e.code == 503 and retry:
             time.sleep(retry_period)
             return load_url_to_file_handle(url,
@@ -171,14 +193,14 @@ def load_url_to_file_handle(url, retry=2, retry_period=1, timeout=10):
                                            timeout=timeout)
         e.msg += ' (%s)' % url
         raise
-    except urllib2.URLError as e:
+    except URLError as e:
         if isinstance(e.reason, socket.timeout) and retry:
             time.sleep(retry_period)
             return load_url_to_file_handle(url,
                                            retry=retry - 1,
                                            retry_period=retry_period,
                                            timeout=timeout)
-        raise urllib2.URLError(str(e) + ' (%s)' % url)
+        raise URLError(str(e) + ' (%s)' % url)
     return fh
 
 
@@ -312,6 +334,8 @@ def check_output(cmd, cwd=None, stdin=None, stderr=None, shell=False):
     out, err = p.communicate()
     if p.returncode:
         raise CalledProcessError(p.returncode, cmd)
+    if not isinstance(out, str):
+        out = out.decode('utf-8')
     return out
 
 
@@ -331,7 +355,7 @@ def maybe_continue(default='y'):
         msg += "{0}[y/N]? {1}".format(ansi('yellowf'), ansi('reset'))
 
     while True:
-        response = raw_input(msg)
+        response = safe_input(msg)
         if not response:
             response = default
 
@@ -381,6 +405,10 @@ def execute_command(cmd, shell=True, autofail=True, silent=True,
     debug(((cwd) if cwd else os.getcwd()) + ":$ " + str(cmd))
     p = Popen(cmd, shell=True, cwd=cwd, stdout=out_io, stderr=err_io)
     out, err = p.communicate()
+    if out is not None and not isinstance(out, str):
+        out = out.decode('utf-8')
+    if err is not None and not isinstance(err, str):
+        err = err.decode('utf-8')
     result = p.returncode
     if result != 0:
         if not silent_error:

@@ -33,6 +33,7 @@
 from __future__ import print_function
 
 import argparse
+import binascii
 import hashlib
 import os
 import sys
@@ -90,7 +91,10 @@ def calculate_file_md5(path, block_size=2 ** 20):
             if not data:
                 break
             md5.update(data)
-    return md5.digest().encode('hex')
+    digest = binascii.hexlify(md5.digest())
+    if not isinstance(digest, str):
+        digest = digest.decode('utf-8')
+    return digest
 
 
 def export_upstream(uri, tag, vcs_type, output_dir, show_uri, name):

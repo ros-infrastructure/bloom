@@ -125,6 +125,8 @@ def __place_template_folder(group, src, dst, gbp=False):
                 debug("Removing existing file '{0}'".format(template_dst))
                 os.remove(template_dst)
             with open(template_dst, 'w') as f:
+                if not isinstance(template, str):
+                    template = template.decode('utf-8')
                 f.write(template)
             shutil.copystat(template_abs_path, template_dst)
 
@@ -373,7 +375,7 @@ def get_package_from_branch(branch):
             "the release generator first to split packages into "
             "individual branches.")
     if type(packages) is dict:
-        return packages.values()[0]
+        return list(packages.values())[0]
 
 
 def debianize_string(value):

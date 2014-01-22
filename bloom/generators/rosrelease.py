@@ -76,7 +76,7 @@ Please checkout the release branch and then create a tag manually with:""")
             self.packages = packages
             # Check meta packages for valid CMakeLists.txt
             if isinstance(self.packages, dict):
-                for path, pkg in self.packages.iteritems():
+                for path, pkg in self.packages.items():
                     # Check for valid CMakeLists.txt if a metapackage
                     self.metapackage_check(path, pkg)
             return name if type(name) is list else [name]
