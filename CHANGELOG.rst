@@ -1,3 +1,12 @@
+0.4.5 (2014-01-22 10:58:50 -0800)
+---------------------------------
+- Added Python2/3 bilingual support, bloom should now install and work with Python3
+- Added an assertion that the rosdistro version 1 is being used in preperation of REP-0141 roll out
+- Fixed crash from unicode characters in the changelog
+- Added assertions about the format of version numbers used
+- Added check for git submodules, still not supported, but bloom will fail earlier with a better error
+- Fixed a bug where empty folders containing a .gitignore in the upstream caused bloom to fail
+
 0.4.4 (2013-07-22 17:50:55 -0700)
 ---------------------------------
 - Properly handle pagination of github pages #174
