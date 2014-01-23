@@ -418,11 +418,11 @@ class DebianGenerator(BloomGenerator):
         self.distros = args.distros
         if self.distros in [None, []]:
             index = rosdistro.get_index(rosdistro.get_index_url())
-            release_file = rosdistro.get_release_file(index, self.rosdistro)
-            if self.os_name not in release_file.platforms:
+            distribution_file = rosdistro.get_distribution_file(index, self.rosdistro)
+            if self.os_name not in distribution_file.release_platforms:
                 error("No platforms defined for os '{0}' in release file for the '{1}' distro."
                       .format(self.os_name, self.rosdistro), exit=True)
-            self.distros = release_file.platforms[self.os_name]
+            self.distros = distribution_file.release_platforms[self.os_name]
         self.install_prefix = args.install_prefix
         if args.install_prefix is None:
             self.install_prefix = self.default_install_prefix
