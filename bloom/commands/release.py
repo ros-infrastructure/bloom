@@ -393,7 +393,7 @@ def create_pull_request(org, repo, user, password, base_branch, head_branch, tit
     return api_dict['html_url']
 
 
-def open_pull_request(track, repository, distro):
+def open_pull_request(track, repository, distro, ssh_pull_request):
     # Get the diff
     release_file = get_release_file(distro)
     if repository in release_file.repositories:
@@ -471,7 +471,11 @@ Increasing version of package(s) in repository `{0}`:
             call(cmd, shell=True)
             if out:
                 info(out, use_prefix=False)
-        _my_run('git clone https://github.com/{0}/{1}.git'.format(gh_username, gh_repo))
+        if ssh_pull_request:
+            rosdistro_git_fork = 'git@github.com/{0}/{1}.git'.format(gh_username, gh_repo)
+        else:
+            rosdistro_git_fork = 'https://github.com/{0}/{1}.git'.format(gh_username, gh_repo)
+        _my_run('git clone {0}'.format(rosdistro_git_fork))
         with change_directory(gh_repo):
             _my_run('git remote add bloom https://github.com/{0}/{1}.git'.format(gh_org, gh_repo))
             _my_run('git remote update')
@@ -589,7 +593,7 @@ Versions of tools used:
     summary_file.write(msg)
 
 
-def perform_release(repository, track, distro, new_track, interactive, pretend):
+def perform_release(repository, track, distro, new_track, interactive, pretend, ssh_pull_request):
     release_repo = get_release_repo(repository, distro)
     with change_directory(release_repo.get_path()):
         # Check to see if the old bloom.conf exists
@@ -743,7 +747,7 @@ def perform_release(repository, track, distro, new_track, interactive, pretend):
              "Generating pull request to distro file located at '{0}'"
              .format(get_release_file_url(distro)))
         try:
-            pull_request_url = open_pull_request(track, repository, distro)
+            pull_request_url = open_pull_request(track, repository, distro, ssh_pull_request)
             if pull_request_url:
                 info(fmt(_success) + "Pull request opened at: {0}".format(pull_request_url))
                 if 'BLOOM_NO_WEBBROWSER' in os.environ and platform.system() not in ['Darwin']:
@@ -774,6 +778,8 @@ def get_argument_parser():
         help="Pretends to push and release")
     add('--no-web', default=False, action='store_true',
         help="prevents a web browser from being opened at the end")
+    add('--ssh-pr', default=False, action='store_true',
+        help="Do rosdistro updates using ssh keys")
     return parser
 
 _quiet = False
@@ -797,6 +803,7 @@ def main(sysargs=None):
         disable_git_clone(True)
         quiet_git_clone_warning(True)
         perform_release(args.repository, args.track, args.ros_distro,
-                        args.new_track, not args.non_interactive, args.pretend)
+                        args.new_track, not args.non_interactive, args.pretend,
+                        args.ssh_pr)
     except (KeyboardInterrupt, EOFError) as exc:
         error("\nReceived '{0}', aborting.".format(type(exc).__name__))
