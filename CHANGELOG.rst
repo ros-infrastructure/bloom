@@ -1,3 +1,8 @@
+0.4.6 (2014-01-24 15:33:00 -0800)
+--------------------------------
+- Updates to support REP-0141 with rosdistro >= 0.3.0 and rosdep >= 0.10.25
+- @ahendrix contributed an option for doing ssh key based pull request generation
+
 0.4.5 (2014-01-22 10:58:50 -0800)
 ---------------------------------
 - Added Python2/3 bilingual support, bloom should now install and work with Python3
