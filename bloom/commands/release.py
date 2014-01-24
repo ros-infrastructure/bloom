@@ -278,20 +278,17 @@ def generate_ros_distro_diff(track, repository, distro):
         }
     # Update the repository
     repo = distribution_dict['repositories'][repository]['release']
-    print("repo is %s" % repo)
     if 'tags' not in repo:
         repo['tags'] = {}
     repo['tags']['release'] = 'release/%s/{package}/{version}' % distro
     repo['version'] = version
     if 'packages' not in repo:
-        repo['packages'] = {}
+        repo['packages'] = []
     for path, pkg in packages.items():
         if pkg.name not in repo['packages']:
             repo['packages'].append(pkg.name)
-
-    packages_being_released = [p.name for p in packages.values()]
-
     # Remove any missing packages
+    packages_being_released = [p.name for p in packages.values()]
     for pkg_name in list(repo['packages']):
         if pkg_name not in packages_being_released:
             repo['packages'].remove(pkg_name)
