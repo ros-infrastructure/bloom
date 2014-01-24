@@ -10,8 +10,7 @@ install:
   - cd /tmp/empy
   - python setup.py install
   - cd -
-  - sudo pip install rosdep
-  - sudo rosdep init
+  - sudo `which rosdep` init
   - rosdep update
   - git config --global user.email "test@example.com"
   - git config --global user.name "Test User"

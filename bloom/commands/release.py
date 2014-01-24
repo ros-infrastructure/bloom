@@ -38,7 +38,6 @@ import base64
 import datetime
 import difflib
 import getpass
-import httplib
 import json
 import os
 import pkg_resources
@@ -51,6 +50,11 @@ import tempfile
 import traceback
 import urllib2
 import webbrowser
+
+try:
+    from httplib import HTTPSConnection
+except ImportError:
+    from http.client import HTTPSConnection
 
 from urlparse import urlparse
 
@@ -88,6 +92,7 @@ from bloom.summary import get_summary_file
 from bloom.util import add_global_arguments
 from bloom.util import change_directory
 from bloom.util import disable_git_clone
+from bloom.util import safe_input
 from bloom.util import get_rfc_2822_date
 from bloom.util import handle_global_arguments
 from bloom.util import load_url_to_file_handle
@@ -95,20 +100,21 @@ from bloom.util import maybe_continue
 from bloom.util import quiet_git_clone_warning
 
 try:
-    import vcstools.__version__
-    from vcstools.vcs_abstraction import get_vcs_client
+    import vcstools
 except ImportError:
     debug(traceback.format_exc())
     error("vcstools was not detected, please install it.", file=sys.stderr,
           exit=True)
+import vcstools.__version__
+from vcstools.vcs_abstraction import get_vcs_client
 
 try:
     import rosdistro
-    from rosdistro.writer import yaml_from_release_file
 except ImportError:
     debug(traceback.format_exc())
     error("rosdistro was not detected, please install it.", file=sys.stderr,
           exit=True)
+from rosdistro.writer import yaml_from_distribution_file
 
 try:
     import rosdep2
@@ -141,51 +147,56 @@ def exit_cleanup():
             shutil.rmtree(repo_path)
 
 _rosdistro_index = None
-_rosdistro_release_files = {}
+_rosdistro_distribution_files = {}
 
 
 def get_index():
     global _rosdistro_index
     if _rosdistro_index is None:
         _rosdistro_index = rosdistro.get_index(rosdistro.get_index_url())
-        if _rosdistro_index.version > 1:
+        if _rosdistro_index.version == 1:
+            error("This version of bloom does not support rosdistro version "
+                  "'{0}', please use an older version of bloom."
+                  .format(_rosdistro_index.version), exit=True)
+        if _rosdistro_index.version > 2:
             error("This version of bloom does not support rosdistro version "
                   "'{0}', please update bloom.".format(_rosdistro_index.version), exit=True)
     return _rosdistro_index
 
 
-def get_release_file(distro):
-    global _rosdistro_release_files
-    if distro not in _rosdistro_release_files:
-        _rosdistro_release_files[distro] = rosdistro.get_release_file(get_index(), distro)
-    return _rosdistro_release_files[distro]
+def get_distribution_file(distro):
+    global _rosdistro_distribution_files
+    if distro not in _rosdistro_distribution_files:
+        _rosdistro_distribution_files[distro] = rosdistro.get_distribution_file(get_index(), distro)
+    return _rosdistro_distribution_files[distro]
 
-_rosdistro_release_file_urls = {}
+_rosdistro_distribution_file_urls = {}
 
 
-def get_release_file_url(distro):
-    global _rosdistro_release_file_urls
-    if distro not in _rosdistro_release_file_urls:
+def get_disitrbution_file_url(distro):
+    global _rosdistro_distribution_file_urls
+    if distro not in _rosdistro_distribution_file_urls:
         index = get_index()
         if distro not in index.distributions:
             error("'{0}' distro is not in the index file.".format(distro), exit=True)
         distro_file = index.distributions[distro]
-        if 'release' not in distro_file:
-            error("'{0}' distro does not have a release file.".format(distro), exit=True)
-        _rosdistro_release_file_urls[distro] = distro_file['release']
-    return _rosdistro_release_file_urls[distro]
+        if 'distribution' not in distro_file:
+            error("'{0}' distro does not have a distribution file.".format(distro), exit=True)
+        _rosdistro_distribution_file_urls[distro] = distro_file['distribution']
+    return _rosdistro_distribution_file_urls[distro]
 
 
 def get_repo_uri(repository, distro):
     url = None
     # Fetch the distro file
-    release_file = get_release_file(distro)
-    if repository in release_file.repositories:
-        url = release_file.repositories[repository].url
+    distribution_file = get_distribution_file(distro)
+    if repository in distribution_file.repositories and \
+       distribution_file.repositories[repository].release_repository is not None:
+        url = distribution_file.repositories[repository].release_repository.url
     else:
-        error("Specified repository '{0}' is not in the release file located at '{1}'"
-              .format(repository, get_release_file_url(distro)))
-        matches = difflib.get_close_matches(repository, release_file.repositories)
+        error("Specified repository '{0}' is not in the distribution file located at '{1}'"
+              .format(repository, get_disitrbution_file_url(distro)))
+        matches = difflib.get_close_matches(repository, distribution_file.repositories)
         if matches:
             info(fmt("@{yf}Did you mean one of these: '" + "', '".join([m for m in matches]) + "'?"))
     if not url:
@@ -194,7 +205,7 @@ def get_repo_uri(repository, distro):
         info("You can continue the release process by manually specifying the location of the RELEASE repository.")
         info("To be clear this is the url of the RELEASE repository not the upstream repository.")
         try:
-            url = raw_input('Release repository url [press enter to abort]: ')
+            url = safe_input('Release repository url [press enter to abort]: ')
         except (KeyboardInterrupt, EOFError):
             url = None
             info('', use_prefix=False)
@@ -241,14 +252,15 @@ def list_tracks(repository, distro):
     return tracks_dict['tracks'].keys() if tracks_dict else None
 
 
-def get_relative_release_file_path(distro):
-    release_file_url = urlparse(get_release_file_url(distro))
+def get_relative_distribution_file_path(distro):
+    distribution_file_url = urlparse(get_disitrbution_file_url(distro))
     index_file_url = urlparse(rosdistro.get_index_url())
-    return os.path.relpath(release_file_url.path, os.path.commonprefix([index_file_url.path, release_file_url.path]))
+    return os.path.relpath(distribution_file_url.path,
+                           os.path.commonprefix([index_file_url.path, distribution_file_url.path]))
 
 
 def generate_ros_distro_diff(track, repository, distro):
-    release_dict = get_release_file(distro).get_data()
+    distribution_dict = get_distribution_file(distro).get_data()
     # Get packages
     packages = get_packages()
     if len(packages) == 0:
@@ -259,13 +271,14 @@ def generate_ros_distro_diff(track, repository, distro):
     release_inc = track_dict['release_inc']
     version = '{0}-{1}'.format(last_version, release_inc)
     # Create a repository if there isn't already one
-    if repository not in release_dict['repositories']:
+    if repository not in distribution_dict['repositories']:
         global _user_provided_release_url
-        release_dict['repositories'][repository] = {
+        distribution_dict['repositories'][repository]['release'] = {
             'url': _user_provided_release_url
         }
     # Update the repository
-    repo = release_dict['repositories'][repository]
+    repo = distribution_dict['repositories'][repository]['release']
+    print("repo is %s" % repo)
     if 'tags' not in repo:
         repo['tags'] = {}
     repo['tags']['release'] = 'release/%s/{package}/{version}' % distro
@@ -274,18 +287,21 @@ def generate_ros_distro_diff(track, repository, distro):
         repo['packages'] = {}
     for path, pkg in packages.items():
         if pkg.name not in repo['packages']:
-            repo['packages'][pkg.name] = {}
-        repo['packages'][pkg.name]['subfolder'] = path  # This will be shortened
+            repo['packages'].append(pkg.name)
+
+    packages_being_released = [p.name for p in packages.values()]
+
     # Remove any missing packages
-    for pkg_name in dict(repo['packages']):
-        if pkg_name not in [p.name for p in packages.values()]:
-            if pkg_name in repo['packages']:
-                del repo['packages'][pkg_name]
+    for pkg_name in list(repo['packages']):
+        if pkg_name not in packages_being_released:
+            repo['packages'].remove(pkg_name)
+    repo['packages'].sort()
+
     # Do the diff
-    distro_file_name = get_relative_release_file_path(distro)
-    updated_release_file = rosdistro.ReleaseFile('distro', release_dict)
-    distro_dump = yaml_from_release_file(updated_release_file)
-    distro_file_raw = load_url_to_file_handle(get_release_file_url(distro)).read()
+    distro_file_name = get_relative_distribution_file_path(distro)
+    updated_distribution_file = rosdistro.DistributionFile(distro, distribution_dict)
+    distro_dump = yaml_from_distribution_file(updated_distribution_file)
+    distro_file_raw = load_url_to_file_handle(get_disitrbution_file_url(distro)).read()
     if distro_file_raw != distro_dump:
         udiff = difflib.unified_diff(distro_file_raw.splitlines(), distro_dump.splitlines(),
                                      fromfile=distro_file_name, tofile=distro_file_name)
@@ -313,7 +329,7 @@ def generate_ros_distro_diff(track, repository, distro):
             info(line, use_prefix=False, end='')
         with open(udiff_file, 'w+') as f:
             f.write(udiff_raw)
-        return updated_release_file
+        return updated_distribution_file
     else:
         warning("This release resulted in no changes to the ROS distro file...")
     return None
@@ -366,7 +382,7 @@ def create_fork(org, repo, user, password):
     info(fmt("@{bf}@!==> @|@!" + str(msg)))
     headers = {}
     headers["Authorization"] = "Basic {0}".format(base64.b64encode('{0}:{1}'.format(user, password)))
-    conn = httplib.HTTPSConnection('api.github.com')
+    conn = HTTPSConnection('api.github.com')
     conn.request('POST', '/repos/{0}/{1}/forks'.format(org, repo), json.dumps({}), headers)
     resp = conn.getresponse()
     if str(resp.status) != '202':
@@ -377,7 +393,7 @@ def create_pull_request(org, repo, user, password, base_branch, head_branch, tit
     headers = {}
     headers["Authorization"] = "Basic {0}".format(base64.b64encode('{0}:{1}'.format(user, password)))
     headers['User-Agent'] = 'bloom-{0}'.format(bloom.__version__)
-    conn = httplib.HTTPSConnection('api.github.com')
+    conn = HTTPSConnection('api.github.com')
     data = {
         'title': title,
         'body': body,
@@ -395,19 +411,20 @@ def create_pull_request(org, repo, user, password, base_branch, head_branch, tit
 
 def open_pull_request(track, repository, distro, ssh_pull_request):
     # Get the diff
-    release_file = get_release_file(distro)
-    if repository in release_file.repositories:
-        orig_version = release_file.repositories[repository].version
+    distribution_file = get_distribution_file(distro)
+    if repository in distribution_file.repositories and \
+       distribution_file.repositories[repository].release_repository is not None:
+        orig_version = distribution_file.repositories[repository].release_repository.version
     else:
         orig_version = None
-    updated_release_file = generate_ros_distro_diff(track, repository, distro)
-    if updated_release_file is None:
+    updated_distribution_file = generate_ros_distro_diff(track, repository, distro)
+    if updated_distribution_file is None:
         # There were no changes, no pull request required
         return None
-    version = updated_release_file.repositories[repository].version
-    updated_distro_file = yaml_from_release_file(updated_release_file)
+    version = updated_distribution_file.repositories[repository].release_repository.version
+    updated_distro_file_yaml = yaml_from_distribution_file(updated_distribution_file)
     # Determine if the distro file is hosted on github...
-    gh_org, gh_repo, gh_branch, gh_path = get_gh_info(get_release_file_url(distro))
+    gh_org, gh_repo, gh_branch, gh_path = get_gh_info(get_disitrbution_file_url(distro))
     if None in [gh_org, gh_repo, gh_branch, gh_path]:
         warning("Automated pull request only available via github.com")
         return
@@ -418,7 +435,7 @@ def open_pull_request(track, repository, distro, ssh_pull_request):
         with open(bloom_user_path, 'r') as f:
             gh_username = f.read().strip()
     gh_username = gh_username or getpass.getuser()
-    response = raw_input("github user name [{0}]: ".format(gh_username))
+    response = safe_input("github user name [{0}]: ".format(gh_username))
     if response:
         gh_username = response
         info("Would you like bloom to store your github user name (~/.bloom_user)?")
@@ -502,7 +519,7 @@ Increasing version of package(s) in repository `{0}`:
             _my_run('git checkout -b {0} bloom/{1}'.format(new_branch, gh_branch))
             with open('{0}'.format(gh_path), 'w') as f:
                 info(fmt("@{bf}@!==> @|@!Writing new distribution file: ") + str(gh_path))
-                f.write(updated_distro_file)
+                f.write(updated_distro_file_yaml)
             _my_run('git add {0}'.format(gh_path))
             _my_run('git commit -m "{0}"'.format(title))
             _my_run('git push origin {0}'.format(new_branch))
@@ -563,9 +580,11 @@ User `{user}@{hostname}` released the packages in the `{repository}` repository 
         for ip in ignored_packages:
             msg += "- `{0}`\n".format(ip)
     summary_file = get_summary_file()
-    release_file = get_release_file(distro)
+    release_file = get_distribution_file(distro)
     reps = release_file.repositories
-    distro_version = reps[repository].version if repository in reps else None
+    distro_version = None
+    if repository in reps and reps[repository].release_repository is not None:
+        distro_version = reps[repository].release_repository.version
     msg += """
 Version of package(s) in repository `{repo}`:
 - rosdistro version: `{rosdistro_pv}`
@@ -745,7 +764,7 @@ def perform_release(repository, track, distro, new_track, interactive, pretend, 
         # Propose github pull request
         info(fmt("@{gf}@!==> @|") +
              "Generating pull request to distro file located at '{0}'"
-             .format(get_release_file_url(distro)))
+             .format(get_disitrbution_file_url(distro)))
         try:
             pull_request_url = open_pull_request(track, repository, distro, ssh_pull_request)
             if pull_request_url:
@@ -755,7 +774,7 @@ def perform_release(repository, track, distro, new_track, interactive, pretend, 
             else:
                 info("The release of your packages was successful, but the pull request failed.")
                 info("Please manually open a pull request by editing the file here: '{0}'"
-                     .format(get_release_file_url(distro)))
+                     .format(get_disitrbution_file_url(distro)))
                 info(fmt(_error) + "No pull request opened.")
         except Exception as e:
             debug(traceback.format_exc())
