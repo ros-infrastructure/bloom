@@ -1,5 +1,9 @@
+0.4.7 (2014-01-24 15:50:00 -0800)
+---------------------------------
+- Fix bug in pull request opening with new rosdistro format
+
 0.4.6 (2014-01-24 15:33:00 -0800)
---------------------------------
+---------------------------------
 - Updates to support REP-0141 with rosdistro >= 0.3.0 and rosdep >= 0.10.25
 - @ahendrix contributed an option for doing ssh key based pull request generation
 
