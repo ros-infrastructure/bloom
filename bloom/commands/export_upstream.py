@@ -50,6 +50,7 @@ from bloom.logging import info
 from bloom.logging import warning
 
 from bloom.git import branch_exists
+from bloom.git import get_root
 from bloom.git import has_submodules
 from bloom.git import tag_exists
 
@@ -120,7 +121,7 @@ def export_upstream(uri, tag, vcs_type, output_dir, show_uri, name):
                 error("Failed to clone repository at '{0}'".format(uri) +
                       (" to reference '{0}'.".format(tag) if tag else '.'),
                       exit=True)
-        if has_submodules(upstream_repo.get_path()):
+        if get_root() is not None and has_submodules(upstream_repo.get_path()):
             error("""\
 bloom does not support exporting git repositories with submodules, see:
 
