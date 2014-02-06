@@ -274,6 +274,8 @@ def generate_ros_distro_diff(track, repository, distro):
     if repository not in distribution_dict['repositories']:
         global _user_provided_release_url
         distribution_dict['repositories'][repository] = {}
+    # Create a release entry if there isn't already one
+    if 'release' not in distribution_dict['repositories'][repository]:
         distribution_dict['repositories'][repository]['release'] = {
             'url': _user_provided_release_url
         }
