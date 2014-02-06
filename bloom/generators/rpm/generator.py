@@ -255,7 +255,8 @@ def generate_substitutions_from_package(
     data['Maintainers'] = ', '.join(maintainers)
     # Changelog
     if releaser_history:
-        changelogs = [(v, releaser_history[v]) for v in sorted(releaser_history, key=releaser_history.get, reverse=True)]
+        sorted_releaser_history = sorted(releaser_history, key=releaser_history.get, reverse=True)
+        changelogs = [(v, releaser_history[v]) for v in sorted_releaser_history]
     else:
         # Ensure at least a minimal changelog
         changelogs = []
@@ -351,7 +352,7 @@ def rpmify_string(value):
     value = markup_remover.sub('', value)
     value = re.sub('\s+', ' ', value)
     value = '\n'.join([v.strip() for v in
-                      textwrap.TextWrapper(width=80,break_long_words=False,replace_whitespace=False).wrap(value)])
+                      textwrap.TextWrapper(width=80, break_long_words=False, replace_whitespace=False).wrap(value)])
     return value
 
 
