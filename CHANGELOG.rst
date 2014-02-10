@@ -1,3 +1,11 @@
+0.4.9 (2014-02-06 14:05:47 -0800)
+---------------------------------
+- Fixed another bug for first time releases, specifically first time releases which already have doc or source entries
+
+0.4.8 (2014-01-29 14:19:24 -0600)
+---------------------------------
+- Fixed a bug for first time releases
+
 0.4.7 (2014-01-24 15:50:00 -0800)
 ---------------------------------
 - Fix bug in pull request opening with new rosdistro format
