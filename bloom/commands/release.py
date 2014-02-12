@@ -481,7 +481,7 @@ Increasing version of package(s) in repository `{0}`:
 """.format(repository, orig_version or 'null', version, gh_path, bloom.__version__)
     with change_directory(temp_dir):
         def _my_run(cmd):
-            info(fmt("@{bf}@!==> @|@!" + str(cmd)))
+            info(fmt("@{bf}@!==> @|@!" + sanitize(str(cmd))))
             # out = check_output(cmd, stderr=subprocess.STDOUT, shell=True)
             out = None
             from subprocess import call
@@ -489,7 +489,7 @@ Increasing version of package(s) in repository `{0}`:
             if out:
                 info(out, use_prefix=False)
         if ssh_pull_request:
-            rosdistro_git_fork = 'git@github.com/{0}/{1}.git'.format(gh_username, gh_repo)
+            rosdistro_git_fork = 'git@github.com:{0}/{1}.git'.format(gh_username, gh_repo)
         else:
             rosdistro_git_fork = 'https://github.com/{0}/{1}.git'.format(gh_username, gh_repo)
         _my_run('git clone {0}'.format(rosdistro_git_fork))
