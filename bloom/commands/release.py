@@ -48,7 +48,6 @@ import subprocess
 import sys
 import tempfile
 import traceback
-import urllib2
 import webbrowser
 
 try:
@@ -69,10 +68,14 @@ from bloom.config import get_tracks_dict_raw
 from bloom.config import upconvert_bloom_to_config_branch
 from bloom.config import write_tracks_dict_raw
 
-from bloom.git import get_branches
+from bloom.git import branch_exists
 from bloom.git import inbranch
 from bloom.git import ls_tree
-from bloom.git import track_branches
+
+from bloom.github import auth_header_from_basic_auth
+from bloom.github import auth_header_from_oauth_token
+from bloom.github import Github
+from bloom.github import GithubException
 
 from bloom.logging import debug
 from bloom.logging import error
@@ -92,12 +95,14 @@ from bloom.summary import get_summary_file
 from bloom.util import add_global_arguments
 from bloom.util import change_directory
 from bloom.util import disable_git_clone
-from bloom.util import safe_input
 from bloom.util import get_rfc_2822_date
 from bloom.util import handle_global_arguments
 from bloom.util import load_url_to_file_handle
 from bloom.util import maybe_continue
 from bloom.util import quiet_git_clone_warning
+from bloom.util import safe_input
+from bloom.util import temporary_directory
+from bloom.util import to_unicode
 
 try:
     import vcstools
@@ -129,6 +134,8 @@ except ImportError:
     debug(traceback.format_exc())
     error("catkin_pkg was not detected, please install it.",
           file=sys.stderr, exit=True)
+
+from catkin_pkg.changelog import get_changelog_from_path
 
 _repositories = {}
 
@@ -259,6 +266,10 @@ def get_relative_distribution_file_path(distro):
                            os.path.commonprefix([index_file_url.path, distribution_file_url.path]))
 
 
+def generate_release_tag(distro):
+    return 'release/%s/{package}/{version}' % distro
+
+
 def generate_ros_distro_diff(track, repository, distro):
     distribution_dict = get_distribution_file(distro).get_data()
     # Get packages
@@ -283,7 +294,7 @@ def generate_ros_distro_diff(track, repository, distro):
     repo = distribution_dict['repositories'][repository]['release']
     if 'tags' not in repo:
         repo['tags'] = {}
-    repo['tags']['release'] = 'release/%s/{package}/{version}' % distro
+    repo['tags']['release'] = generate_release_tag(distro)
     repo['version'] = version
     if 'packages' not in repo:
         repo['packages'] = []
@@ -346,37 +357,6 @@ def get_gh_info(url):
     return url_paths[1], url_paths[2], url_paths[3], '/'.join(url_paths[4:])
 
 
-def __fetch_github_api(url, data):
-    try:
-        if data is not None:
-            req = urllib2.Request(url=url, data=data)
-            raw_gh_api = urllib2.urlopen(req)
-        else:
-            raw_gh_api = urllib2.urlopen(url)
-    except urllib2.HTTPError as e:
-        error("Failed to fetch github API '{0}': {1}"
-              .format(url, e))
-        return None
-    return json.load(raw_gh_api)
-
-
-def fetch_github_api(url, data=None, use_pagination=False, only_page=None):
-    if not use_pagination:
-        return __fetch_github_api(url, data)
-    items = []
-    page_count = only_page or 1
-    while True:
-        url_ = url + "?page=" + str(page_count)
-        page_count += 1
-        page_items = __fetch_github_api(url_, data)
-        if page_items is None:
-            return page_items
-        items.extend(page_items)
-        if not page_items or only_page:
-            break
-    return items
-
-
 def create_fork(org, repo, user, password):
     msg = "Creating fork: {0}:{1} => {2}:{1}".format(org, repo, user)
     info(fmt("@{bf}@!==> @|@!" + str(msg)))
@@ -389,24 +369,77 @@ def create_fork(org, repo, user, password):
         error("Failed to create fork: {0} {1}".format(resp.status, resp.reason), exit=True)
 
 
-def create_pull_request(org, repo, user, password, base_branch, head_branch, title, body=""):
-    headers = {}
-    headers["Authorization"] = "Basic {0}".format(base64.b64encode('{0}:{1}'.format(user, password)))
-    headers['User-Agent'] = 'bloom-{0}'.format(bloom.__version__)
-    conn = HTTPSConnection('api.github.com')
-    data = {
-        'title': title,
-        'body': body,
-        'head': "{0}:{1}".format(user, head_branch),
-        'base': base_branch
-    }
-    conn.request('POST', '/repos/{0}/{1}/pulls'.format(org, repo), json.dumps(data), headers)
-    resp = conn.getresponse()
-    if str(resp.status) != '201':
-        error("Failed to create pull request: {0} {1}".format(resp.status, resp.reason), exit=True)
-    api_location = resp.msg.dict['location']
-    api_dict = fetch_github_api(api_location)
-    return api_dict['html_url']
+def get_github_interface():
+    # First check to see if the oauth token is stored
+    oauth_config_path = os.path.join(os.path.expanduser('~'), '.config', 'bloom')
+    config = {}
+    if os.path.exists(oauth_config_path):
+        with open(oauth_config_path, 'r') as f:
+            config = json.loads(f.read())
+            token = config.get('oauth_token', None)
+            username = config.get('github_user', None)
+            if token and username:
+                return Github(username, auth=auth_header_from_oauth_token(token), token=token)
+    if not os.path.isdir(os.path.dirname(oauth_config_path)):
+        os.makedirs(os.path.dirname(oauth_config_path))
+    # Ok, now we have to ask for the user name and pass word
+    info("")
+    info("Looks like bloom doesn't have an oauth token for you yet.")
+    info("Therefore bloom will require your Github username and password just this once.")
+    info("With your Github username and password bloom will create an oauth token on your behalf.")
+    info("The token will be stored in `~/.config/bloom`.")
+    info("You can delete the token from that file to have a new token generated.")
+    info("Guard this token like a password, because it allows someone/something to act on your behalf.")
+    info("If you need to unauthorize it, remove it from the 'Applications' menu in your Github account page.")
+    info("")
+    token = None
+    while token is None:
+        try:
+            username = getpass.getuser()
+            username = safe_input("Github username [{0}]: ".format(username)) or username
+            password = getpass.getpass("Github password (never stored): ")
+        except (KeyboardInterrupt, EOFError):
+            return None
+        if not password:
+            error("No password was given, aborting.")
+            return None
+        gh = Github(username, auth=auth_header_from_basic_auth(username, password))
+        try:
+            token = gh.create_new_bloom_authorization(update_auth=True)
+            with open(oauth_config_path, 'a') as f:
+                config.update({'oauth_token': token, 'github_user': username})
+                f.write(json.dumps(config))
+            info("The token '{token}' was created and stored in the bloom config file: '{oauth_config_path}'"
+                 .format(**locals()))
+        except GithubException as exc:
+            error("{0}".format(exc))
+            info("")
+            warning("This sometimes fails when the username or password are incorrect, try again?")
+            if not maybe_continue():
+                return None
+    return gh
+
+
+def get_changelog_summary(release_tag):
+    summary = ""
+    for package in get_packages().values():
+        release_branch = '/'.join(release_tag.split('/')[:-1]).format(package=package.name)
+        if not branch_exists(release_branch):
+            continue
+        with inbranch(release_branch):
+            changelog = get_changelog_from_path(os.getcwd())
+            if changelog is None:
+                continue
+            for version, date, changes in changelog.foreach_version():
+                if changes and version == package.version:
+                    msgs = []
+                    for change in changes:
+                        msgs.extend([i for i in to_unicode(change).splitlines()])
+                    msg = '\n'.join(msgs)
+                    summary += "\nChanges for {package.name} {version}:\n{msg}\n".format(**locals())
+    if summary:
+        summary = "\n```" + summary + "```"
+    return summary
 
 
 def open_pull_request(track, repository, distro, ssh_pull_request):
@@ -424,81 +457,85 @@ def open_pull_request(track, repository, distro, ssh_pull_request):
     version = updated_distribution_file.repositories[repository].release_repository.version
     updated_distro_file_yaml = yaml_from_distribution_file(updated_distribution_file)
     # Determine if the distro file is hosted on github...
-    gh_org, gh_repo, gh_branch, gh_path = get_gh_info(get_disitrbution_file_url(distro))
-    if None in [gh_org, gh_repo, gh_branch, gh_path]:
+    base_org, base_repo, base_branch, base_path = get_gh_info(get_disitrbution_file_url(distro))
+    if None in [base_org, base_repo, base_branch, base_path]:
         warning("Automated pull request only available via github.com")
         return
-    # Get the github user name
-    gh_username = None
-    bloom_user_path = os.path.join(os.path.expanduser('~'), '.bloom_user')
-    if os.path.exists(bloom_user_path):
-        with open(bloom_user_path, 'r') as f:
-            gh_username = f.read().strip()
-    gh_username = gh_username or getpass.getuser()
-    response = safe_input("github user name [{0}]: ".format(gh_username))
-    if response:
-        gh_username = response
-        info("Would you like bloom to store your github user name (~/.bloom_user)?")
-        if maybe_continue():
-            with open(bloom_user_path, 'w') as f:
-                f.write(gh_username)
+    # Get the github interface
+    gh = get_github_interface()
+    # Determine the head org/repo for the pull request
+    head_org = gh.username  # The head org will always be gh user
+    head_repo = None
+    # Check if the github user and the base org are the same
+    if gh.username == base_org:
+        # If it is, then a fork is not necessary
+        head_repo = base_repo
+    else:
+        info(fmt("@{bf}@!==> @|@!Checking on github for a fork to make the pull request from..."))
+        # It is not, so a fork will be required
+        # Check if a fork already exists on the user's account with the same name
+        base_full_name = '{base_org}/{base_repo}'.format(**locals())
+        try:
+            repo_data = gh.get_repo(gh.username, base_repo)
+            if repo_data.get('fork', False):  # Check if it is a fork
+                # If it is, check that it is a fork of the destination
+                parent = repo_data.get('parent', {}).get('full_name', None)
+                if parent == base_full_name:
+                    # This is a valid fork
+                    head_repo = base_repo
+        except GithubException as exc:
+            pass  # 404 or unauthorized, but unauthorized should have been caught above
+        # If not head_repo, then either the fork has a different name, or there isn't one
+        if head_repo is None:
+            info(fmt("@{bf}@!==> @|@!" + "{head_org}/{base_repo} is not a fork, searching...".format(**locals())))
+            # First we should look at every repository for the user and see if they are a fork
+            user_repos = gh.list_repos(gh.username)
+            for repo in user_repos:
+                # If it is a fork and the parent is base_org/base_repo
+                if repo.get('fork', False) and repo.get('parent', {}).get('full_name', '') == base_full_name:
+                    # Then this is a valid fork
+                    head_repo = repo['name']
+        # If not head_repo still, a fork does not exist and must be created
         else:
-            with open(bloom_user_path, 'w') as f:
-                f.write(' ')
-            warning("If you want to have bloom store it in the future remove the ~/.bloom_user file.")
-    # Get the github password
-    gh_password = getpass.getpass("github password (This is not stored):")
-    if not gh_password or not gh_username:
-        error("Either the github username or github password is not set.")
-        warning("Skipping the pull request...")
-        return
-    # Check for fork
-    info(fmt("@{bf}@!==> @|@!Checking for rosdistro fork on github..."))
-    gh_user_repos = fetch_github_api('https://api.github.com/users/{0}/repos'.format(gh_username), use_pagination=True)
-    if gh_user_repos is None:
-        error("Failed to get a list of repositories for user: '{0}'".format(gh_username))
-        warning("Skipping the pull request...")
-        return
-    if 'rosdistro' not in [x['name'] for x in gh_user_repos if 'name' in x]:
-        warning("Github user '{0}' does not have a fork ".format(gh_username) +
-                "of the {0}:{1} repository, create one?".format(gh_org, gh_repo))
-        if not maybe_continue():
-            warning("Skipping the pull request...")
-            return
-        # Create a fork
-        create_fork(gh_org, gh_repo, gh_username, gh_password)
+            warning("Could not find a fork of {base_full_name} on the {gh.username} Github account.")
+            warning("Would you like to create one now?")
+            if not maybe_continue():
+                warning("Skipping the pull request...")
+                return
+            # Create a fork
+            try:
+                gh.create_fork(base_org, base_repo)  # Will raise if not successful
+            except GithubException as exc:
+                error("Aborting pull request: {0}".format(exc))
+                return
+    info(fmt("@{bf}@!==> @|@!" +
+             "Using this fork to make a pull request from: {head_org}/{head_repo}".format(**locals())))
     # Clone the fork
-    info(fmt("@{bf}@!==> @|@!" + "Cloning {0}/{1}...".format(gh_username, gh_repo)))
-    temp_dir = tempfile.mkdtemp()
+    info(fmt("@{bf}@!==> @|@!" + "Cloning {0}/{1}...".format(head_org, head_repo)))
     new_branch = None
-    title = "{0}: {1} in '{2}' [bloom]".format(repository, version, gh_path)
+    title = "{0}: {1} in '{2}' [bloom]".format(repository, version, base_path)
     body = """\
-Increasing version of package(s) in repository `{0}`:
-- previous version: `{1}`
-- new version: `{2}`
+Increasing version of package(s) in repository `{0}` to `{1}` from `{2}`:
+
 - distro file: `{3}`
 - bloom version: `{4}`
-""".format(repository, orig_version or 'null', version, gh_path, bloom.__version__)
-    with change_directory(temp_dir):
-        def _my_run(cmd):
-            info(fmt("@{bf}@!==> @|@!" + sanitize(str(cmd))))
-            # out = check_output(cmd, stderr=subprocess.STDOUT, shell=True)
-            out = None
-            from subprocess import call
-            call(cmd, shell=True)
-            if out:
-                info(out, use_prefix=False)
-        if ssh_pull_request:
-            rosdistro_git_fork = 'git@github.com:{0}/{1}.git'.format(gh_username, gh_repo)
-        else:
-            rosdistro_git_fork = 'https://github.com/{0}/{1}.git'.format(gh_username, gh_repo)
-        _my_run('git clone {0}'.format(rosdistro_git_fork))
-        with change_directory(gh_repo):
-            _my_run('git remote add bloom https://github.com/{0}/{1}.git'.format(gh_org, gh_repo))
-            _my_run('git remote update')
-            _my_run('git fetch')
-            track_branches()
-            branches = get_branches()
+""".format(repository, orig_version or 'null', version, base_path, bloom.__version__)
+    body += get_changelog_summary(generate_release_tag(distro))
+    with temporary_directory() as temp_dir:
+        def _my_run(cmd, msg=None):
+            if msg:
+                info(fmt("@{bf}@!==> @|@!" + sanitize(msg)))
+            else:
+                info(fmt("@{bf}@!==> @|@!" + sanitize(str(cmd))))
+            from subprocess import check_call
+            check_call(cmd, shell=True)
+        # Use the oauth token to clone
+        rosdistro_url = 'https://{gh.token}:x-oauth-basic@github.com/{base_org}/{base_repo}.git'.format(**locals())
+        rosdistro_fork_url = 'https://{gh.token}:x-oauth-basic@github.com/{head_org}/{head_repo}.git'.format(**locals())
+        _my_run('mkdir -p {base_repo}'.format(**locals()))
+        with change_directory(base_repo):
+            _my_run('git init')
+            branches = [x['name'] for x in gh.list_branches(head_org, head_repo)]
             new_branch = 'bloom-{repository}-{count}'
             count = 0
             while new_branch.format(repository=repository, count=count) in branches:
@@ -508,23 +545,24 @@ Increasing version of package(s) in repository `{0}`:
             info(fmt("@{cf}Pull Request Title: @{yf}" + title))
             info(fmt("@{cf}Pull Request Body : \n@{yf}" + body))
             msg = fmt("@!Open a @|@{cf}pull request@| @!@{kf}from@| @!'@|@!@{bf}" +
-                      "{gh_username}/{gh_repo}:{new_branch}".format(**locals()) +
+                      "{head_repo}/{head_repo}:{new_branch}".format(**locals()) +
                       "@|@!' @!@{kf}into@| @!'@|@!@{bf}" +
-                      "{gh_org}/{gh_repo}:{gh_branch}".format(**locals()) +
+                      "{base_org}/{base_repo}:{base_branch}".format(**locals()) +
                       "@|@!'?")
             info(msg)
             if not maybe_continue():
                 warning("Skipping the pull request...")
                 return
-            _my_run('git checkout -b {0} bloom/{1}'.format(new_branch, gh_branch))
-            with open('{0}'.format(gh_path), 'w') as f:
-                info(fmt("@{bf}@!==> @|@!Writing new distribution file: ") + str(gh_path))
+            _my_run('git checkout -b {new_branch}'.format(**locals()))
+            _my_run('git pull {rosdistro_url} {base_branch}'.format(**locals()), "Pulling latest rosdistro branch")
+            with open('{0}'.format(base_path), 'w') as f:
+                info(fmt("@{bf}@!==> @|@!Writing new distribution file: ") + str(base_path))
                 f.write(updated_distro_file_yaml)
-            _my_run('git add {0}'.format(gh_path))
+            _my_run('git add {0}'.format(base_path))
             _my_run('git commit -m "{0}"'.format(title))
-            _my_run('git push origin {0}'.format(new_branch))
+            _my_run('git push {rosdistro_fork_url} {new_branch}'.format(**locals()), "Pushing changes to fork")
     # Open the pull request
-    return create_pull_request(gh_org, gh_repo, gh_username, gh_password, gh_branch, new_branch, title, body)
+    return gh.create_pull_request(base_org, base_repo, base_branch, head_org, new_branch, title, body)
 
 _original_version = None
 
