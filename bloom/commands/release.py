@@ -49,6 +49,7 @@ import sys
 import tempfile
 import traceback
 import webbrowser
+import yaml
 
 try:
     from httplib import HTTPSConnection
@@ -336,6 +337,7 @@ def generate_ros_distro_diff(track, repository, distro):
     distro_dump = yaml_from_distribution_file(updated_distribution_file)
     distro_file_raw = load_url_to_file_handle(get_disitrbution_file_url(distro)).read()
     if distro_file_raw != distro_dump:
+        # Calculate the diff
         udiff = difflib.unified_diff(distro_file_raw.splitlines(), distro_dump.splitlines(),
                                      fromfile=distro_file_name, tofile=distro_file_name)
         temp_dir = tempfile.mkdtemp()
@@ -360,8 +362,23 @@ def generate_ros_distro_diff(track, repository, distro):
                 line += '\n'
                 udiff_raw += line
             info(line, use_prefix=False, end='')
+        # Assert that only this repository is being changed
+        distro_file_yaml = yaml.load(distro_file_raw)
+        distro_yaml = yaml.load(distro_dump)
+        if 'repositories' in distro_file_yaml:
+            distro_file_repos = distro_file_yaml['repositories']
+            for repo in distro_yaml['repositories']:
+                if repo == repository:
+                    continue
+                if repo not in distro_file_repos or distro_file_repos[repo] != distro_yaml['repositories'][repo]:
+                    error("This generated pull request modifies a repository entry other than the one being released.")
+                    error("This likely occured because the upstream rosdistro changed during this release.")
+                    error("This pull request will abort, please re-run this command with the -p option to try again.",
+                          exit=True)
+        # Write the diff out to file
         with open(udiff_file, 'w+') as f:
             f.write(udiff_raw)
+        # Return the diff
         return updated_distribution_file
     else:
         warning("This release resulted in no changes to the ROS distro file...")
@@ -657,7 +674,7 @@ Versions of tools used:
 - rosdep version: `{rosdep_v}`
 - rosdistro version: `{rosdistro_v}`
 - vcstools version: `{vcstools_v}`
-""".format(**dict(
+""".format(
         repo=repository,
         rosdistro_pv=distro_version or 'null',
         old_pv=_original_version,
@@ -668,11 +685,112 @@ Versions of tools used:
         rosdistro_v=pkg_resources.require("rosdistro")[0].version,
         rosdep_v=rosdep2.__version__,
         vcstools_v=vcstools.__version__.version
-    ))
+    )
     summary_file.write(msg)
 
 
-def perform_release(repository, track, distro, new_track, interactive, pretend):
+def _perform_release(repository, track, distro, new_track, interactive, pretend, tracks_dict):
+    # Ensure the track is complete
+    track_dict = tracks_dict['tracks'][track]
+    track_dict = update_track(track_dict)
+    tracks_dict['tracks'][track] = track_dict
+    # Set the release repositories' remote if given
+    release_repo_url = track_dict.get('release_repo_url', None)
+    if release_repo_url is not None:
+        info(fmt("@{gf}@!==> @|") +
+             "Setting release repository remote url to '{0}'"
+             .format(release_repo_url))
+        cmd = 'git remote set-url origin ' + release_repo_url
+        info(fmt("@{bf}@!==> @|@!") + str(cmd))
+        try:
+            subprocess.check_call(cmd, shell=True)
+        except subprocess.CalledProcessError:
+            error("Setting the remote url failed, exiting.", exit=True)
+    # Check for push permissions
+    try:
+        info(fmt(
+            "@{gf}@!==> @|Testing for push permission on release repository"
+        ))
+        cmd = 'git remote -v'
+        info(fmt("@{bf}@!==> @|@!") + str(cmd))
+        subprocess.check_call(cmd, shell=True)
+        # Dry run will authenticate, but not push
+        cmd = 'git push --dry-run'
+        info(fmt("@{bf}@!==> @|@!") + str(cmd))
+        subprocess.check_call(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        error("Cannot push to remote release repository.", exit=True)
+    # Write the track config before releasing
+    write_tracks_dict_raw(tracks_dict)
+    # Run the release
+    info(fmt("@{gf}@!==> @|") +
+         "Releasing '{0}' using release track '{1}'"
+         .format(repository, track))
+    cmd = 'git-bloom-release ' + str(track)
+    if pretend:
+        cmd += ' --pretend'
+    info(fmt("@{bf}@!==> @|@!" + str(cmd)))
+    try:
+        subprocess.check_call(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        error("Release failed, exiting.", exit=True)
+    info(fmt(_success) +
+         "Released '{0}' using release track '{1}' successfully"
+         .format(repository, track))
+    # Commit the summary
+    update_summary(track, repository, distro)
+    commit_summary()
+    # Check for pushing
+    if interactive:
+        info("Releasing complete, push?")
+        if not maybe_continue():
+            error("User answered no to continue prompt, aborting.",
+                  exit=True)
+    # Push changes to the repository
+    info(fmt("@{gf}@!==> @|") +
+         "Pushing changes to release repository for '{0}'"
+         .format(repository))
+    cmd = 'git push --all'
+    if pretend:
+        cmd += ' --dry-run'
+    info(fmt("@{bf}@!==> @|@!" + str(cmd)))
+    try:
+        subprocess.check_call(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        error("Pushing changes failed, would you like to add '--force' to 'git push --all'?")
+        if not maybe_continue():
+            error("Pushing changes failed, exiting.", exit=True)
+        cmd += ' --force'
+        info(fmt("@{bf}@!==> @|@!" + str(cmd)))
+        try:
+            subprocess.check_call(cmd, shell=True)
+        except subprocess.CalledProcessError:
+            error("Pushing changes failed, exiting.", exit=True)
+    info(fmt(_success) + "Pushed changes successfully")
+    # Push tags to the repository
+    info(fmt("@{gf}@!==> @|") +
+         "Pushing tags to release repository for '{0}'"
+         .format(repository))
+    cmd = 'git push --tags'
+    if pretend:
+        cmd += ' --dry-run'
+    info(fmt("@{bf}@!==> @|@!" + str(cmd)))
+    try:
+        subprocess.check_call(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        error("Pushing changes failed, would you like to add '--force' to 'git push --tags'?")
+        if not maybe_continue():
+            error("Pushing tags failed, exiting.", exit=True)
+        cmd += ' --force'
+        info(fmt("@{bf}@!==> @|@!" + str(cmd)))
+        try:
+            subprocess.check_call(cmd, shell=True)
+        except subprocess.CalledProcessError:
+            error("Pushing tags failed, exiting.", exit=True)
+    info(fmt(_success) + "Pushed tags successfully")
+
+
+def perform_release(repository, track, distro, new_track, interactive, pretend, pull_request_only):
     release_repo = get_release_repo(repository, distro)
     with change_directory(release_repo.get_path()):
         # Check to see if the old bloom.conf exists
@@ -723,104 +841,8 @@ def perform_release(repository, track, distro, new_track, interactive, pretend):
             # Get the only track
             track = tracks[0]
         start_summary(track)
-        # Ensure the track is complete
-        track_dict = tracks_dict['tracks'][track]
-        track_dict = update_track(track_dict)
-        tracks_dict['tracks'][track] = track_dict
-        # Set the release repositories' remote if given
-        release_repo_url = track_dict.get('release_repo_url', None)
-        if release_repo_url is not None:
-            info(fmt("@{gf}@!==> @|") +
-                 "Setting release repository remote url to '{0}'"
-                 .format(release_repo_url))
-            cmd = 'git remote set-url origin ' + release_repo_url
-            info(fmt("@{bf}@!==> @|@!") + str(cmd))
-            try:
-                subprocess.check_call(cmd, shell=True)
-            except subprocess.CalledProcessError:
-                error("Setting the remote url failed, exiting.", exit=True)
-        # Check for push permissions
-        try:
-            info(fmt(
-                "@{gf}@!==> @|Testing for push permission on release repository"
-            ))
-            cmd = 'git remote -v'
-            info(fmt("@{bf}@!==> @|@!") + str(cmd))
-            subprocess.check_call(cmd, shell=True)
-            # Dry run will authenticate, but not push
-            cmd = 'git push --dry-run'
-            info(fmt("@{bf}@!==> @|@!") + str(cmd))
-            subprocess.check_call(cmd, shell=True)
-        except subprocess.CalledProcessError:
-            error("Cannot push to remote release repository.", exit=True)
-        # Write the track config before releasing
-        write_tracks_dict_raw(tracks_dict)
-        # Run the release
-        info(fmt("@{gf}@!==> @|") +
-             "Releasing '{0}' using release track '{1}'"
-             .format(repository, track))
-        cmd = 'git-bloom-release ' + str(track)
-        if pretend:
-            cmd += ' --pretend'
-        info(fmt("@{bf}@!==> @|@!" + str(cmd)))
-        try:
-            subprocess.check_call(cmd, shell=True)
-        except subprocess.CalledProcessError:
-            error("Release failed, exiting.", exit=True)
-        info(fmt(_success) +
-             "Released '{0}' using release track '{1}' successfully"
-             .format(repository, track))
-        # Commit the summary
-        update_summary(track, repository, distro)
-        commit_summary()
-        # Check for pushing
-        if interactive:
-            info("Releasing complete, push?")
-            if not maybe_continue():
-                error("User answered no to continue prompt, aborting.",
-                      exit=True)
-        # Push changes to the repository
-        info(fmt("@{gf}@!==> @|") +
-             "Pushing changes to release repository for '{0}'"
-             .format(repository))
-        cmd = 'git push --all'
-        if pretend:
-            cmd += ' --dry-run'
-        info(fmt("@{bf}@!==> @|@!" + str(cmd)))
-        try:
-            subprocess.check_call(cmd, shell=True)
-        except subprocess.CalledProcessError:
-            error("Pushing changes failed, would you like to add '--force' to 'git push --all'?")
-            if not maybe_continue():
-                error("Pushing changes failed, exiting.", exit=True)
-            cmd += ' --force'
-            info(fmt("@{bf}@!==> @|@!" + str(cmd)))
-            try:
-                subprocess.check_call(cmd, shell=True)
-            except subprocess.CalledProcessError:
-                error("Pushing changes failed, exiting.", exit=True)
-        info(fmt(_success) + "Pushed changes successfully")
-        # Push tags to the repository
-        info(fmt("@{gf}@!==> @|") +
-             "Pushing tags to release repository for '{0}'"
-             .format(repository))
-        cmd = 'git push --tags'
-        if pretend:
-            cmd += ' --dry-run'
-        info(fmt("@{bf}@!==> @|@!" + str(cmd)))
-        try:
-            subprocess.check_call(cmd, shell=True)
-        except subprocess.CalledProcessError:
-            error("Pushing changes failed, would you like to add '--force' to 'git push --tags'?")
-            if not maybe_continue():
-                error("Pushing tags failed, exiting.", exit=True)
-            cmd += ' --force'
-            info(fmt("@{bf}@!==> @|@!" + str(cmd)))
-            try:
-                subprocess.check_call(cmd, shell=True)
-            except subprocess.CalledProcessError:
-                error("Pushing tags failed, exiting.", exit=True)
-        info(fmt(_success) + "Pushed tags successfully")
+        if not pull_request_only:
+            _perform_release(repository, track, distro, new_track, interactive, pretend, tracks_dict)
         # Propose github pull request
         info(fmt("@{gf}@!==> @|") +
              "Generating pull request to distro file located at '{0}'"
@@ -829,7 +851,7 @@ def perform_release(repository, track, distro, new_track, interactive, pretend):
             pull_request_url = open_pull_request(track, repository, distro)
             if pull_request_url:
                 info(fmt(_success) + "Pull request opened at: {0}".format(pull_request_url))
-                if 'BLOOM_NO_WEBBROWSER' in os.environ and platform.system() not in ['Darwin']:
+                if 'BLOOM_NO_WEBBROWSER' not in os.environ and platform.system() in ['Darwin']:
                     webbrowser.open(pull_request_url)
             else:
                 info("The release of your packages was successful, but the pull request failed.")
@@ -853,10 +875,12 @@ def get_argument_parser():
         help="determines the ROS distro file used")
     add('--new-track', '--edit-track', '-n', '-e', action='store_true', default=False,
         help="if used, a new track will be created before running bloom")
-    add('--pretend', '-p', default=False, action='store_true',
+    add('--pretend', '-s', default=False, action='store_true',
         help="Pretends to push and release")
     add('--no-web', default=False, action='store_true',
         help="prevents a web browser from being opened at the end")
+    add('--pull-request-only', '-p', default=False, action='store_true',
+        help="skips the release actions and only tries to open a pull request")
     return parser
 
 _quiet = False
@@ -880,6 +904,7 @@ def main(sysargs=None):
         disable_git_clone(True)
         quiet_git_clone_warning(True)
         perform_release(args.repository, args.track, args.ros_distro,
-                        args.new_track, not args.non_interactive, args.pretend)
+                        args.new_track, not args.non_interactive, args.pretend,
+                        args.pull_request_only)
     except (KeyboardInterrupt, EOFError) as exc:
         error("\nReceived '{0}', aborting.".format(type(exc).__name__))
