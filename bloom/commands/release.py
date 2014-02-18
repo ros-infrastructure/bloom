@@ -206,18 +206,40 @@ def get_repo_uri(repository, distro):
         matches = difflib.get_close_matches(repository, distribution_file.repositories)
         if matches:
             info(fmt("@{yf}Did you mean one of these: '" + "', '".join([m for m in matches]) + "'?"))
-    if not url:
+    if url is None:
         info("Could not determine release repository url for repository '{0}' of distro '{1}'"
              .format(repository, distro))
         info("You can continue the release process by manually specifying the location of the RELEASE repository.")
         info("To be clear this is the url of the RELEASE repository not the upstream repository.")
-        try:
-            url = safe_input('Release repository url [press enter to abort]: ')
-        except (KeyboardInterrupt, EOFError):
-            url = None
-            info('', use_prefix=False)
-        if not url:
-            error("No release repository url given, aborting.", exit=True)
+        info("For release repositories on github, you should provide the `https://` url which should end in `.git`.")
+        while True:
+            try:
+                url = safe_input('Release repository url [press enter to abort]: ')
+            except (KeyboardInterrupt, EOFError):
+                url = None
+                info('', use_prefix=False)
+            if not url:
+                url = None
+                error("No release repository url given, aborting.", exit=True)
+                break
+            # If github.com address, validate it
+            if url is not None and 'github.com' in url:
+                valid_url = True
+                if not url.endswith('.git') and not url.endswith('.git/'):
+                    valid_url = False
+                    warning("The release repository url you provided does not end in `.git`.")
+                if not url.startswith('https://'):
+                    valid_url = False
+                    warning("The release repository url you provided is not a `https://` address.")
+                if not valid_url:
+                    warning("Would you like to enter the address again?")
+                    if maybe_continue():
+                        url = None
+                        continue
+                    else:
+                        info("Very well, the address '{url}' will be used as is.".format(**locals()))
+                        break
+            break
         global _user_provided_release_url
         _user_provided_release_url = url
     return url
