@@ -355,7 +355,7 @@ def process_template_files(path, subs):
     return __process_template_folder(debian_dir, subs)
 
 
-def match_branches_with_prefix(prefix, get_branches):
+def match_branches_with_prefix(prefix, get_branches, prune=False):
     debug("match_branches_with_prefix(" + str(prefix) + ", " +
           str(get_branches()) + ")")
     branches = []
@@ -366,7 +366,15 @@ def match_branches_with_prefix(prefix, get_branches):
             branch = branch.split('/', 2)[-1]
         if branch.startswith(prefix):
             branches.append(branch)
-    return list(set(branches))
+    branches = list(set(branches))
+    if prune:
+        # Prune listed branches by packages in latest upstream
+        with inbranch('upstream'):
+            pkg_names, version, pkgs_dict = get_package_data('upstream')
+            for branch in branches:
+                if branch.split(prefix)[-1].strip('/') not in pkg_names:
+                    branches.remove(branch)
+    return branches
 
 
 def get_package_from_branch(branch):
@@ -415,6 +423,9 @@ class DebianGenerator(BloomGenerator):
         add('-p', '--prefix', required=True,
             help="branch prefix to match, and from which create debians"
                  " hint: if you want to match 'release/foo' use 'release'")
+        add('-a', '--match-all', default=False, action="store_true",
+            help="match all branches with the given prefix, "
+                 "even if not in current upstream")
         add('--distros', nargs='+', required=False, default=[],
             help='A list of debian (ubuntu) distros to generate for')
         add('--install-prefix', default=None,
@@ -438,7 +449,7 @@ class DebianGenerator(BloomGenerator):
         if args.install_prefix is None:
             self.install_prefix = self.default_install_prefix
         self.prefix = args.prefix
-        self.branches = match_branches_with_prefix(self.prefix, get_branches)
+        self.branches = match_branches_with_prefix(self.prefix, get_branches, prune=not args.match_all)
         if len(self.branches) == 0:
             error(
                 "No packages found, check your --prefix or --src arguments.",
