@@ -384,13 +384,13 @@ def get_github_interface():
         os.makedirs(os.path.dirname(oauth_config_path))
     # Ok, now we have to ask for the user name and pass word
     info("")
-    info("Looks like bloom doesn't have an oauth token for you yet.")
-    info("Therefore bloom will require your Github username and password just this once.")
-    info("With your Github username and password bloom will create an oauth token on your behalf.")
-    info("The token will be stored in `~/.config/bloom`.")
-    info("You can delete the token from that file to have a new token generated.")
-    info("Guard this token like a password, because it allows someone/something to act on your behalf.")
-    info("If you need to unauthorize it, remove it from the 'Applications' menu in your Github account page.")
+    warning("Looks like bloom doesn't have an oauth token for you yet.")
+    warning("Therefore bloom will require your Github username and password just this once.")
+    warning("With your Github username and password bloom will create an oauth token on your behalf.")
+    warning("The token will be stored in `~/.config/bloom`.")
+    warning("You can delete the token from that file to have a new token generated.")
+    warning("Guard this token like a password, because it allows someone/something to act on your behalf.")
+    warning("If you need to unauthorize it, remove it from the 'Applications' menu in your Github account page.")
     info("")
     token = None
     while token is None:
@@ -442,7 +442,7 @@ def get_changelog_summary(release_tag):
     return summary
 
 
-def open_pull_request(track, repository, distro, ssh_pull_request):
+def open_pull_request(track, repository, distro):
     # Get the diff
     distribution_file = get_distribution_file(distro)
     if repository in distribution_file.repositories and \
@@ -650,7 +650,7 @@ Versions of tools used:
     summary_file.write(msg)
 
 
-def perform_release(repository, track, distro, new_track, interactive, pretend, ssh_pull_request):
+def perform_release(repository, track, distro, new_track, interactive, pretend):
     release_repo = get_release_repo(repository, distro)
     with change_directory(release_repo.get_path()):
         # Check to see if the old bloom.conf exists
@@ -804,7 +804,7 @@ def perform_release(repository, track, distro, new_track, interactive, pretend, 
              "Generating pull request to distro file located at '{0}'"
              .format(get_disitrbution_file_url(distro)))
         try:
-            pull_request_url = open_pull_request(track, repository, distro, ssh_pull_request)
+            pull_request_url = open_pull_request(track, repository, distro)
             if pull_request_url:
                 info(fmt(_success) + "Pull request opened at: {0}".format(pull_request_url))
                 if 'BLOOM_NO_WEBBROWSER' in os.environ and platform.system() not in ['Darwin']:
@@ -835,8 +835,6 @@ def get_argument_parser():
         help="Pretends to push and release")
     add('--no-web', default=False, action='store_true',
         help="prevents a web browser from being opened at the end")
-    add('--ssh-pr', default=False, action='store_true',
-        help="Do rosdistro updates using ssh keys")
     return parser
 
 _quiet = False
@@ -860,7 +858,6 @@ def main(sysargs=None):
         disable_git_clone(True)
         quiet_git_clone_warning(True)
         perform_release(args.repository, args.track, args.ros_distro,
-                        args.new_track, not args.non_interactive, args.pretend,
-                        args.ssh_pr)
+                        args.new_track, not args.non_interactive, args.pretend)
     except (KeyboardInterrupt, EOFError) as exc:
         error("\nReceived '{0}', aborting.".format(type(exc).__name__))
