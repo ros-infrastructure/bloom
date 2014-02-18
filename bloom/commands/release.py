@@ -616,7 +616,8 @@ def update_summary(track, repository, distro):
     msg = """\
 ## {repository} ({distro}) - {version}
 
-User `{user}@{hostname}` released the packages in the `{repository}` repository into the `{distro}` distro by running `{cmd}` on `{date}`
+User `{user}@{hostname}` released the packages in the `{repository}` repository into the \
+`{distro}` distro by running `{cmd}` on `{date}`
 
 """.format(
         repository=repository,
