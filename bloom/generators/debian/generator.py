@@ -96,6 +96,17 @@ except ImportError:
     debug(traceback.format_exc())
     error("empy was not detected, please install it.", exit=True)
 
+## Fix unicode bug in empy
+## This should be removed once upstream empy is fixed
+## See: https://github.com/ros-infrastructure/bloom/issues/196
+try:
+    em.str = unicode
+    em.Stream.write_old = em.Stream.write
+    em.Stream.write = lambda self, data: em.Stream.write_old(self, data.encode('utf8'))
+except NameError:
+    pass
+## End fix
+
 TEMPLATE_EXTENSION = '.em'
 
 
