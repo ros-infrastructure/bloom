@@ -69,6 +69,8 @@ from bloom.logging import fmt
 from bloom.logging import info
 from bloom.logging import warning
 
+from bloom.packages import get_package_data
+
 from bloom.util import add_global_arguments
 from bloom.util import execute_command
 from bloom.util import get_git_clone_state
@@ -318,6 +320,12 @@ def import_upstream(tarball_path, patches_path, version, name, replace):
 
     # Create tags
     with inbranch('upstream'):
+        # Assert packages in upstream are the correct version
+        _, actual_version, _ = get_package_data('upstream')
+        if actual_version != version:
+            error("The package(s) in upstream are version '{0}', but the version to be released is '{1}', aborting."
+                  .format(actual_version, version), exit=True)
+        # Create the tag
         info("Creating tag: '{0}'".format(upstream_tag))
         create_tag(upstream_tag)
         if name_tag != upstream_tag:
