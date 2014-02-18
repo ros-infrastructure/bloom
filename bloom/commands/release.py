@@ -631,18 +631,20 @@ def update_summary(track, repository, distro):
     version = "{0}-{1}".format(last_version, release_inc)
     summary_file = get_summary_file()
     msg = """\
-## {repository} - {version}
+## {repository} ({distro}) - {version}
 
-User `{user}@{hostname}` released the packages in the `{repository}` repository by running `{cmd}` on `{date}`
+User `{user}@{hostname}` released the packages in the `{repository}` repository into the \
+`{distro}` distro by running `{cmd}` on `{date}`
 
-""".format(**{
-        'repository': repository,
-        'date': get_rfc_2822_date(datetime.datetime.now()),
-        'user': getpass.getuser(),
-        'hostname': socket.gethostname(),
-        'cmd': ' '.join(sys.argv),
-        'version': version
-    })
+""".format(
+        repository=repository,
+        distro=distro,
+        date=get_rfc_2822_date(datetime.datetime.now()),
+        user=getpass.getuser(),
+        hostname=socket.gethostname(),
+        cmd=' '.join(sys.argv),
+        version=version
+    )
     packages = [p.name for p in get_packages().values()]
     if len(packages) > 1:
         msg += "These packages were released:\n"
