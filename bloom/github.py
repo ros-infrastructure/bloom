@@ -139,8 +139,8 @@ class Github(object):
         return json.loads(resp.read())
 
     def create_fork(self, parent_org, parent_repo):
-        resp = do_github_post_req('/repos/{parent_org}/{parent_repo}/forks'.format(**locals()), auth=self.auth)
-        if '{0}'.format(resp.status) not in ['200']:
+        resp = do_github_post_req('/repos/{parent_org}/{parent_repo}/forks'.format(**locals()), {}, auth=self.auth)
+        if '{0}'.format(resp.status) not in ['200', '202']:
             raise GithubException(
                 "Failed to creat a fork of '{parent_org}/{parent_repo}'".format(**locals()), resp)
 
