@@ -475,9 +475,13 @@ def get_changelog_summary(release_tag):
                     for change in changes:
                         msgs.extend([i for i in to_unicode(change).splitlines()])
                     msg = '\n'.join(msgs)
-                    summary += "\nChanges for {package.name} {version}:\n{msg}\n".format(**locals())
-    if summary:
-        summary = "\n```" + summary + "```"
+                    summary += """
+## {package.name} -> {version}
+
+```
+{msg}
+```
+""".format(**locals())
     return summary
 
 
@@ -523,6 +527,7 @@ def open_pull_request(track, repository, distro):
                     # This is a valid fork
                     head_repo = base_repo
         except GithubException as exc:
+            debug("Received GithubException while checking for fork: {exc}".format(**locals()))
             pass  # 404 or unauthorized, but unauthorized should have been caught above
         # If not head_repo, then either the fork has a different name, or there isn't one
         if head_repo is None:
@@ -535,8 +540,9 @@ def open_pull_request(track, repository, distro):
                     # Then this is a valid fork
                     head_repo = repo['name']
         # If not head_repo still, a fork does not exist and must be created
-        else:
-            warning("Could not find a fork of {base_full_name} on the {gh.username} Github account.")
+        if head_repo is None:
+            warning("Could not find a fork of {base_full_name} on the {gh.username} Github account."
+                    .format(**locals()))
             warning("Would you like to create one now?")
             if not maybe_continue():
                 warning("Skipping the pull request...")
@@ -544,6 +550,7 @@ def open_pull_request(track, repository, distro):
             # Create a fork
             try:
                 gh.create_fork(base_org, base_repo)  # Will raise if not successful
+                head_repo = base_repo
             except GithubException as exc:
                 error("Aborting pull request: {0}".format(exc))
                 return
@@ -554,10 +561,11 @@ def open_pull_request(track, repository, distro):
     new_branch = None
     title = "{0}: {1} in '{2}' [bloom]".format(repository, version, base_path)
     body = """\
-Increasing version of package(s) in repository `{0}` to `{1}` from `{2}`:
+Increasing version of package(s) in repository `{0}` to `{2}`:
 
 - distro file: `{3}`
 - bloom version: `{4}`
+- previous version for package: `{1}`
 """.format(repository, orig_version or 'null', version, base_path, bloom.__version__)
     body += get_changelog_summary(generate_release_tag(distro))
     with temporary_directory() as temp_dir:
