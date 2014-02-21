@@ -28,6 +28,9 @@ setup(
         'bloom.generators.debian': [
             'bloom/generators/debian/templates/*',
             'bloom/generators/debian/templates/source/*'
+        ],
+        'bloom.generators.rpm': [
+            'bloom/generators/rpm/templates/*'
         ]
     },
     include_package_data=True,
@@ -67,11 +70,15 @@ generation of platform specific source packages, like debian's src-debs.""",
             'release = bloom.generators.release:ReleaseGenerator',
             'rosrelease = bloom.generators.rosrelease:RosReleaseGenerator',
             'debian = bloom.generators.debian:DebianGenerator',
-            'rosdebian = bloom.generators.rosdebian:RosDebianGenerator'
+            'rosdebian = bloom.generators.rosdebian:RosDebianGenerator',
+            'rpm = bloom.generators.rpm:RpmGenerator',
+            'rosrpm = bloom.generators.rosrpm:RosRpmGenerator'
         ],
         'bloom.generate_cmds': [
             'debian = bloom.generators.debian.generate_cmd:description',
-            'rosdebian = bloom.generators.rosdebian:description'
+            'rosdebian = bloom.generators.rosdebian:description',
+            'rpm = bloom.generators.rpm.generate_cmd:description',
+            'rosrpm = bloom.generators.rosrpm:description'
         ]
     }
 )
