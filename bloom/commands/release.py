@@ -331,6 +331,80 @@ def generate_ros_distro_diff(track, repository, distro):
             repo['packages'].remove(pkg_name)
     repo['packages'].sort()
 
+    def get_repository_info_from_user():
+        data = {}
+        while True:
+            vcs_type = safe_input('VCS type [git, svn, hg, bzr]: ')
+            if vcs_type in ['git', 'svn', 'hg', 'bzr']:
+                break
+            error("'{0}' is not a valid vcs type.".format(vcs_type))
+            if not maybe_continue(msg='Try again'):
+                return {}
+        data['type'] = vcs_type
+        while True:
+            url = safe_input('VCS url: ')
+            if url:
+                break
+            error("Nothing entered for url.")
+            if not maybe_continue(msg='Try again'):
+                return {}
+        data['url'] = url
+        while True:
+            version = safe_input('VCS version [commit, tag, branch, etc]: ')
+            if version:
+                break
+            error("Nothing entered for version.")
+            if not maybe_continue(msg='Try again'):
+                return {}
+        data['version'] = version
+        return data
+
+    # Ask for doc entry
+    if 'BLOOM_DONT_ASK_FOR_DOCS' not in os.environ:
+        docs = distribution_dict['repositories'][repository].get('doc', {})
+        if not docs and maybe_continue(msg='Would you like to add documentation information for this repository?'):
+            info("Please enter your repository information for the doc generation job.")
+            info("This information should point to the repository from which documentation should be generated.")
+            docs = get_repository_info_from_user()
+        distribution_dict['repositories'][repository]['doc'] = docs
+
+    # Ask for source entry
+    if 'BLOOM_DONT_ASK_FOR_SOURCE' not in os.environ:
+        source = distribution_dict['repositories'][repository].get('source', {})
+        if not source and maybe_continue(msg='Would you like to add source information for this repository?'):
+            info("Please enter information which points ot the active development branch for this repository.")
+            info("This information is used to run continuous integration jobs and for developers to checkout from.")
+            source = get_repository_info_from_user()
+        distribution_dict['repositories'][repository]['source'] = source
+
+    # Ask for maintainership information
+    if 'BLOOM_DONT_ASK_FOR_MAINTENANCE_STATUS' not in os.environ:
+        status = distribution_dict['repositories'][repository].get('status', None)
+        if status is None and maybe_continue(msg='Would you like to add a maintenance status for this repository?'):
+            info("Please enter a maintenance status.")
+            info("Valid maintenance statuses:")
+            info("- developed: active development is in progress")
+            info("- maintained: no new development, but bug fixes and pull requests are addressed")
+            info("- end-of-life: should not be used, will disapear at some point")
+            while True:
+                status = safe_input('Status: ')
+                if status in ['developed', 'maintained', 'end-of-life']:
+                    break
+                error("'{0}' is not a valid status.".format(status))
+                if not maybe_continue(msg='Try again'):
+                    status = None
+                    break
+            if status is not None:
+                info("You can also enter a status description.")
+                info("This is usually reserved for giving a reason when a status is 'end-of-life'.")
+                description = safe_input('Status Description [press Enter for no status]: ')
+                if not description:
+                    description = None
+        if status is not None:
+            distribution_dict['repositories'][repository]['status'] = status
+            if description is not None:
+                distribution_dict['repositories'][repository]['status_description'] = description
+
     # Do the diff
     distro_file_name = get_relative_distribution_file_path(distro)
     updated_distribution_file = rosdistro.DistributionFile(distro, distribution_dict)
