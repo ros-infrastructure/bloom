@@ -470,18 +470,24 @@ def get_changelog_summary(release_tag):
             if changelog is None:
                 continue
             for version, date, changes in changelog.foreach_version():
-                if changes and version == package.version:
+                if version == package.version:
                     msgs = []
                     for change in changes:
                         msgs.extend([i for i in to_unicode(change).splitlines()])
                     msg = '\n'.join(msgs)
                     summary += """
-## {package.name} -> {version}
-
+## {package.name}
+""".format(**locals())
+                    if msg:
+                        summary += """
 ```
 {msg}
 ```
 """.format(**locals())
+                    else:
+                        summary += """
+- No changes
+"""
     return summary
 
 
