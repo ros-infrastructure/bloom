@@ -69,12 +69,13 @@ except ImportError:
     # Python3
     from io import StringIO
 
-from bloom.logging import ansi
 from bloom.logging import debug
 from bloom.logging import disable_ANSI_colors
 from bloom.logging import enable_debug
 from bloom.logging import error
+from bloom.logging import fmt
 from bloom.logging import info
+from bloom.logging import sanitize
 from bloom.logging import warning
 
 try:
@@ -345,14 +346,15 @@ def create_temporary_directory(prefix_dir=None):
     return mkdtemp(prefix='bloom_', dir=prefix_dir)
 
 
-def maybe_continue(default='y'):
+def maybe_continue(default='y', msg='Continue'):
     """Prompts the user for continuation"""
     default = default.lower()
-    msg = "{0}Continue ".format(ansi('boldon'))
+    msg = "@!{msg} ".format(msg=sanitize(msg))
     if default == 'y':
-        msg += "{0}[Y/n]? {1}".format(ansi('yellowf'), ansi('reset'))
+        msg += "@{yf}[Y/n]? @|"
     else:
-        msg += "{0}[y/N]? {1}".format(ansi('yellowf'), ansi('reset'))
+        msg += "@{yf}[y/N]? @|"
+    msg = fmt(msg)
 
     while True:
         response = safe_input(msg)
