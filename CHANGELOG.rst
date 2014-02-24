@@ -1,3 +1,19 @@
+0.5.0 (2014-02-23 21:55:00 -0800)
+---------------------------------
+- OAUTH is now used for creating pull requests.
+  On the first pull request, bloom will ask for your github username and password.
+  Using them it will create an authorization on your behalf and store it in your home folder.
+  Specifically `~/.config/bloom`.
+  From then on, bloom will no longer require your username and password for pull requests.
+  Closed #177 and #170.
+- Added checks to ensure that for github.com urls provided by users they end in `.git` and are `https://`
+- Added some fixes and monkey patches to empy to better support unicode in changelogs
+- Added additionally pull request checks, which should prevent some of the invalid pull requests from being created.
+- Fixed a bug where packages which were removed from the repository were still getting generated.
+- Merged preliminary Fedora generation support, provided by @cottsay
+- Added changelog summaries to pull requests
+- Added a prompt for users to enter doc, source, and maintenance status when releasing.
+
 0.4.9 (2014-02-06 14:05:47 -0800)
 ---------------------------------
 - Fixed another bug for first time releases, specifically first time releases which already have doc or source entries
