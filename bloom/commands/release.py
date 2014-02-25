@@ -380,6 +380,7 @@ def generate_ros_distro_diff(track, repository, distro):
     # Ask for maintainership information
     if 'BLOOM_DONT_ASK_FOR_MAINTENANCE_STATUS' not in os.environ:
         status = distribution_dict['repositories'][repository].get('status', None)
+        description = distribution_dict['repositories'][repository].get('status_description', None)
         if status is None and maybe_continue(msg='Would you like to add a maintenance status for this repository?'):
             info("Please enter a maintenance status.")
             info("Valid maintenance statuses:")
@@ -397,9 +398,11 @@ def generate_ros_distro_diff(track, repository, distro):
             if status is not None:
                 info("You can also enter a status description.")
                 info("This is usually reserved for giving a reason when a status is 'end-of-life'.")
-                description = safe_input('Status Description [press Enter for no status]: ')
-                if not description:
-                    description = None
+                if description is not None:
+                    info("Current status description: {0}".format(description))
+                description_in = safe_input('Status Description [press Enter for no change]: ')
+                if description_in:
+                    description = description_in
         if status is not None:
             distribution_dict['repositories'][repository]['status'] = status
             if description is not None:
