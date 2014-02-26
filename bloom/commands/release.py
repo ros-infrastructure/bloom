@@ -31,6 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from __future__ import print_function
+from __future__ import unicode_literals
 
 import argparse
 import atexit
@@ -303,7 +304,7 @@ def generate_ros_distro_diff(track, repository, distro):
     track_dict = get_tracks_dict_raw()['tracks'][track]
     last_version = track_dict['last_version']
     release_inc = track_dict['release_inc']
-    version = '{0}-{1}'.format(last_version, release_inc)
+    version = str('{0}-{1}'.format(last_version, release_inc))
     # Create a repository if there isn't already one
     if repository not in distribution_dict['repositories']:
         global _user_provided_release_url

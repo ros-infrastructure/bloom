@@ -33,6 +33,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from __future__ import print_function
+from __future__ import unicode_literals
 
 import atexit
 import datetime
@@ -227,7 +228,7 @@ _file_log = None
 def debug(msg, file=None, end='\n', use_prefix=True):
     file = file if file is not None else sys.stdout
     global _quiet, _debug, _log_prefix, _file_log
-    msg = str(msg)
+    msg = '{0}'.format(msg)
     if use_prefix:
         msg = ansi('greenf') + _log_prefix + msg + ansi('reset')
     else:
@@ -235,27 +236,27 @@ def debug(msg, file=None, end='\n', use_prefix=True):
     if not _quiet and _debug:
         print(msg, file=file, end=end)
     if _file_log is not None:
-        print('[debug] ' + strip_ansi(msg), file=_file_log, end=end)
+        print(('[debug] ' + strip_ansi(msg)).encode('UTF-8'), file=_file_log, end=end)
     return msg
 
 
 def info(msg, file=None, end='\n', use_prefix=True):
     file = file if file is not None else sys.stdout
     global _quiet, _log_prefix, _file_log
-    msg = str(msg)
+    msg = '{0}'.format(msg)
     if use_prefix:
         msg = _log_prefix + msg + ansi('reset')
     if not _quiet:
         print(msg, file=file, end=end)
     if _file_log is not None:
-        print('[info] ' + strip_ansi(msg), file=_file_log, end=end)
+        print(('[info] ' + strip_ansi(msg)).encode('UTF-8'), file=_file_log, end=end)
     return msg
 
 
 def warning(msg, file=None, end='\n', use_prefix=True):
     file = file if file is not None else sys.stdout
     global _quiet, _log_prefix, _file_log
-    msg = str(msg)
+    msg = '{0}'.format(msg)
     if use_prefix:
         msg = ansi('yellowf') + _log_prefix + msg \
             + ansi('reset')
@@ -264,20 +265,20 @@ def warning(msg, file=None, end='\n', use_prefix=True):
     if not _quiet:
         print(msg, file=file, end=end)
     if _file_log is not None:
-        print('[warning] ' + strip_ansi(msg), file=_file_log, end=end)
+        print(('[warning] ' + strip_ansi(msg)).encode('UTF-8'), file=_file_log, end=end)
     return msg
 
 
 def error(msg, file=None, end='\n', use_prefix=True, exit=False):
     file = file if file is not None else sys.stderr
     global _quiet, _log_prefix, _file_log
-    msg = str(msg)
+    msg = '{0}'.format(msg)
     if use_prefix:
         msg = ansi('redf') + ansi('boldon') + _log_prefix + msg + ansi('reset')
     else:
         msg = ansi('redf') + ansi('boldon') + msg + ansi('reset')
     if _file_log is not None:
-        print('[error] ' + strip_ansi(msg), file=_file_log, end=end)
+        print(('[error] ' + strip_ansi(msg)).encode('UTF-8'), file=_file_log, end=end)
     if exit:
         if _file_log is not None:
             print("[error] SYS.EXIT", file=_file_log, end=end)
