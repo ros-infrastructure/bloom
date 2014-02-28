@@ -539,7 +539,9 @@ def get_github_interface():
 
 def get_changelog_summary(release_tag):
     summary = ""
-    for package in get_packages().values():
+    packages = dict([(p.name, p) for p in get_packages().values()])
+    for package_name in sorted(packages.keys()):
+        package = packages[package_name]
         release_branch = '/'.join(release_tag.split('/')[:-1]).format(package=package.name)
         if not branch_exists(release_branch):
             continue
