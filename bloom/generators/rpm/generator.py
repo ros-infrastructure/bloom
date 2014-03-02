@@ -209,9 +209,9 @@ def generate_substitutions_from_package(
     data['Version'] = package.version
     data['Description'] = rpmify_string(package.description)
     # License
-    data['License'] = package.licenses[0] if package.licenses else ''
-    if data['License'] == '':
-        warning("No license set")
+    if not package.licenses or not package.licenses[0]:
+        error("No license set for package '{0}', aborting.".format(package.name), exit=True)
+    data['License'] = package.licenses[0]
     # Websites
     websites = [str(url) for url in package.urls if url.type == 'website']
     data['Homepage'] = websites[0] if websites else ''
