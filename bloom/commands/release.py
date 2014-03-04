@@ -675,8 +675,8 @@ Increasing version of package(s) in repository `{0}` to `{2}`:
                 count += 1
             new_branch = new_branch.format(repository=repository, count=count)
             # Final check
-            info(fmt("@{cf}Pull Request Title: @{yf}" + title))
-            info(fmt("@{cf}Pull Request Body : \n@{yf}" + body))
+            info(fmt("@{cf}Pull Request Title: @{yf}" + sanitize(title)))
+            info(fmt("@{cf}Pull Request Body : \n@{yf}" + sanitize(body)))
             msg = fmt("@!Open a @|@{cf}pull request@| @!@{kf}from@| @!'@|@!@{bf}" +
                       "{head_repo}/{head_repo}:{new_branch}".format(**locals()) +
                       "@|@!' @!@{kf}into@| @!'@|@!@{bf}" +
