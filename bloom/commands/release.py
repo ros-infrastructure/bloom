@@ -291,7 +291,7 @@ def get_relative_distribution_file_path(distro):
 
 
 def generate_release_tag(distro):
-    return 'release/%s/{package}/{version}' % distro
+    return ('release/%s/{package}/{version}' % distro).encode('utf-8')
 
 
 def generate_ros_distro_diff(track, repository, distro):
@@ -304,24 +304,24 @@ def generate_ros_distro_diff(track, repository, distro):
     track_dict = get_tracks_dict_raw()['tracks'][track]
     last_version = track_dict['last_version']
     release_inc = track_dict['release_inc']
-    version = str('{0}-{1}'.format(last_version, release_inc))
+    version = '{0}-{1}'.format(last_version, release_inc).encode('utf-8')
     # Create a repository if there isn't already one
     if repository not in distribution_dict['repositories']:
         global _user_provided_release_url
         distribution_dict['repositories'][repository] = {}
     # Create a release entry if there isn't already one
     if 'release' not in distribution_dict['repositories'][repository]:
-        distribution_dict['repositories'][repository]['release'] = {
-            'url': _user_provided_release_url
+        distribution_dict['repositories'][repository]['release'.encode('utf-8')] = {
+            'url'.encode('utf-8'): _user_provided_release_url
         }
     # Update the repository
     repo = distribution_dict['repositories'][repository]['release']
     if 'tags' not in repo:
-        repo['tags'] = {}
-    repo['tags']['release'] = generate_release_tag(distro)
-    repo['version'] = version
+        repo['tags'.encode('utf-8')] = {}
+    repo['tags']['release'.encode('utf-8')] = generate_release_tag(distro)
+    repo['version'.encode('utf-8')] = version
     if 'packages' not in repo:
-        repo['packages'] = []
+        repo['packages'.encode('utf-8')] = []
     for path, pkg in packages.items():
         if pkg.name not in repo['packages']:
             repo['packages'].append(pkg.name)
