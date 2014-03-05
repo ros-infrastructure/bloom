@@ -1,3 +1,18 @@
+0.5.2 (2014-03-04 20:52:09 -0600)
+---------------------------------
+- Pull request titles and body are now santized before printing
+- Prevent unicode getting into the yaml files
+- Make license tags required (rpm generation)
+  Source RPMs will not build if the license tag is empty or missing.
+  This will not be a problem for the vast majority of packages in ROS.
+- Packages are now ordered in changelog summary
+- Improved unicode support in Python2
+- setup environment is now sourced before the install step (debian rules file)
+
+0.5.1 (2014-02-24 16:03:29 -0800)
+---------------------------------
+- fix a bug related to setting the status description
+
 0.5.0 (2014-02-23 21:55:00 -0800)
 ---------------------------------
 - OAUTH is now used for creating pull requests.
