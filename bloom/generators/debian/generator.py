@@ -336,6 +336,8 @@ def generate_substitutions_from_package(
             for i, val in enumerate(obj_tmp):
                 obj_tmp[i] = convertToUnicode(obj_tmp[i])
             return tuple(obj_tmp)
+        elif isinstance(obj, int):
+            return obj
         raise RuntimeError('need to deal with type %s' % (str(type(obj))))
 
     for item in data.items():
