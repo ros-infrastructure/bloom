@@ -44,7 +44,6 @@ import os
 import pkg_resources
 import platform
 import shutil
-import socket
 import subprocess
 import sys
 import tempfile
@@ -727,15 +726,13 @@ def update_summary(track, repository, distro):
     msg = """\
 ## {repository} ({distro}) - {version}
 
-User `{user}@{hostname}` released the packages in the `{repository}` repository into the \
+The packages in the `{repository}` repository were released into the \
 `{distro}` distro by running `{cmd}` on `{date}`
 
 """.format(
         repository=repository,
         distro=distro,
         date=get_rfc_2822_date(datetime.datetime.now()),
-        user=getpass.getuser(),
-        hostname=socket.gethostname(),
         cmd=' '.join(sys.argv),
         version=version
     )
