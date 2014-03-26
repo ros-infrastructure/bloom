@@ -271,6 +271,38 @@ def generate_substitutions_from_package(
     data['changelogs'] = changelogs
     # Summarize dependencies
     summarize_dependency_mapping(data, depends, build_depends, resolved_deps)
+
+    def convertToUnicode(obj):
+        if sys.version_info.major == 2:
+            if isinstance(obj, str):
+                return unicode(obj.decode('utf8'))
+            elif isinstance(obj, unicode):
+                return obj
+        else:
+            if isinstance(obj, bytes):
+                return str(obj.decode('utf8'))
+            elif isinstance(obj, str):
+                return obj
+        if isinstance(obj, list):
+            for i, val in enumerate(obj):
+                obj[i] = convertToUnicode(val)
+            return obj
+        elif isinstance(obj, type(None)):
+            return None
+        elif isinstance(obj, tuple):
+            obj_tmp = list(obj)
+            for i, val in enumerate(obj_tmp):
+                obj_tmp[i] = convertToUnicode(obj_tmp[i])
+            return tuple(obj_tmp)
+        elif isinstance(obj, int):
+            return obj
+        elif isinstance(obj, int):
+            return obj
+        raise RuntimeError('need to deal with type %s' % (str(type(obj))))
+
+    for item in data.items():
+        data[item[0]] = convertToUnicode(item[1])
+
     return data
 
 
@@ -297,7 +329,7 @@ def __process_template_folder(path, subs):
         result = em.expand(template, **subs)
         # Write the result
         with open(template_path, 'w') as f:
-            f.write(result.encode('utf8'))
+            f.write(result)
         # Copy the permissions
         shutil.copymode(item, template_path)
         processed_items.append(item)
