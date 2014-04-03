@@ -225,7 +225,7 @@ def generate_substitutions_from_package(
     data['InstallationPrefix'] = installation_prefix
     # Resolve dependencies
     depends = package.run_depends
-    build_depends = package.build_depends + package.buildtool_depends
+    build_depends = package.build_depends + package.buildtool_depends + package.test_depends
     unresolved_keys = depends + build_depends + package.replaces + package.conflicts
     resolved_deps = resolve_dependencies(unresolved_keys, os_name,
                                          os_version, ros_distro,
