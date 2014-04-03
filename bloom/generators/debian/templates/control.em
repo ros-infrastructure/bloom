@@ -10,3 +10,9 @@ Package: @(Package)
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, @(', '.join(Depends))
 Description: @(Description)
+
+Package: @(Package)-dbg
+Section: debug
+Architecture: any
+Depends: @(Package) (= ${binary:Version}), ${misc:Depends}
+Description: @(Description)
