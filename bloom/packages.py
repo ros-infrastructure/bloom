@@ -79,7 +79,7 @@ def get_package_data(branch_name=None, directory=None, quiet=True, release_direc
         log("Looking for packages in '{0}' branch... ".format(branch_name), end='')
     else:
         log("Looking for packages in '{0}'... ".format(directory or os.getcwd()), end='')
-    ## Check for package.xml(s)
+    # Check for package.xml(s)
     packages = find_packages(repo_dir)
     if type(packages) == dict and packages != {}:
         if len(packages) > 1:

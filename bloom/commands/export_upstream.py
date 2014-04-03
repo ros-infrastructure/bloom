@@ -111,7 +111,7 @@ def export_upstream(uri, tag, vcs_type, output_dir, show_uri, name):
     name = name or 'upstream'
     with temporary_directory() as tmp_dir:
         info("Checking out repository at '{0}'".format(show_uri or uri) +
-            (" to reference '{0}'.".format(tag) if tag else '.'))
+             (" to reference '{0}'.".format(tag) if tag else '.'))
         if uri_is_path:
             upstream_repo = get_vcs_client(vcs_type, uri)
         else:

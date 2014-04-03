@@ -130,7 +130,7 @@ def run_generator(generator, arguments):
             # Summarize branch command
             msg = summarize_branch_cmd(destination, source, interactive)
 
-            ### Run pre - branch - post
+            # Run pre - branch - post
             # Pre branch
             try_execute('generator pre_branch', msg,
                         gen.pre_branch, destination, source)
@@ -141,7 +141,7 @@ def run_generator(generator, arguments):
             try_execute('generator post_branch', msg,
                         gen.post_branch, destination, source)
 
-            ### Run pre - export patches - post
+            # Run pre - export patches - post
             # Pre patch
             try_execute('generator pre_export_patches', msg,
                         gen.pre_export_patches, destination)
@@ -151,7 +151,7 @@ def run_generator(generator, arguments):
             try_execute('generator post_export_patches', msg,
                         gen.post_export_patches, destination)
 
-            ### Run pre - rebase - post
+            # Run pre - rebase - post
             # Pre rebase
             try_execute('generator pre_rebase', msg,
                         gen.pre_rebase, destination)
@@ -161,7 +161,7 @@ def run_generator(generator, arguments):
             try_execute('generator post_rebase', msg,
                         gen.post_rebase, destination)
 
-            ### Run pre - import patches - post
+            # Run pre - import patches - post
             # Pre patch
             try_execute('generator pre_patch', msg,
                         gen.pre_patch, destination)

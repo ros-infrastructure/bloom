@@ -347,8 +347,8 @@ def main(sysargs=None):
     warning("Tip: Check to ensure that the debian tags created have the same "
             "version as the upstream version you are releasing.")
     info(fmt("@{gf}@!Everything went as expected, "
-         "you should check that the new tags match your expectations, and "
-         "then push to the release repo with:@|"))
+             "you should check that the new tags match your expectations, and "
+             "then push to the release repo with:@|"))
     info(fmt("  git push --all && git push --tags  "
              "@{kf}@!# You might have to add --force to the second command if you "
              "are over-writing existing tags"))

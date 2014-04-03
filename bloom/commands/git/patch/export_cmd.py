@@ -21,7 +21,7 @@ from bloom.commands.git.patch.common import list_patches
 
 @log_prefix('[git-bloom-patch export]: ')
 def export_patches(directory=None):
-    ### Ensure a clean/valid working environment
+    # Ensure a clean/valid working environment
     ensure_clean_working_env(git_status=True, directory=directory)
     # Get current branch
     current_branch = get_current_branch(directory)

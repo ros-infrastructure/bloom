@@ -125,9 +125,9 @@ def git_rebase(upstream_branch, directory=None):
 
 @log_prefix('[git-bloom-patch rebase]: ')
 def rebase_patches(without_git_rebase=True, directory=None):
-    ### Ensure a clean/valid working environment
+    # Ensure a clean/valid working environment
     ensure_clean_working_env(git_status=True, directory=directory)
-    ### Make sure we need to actually call this
+    # Make sure we need to actually call this
     # Get the current branch
     current_branch = get_current_branch(directory)
     if current_branch is None:
@@ -137,13 +137,13 @@ def rebase_patches(without_git_rebase=True, directory=None):
     # Get the current patches.conf
     config = get_patch_config(patches_branch, directory=directory)
 
-    ### Execute the rebase
+    # Execute the rebase
     if without_git_rebase:
         non_git_rebase(config['parent'], directory=directory)
     else:
         git_rebase(config['parent'], directory=directory)
 
-    ### Update the patches information
+    # Update the patches information
     # Get the latest configs
     config = get_patch_config(patches_branch, directory)
     # Set the base to the current hash (before patches)

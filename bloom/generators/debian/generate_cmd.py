@@ -114,7 +114,7 @@ def main(args=None, get_subs_fn=None):
     # Summarize
     info(fmt("@!@{gf}==> @|") +
          fmt("Generating debs for @{cf}%s:%s@| for package(s) %s" %
-            (os_name, os_version, [p.name for p in pkgs_dict.values()])))
+             (os_name, os_version, [p.name for p in pkgs_dict.values()])))
 
     for path, pkg in pkgs_dict.items():
         template_files = None
