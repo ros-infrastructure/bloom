@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 install_requires = [
     'catkin-pkg >= 0.1.14',
-    'distribute',
+    'setuptools',
     'empy',
     'python-dateutil',
     'PyYAML',
