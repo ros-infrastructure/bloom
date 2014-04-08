@@ -4,7 +4,7 @@ python:
   - "3.3"
 # command to install dependencies
 install:
-  - pip install PyYAML argparse rosdep vcstools catkin-pkg python-dateutil distribute
+  - pip install PyYAML argparse rosdep vcstools catkin-pkg python-dateutil setuptools
   - pip install nose coverage pep8
   - git clone https://github.com/dirk-thomas/empy.git /tmp/empy
   - cd /tmp/empy
