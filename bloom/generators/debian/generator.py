@@ -267,6 +267,8 @@ def generate_substitutions_from_package(
     data['Package'] = sanitize_package_name(package.name)
     # Installation prefix
     data['InstallationPrefix'] = installation_prefix
+    # Library directory location
+    data['LibDir'] = None
     # Resolve dependencies
     depends = package.run_depends
     build_depends = package.build_depends + package.buildtool_depends

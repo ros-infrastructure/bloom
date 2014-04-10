@@ -113,6 +113,8 @@ def get_subs(pkg, os_name, os_version, ros_distro):
         ros_distro
     )
     subs['Package'] = rosify_package_name(subs['Package'], ros_distro)
+    # Override LibDir to not use multiarch with ROS releases
+    subs['LibDir'] = 'lib'
     return subs
 
 
