@@ -83,11 +83,22 @@ try:
 except NameError:
     to_unicode = str
 
+
+def flush_stdin():
+    try:
+        from termios import tcflush, TCIOFLUSH
+        tcflush(sys.stdin, TCIOFLUSH)
+    except ImportError:
+        # fallback if not supported on some platforms
+        pass
+
 try:
     def safe_input(prompt=None):
+        flush_stdin()
         return raw_input(prompt)
 except NameError:
     def safe_input(prompt=None):
+        flush_stdin()
         return input(prompt)
 
 
