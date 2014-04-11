@@ -1,3 +1,12 @@
+0.5.3 (2014-04-11 15:51:09 -0700)
+---------------------------------
+- Fixed a bug when handling unicode failed on values which were int's
+- Removed mention of username and hostname from bloom summaries in the release repo's README.md
+- Fixed unicode handling in Fedora generation
+- Modified handling of test dependencies for changes from REP-140 roll out
+- Removed references to python-distribute in favor of python-setuptools
+- Changed usuage of rosdep api to work with rosdep >= 0.10.27
+
 0.5.2 (2014-03-04 20:52:09 -0600)
 ---------------------------------
 - Pull request titles and body are now santized before printing
