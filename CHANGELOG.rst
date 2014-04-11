@@ -1,3 +1,7 @@
+0.5.4 (2014-04-11 16:09:00 -0700)
+---------------------------------
+- Fixed a problem with the documentation on readthedocs.org
+
 0.5.3 (2014-04-11 15:51:09 -0700)
 ---------------------------------
 - Fixed a bug when handling unicode failed on values which were int's
