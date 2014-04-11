@@ -43,9 +43,8 @@ from bloom.util import maybe_continue
 from bloom.util import print_exc
 
 try:
-    from rosdep2.catkin_support import default_installers
+    from rosdep2 import create_default_installer_context
     from rosdep2.catkin_support import get_catkin_view
-    from rosdep2.catkin_support import get_installer
     from rosdep2.catkin_support import resolve_for_os
     from rosdep2.lookup import ResolutionError
     import rosdep2.catkin_support
@@ -105,10 +104,13 @@ def resolve_rosdep_key(
     retry=True
 ):
     ignored = ignored or []
-    if os_name not in default_installers:
+    ctx = create_default_installer_context()
+    try:
+        installer_key = ctx.get_default_os_installer_key(os_name)
+    except KeyError:
         BloomGenerator.exit("Could not determine the installer for '{0}'"
                             .format(os_name))
-    installer = get_installer(default_installers[os_name][0])
+    installer = ctx.get_installer(installer_key)
     ros_distro = ros_distro or DEFAULT_ROS_DISTRO
     view = get_view(os_name, os_version, ros_distro)
     try:
