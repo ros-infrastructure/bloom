@@ -268,6 +268,8 @@ def generate_substitutions_from_package(
                 package.maintainers[0].email
             )
         ))
+    exported_tags = [e.tagname for e in package.exports]
+    data['NoArch'] = 'metapackage' in exported_tags or 'architecture_independent' in exported_tags
     data['changelogs'] = changelogs
     # Summarize dependencies
     summarize_dependency_mapping(data, depends, build_depends, resolved_deps)
