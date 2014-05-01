@@ -264,7 +264,7 @@ def delete_cmd(track):
 
 
 def copy_cmd(args):
-    copy_track(args.dst, args.src)
+    copy_track(args.src, args.dst)
 
 
 def copy_track(src, dst):
