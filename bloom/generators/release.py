@@ -54,8 +54,8 @@ from bloom.commands.git.patch.trim_cmd import trim
 try:
     import catkin_pkg
     from pkg_resources import parse_version
-    if parse_version(catkin_pkg.__version__) < parse_version('0.1.14'):
-        warning("This version of bloom requires catkin_pkg version >= '0.1.14',"
+    if parse_version(catkin_pkg.__version__) < parse_version('0.2.2'):
+        warning("This version of bloom requires catkin_pkg version >= '0.2.2',"
                 " the used version of catkin_pkg is '{0}'".format(catkin_pkg.__version__))
     from catkin_pkg import metapackage
 except ImportError as err:
