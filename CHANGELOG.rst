@@ -1,3 +1,7 @@
+0.5.7 (2014-05-08 14:00:00 -0700)
+---------------------------------
+- Add versioned dependency on catkin_pkg 0.2.2
+
 0.5.6 (2014-05-07 17:16:43 -0700)
 ---------------------------------
 - When generating Debian and Fedora packaging files, explicitly include buildtool_export_depends with run_depends
