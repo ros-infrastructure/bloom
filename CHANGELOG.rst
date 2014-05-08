@@ -1,4 +1,8 @@
-0.5.4 (2014-04-11 16:09:00 -0700)
+0.5.6 (2014-05-07 17:16:43 -0700)
+---------------------------------
+- When generating Debian and Fedora packaging files, explicitly include buildtool_export_depends with run_depends
+
+0.5.5 (2014-05-01 10:24:31 -0700)
 ---------------------------------
 - Add noarch flag to fedora generation for metapackages and packages marked as architecture_independent
 - Fix the order of the arguments for git-bloom-config copy
