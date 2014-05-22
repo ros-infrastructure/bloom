@@ -311,6 +311,8 @@ def generate_substitutions_from_package(
             package.maintainers[0].email
         ))
     data['changelogs'] = changelogs
+    # Use debhelper version 7 for oneric, otherwise 9
+    data['debhelper_version'] = 7 if os_version in ['oneiric'] else 9
     # Summarize dependencies
     summarize_dependency_mapping(data, depends, build_depends, resolved_deps)
 

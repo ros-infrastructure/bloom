@@ -2,7 +2,7 @@ Source: @(Package)
 Section: misc
 Priority: extra
 Maintainer: @(Maintainer)
-Build-Depends: debhelper (>= 9.0.0), @(', '.join(BuildDepends))
+Build-Depends: debhelper (>= @(debhelper_version).0.0), @(', '.join(BuildDepends))
 Homepage: @(Homepage)
 Standards-Version: 3.9.2
 
