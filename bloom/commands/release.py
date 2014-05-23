@@ -570,7 +570,7 @@ def get_changelog_summary(release_tag):
     return summary
 
 
-def open_pull_request(track, repository, distro):
+def open_pull_request(track, repository, distro, interactive):
     # Get the diff
     distribution_file = get_distribution_file(distro)
     if repository in distribution_file.repositories and \
@@ -682,7 +682,7 @@ Increasing version of package(s) in repository `{0}` to `{2}`:
                       "{base_org}/{base_repo}:{base_branch}".format(**locals()) +
                       "@|@!'?")
             info(msg)
-            if not maybe_continue():
+            if interactive and not maybe_continue():
                 warning("Skipping the pull request...")
                 return
             _my_run('git checkout -b {new_branch}'.format(**locals()))
@@ -941,7 +941,7 @@ def perform_release(repository, track, distro, new_track, interactive, pretend, 
              "Generating pull request to distro file located at '{0}'"
              .format(get_disitrbution_file_url(distro)))
         try:
-            pull_request_url = open_pull_request(track, repository, distro)
+            pull_request_url = open_pull_request(track, repository, distro, interactive)
             if pull_request_url:
                 info(fmt(_success) + "Pull request opened at: {0}".format(pull_request_url))
                 if 'BLOOM_NO_WEBBROWSER' not in os.environ and platform.system() in ['Darwin']:
