@@ -37,6 +37,8 @@ def non_git_rebase(upstream_branch, directory=None):
             ignores = ('.git', '.gitignore', '.svn', '.hgignore', '.hg', 'CVS')
             parent_source = os.path.join(tmp_dir, 'parent_source')
             my_copytree(git_root, parent_source, ignores)
+        # Clear out any untracked files
+        execute_command('git clean -fdx', cwd=directory)  # for good measure?
         # Collect files (excluding .git)
         items = []
         for item in os.listdir(git_root):
@@ -46,8 +48,6 @@ def non_git_rebase(upstream_branch, directory=None):
         # Remove all files
         if len(items) > 0:
             execute_command('git rm -rf ' + ' '.join(items), cwd=directory)
-        # Clear out any untracked files
-        execute_command('git clean -fdx', cwd=directory)  # for good measure?
 
         # Copy the parent source into the newly cleaned directory
         my_copytree(parent_source, git_root)
