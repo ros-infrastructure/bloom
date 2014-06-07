@@ -19,7 +19,7 @@ License:        @(License)
 # in the install tree that was dropped by catkin, and source it.  It will
 # set things like CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
 if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi
-mkdir build && cd build
+mkdir -p build && cd build
 cmake .. \
         -DCMAKE_INSTALL_PREFIX="@(InstallationPrefix)" \
         -DCMAKE_PREFIX_PATH="@(InstallationPrefix)" \
