@@ -435,8 +435,10 @@ class RpmGenerator(BloomGenerator):
             index = rosdistro.get_index(rosdistro.get_index_url())
             distribution_file = rosdistro.get_distribution_file(index, self.rosdistro)
             if self.os_name not in distribution_file.release_platforms:
-                error("No platforms defined for os '{0}' in release file for the '{1}' distro."
-                      .format(self.os_name, self.rosdistro), exit=True)
+                warning("No platforms defined for os '{0}' in release file for the '{1}' distro."
+                        "\nNot performing RPM generation."
+                        .format(self.os_name, self.rosdistro))
+                sys.exit(0)
             self.distros = distribution_file.release_platforms[self.os_name]
         self.install_prefix = args.install_prefix
         if args.install_prefix is None:
