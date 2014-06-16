@@ -86,8 +86,8 @@ except NameError:
 
 def flush_stdin():
     try:
-        from termios import tcflush, TCIOFLUSH
-        tcflush(sys.stdin, TCIOFLUSH)
+        from termios import tcflush, TCIFLUSH
+        tcflush(sys.stdin, TCIFLUSH)
     except ImportError:
         # fallback if not supported on some platforms
         pass
