@@ -646,13 +646,24 @@ def open_pull_request(track, repository, distro):
     info(fmt("@{bf}@!==> @|@!" + "Cloning {0}/{1}...".format(head_org, head_repo)))
     new_branch = None
     title = "{0}: {1} in '{2}' [bloom]".format(repository, version, base_path)
+    track_dict = get_tracks_dict_raw()['tracks'][track]
     body = """\
-Increasing version of package(s) in repository `{0}` to `{2}`:
+Increasing version of package(s) in repository `{repository}` to `{version}`:
 
-- distro file: `{3}`
-- bloom version: `{4}`
-- previous version for package: `{1}`
-""".format(repository, orig_version or 'null', version, base_path, bloom.__version__)
+- upstream repository: {upstream_repo}
+- release repository: {release_repo}
+- distro file: `{distro_file}`
+- bloom version: `{bloom_version}`
+- previous version for package: `{orig_version}`
+""".format(
+        repository=repository,
+        orig_version=orig_version or 'null',
+        version=version,
+        distro_file=base_path,
+        bloom_version=bloom.__version__,
+        upstream_repo=track_dict['vcs_uri'],
+        release_repo=updated_distribution_file.repositories[repository].release_repository.url,
+    )
     body += get_changelog_summary(generate_release_tag(distro))
     with temporary_directory() as temp_dir:
         def _my_run(cmd, msg=None):
@@ -754,10 +765,14 @@ The packages in the `{repository}` repository were released into the \
     release_file = get_distribution_file(distro)
     reps = release_file.repositories
     distro_version = None
+    release_repo_url = 'unknown'
     if repository in reps and reps[repository].release_repository is not None:
         distro_version = reps[repository].release_repository.version
+        release_repo_url = reps[repository].release_repository.url
     msg += """
 Version of package(s) in repository `{repo}`:
+- upstream repository: {upstream_repo_url}
+- release repository: {release_repo_url}
 - rosdistro version: `{rosdistro_pv}`
 - old version: `{old_pv}`
 - new version: `{new_pv}`
@@ -770,6 +785,8 @@ Versions of tools used:
 - vcstools version: `{vcstools_v}`
 """.format(
         repo=repository,
+        upstream_repo_url=track_dict['vcs_uri'],
+        release_repo_url=release_repo_url,
         rosdistro_pv=distro_version or 'null',
         old_pv=_original_version,
         new_pv=version,
