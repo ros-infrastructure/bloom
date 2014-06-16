@@ -1,3 +1,16 @@
+0.5.10 (2014-06-16 11:48:51 -0700)
+----------------------------------
+- Fix cleaning behavior for trim and rebase, #281
+- Fix a bug where stdout was getting truncated before a user prompt
+
+0.5.9 (2014-05-22 14:55:59 -0700)
+---------------------------------
+- Revert to deb compat version 7 for Oneric
+
+0.5.8 (2014-05-16 16:17:38 -0700)
+---------------------------------
+- Change deb compat version to 9 in order to get default compiler flags (with optimization) again
+
 0.5.7 (2014-05-08 14:00:00 -0700)
 ---------------------------------
 - Add versioned dependency on catkin_pkg 0.2.2
