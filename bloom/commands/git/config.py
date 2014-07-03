@@ -213,10 +213,16 @@ def update_track(track_dict):
     for key, value in DEFAULT_TEMPLATE.items():
         if key in ['actions']:
             if track_dict[key] != DEFAULT_TEMPLATE[key]:
-                warning("""\
-Your track's '{0}' configuration is not the same as the default, should it be updated to the default setting?"""
+                warning("Your track's '{0}' configuration is not the same as the default."
                         .format(key))
-                if maybe_continue('n'):
+                default = 'n'
+                if key == 'actions':
+                    default = 'y'
+                    warning("Unless you have manually modified your 'actions' "
+                            "(the commands which get run for a release), "
+                            "you should update to the new default.")
+                warning("Should it be updated to the default setting?")
+                if maybe_continue(default):
                     track_dict[key] = DEFAULT_TEMPLATE[key]
         elif key not in track_dict:
             value = value.default if isinstance(value, PromptEntry) else value
