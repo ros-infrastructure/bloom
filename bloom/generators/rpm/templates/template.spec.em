@@ -19,8 +19,13 @@ License:        @(License)
 # in the install tree that was dropped by catkin, and source it.  It will
 # set things like CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
 if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi
-mkdir build && cd build
-cmake .. \
+mkdir -p build && cd build
+%cmake .. \
+        -UINCLUDE_INSTALL_DIR \
+        -ULIB_INSTALL_DIR \
+        -USYSCONF_INSTALL_DIR \
+        -USHARE_INSTALL_PREFIX \
+        -ULIB_SUFFIX \
         -DCMAKE_INSTALL_PREFIX="@(InstallationPrefix)" \
         -DCMAKE_PREFIX_PATH="@(InstallationPrefix)" \
         -DSETUPTOOLS_DEB_LAYOUT=OFF \
@@ -34,7 +39,7 @@ make %{?_smp_mflags}
 # set things like CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
 if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi
 cd build
-make install DESTDIR=%{buildroot}
+make %{?_smp_mflags} install DESTDIR=%{buildroot}
 
 %files
 @(InstallationPrefix)

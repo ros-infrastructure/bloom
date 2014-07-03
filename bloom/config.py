@@ -197,6 +197,8 @@ DEFAULT_TEMPLATE = {
         'git-bloom-generate -y rosrelease :{ros_distro}'
         ' --source upstream -i :{release_inc}',
         'git-bloom-generate -y rosdebian --prefix release/:{ros_distro}'
+        ' :{ros_distro} -i :{release_inc}',
+        'git-bloom-generate -y rosrpm --prefix release/:{ros_distro}'
         ' :{ros_distro} -i :{release_inc}'
     ]
 }
