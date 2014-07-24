@@ -1,3 +1,9 @@
+0.5.11 (2014-07-24 14:28:03 -0700)
+----------------------------------
+- Added rosrpm generator to the default list of generators.
+- Upstream repository url and release repository url are now included in the summaries in pull requests.
+- Updated the warning about changing track actions to make the transion of rosrpm in the default actions smoother.
+
 0.5.10 (2014-06-16 11:48:51 -0700)
 ----------------------------------
 - Fix cleaning behavior for trim and rebase, #281
