@@ -37,12 +37,9 @@ override_dh_auto_build:
 	dh_auto_build
 
 override_dh_auto_test:
-	# In case we're installing to a non-standard location, look for a setup.sh
-	# in the install tree that was dropped by catkin, and source it.  It will
-	# set things like CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
-	echo -- Running tests. Even if one of them fails the build is not canceled.
-	if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi && \
-	dh_auto_test || true
+	# Because test dependencies are not installed, we cannot guarantee that
+	# tests will build, therefore we just skip them completely.
+	true
 
 override_dh_shlibdeps:
 	# In case we're installing to a non-standard location, look for a setup.sh
