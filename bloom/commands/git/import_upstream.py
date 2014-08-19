@@ -124,7 +124,7 @@ def import_tarball(tarball_path, target_branch, version, name):
             if not item.startswith('.'):
                 items.append(item)
         tarball_prefix = os.path.basename(tarball_path)[:-len('.tag.gz')]
-        if tarball_prefix in items:
+        if [tarball_prefix] == items:
             debug('Removing nested tarball folder: ' + str(tarball_prefix))
             tarball_prefix_path = os.path.join(os.getcwd(), tarball_prefix)
             for item in os.listdir(tarball_prefix_path):
