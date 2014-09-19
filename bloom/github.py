@@ -121,10 +121,11 @@ class Github(object):
         page = start_page or 1
         repos = []
         while True:
-            resp = do_github_get_req('/users/{user}/repos?page={page}'.format(**locals()), auth=self.auth)
+            url = '/users/{user}/repos?page={page}'.format(**locals())
+            resp = do_github_get_req(url, auth=self.auth)
             if '{0}'.format(resp.status) not in ['200']:
                 raise GithubException(
-                    "Failed to get information for repository '{owner}/{repo}'".format(**locals()), resp)
+                    "Failed to list repositories for user '{user}' using url '{url}'".format(**locals()), resp)
             new_repos = json.loads(resp.read())
             if not new_repos:
                 return repos
