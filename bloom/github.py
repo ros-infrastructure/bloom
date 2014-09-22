@@ -38,6 +38,7 @@ Provides functions for interating with github
 from __future__ import print_function
 
 import base64
+import datetime
 import json
 import socket
 
@@ -96,12 +97,16 @@ class Github(object):
     def create_new_bloom_authorization(self, note=None, note_url=None, scopes=None, update_auth=False):
         payload = {
             "scopes": ['public_repo'] if scopes is None else scopes,
-            "note": note or "bloom-{0} on {1}".format(bloom.__version__, socket.gethostname()),
+            "note": note or "bloom-{0} for {1} created on {2}".format(
+                bloom.__version__,
+                socket.gethostname(),
+                datetime.datetime.now().isoformat()),
             "note_url": 'http://bloom.readthedocs.org/' if note_url is None else note_url
         }
         resp = do_github_post_req('/authorizations', payload, self.auth)
         resp_data = json.loads(resp.read())
-        if '{0}'.format(resp.status) not in ['201', '202'] or 'token' not in resp_data:
+        resp_code = '{0}'.format(resp.status)
+        if resp_code not in ['201', '202'] or 'token' not in resp_data:
             raise GithubException("Failed to create a new oauth authorization", resp)
         token = resp_data['token']
         if update_auth:
