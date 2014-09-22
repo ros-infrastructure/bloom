@@ -531,6 +531,17 @@ def get_github_interface():
         except GithubException as exc:
             error("{0}".format(exc))
             info("")
+            if '{0}'.format(exc.resp.status) in ['401']:
+                warning("Receiving 401 when trying to create an oauth token can be caused by the user "
+                        "having two-factor authentication enabled.")
+                warning("If 2FA is enabled, the user will have to create an oauth token manually.")
+                warning("A token can be created at https://github.com/settings/applications")
+                warning("The resulting token can be placed in the '{oauth_config_path}' file as such:"
+                        .format(**locals()))
+                info("")
+                warning('{{"github_user": "{username}", "oauth_token": "TOKEN_GOES_HERE"}}'
+                        .format(**locals()))
+                info("")
             warning("This sometimes fails when the username or password are incorrect, try again?")
             if not maybe_continue():
                 return None
@@ -592,6 +603,8 @@ def open_pull_request(track, repository, distro):
         return
     # Get the github interface
     gh = get_github_interface()
+    if gh is None:
+        return None
     # Determine the head org/repo for the pull request
     head_org = gh.username  # The head org will always be gh user
     head_repo = None
