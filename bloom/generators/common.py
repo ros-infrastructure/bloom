@@ -33,12 +33,14 @@
 from __future__ import print_function
 
 import pkg_resources
+import sys
 import traceback
 
 from bloom.logging import debug
 from bloom.logging import error
 from bloom.logging import info
 
+from bloom.util import code
 from bloom.util import maybe_continue
 from bloom.util import print_exc
 
@@ -165,8 +167,17 @@ def resolve_dependencies(
 
 
 class GeneratorError(Exception):
-    def __init__(self, msg):
+    def __init__(self, msg, returncode=code.UNKNOWN):
         super(GeneratorError, self).__init__("Error running generator: " + msg)
+        self.returncode = returncode
+
+    @staticmethod
+    def excepthook(etype, value, traceback):
+        GeneratorError.sysexcepthook(etype, value, traceback)
+        if isinstance(value, GeneratorError):
+            sys.exit(value.returncode)
+
+    sys.excepthook, sysexcepthook = excepthook.__func__, staticmethod(sys.excepthook)
 
 
 class BloomGenerator(object):
