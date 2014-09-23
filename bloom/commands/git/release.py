@@ -71,8 +71,10 @@ from bloom.packages import get_package_data
 import bloom.util
 from bloom.util import add_global_arguments
 from bloom.util import change_directory
+from bloom.util import code
 from bloom.util import disable_git_clone
 from bloom.util import handle_global_arguments
+from bloom.util import maybe_continue
 from bloom.util import quiet_git_clone_warning
 from bloom.util import safe_input
 
@@ -286,6 +288,19 @@ def execute_track(track, track_dict, release_inc, pretend=True, debug=False, fas
             info(out, use_prefix=False)
         ret = p.returncode
         if ret > 0:
+            if 'bloom-generate' in templated_action[0] and ret == code.GENERATOR_NO_ROSDEP_KEY_FOR_DISTRO:
+                error(fmt(_error + "The following generator action reported that it is missing one or more"))
+                error(fmt("    @|rosdep keys, but that the key exists in other platforms:"))
+                error(fmt("@|'@!{0}'@|").format(templated_action))
+                info('', use_prefix=False)
+                error(fmt("@|If you are @!@_@{rf}absolutely@| sure that this key is unavailable for the platform in"))
+                error(fmt("@|question, the generator can be skipped and you can proceed with the release."))
+                if maybe_continue('n', 'Skip generator action and continue with release'):
+                    info("\nAction skipped, continuing with release.\n")
+                    continue
+
+                info('', use_prefix=False)
+
             error(fmt(_error + "Error running command '@!{0}'@|")
                   .format(templated_action), exit=True)
         info('', use_prefix=False)

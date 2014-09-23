@@ -33,12 +33,14 @@
 from __future__ import print_function
 
 import pkg_resources
+import sys
 import traceback
 
 from bloom.logging import debug
 from bloom.logging import error
 from bloom.logging import info
 
+from bloom.util import code
 from bloom.util import maybe_continue
 from bloom.util import print_exc
 
@@ -121,10 +123,12 @@ def resolve_rosdep_key(
             return None
         if isinstance(exc, KeyError):
             error("Could not resolve rosdep key '{0}'".format(key))
+            returncode = code.GENERATOR_NO_SUCH_ROSDEP_KEY
         else:
             error("Could not resolve rosdep key '{0}' for distro '{1}':"
                   .format(key, os_version))
             info(str(exc), use_prefix=False)
+            returncode = code.GENERATOR_NO_ROSDEP_KEY_FOR_DISTRO
         if retry:
             error("Try to resolve the problem with rosdep and then continue.")
             if maybe_continue():
@@ -133,12 +137,12 @@ def resolve_rosdep_key(
                 return resolve_rosdep_key(key, os_name, os_version, ros_distro,
                                           ignored, retry=True)
         BloomGenerator.exit("Failed to resolve rosdep key '{0}', aborting."
-                            .format(key))
+                            .format(key), returncode=returncode)
 
 
 def default_fallback_resolver(key, peer_packages):
     BloomGenerator.exit("Failed to resolve rosdep key '{0}', aborting."
-                        .format(key))
+                        .format(key), returncode=code.GENERATOR_NO_SUCH_ROSDEP_KEY)
 
 
 def resolve_dependencies(
@@ -165,8 +169,17 @@ def resolve_dependencies(
 
 
 class GeneratorError(Exception):
-    def __init__(self, msg):
+    def __init__(self, msg, returncode=code.UNKNOWN):
         super(GeneratorError, self).__init__("Error running generator: " + msg)
+        self.returncode = returncode
+
+    @staticmethod
+    def excepthook(etype, value, traceback):
+        GeneratorError.sysexcepthook(etype, value, traceback)
+        if isinstance(value, GeneratorError):
+            sys.exit(value.returncode)
+
+    sys.excepthook, sysexcepthook = excepthook.__func__, staticmethod(sys.excepthook)
 
 
 class BloomGenerator(object):
@@ -179,8 +192,8 @@ class BloomGenerator(object):
     help = None
 
     @classmethod
-    def exit(cls, retcode):
-        raise GeneratorError(retcode)
+    def exit(cls, msg, returncode=code.UNKNOWN):
+        raise GeneratorError(msg, returncode)
 
     def prepare_arguments(self, parser):
         """
@@ -217,6 +230,17 @@ class BloomGenerator(object):
         :returns: list of tuples containing arguments for git-bloom-branch
         """
         return []
+
+    def pre_modify(self):
+        """
+        Hook for last minute checks
+
+        This is the last call before the generator is expected to start
+        performing modifications to the repository.
+
+        :returns: return code, return 0 or None for OK, anything else on error
+        """
+        return 0
 
     def pre_branch(self, destination, source):
         """
