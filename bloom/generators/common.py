@@ -123,10 +123,12 @@ def resolve_rosdep_key(
             return None
         if isinstance(exc, KeyError):
             error("Could not resolve rosdep key '{0}'".format(key))
+            returncode = code.GENERATOR_NO_SUCH_ROSDEP_KEY
         else:
             error("Could not resolve rosdep key '{0}' for distro '{1}':"
                   .format(key, os_version))
             info(str(exc), use_prefix=False)
+            returncode = code.GENERATOR_NO_ROSDEP_KEY_FOR_DISTRO
         if retry:
             error("Try to resolve the problem with rosdep and then continue.")
             if maybe_continue():
@@ -135,12 +137,12 @@ def resolve_rosdep_key(
                 return resolve_rosdep_key(key, os_name, os_version, ros_distro,
                                           ignored, retry=True)
         BloomGenerator.exit("Failed to resolve rosdep key '{0}', aborting."
-                            .format(key))
+                            .format(key), returncode=returncode)
 
 
 def default_fallback_resolver(key, peer_packages):
     BloomGenerator.exit("Failed to resolve rosdep key '{0}', aborting."
-                        .format(key))
+                        .format(key), returncode=code.GENERATOR_NO_SUCH_ROSDEP_KEY)
 
 
 def resolve_dependencies(
@@ -190,8 +192,8 @@ class BloomGenerator(object):
     help = None
 
     @classmethod
-    def exit(cls, retcode):
-        raise GeneratorError(retcode)
+    def exit(cls, msg, returncode=code.UNKNOWN):
+        raise GeneratorError(msg, returncode)
 
     def prepare_arguments(self, parser):
         """
