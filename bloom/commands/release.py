@@ -234,8 +234,7 @@ def get_repo_uri(repository, distro):
                     valid_url = False
                     warning("The release repository url you provided is not a `https://` address.")
                 if not valid_url:
-                    warning("Would you like to enter the address again?")
-                    if maybe_continue():
+                    if maybe_continue(msg="Would you like to enter the address again"):
                         url = None
                         continue
                     else:
