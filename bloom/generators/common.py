@@ -218,6 +218,17 @@ class BloomGenerator(object):
         """
         return []
 
+    def pre_modify(self):
+        """
+        Hook for last minute checks
+
+        This is the last call before the generator is expected to start
+        performing modifications to the repository.
+
+        :returns: return code, return 0 or None for OK, anything else on error
+        """
+        return 0
+
     def pre_branch(self, destination, source):
         """
         Pre-branching hook

@@ -123,6 +123,8 @@ def run_generator(generator, arguments):
         if arguments.interactive:
             if not maybe_continue('y'):
                 error("Answered no to continue, aborting.", exit=True)
+        try_execute('generator pre_modify', '',
+                    gen.pre_modify)
         for branch_args in generator.get_branching_arguments():
             parsed_branch_args = parse_branch_args(branch_args,
                                                    arguments.interactive)

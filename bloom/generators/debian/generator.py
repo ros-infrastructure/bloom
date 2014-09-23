@@ -516,6 +516,25 @@ class DebianGenerator(BloomGenerator):
         update_rosdep()
         self.has_run_rosdep = True
 
+    def pre_modify(self):
+        info("\nPre-verifying Debian dependency keys...")
+        # Run rosdep update is needed
+        if not self.has_run_rosdep:
+            self.update_rosdep()
+
+        peer_packages = [p.name for p in self.packages.values()]
+
+        for package in self.packages.values():
+            depends = package.run_depends + package.buildtool_export_depends
+            build_depends = package.build_depends + package.buildtool_depends + package.test_depends
+            unresolved_keys = depends + build_depends + package.replaces + package.conflicts
+            for os_version in self.distros:
+                resolve_dependencies(unresolved_keys, self.os_name,
+                                     os_version, self.rosdistro,
+                                     peer_packages, fallback_resolver=missing_dep_resolver)
+
+        info("All keys are " + ansi('greenf') + "OK" + ansi('reset') + "\n")
+
     def pre_branch(self, destination, source):
         if destination in self.debian_branches:
             return
