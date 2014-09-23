@@ -311,6 +311,14 @@ def generate_substitutions_from_package(
             package.maintainers[0].name,
             package.maintainers[0].email
         ))
+    bad_changelog = False
+    # Make sure that the first change log is the version being released
+    if package.version != changelogs[0][0]:
+        error("")
+        error("The version of the first changelog entry '{0}' is not the "
+              "same as the version being currently released '{1}'."
+              .format(package.version, changelogs[0][0]))
+        bad_changelog = True
     # Make sure that the current version is the latest in the changelog
     for changelog in changelogs:
         if parse_version(package.version) < parse_version(changelog[0]):
@@ -318,11 +326,13 @@ def generate_substitutions_from_package(
             error("There is at least one changelog entry, '{0}', which has a "
                   "newer version than the version of package '{1}' being released, '{2}'."
                   .format(changelog[0], package.name, package.version))
-            error("This is almost certainly by mistake, you should really take a "
-                  "look at the changelogs for the package you are releasing.")
-            error("")
-            if not maybe_continue('n'):
-                sys.exit("User quit.")
+            bad_changelog = True
+    if bad_changelog:
+        error("This is almost certainly by mistake, you should really take a "
+              "look at the changelogs for the package you are releasing.")
+        error("")
+        if not maybe_continue('n', 'Continue anyways'):
+            sys.exit("User quit.")
     data['changelogs'] = changelogs
     # Use debhelper version 7 for oneric, otherwise 9
     data['debhelper_version'] = 7 if os_version in ['oneiric'] else 9
