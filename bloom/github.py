@@ -137,12 +137,20 @@ class Github(object):
             repos.extend(new_repos)
             page += 1
 
-    def list_branches(self, owner, repo):
-        resp = do_github_get_req('/repos/{owner}/{repo}/branches'.format(**locals()), auth=self.auth)
-        if '{0}'.format(resp.status) not in ['200']:
-            raise GithubException(
-                "Failed to list branches for repository '{owner}/{repo}'".format(**locals()), resp)
-        return json.loads(resp.read())
+    def list_branches(self, owner, repo, start_page=None):
+        page = start_page or 1
+        branches = []
+        while True:
+            url = '/repos/{owner}/{repo}/branches?page={page}&per_page=2'.format(**locals())
+            resp = do_github_get_req(url, auth=self.auth)
+            if '{0}'.format(resp.status) not in ['200']:
+                raise GithubException(
+                    "Failed to list branches for '{owner}/{repo}' using url '{url}'".format(**locals()), resp)
+            new_branches = json.loads(resp.read())
+            if not new_branches:
+                return branches
+            branches.extend(new_branches)
+            page += 1
 
     def create_fork(self, parent_org, parent_repo):
         resp = do_github_post_req('/repos/{parent_org}/{parent_repo}/forks'.format(**locals()), {}, auth=self.auth)
