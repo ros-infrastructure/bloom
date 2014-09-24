@@ -214,6 +214,7 @@ def get_repo_uri(repository, distro):
         info("You can continue the release process by manually specifying the location of the RELEASE repository.")
         info("To be clear this is the url of the RELEASE repository not the upstream repository.")
         info("For release repositories on github, you should provide the `https://` url which should end in `.git`.")
+        info("Here is the url for a typical release repository on GitHub: https://github.com/ros-gbp/rviz-release.git")
         while True:
             try:
                 url = safe_input('Release repository url [press enter to abort]: ')
@@ -963,6 +964,15 @@ def perform_release(repository, track, distro, new_track, interactive, pretend, 
                       str(tracks), exit=True)
             # Get the only track
             track = tracks[0]
+        # Make sure the release repository and the upstream repository are different.
+        track_dict = tracks_dict['tracks'][track]
+        vcs_uri = track_dict.get('vcs_uri')
+        if vcs_uri == release_repo.get_url():
+            warning("Your RELEASE repository, '{0}', is the same as your UPSTREAM repository, '{1}'."
+                    .format(release_repo.get_url(), vcs_uri))
+            warning("This is not recommended, normally you have separate RELEASE and UPSTREAM repositories.")
+            if not maybe_continue('n', 'Are you sure you want continue'):
+                error("User quit.", exit=True)
         start_summary(track)
         if not pull_request_only:
             _perform_release(repository, track, distro, new_track, interactive, pretend, tracks_dict)
