@@ -136,7 +136,7 @@ bloom does not support exporting git repositories with submodules, see:
         if not upstream_repo.export_repository(tag or '', tarball_path):
             error("Failed to create archive of upstream repository at '{0}'"
                   .format(show_uri))
-            if tag:
+            if tag and vcs_type == 'git':  # can only check for git repos
                 with change_directory(upstream_repo.get_path()):
                     if not tag_exists(tag):
                         warning("'{0}' is not a tag in the upstream repository..."
