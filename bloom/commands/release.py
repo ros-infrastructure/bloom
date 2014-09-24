@@ -195,6 +195,28 @@ def get_disitrbution_file_url(distro):
     return _rosdistro_distribution_file_urls[distro]
 
 
+def validate_github_url(url, url_type):
+    if 'github.com' not in url:
+        return True
+    valid_url = True
+    if not url.endswith('.git') and not url.endswith('.git/'):
+        valid_url = False
+        warning("The {0} repository url you provided does not end in `.git`."
+                .format(url_type))
+    if not url.startswith('https://'):
+        valid_url = False
+        warning("The {0} repository url you provided is not a `https://` address."
+                .format(url_type))
+    if not valid_url:
+        if maybe_continue(msg="Would you like to enter the address again"):
+            return False
+        else:
+            warning("Very well, the address '{0}' will be used as is.".format(url))
+            return True
+    # url is OK
+    return True
+
+
 def get_repo_uri(repository, distro):
     url = None
     # Fetch the distro file
@@ -225,22 +247,11 @@ def get_repo_uri(repository, distro):
                 url = None
                 error("No release repository url given, aborting.", exit=True)
                 break
+            if url is None:
+                break
             # If github.com address, validate it
-            if url is not None and 'github.com' in url:
-                valid_url = True
-                if not url.endswith('.git') and not url.endswith('.git/'):
-                    valid_url = False
-                    warning("The release repository url you provided does not end in `.git`.")
-                if not url.startswith('https://'):
-                    valid_url = False
-                    warning("The release repository url you provided is not a `https://` address.")
-                if not valid_url:
-                    if maybe_continue(msg="Would you like to enter the address again"):
-                        url = None
-                        continue
-                    else:
-                        info("Very well, the address '{url}' will be used as is.".format(**locals()))
-                        break
+            if not validate_github_url(url, 'release'):
+                continue
             break
         global _user_provided_release_url
         _user_provided_release_url = url
@@ -332,7 +343,7 @@ def generate_ros_distro_diff(track, repository, distro):
             repo['packages'].remove(pkg_name)
     repo['packages'].sort()
 
-    def get_repository_info_from_user():
+    def get_repository_info_from_user(url_type):
         data = {}
         while True:
             vcs_type = safe_input('VCS type [git, svn, hg, bzr]: ')
@@ -345,13 +356,16 @@ def generate_ros_distro_diff(track, repository, distro):
         while True:
             url = safe_input('VCS url: ')
             if url:
+                if not validate_github_url(url, url_type):
+                    # User wants to try again
+                    continue
                 break
             error("Nothing entered for url.")
             if not maybe_continue(msg='Try again'):
                 return {}
         data['url'] = url
         while True:
-            version = safe_input('VCS version [commit, tag, branch, etc]: ')
+            version = safe_input('VCS version [commit, tag, or branch, e.g. master]: ')
             if version:
                 break
             error("Nothing entered for version.")
@@ -366,7 +380,7 @@ def generate_ros_distro_diff(track, repository, distro):
         if not docs and maybe_continue(msg='Would you like to add documentation information for this repository?'):
             info("Please enter your repository information for the doc generation job.")
             info("This information should point to the repository from which documentation should be generated.")
-            docs = get_repository_info_from_user()
+            docs = get_repository_info_from_user('doc')
         distribution_dict['repositories'][repository]['doc'] = docs
 
     # Ask for source entry
@@ -375,7 +389,7 @@ def generate_ros_distro_diff(track, repository, distro):
         if not source and maybe_continue(msg='Would you like to add source information for this repository?'):
             info("Please enter information which points to the active development branch for this repository.")
             info("This information is used to run continuous integration jobs and for developers to checkout from.")
-            source = get_repository_info_from_user()
+            source = get_repository_info_from_user('source')
         distribution_dict['repositories'][repository]['source'] = source
 
     # Ask for maintainership information
