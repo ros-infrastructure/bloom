@@ -213,7 +213,7 @@ def get_repo_uri(repository, distro):
              .format(repository, distro))
         info("You can continue the release process by manually specifying the location of the RELEASE repository.")
         info("To be clear this is the url of the RELEASE repository not the upstream repository.")
-        info("For release repositories on github, you should provide the `https://` url which should end in `.git`.")
+        info("For release repositories on GitHub, you should provide the `https://` url which should end in `.git`.")
         info("Here is the url for a typical release repository on GitHub: https://github.com/ros-gbp/rviz-release.git")
         while True:
             try:
@@ -373,7 +373,7 @@ def generate_ros_distro_diff(track, repository, distro):
     if 'BLOOM_DONT_ASK_FOR_SOURCE' not in os.environ:
         source = distribution_dict['repositories'][repository].get('source', {})
         if not source and maybe_continue(msg='Would you like to add source information for this repository?'):
-            info("Please enter information which points ot the active development branch for this repository.")
+            info("Please enter information which points to the active development branch for this repository.")
             info("This information is used to run continuous integration jobs and for developers to checkout from.")
             source = get_repository_info_from_user()
         distribution_dict['repositories'][repository]['source'] = source
@@ -387,7 +387,7 @@ def generate_ros_distro_diff(track, repository, distro):
             info("Valid maintenance statuses:")
             info("- developed: active development is in progress")
             info("- maintained: no new development, but bug fixes and pull requests are addressed")
-            info("- end-of-life: should not be used, will disapear at some point")
+            info("- end-of-life: should not be used, will disappear at some point")
             while True:
                 status = safe_input('Status: ')
                 if status in ['developed', 'maintained', 'end-of-life']:
@@ -450,7 +450,7 @@ def generate_ros_distro_diff(track, repository, distro):
                     continue
                 if repo not in distro_file_repos or distro_file_repos[repo] != distro_yaml['repositories'][repo]:
                     error("This generated pull request modifies a repository entry other than the one being released.")
-                    error("This likely occured because the upstream rosdistro changed during this release.")
+                    error("This likely occurred because the upstream rosdistro changed during this release.")
                     error("This pull request will abort, please re-run this command with the -p option to try again.",
                           exit=True)
         # Write the diff out to file
@@ -502,19 +502,19 @@ def get_github_interface():
     # Ok, now we have to ask for the user name and pass word
     info("")
     warning("Looks like bloom doesn't have an oauth token for you yet.")
-    warning("Therefore bloom will require your Github username and password just this once.")
-    warning("With your Github username and password bloom will create an oauth token on your behalf.")
+    warning("Therefore bloom will require your GitHub username and password just this once.")
+    warning("With your GitHub username and password bloom will create an oauth token on your behalf.")
     warning("The token will be stored in `~/.config/bloom`.")
     warning("You can delete the token from that file to have a new token generated.")
     warning("Guard this token like a password, because it allows someone/something to act on your behalf.")
-    warning("If you need to unauthorize it, remove it from the 'Applications' menu in your Github account page.")
+    warning("If you need to unauthorize it, remove it from the 'Applications' menu in your GitHub account page.")
     info("")
     token = None
     while token is None:
         try:
             username = getpass.getuser()
-            username = safe_input("Github username [{0}]: ".format(username)) or username
-            password = getpass.getpass("Github password (never stored): ")
+            username = safe_input("GitHub username [{0}]: ".format(username)) or username
+            password = getpass.getpass("GitHub password (never stored): ")
         except (KeyboardInterrupt, EOFError):
             return None
         if not password:
@@ -613,7 +613,7 @@ def open_pull_request(track, repository, distro, interactive):
         # If it is, then a fork is not necessary
         head_repo = base_repo
     else:
-        info(fmt("@{bf}@!==> @|@!Checking on github for a fork to make the pull request from..."))
+        info(fmt("@{bf}@!==> @|@!Checking on GitHub for a fork to make the pull request from..."))
         # It is not, so a fork will be required
         # Check if a fork already exists on the user's account with the same name
         base_full_name = '{base_org}/{base_repo}'.format(**locals())
@@ -640,7 +640,7 @@ def open_pull_request(track, repository, distro, interactive):
                     head_repo = repo['name']
         # If not head_repo still, a fork does not exist and must be created
         if head_repo is None:
-            warning("Could not find a fork of {base_full_name} on the {gh.username} Github account."
+            warning("Could not find a fork of {base_full_name} on the {gh.username} GitHub account."
                     .format(**locals()))
             warning("Would you like to create one now?")
             if not maybe_continue():
