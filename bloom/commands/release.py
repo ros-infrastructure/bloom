@@ -157,12 +157,46 @@ def exit_cleanup():
 
 _rosdistro_index = None
 _rosdistro_distribution_files = {}
+_rosdistro_index_commit = None
+
+
+def get_index_url():
+    global _rosdistro_index_commit
+    index_url = rosdistro.get_index_url()
+    pr = urlparse(index_url)
+    if pr.netloc == 'raw.github.com':
+        # Try to determine what the commit hash was
+        tokens = [x for x in pr.path.split('/') if x]
+        if len(tokens) <= 3:
+            debug("Failed to get commit for rosdistro index file: index url")
+            debug(tokens)
+            return index_url
+        owner = tokens[0]
+        repo = tokens[1]
+        branch = tokens[2]
+        gh = get_github_interface(quiet=True)
+        if gh is None:
+            # Failed to get it with auth, try without auth (may fail)
+            gh = Github(username=None, auth=None)
+        try:
+            data = gh.get_branch(owner, repo, branch)
+        except GithubException:
+            debug(traceback.format_exc())
+            debug("Failed to get commit for rosdistro index file: api")
+            return index_url
+        _rosdistro_index_commit = data.get('commit', {}).get('sha', None)
+        if _rosdistro_index_commit is not None:
+            info("ROS Distro index file associate with commit '{0}'"
+                 .format(_rosdistro_index_commit))
+        else:
+            debug("Failed to get commit for rosdistro index file: json")
+    return index_url
 
 
 def get_index():
     global _rosdistro_index
     if _rosdistro_index is None:
-        _rosdistro_index = rosdistro.get_index(rosdistro.get_index_url())
+        _rosdistro_index = rosdistro.get_index(get_index_url())
         if _rosdistro_index.version == 1:
             error("This version of bloom does not support rosdistro version "
                   "'{0}', please use an older version of bloom."
@@ -500,7 +534,13 @@ def create_fork(org, repo, user, password):
         error("Failed to create fork: {0} {1}".format(resp.status, resp.reason), exit=True)
 
 
-def get_github_interface():
+_gh = None
+
+
+def get_github_interface(quiet=False):
+    global _gh
+    if _gh is not None:
+        return _gh
     # First check to see if the oauth token is stored
     oauth_config_path = os.path.join(os.path.expanduser('~'), '.config', 'bloom')
     config = {}
@@ -513,6 +553,8 @@ def get_github_interface():
                 return Github(username, auth=auth_header_from_oauth_token(token), token=token)
     if not os.path.isdir(os.path.dirname(oauth_config_path)):
         os.makedirs(os.path.dirname(oauth_config_path))
+    if quiet:
+        return None
     # Ok, now we have to ask for the user name and pass word
     info("")
     warning("Looks like bloom doesn't have an oauth token for you yet.")
@@ -523,6 +565,8 @@ def get_github_interface():
     warning("Guard this token like a password, because it allows someone/something to act on your behalf.")
     warning("If you need to unauthorize it, remove it from the 'Applications' menu in your GitHub account page.")
     info("")
+    if not maybe_continue('y', "Would you like to create an OAuth token now"):
+        return None
     token = None
     while token is None:
         try:
@@ -559,6 +603,7 @@ def get_github_interface():
             warning("This sometimes fails when the username or password are incorrect, try again?")
             if not maybe_continue():
                 return None
+    _gh = gh
     return gh
 
 
@@ -597,6 +642,7 @@ def get_changelog_summary(release_tag):
 
 
 def open_pull_request(track, repository, distro, interactive):
+    global _rosdistro_index_commit
     # Get the diff
     distribution_file = get_distribution_file(distro)
     if repository in distribution_file.repositories and \
@@ -726,6 +772,8 @@ Increasing version of package(s) in repository `{repository}` to `{version}`:
                 return
             _my_run('git checkout -b {new_branch}'.format(**locals()))
             _my_run('git pull {rosdistro_url} {base_branch}'.format(**locals()), "Pulling latest rosdistro branch")
+            if _rosdistro_index_commit is not None:
+                _my_run('git reset --hard {_rosdistro_index_commit}'.format(**globals()))
             with open('{0}'.format(base_path), 'w') as f:
                 info(fmt("@{bf}@!==> @|@!Writing new distribution file: ") + str(base_path))
                 f.write(updated_distro_file_yaml)

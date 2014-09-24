@@ -137,6 +137,15 @@ class Github(object):
             repos.extend(new_repos)
             page += 1
 
+    def get_branch(self, owner, repo, branch):
+        url = '/repos/{owner}/{repo}/branches/{branch}'.format(**locals())
+        resp = do_github_get_req(url, auth=self.auth)
+        if '{0}'.format(resp.status) not in ['200']:
+            raise GithubException("Failed to get branch information for '{branch}' on '{owner}/{repo}' using '{url}'"
+                                  .format(**locals()),
+                                  resp)
+        return json.loads(resp.read())
+
     def list_branches(self, owner, repo, start_page=None):
         page = start_page or 1
         branches = []
