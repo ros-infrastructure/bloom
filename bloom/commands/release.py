@@ -549,7 +549,7 @@ def get_github_interface():
 
 
 def get_changelog_summary(release_tag):
-    summary = ""
+    summary = u""
     packages = dict([(p.name, p) for p in get_packages().values()])
     for package_name in sorted(packages.keys()):
         package = packages[package_name]
@@ -566,17 +566,17 @@ def get_changelog_summary(release_tag):
                     for change in changes:
                         msgs.extend([i for i in to_unicode(change).splitlines()])
                     msg = '\n'.join(msgs)
-                    summary += """
+                    summary += u"""
 ## {package.name}
 """.format(**locals())
                     if msg:
-                        summary += """
+                        summary += u"""
 ```
 {msg}
 ```
 """.format(**locals())
                     else:
-                        summary += """
+                        summary += u"""
 - No changes
 """
     return summary
@@ -660,7 +660,7 @@ def open_pull_request(track, repository, distro, interactive):
     new_branch = None
     title = "{0}: {1} in '{2}' [bloom]".format(repository, version, base_path)
     track_dict = get_tracks_dict_raw()['tracks'][track]
-    body = """\
+    body = u"""\
 Increasing version of package(s) in repository `{repository}` to `{version}`:
 
 - upstream repository: {upstream_repo}
