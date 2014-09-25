@@ -1,8 +1,29 @@
+0.5.12 (2014-09-24 15:28:16 -0700)
+----------------------------------
+- Pull requests are now opened against the commit from which the rosdistro index file is retrieved.
+  This should address the remaining race condition in bloom allows pull requests which modify other entries.
+  Addresses: `#252 <https://github.com/ros-infrastructure/bloom/issues/252>`_
+- Pagination is now used when listing branches from GitHub.
+  This addresses an error which occurred when the user had too many branches for page one.
+  Addresses: `#273 <https://github.com/ros-infrastructure/bloom/issues/273>`_
+- Improved support for unicode in changelogs.
+  Addresses: `#260 <https://github.com/ros-infrastructure/bloom/issues/260>`_
+- Added checking for .git and https on source and doc urls.
+  Addresses: `#271 <https://github.com/ros-infrastructure/bloom/issues/271>`_
+- Added check to make sure the release repository and the upstream repository are not the same.
+  Addresses: `#267 <https://github.com/ros-infrastructure/bloom/issues/267>`_
+- Added a check to make sure the changelog versions are sane with respect to the current version being released.
+- Users can now skip rpm generation if rosdep keys are missing for fedora only.
+- Improved error handling when GitHub's two factor authentication is encountered.
+- Fixed a bug with expanding nested tarball's.
+- Fixed order of changelogs in rpm generators.
+- Non-interactive mode now applies to the confirmation for opening a pull request.
+
 0.5.11 (2014-07-24 14:28:03 -0700)
 ----------------------------------
 - Added rosrpm generator to the default list of generators.
 - Upstream repository url and release repository url are now included in the summaries in pull requests.
-- Updated the warning about changing track actions to make the transion of rosrpm in the default actions smoother.
+- Updated the warning about changing track actions to make the transition of rosrpm in the default actions smoother.
 
 0.5.10 (2014-06-16 11:48:51 -0700)
 ----------------------------------
