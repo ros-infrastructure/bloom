@@ -300,7 +300,7 @@ try:
         _file_log.write("[bloom] bloom version " + bloom.__version__ + "\n")
 except Exception as exc:
     _file_log = None
-    debug(str(exc.__name__) + ": " + str(exc))
+    debug(str(exc.__class__.__name__) + ": " + str(exc))
 
 _summary_file = None
 
