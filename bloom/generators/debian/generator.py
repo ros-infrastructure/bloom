@@ -667,16 +667,18 @@ class DebianGenerator(BloomGenerator):
         # Create/Clean the debian folder
         if os.path.exists(debian_dir):
             if self.interactive:
-                warning("Debian directory exists: " + debian_dir)
+                warning("debian directory exists: " + debian_dir)
                 warning("Do you wish to overwrite it?")
                 if not maybe_continue('y'):
                     error("Answered no to continue, aborting.", exit=True)
+            elif 'BLOOM_CLEAR_DEBIAN_ON_GENERATION' in os.environ:
+                warning("Overwriting debian directory: " + debian_dir)
+                execute_command('git rm -rf ' + debian_dir)
+                execute_command('git commit -m "Clearing previous debian folder"')
+                if os.path.exists(debian_dir):
+                    shutil.rmtree(debian_dir)
             else:
-                warning("Overwriting Debian directory: " + debian_dir)
-            execute_command('git rm -rf ' + debian_dir)
-            execute_command('git commit -m "Clearing previous debian folder"')
-            if os.path.exists(debian_dir):
-                shutil.rmtree(debian_dir)
+                warning("Not overwriting debian directory.")
         # Use generic place template files command
         place_template_files('.', gbp=True)
         # Commit results
