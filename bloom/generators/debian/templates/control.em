@@ -3,6 +3,8 @@ Section: misc
 Priority: extra
 Maintainer: @(Maintainer)
 Build-Depends: debhelper (>= @(debhelper_version).0.0), @(', '.join(BuildDepends))
+Conflicts: @(', '.join(Conflicts))
+Replaces: @(', '.join(Replaces))
 Homepage: @(Homepage)
 Standards-Version: 3.9.2
 
