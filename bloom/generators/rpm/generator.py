@@ -227,7 +227,7 @@ def generate_substitutions_from_package(
     # Resolve dependencies
     depends = package.run_depends + package.buildtool_export_depends
     build_depends = package.build_depends + package.buildtool_depends + package.test_depends
-    unresolved_keys = depends + build_depends + package.replaces + package.conflicts
+    unresolved_keys = depends + build_depends
     resolved_deps = resolve_dependencies(unresolved_keys, os_name,
                                          os_version, ros_distro,
                                          peer_packages, fallback_resolver)
@@ -493,7 +493,7 @@ class RpmGenerator(BloomGenerator):
         for package in self.packages.values():
             depends = package.run_depends + package.buildtool_export_depends
             build_depends = package.build_depends + package.buildtool_depends + package.test_depends
-            unresolved_keys = depends + build_depends + package.replaces + package.conflicts
+            unresolved_keys = depends + build_depends
             for os_version in self.distros:
                 resolve_dependencies(unresolved_keys, self.os_name,
                                      os_version, self.rosdistro,
