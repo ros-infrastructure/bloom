@@ -281,6 +281,12 @@ def generate_substitutions_from_package(
     data['BuildDepends'] = sorted(
         set(format_depends(build_depends, resolved_deps))
     )
+    data['Replaces'] = sorted(
+        set(format_depends(package.replaces, resolved_deps))
+    )
+    data['Conflicts'] = sorted(
+        set(format_depends(package.conflicts, resolved_deps))
+    )
     # Set the distribution
     data['Distribution'] = os_version
     # Use the time stamp to set the date strings
