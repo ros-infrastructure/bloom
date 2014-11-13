@@ -230,7 +230,8 @@ def generate_substitutions_from_package(
     unresolved_keys = depends + build_depends + package.replaces + package.conflicts
     resolved_deps = resolve_dependencies(unresolved_keys, os_name,
                                          os_version, ros_distro,
-                                         peer_packages, fallback_resolver)
+                                         peer_packages + [d.name for d in package.replaces + package.conflicts],
+                                         fallback_resolver)
     data['Depends'] = sorted(
         set(format_depends(depends, resolved_deps))
     )
@@ -497,7 +498,8 @@ class RpmGenerator(BloomGenerator):
             for os_version in self.distros:
                 resolve_dependencies(unresolved_keys, self.os_name,
                                      os_version, self.rosdistro,
-                                     peer_packages, fallback_resolver=missing_dep_resolver)
+                                     peer_packages + [d.name for d in package.replaces + package.conflicts],
+                                     fallback_resolver=missing_dep_resolver)
 
         info("All keys are " + ansi('greenf') + "OK" + ansi('reset') + "\n")
 
