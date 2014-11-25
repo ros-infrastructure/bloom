@@ -1,3 +1,10 @@
+0.5.13 (2014-11-24 17:10:00 -0700)
+----------------------------------
+- Fixed exception from importing ``bloom.logging``.
+- Debian ``gbp.conf`` now uses ``upstream-tag``.
+- Fixed a bug which overwrote the user provided debian folder during templating.
+- Added support for utilizing the Conflicts and Replaces in ``package.xml``'s in the Debian control files.
+
 0.5.12 (2014-09-24 15:28:16 -0700)
 ----------------------------------
 - Pull requests are now opened against the commit from which the rosdistro index file is retrieved.
