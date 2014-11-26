@@ -323,6 +323,7 @@ def test_multi_package_repository(directory=None):
                     "Lost the debian overlaid files in debian branch"
                 assert os.path.exists('package.xml'), "debian branch invalid"
                 # Is there blank lins due to no Conflicts/Replaces?
+                # See: https://github.com/ros-infrastructure/bloom/pull/329
                 with open(os.path.join('debian', 'control'), 'r') as f:
                     assert f.read().count('\n\nHomepage:') == 0, \
                         "Extra blank line before Homepage detected."
