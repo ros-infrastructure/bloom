@@ -1,3 +1,8 @@
+0.5.14 (2014-11-26 08:10:00 -0700)
+----------------------------------
+- Hotfix for issue #329 which makes sure no extra new lines are introduced in the debian control file.
+- Changed RPM build directory to have a more unique name.
+
 0.5.13 (2014-11-24 17:10:00 -0700)
 ----------------------------------
 - Fixed exception from importing ``bloom.logging``.
