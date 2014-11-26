@@ -322,6 +322,10 @@ def test_multi_package_repository(directory=None):
                     os.path.join('debian', 'something.udev')), \
                     "Lost the debian overlaid files in debian branch"
                 assert os.path.exists('package.xml'), "debian branch invalid"
+                # Is there blank lins due to no Conflicts/Replaces?
+                with open(os.path.join('debian', 'control'), 'r') as f:
+                    assert f.read().count('\n\nHomepage:') == 0, \
+                        "Extra blank line before Homepage detected."
                 # Is it the correct package.xml for this pkg?
                 with open('package.xml', 'r') as f:
                     assert f.read().count('<name>' + pkg + '</name>'), \
