@@ -57,7 +57,11 @@ try:
 except ImportError:
     from http.client import HTTPSConnection
 
-from urlparse import urlparse
+# python2/3 compatibility
+try:
+    from urllib.parse import urlparse
+except ImportError:
+    from urlparse import urlparse
 
 import bloom
 
