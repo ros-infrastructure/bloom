@@ -237,7 +237,10 @@ def get_disitrbution_file_url(distro):
         distro_file = index.distributions[distro]
         if 'distribution' not in distro_file:
             error("'{0}' distro does not have a distribution file.".format(distro), exit=True)
-        _rosdistro_distribution_file_urls[distro] = distro_file['distribution']
+        if isinstance(distro_file['distribution'], list):
+            _rosdistro_distribution_file_urls[distro] = distro_file['distribution'][-1]
+        else:
+            _rosdistro_distribution_file_urls[distro] = distro_file['distribution']
     return _rosdistro_distribution_file_urls[distro]
 
 
