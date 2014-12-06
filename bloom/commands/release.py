@@ -529,7 +529,7 @@ def generate_ros_distro_diff(track, repository, distro):
 def get_gh_info(url):
     from urlparse import urlparse
     o = urlparse(url)
-    if 'raw.github.com' not in o.netloc:
+    if 'raw.github.com' not in o.netloc and 'raw.githubusercontent.com' not in o.netloc:
         return None, None, None, None
     url_paths = o.path.split('/')
     if len(url_paths) < 5:
