@@ -205,7 +205,7 @@ def get_index():
             error("This version of bloom does not support rosdistro version "
                   "'{0}', please use an older version of bloom."
                   .format(_rosdistro_index.version), exit=True)
-        if _rosdistro_index.version > 2:
+        if _rosdistro_index.version > 3:
             error("This version of bloom does not support rosdistro version "
                   "'{0}', please update bloom.".format(_rosdistro_index.version), exit=True)
     return _rosdistro_index
