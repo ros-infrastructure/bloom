@@ -92,11 +92,11 @@ def flush_stdin():
         # fallback if not supported on some platforms
         pass
 
-try:
+if sys.version_info < (3, 0):
     def safe_input(prompt=None):
         flush_stdin()
         return raw_input(prompt)
-except NameError:
+else:
     def safe_input(prompt=None):
         flush_stdin()
         return input(prompt)

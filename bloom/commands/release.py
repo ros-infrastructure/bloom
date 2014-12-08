@@ -52,6 +52,8 @@ import traceback
 import webbrowser
 import yaml
 
+from pkg_resources import parse_version
+
 try:
     from httplib import HTTPSConnection
 except ImportError:
@@ -124,6 +126,10 @@ try:
 except ImportError:
     debug(traceback.format_exc())
     error("rosdistro was not detected, please install it.", file=sys.stderr,
+          exit=True)
+if parse_version(rosdistro.__version__) < parse_version('0.4.0'):
+    error("rosdistro version 0.4.0 or greater is required, found '{0}' from '{1}'."
+          .format(rosdistro.__version__, os.path.dirname(rosdistro.__file__)),
           exit=True)
 from rosdistro.writer import yaml_from_distribution_file
 
@@ -205,7 +211,7 @@ def get_index():
             error("This version of bloom does not support rosdistro version "
                   "'{0}', please use an older version of bloom."
                   .format(_rosdistro_index.version), exit=True)
-        if _rosdistro_index.version > 2:
+        if _rosdistro_index.version > 3:
             error("This version of bloom does not support rosdistro version "
                   "'{0}', please update bloom.".format(_rosdistro_index.version), exit=True)
     return _rosdistro_index
@@ -214,15 +220,12 @@ def get_index():
 def get_distribution_file(distro):
     global _rosdistro_distribution_files
     if distro not in _rosdistro_distribution_files:
-        try:
-            # REP 143, get list of distribution files and take the last one
-            files = rosdistro.get_distribution_files(get_index(), distro)
-            if not files:
-                error("No distribution files listed for distribution '{0}'."
-                      .format(distro), exit=True)
-            _rosdistro_distribution_files[distro] = files[-1]
-        except AttributeError:
-            _rosdistro_distribution_files[distro] = rosdistro.get_distribution_file(get_index(), distro)
+        # REP 143, get list of distribution files and take the last one
+        files = rosdistro.get_distribution_files(get_index(), distro)
+        if not files:
+            error("No distribution files listed for distribution '{0}'."
+                  .format(distro), exit=True)
+        _rosdistro_distribution_files[distro] = files[-1]
     return _rosdistro_distribution_files[distro]
 
 _rosdistro_distribution_file_urls = {}
@@ -237,7 +240,10 @@ def get_disitrbution_file_url(distro):
         distro_file = index.distributions[distro]
         if 'distribution' not in distro_file:
             error("'{0}' distro does not have a distribution file.".format(distro), exit=True)
-        _rosdistro_distribution_file_urls[distro] = distro_file['distribution']
+        if isinstance(distro_file['distribution'], list):
+            _rosdistro_distribution_file_urls[distro] = distro_file['distribution'][-1]
+        else:
+            _rosdistro_distribution_file_urls[distro] = distro_file['distribution']
     return _rosdistro_distribution_file_urls[distro]
 
 
@@ -526,7 +532,7 @@ def generate_ros_distro_diff(track, repository, distro):
 def get_gh_info(url):
     from urlparse import urlparse
     o = urlparse(url)
-    if 'raw.github.com' not in o.netloc:
+    if 'raw.github.com' not in o.netloc and 'raw.githubusercontent.com' not in o.netloc:
         return None, None, None, None
     url_paths = o.path.split('/')
     if len(url_paths) < 5:
