@@ -1,3 +1,10 @@
+0.5.15 (2014-12-08 12:10:00 -0700)
+----------------------------------
+- Added support for REP 143 which allows for multiple distribution files, currently bloom uses the last one.
+- Fix to Python3 support.
+- ``ROSDISTRO_INDEX_URL``'s which point to githubusercontent.com will also be eligible for pull requests now.
+- ``-DNDEBUG`` is now added to debian configurations by default.
+
 0.5.14 (2014-11-26 08:10:00 -0700)
 ----------------------------------
 - Hotfix for issue #329 which makes sure no extra new lines are introduced in the debian control file.
