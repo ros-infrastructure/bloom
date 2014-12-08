@@ -15,6 +15,9 @@ export DH_OPTIONS=-v --buildsystem=cmake
 #  https://code.ros.org/trac/ros/ticket/3842
 export LDFLAGS=
 export PKG_CONFIG_PATH=@(InstallationPrefix)/lib/pkgconfig
+# Explicitly enable -DNDEBUG, see:
+# 	https://github.com/ros-infrastructure/bloom/issues/327
+export DEB_CXXFLAGS_MAINT_APPEND=-DNDEBUG
 
 %:
 	dh  $@@
