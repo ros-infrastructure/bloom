@@ -1,3 +1,8 @@
+0.5.16 (2014-12-15 14:30:00 -0700)
+----------------------------------
+- Hotfix to the Replaces/Conflicts template generation to prevent error causes extra whitespace.
+  See: `#340 <https://github.com/ros-infrastructure/bloom/issues/340>`_
+
 0.5.15 (2014-12-08 12:10:00 -0700)
 ----------------------------------
 - Added support for REP 143 which allows for multiple distribution files, currently bloom uses the last one.
