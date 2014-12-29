@@ -77,6 +77,9 @@ from bloom.config import upconvert_bloom_to_config_branch
 from bloom.config import write_tracks_dict_raw
 
 from bloom.git import branch_exists
+from bloom.git import checkout
+from bloom.git import get_branches
+from bloom.git import get_current_branch
 from bloom.git import inbranch
 from bloom.git import ls_tree
 
@@ -994,6 +997,44 @@ def _perform_release(repository, track, distro, new_track, interactive, pretend,
     info(fmt(_success) + "Pushed tags successfully")
 
 
+def check_for_patches_and_ignores(release_repo_path):
+    warning_messages = []
+    current_branch = get_current_branch()
+    # Get the list of files in the master branch of the release repository
+    files = ls_tree('master')
+    # Look for any ignore files
+    ignore_files = []
+    for file_name in files:
+        if file_name.endswith('.ignored'):
+            ignore_files.append(file_name)
+    if ignore_files:
+        warning_messages.append("There are package ignore files: {0}".format(ignore_files))
+    # Check for .patch files in any patch branches
+    for patch_branch in [b for b in get_branches() if b.lstrip('remotes/origin/').startswith('patches/')]:
+        patch_branch = patch_branch.lstrip('remotes/origin/')
+        if [f for f in ls_tree(patch_branch) if f.endswith('.patch')]:
+            warning_messages.append("There are patches on the branch '{0}'.".format(patch_branch))
+    # Summarize result
+    if warning_messages:
+        warning("")
+        warning("You are creating a new track, this often means you are releasing for a new distribution.")
+        warning("bloom has detected some patches and/or ignored packages from previous release tracks.")
+        warning("You may wish to migrate patches or duplicate the ignored files from previous releases.")
+        warning("These patches and ignored files are NOT migrated to the new track automatically.")
+        warning("")
+        warning("Potential items to address:")
+        for msg in warning_messages:
+            warning("- {0}".format(msg))
+        warning("")
+        warning("The release repository is located at '{0}'".format(release_repo_path))
+        warning("You can modify it in a different shell and continue when finished.")
+        with change_directory(release_repo_path):
+            if not maybe_continue('y'):
+                error("User quit.", exit=True)
+        # with clause should restore the path, regardless of the user's actions
+        checkout(current_branch)
+
+
 def perform_release(repository, track, distro, new_track, interactive, pretend, pull_request_only):
     release_repo = get_release_repo(repository, distro)
     with change_directory(release_repo.get_path()):
@@ -1022,6 +1063,7 @@ def perform_release(repository, track, distro, new_track, interactive, pretend, 
                 overrides = {'ros_distro': distro}
                 new_track_cmd(track, copy_track='', overrides=overrides)
                 tracks_dict = get_tracks_dict_raw()
+                check_for_patches_and_ignores(release_repo.get_path())
         if track and track not in tracks_dict['tracks']:
             error("Given track '{0}' does not exist in release repository."
                   .format(track))
