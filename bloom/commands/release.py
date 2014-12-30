@@ -949,7 +949,10 @@ def _perform_release(repository, track, distro, new_track, interactive, pretend,
     commit_summary()
     # Check for pushing
     if interactive:
-        info("Releasing complete, push?")
+        cmd = 'git remote -v'
+        info(fmt("@{bf}@!==> @|@!") + str(cmd))
+        subprocess.check_call(cmd, shell=True)
+        info("Releasing complete, push to release repository?")
         if not maybe_continue():
             error("User answered no to continue prompt, aborting.",
                   exit=True)
