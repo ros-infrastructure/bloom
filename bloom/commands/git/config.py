@@ -175,7 +175,7 @@ def new(track, template=None, copy_track=None, overrides={}):
             error("You cannot specify both a template and track to copy.",
                   exit=True)
         if copy_track == '' and len(tracks_dict['tracks']) != 0:
-            copy_track = tracks_dict['tracks'].keys()[0]
+            copy_track = list(reversed(sorted(tracks_dict['tracks'].keys())))[0]
         if copy_track and copy_track not in tracks_dict['tracks']:
             error("Cannot copy a track which does not exist: '{0}'"
                   .format(copy_track), exit=True)
