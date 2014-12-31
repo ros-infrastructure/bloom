@@ -224,6 +224,26 @@ def list_distributions():
     return sorted(get_index().distributions.keys())
 
 
+def get_most_recent(thing_name, repository):
+    distros_with_entry = {}
+    get_things = {
+        'release': lambda r: None if r.release_repository is None else r.release_repository,
+        'doc': lambda r: None if r.doc_repository is None else r.doc_repository,
+        'source': lambda r: None if r.source_repository is None else r.source_repository,
+    }
+    get_thing = get_things[thing_name]
+    for distro in list_distributions():
+        distro_file = get_distribution_file(distro)
+        if repository in distro_file.repositories:
+            thing = get_thing(distro_file.repositories[repository])
+            if thing is not None:
+                distros_with_entry[distro] = thing
+    # Choose the alphabetical last distro which contained a release of this repository
+    default_distro = (sorted(distros_with_entry.keys()) or [None])[-1]
+    default_thing = distros_with_entry.get(default_distro, None)
+    return default_distro, default_thing
+
+
 def get_distribution_file(distro):
     global _rosdistro_distribution_files
     if distro not in _rosdistro_distribution_files:
@@ -298,18 +318,10 @@ def get_repo_uri(repository, distro):
         info("Here is the url for a typical release repository on GitHub: https://github.com/ros-gbp/rviz-release.git")
         # Calculate a reasonable default from the list of previous distros
         info(fmt("@{gf}@!==> @|") + "Looking for a release of this repository in a different distribution...")
-        distros_with_repo = {}
-        for other_distro in list_distributions():
-            other_distro_file = get_distribution_file(other_distro)
-            if repository in other_distro_file.repositories:
-                if other_distro_file.repositories[repository].release_repository is not None:
-                    distros_with_repo[other_distro] = other_distro_file.repositories[repository].release_repository.url
-        # Choose the alphabetical last distro which contained a release of this repository
-        default_distro = (sorted(distros_with_repo.keys()) or [None])[-1]
-        default_release_repo_url = distros_with_repo.get(default_distro, "press enter to abort")
+        default_distro, default_release = get_most_recent('release', repository)
+        default_release_repo_url = default_release.url if default_release else "press enter to abort"
         if default_distro is not None:
-            warning("A previous distribution, '{0}', released this package."
-                    .format(default_distro))
+            warning("A previous distribution, '{0}', released this repository.".format(default_distro))
         else:
             warning("No reasonable default release repository url could be determined from previous releases.")
         while True:
@@ -422,10 +434,16 @@ def generate_ros_distro_diff(track, repository, distro):
             repo['packages'].remove(pkg_name)
     repo['packages'].sort()
 
-    def get_repository_info_from_user(url_type):
+    def get_repository_info_from_user(url_type, defaults=None):
         data = {}
+        defaults = defaults or {}
         while True:
-            vcs_type = safe_input('VCS type [git, svn, hg, bzr]: ')
+            info("VCS Type must be one of git, svn, hg, or bzr.")
+            default = defaults.get('type', None)
+            insert = '' if default is None else ' [{0}]'.format(default)
+            vcs_type = safe_input('VCS type{0}: '.format(insert))
+            if not vcs_type:
+                vcs_type = default
             if vcs_type in ['git', 'svn', 'hg', 'bzr']:
                 break
             error("'{0}' is not a valid vcs type.".format(vcs_type))
@@ -433,7 +451,11 @@ def generate_ros_distro_diff(track, repository, distro):
                 return {}
         data['type'] = vcs_type
         while True:
-            url = safe_input('VCS url: ')
+            default = defaults.get('url', None)
+            insert = '' if default is None else ' [{0}]'.format(default)
+            url = safe_input('VCS url{0}: '.format(insert))
+            if not url:
+                url = default
             if url:
                 if not validate_github_url(url, url_type):
                     # User wants to try again
@@ -444,7 +466,12 @@ def generate_ros_distro_diff(track, repository, distro):
                 return {}
         data['url'] = url
         while True:
-            version = safe_input('VCS version [commit, tag, or branch, e.g. master]: ')
+            info("VCS version must be a branch, tag, or commit, e.g. master or 0.1.0")
+            default = defaults.get('version', None)
+            insert = '' if default is None else ' [{0}]'.format(default)
+            version = safe_input('VCS version{0}: '.format(insert))
+            if not version:
+                version = default
             if version:
                 break
             error("Nothing entered for version.")
@@ -457,18 +484,44 @@ def generate_ros_distro_diff(track, repository, distro):
     if 'BLOOM_DONT_ASK_FOR_DOCS' not in os.environ:
         docs = distribution_dict['repositories'][repository].get('doc', {})
         if not docs and maybe_continue(msg='Would you like to add documentation information for this repository?'):
+            defaults = None
+            info(fmt("@{gf}@!==> @|") + "Looking for a doc entry for this repository in a different distribution...")
+            default_distro, default_doc = get_most_recent('doc', repository)
+            if default_distro is None:
+                warning("No existing doc entries found for use as defaults.")
+            else:
+                warning("Using defaults from the doc entry of distribution '{0}'.".format(default_distro))
+                if default_doc is not None:
+                    defaults = {
+                        'type': default_doc.type or None,
+                        'url': default_doc.url or None,
+                        'version': default_doc.version or None,
+                    }
             info("Please enter your repository information for the doc generation job.")
             info("This information should point to the repository from which documentation should be generated.")
-            docs = get_repository_info_from_user('doc')
+            docs = get_repository_info_from_user('doc', defaults)
         distribution_dict['repositories'][repository]['doc'] = docs
 
     # Ask for source entry
     if 'BLOOM_DONT_ASK_FOR_SOURCE' not in os.environ:
         source = distribution_dict['repositories'][repository].get('source', {})
         if not source and maybe_continue(msg='Would you like to add source information for this repository?'):
+            defaults = None
+            info(fmt("@{gf}@!==> @|") + "Looking for a source entry for this repository in a different distribution...")
+            default_distro, default_source = get_most_recent('source', repository)
+            if default_distro is None:
+                warning("No existing source entries found for use as defaults.")
+            else:
+                warning("Using defaults from the source entry of distribution '{0}'.".format(default_distro))
+                if default_source is not None:
+                    defaults = {
+                        'type': default_source.type or None,
+                        'url': default_source.url or None,
+                        'version': default_source.version or None,
+                    }
             info("Please enter information which points to the active development branch for this repository.")
             info("This information is used to run continuous integration jobs and for developers to checkout from.")
-            source = get_repository_info_from_user('source')
+            source = get_repository_info_from_user('source', defaults)
         distribution_dict['repositories'][repository]['source'] = source
 
     # Ask for maintainership information
