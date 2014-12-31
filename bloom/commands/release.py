@@ -220,6 +220,10 @@ def get_index():
     return _rosdistro_index
 
 
+def list_distributions():
+    return sorted(get_index().distributions.keys())
+
+
 def get_distribution_file(distro):
     global _rosdistro_distribution_files
     if distro not in _rosdistro_distribution_files:
@@ -292,19 +296,39 @@ def get_repo_uri(repository, distro):
         info("To be clear this is the url of the RELEASE repository not the upstream repository.")
         info("For release repositories on GitHub, you should provide the `https://` url which should end in `.git`.")
         info("Here is the url for a typical release repository on GitHub: https://github.com/ros-gbp/rviz-release.git")
+        # Calculate a reasonable default from the list of previous distros
+        info(fmt("@{gf}@!==> @|") + "Looking for a release of this repository in a different distribution...")
+        distros_with_repo = {}
+        for other_distro in list_distributions():
+            other_distro_file = get_distribution_file(other_distro)
+            if repository in other_distro_file.repositories:
+                if other_distro_file.repositories[repository].release_repository is not None:
+                    distros_with_repo[other_distro] = other_distro_file.repositories[repository].release_repository.url
+        # Choose the alphabetical last distro which contained a release of this repository
+        default_distro = (sorted(distros_with_repo.keys()) or [None])[-1]
+        default_release_repo_url = distros_with_repo.get(default_distro, "press enter to abort")
+        if default_distro is not None:
+            warning("A previous distribution, '{0}', released this package."
+                    .format(default_distro))
+        else:
+            warning("No reasonable default release repository url could be determined from previous releases.")
         while True:
+            url = None
             try:
-                url = safe_input('Release repository url [press enter to abort]: ')
+                url = safe_input('Release repository url [{0}]: '.format(default_release_repo_url))
             except (KeyboardInterrupt, EOFError):
-                url = None
                 info('', use_prefix=False)
+                error("User exited at prompt.", exit=True)
             if not url:
-                url = None
-                error("No release repository url given, aborting.", exit=True)
-                break
+                if default_distro is None:
+                    url = None
+                    error("No release repository url given, aborting.", exit=True)
+                if url is not None:
+                    url = default_release_repo_url
             if url is None:
                 break
             # If github.com address, validate it
+            # If not, validate_github_url will print some messages about why
             if not validate_github_url(url, 'release'):
                 continue
             break
