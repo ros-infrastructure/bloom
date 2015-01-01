@@ -12,7 +12,7 @@ from ..utils.common import user
 
 
 def create_release_repo(upstream_url, upstream_type, upstream_branch='',
-                        rosdistro='groovy'):
+                        rosdistro='indigo'):
     user('mkdir foo_release')
     with change_directory('foo_release'):
         user('git init .')

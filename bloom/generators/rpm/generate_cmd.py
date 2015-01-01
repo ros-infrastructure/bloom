@@ -104,7 +104,7 @@ def main(args=None, get_subs_fn=None):
 
     os_data = create_default_installer_context().get_os_name_and_version()
     os_name, os_version = os_data
-    ros_distro = os.environ.get('ROS_DISTRO', 'groovy')
+    ros_distro = os.environ.get('ROS_DISTRO', 'indigo')
 
     # Allow args overrides
     os_name = args.os_name or os_name
