@@ -131,7 +131,7 @@ def get_upstream_meta(upstream_dir, ros_distro):
     return meta
 
 
-def find_version_from_upstream(vcs_uri, vcs_type, devel_branch=None, ros_distro='groovy'):
+def find_version_from_upstream(vcs_uri, vcs_type, devel_branch=None, ros_distro='indigo'):
     # Check for github.com
     # if vcs_uri.startswith('http') and 'github.com' in vcs_uri:
     #     info("Detected github.com repository, checking for package.xml "

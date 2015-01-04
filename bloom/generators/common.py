@@ -55,7 +55,7 @@ except ImportError as err:
     error("rosdep was not detected, please install it.", exit=True)
 
 BLOOM_GROUP = 'bloom.generators'
-DEFAULT_ROS_DISTRO = 'groovy'
+DEFAULT_ROS_DISTRO = 'indigo'
 
 
 def list_generators():

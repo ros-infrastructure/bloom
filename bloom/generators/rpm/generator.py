@@ -411,7 +411,7 @@ class RpmGenerator(BloomGenerator):
     description = "Generates RPMs from the catkin meta data"
     has_run_rosdep = False
     default_install_prefix = '/usr'
-    rosdistro = os.environ.get('ROS_DISTRO', 'groovy')
+    rosdistro = os.environ.get('ROS_DISTRO', 'indigo')
 
     def prepare_arguments(self, parser):
         # Add command line arguments for this generator

@@ -185,7 +185,7 @@ DEFAULT_TEMPLATE = {
     'release_tag': PromptEntry('Release Tag', default=':{version}', spec=config_spec['release_tag']),
     'devel_branch': PromptEntry('Upstream Devel Branch', spec=config_spec['devel_branch']),
     'patches': PromptEntry('Patches Directory', spec=config_spec['patches']),
-    'ros_distro': PromptEntry('ROS Distro', default='groovy', spec=config_spec['ros_distro']),
+    'ros_distro': PromptEntry('ROS Distro', default='indigo', spec=config_spec['ros_distro']),
     'release_repo_url': PromptEntry('Release Repository Push URL', spec=config_spec['release_repo_url']),
     'release_inc': -1,
     'actions': [
