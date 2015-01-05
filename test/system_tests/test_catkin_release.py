@@ -68,12 +68,13 @@ def create_upstream_repository(packages, directory=None):
                     f.write(package_xml)
                 user('touch .cproject')
                 user('touch .project')
+                user('touch white space.txt~')
                 user('mkdir -p include/sym')
                 user('touch include/{0}.h'.format(package))
                 os.symlink('../{0}.h'.format(package), 'include/sym/{0}.h'.format(package))
                 user('mkdir debian')
                 user('touch debian/something.udev')
-                user('git add package.xml .cproject .project include debian')
+                user('git add package.xml .cproject .project include debian "white space.txt~"')
         user('git commit -m "Releasing version 0.1.0" --allow-empty')
         user('git tag 0.1.0 -m "Releasing version 0.1.0"')
         return os.getcwd()
@@ -105,6 +106,8 @@ def _test_unary_package_repository(release_dir, version, directory=None):
                 str(os.listdir(os.getcwd()))
             assert os.path.exists(os.path.join('debian', 'something.udev')), \
                 "Lost the debian overlaid files in upstream branch"
+            assert os.path.exists('white space.txt~'), \
+                "Lost file with whitespace in name in upstream branch"
             with open('package.xml') as f:
                 package_xml = f.read()
                 assert package_xml.count(version), "not right file"
@@ -131,6 +134,8 @@ def _test_unary_package_repository(release_dir, version, directory=None):
         with inbranch('release/groovy/foo'):
             assert os.path.exists(os.path.join('debian', 'something.udev')), \
                 "Lost the debian overlaid files in release branch"
+            assert os.path.exists('white space.txt~'), \
+                "Lost file with whitespace in name in release branch"
             assert os.path.islink('include/sym/foo.h'), "Symbolic link lost during pipeline"
             if os.path.exists('include/foo.h'):
                 user('git rm include/foo.h')
@@ -233,6 +238,8 @@ def test_multi_package_repository(directory=None):
                     assert os.path.exists(
                         os.path.join('debian', 'something.udev')), \
                         "Lost the debian overlaid files in upstream branch"
+                    assert os.path.exists('white space.txt~'), \
+                        "Lost file with whitespace in name in upstream branch"
                     assert os.path.exists('package.xml'), \
                         "upstream did not import: " + os.listdir()
                     with open('package.xml') as f:
@@ -290,6 +297,8 @@ def test_multi_package_repository(directory=None):
             with inbranch('release/groovy/' + pkg):
                 assert os.path.exists(os.path.join('debian', 'something.udev')), \
                     "Lost the debian overlaid files in release branch"
+                assert os.path.exists('white space.txt~'), \
+                    "Lost file with whitespace in name in release branch"
                 assert os.path.exists('package.xml'), "release branch invalid"
                 # Is it the correct package.xml for this pkg?
                 with open('package.xml', 'r') as f:
@@ -321,6 +330,8 @@ def test_multi_package_repository(directory=None):
                 assert os.path.exists(
                     os.path.join('debian', 'something.udev')), \
                     "Lost the debian overlaid files in debian branch"
+                assert os.path.exists('white space.txt~'), \
+                    "Lost file with whitespace in name in debian branch"
                 assert os.path.exists('package.xml'), "debian branch invalid"
                 # Is there blank lins due to no Conflicts/Replaces?
                 # See: https://github.com/ros-infrastructure/bloom/pull/329
