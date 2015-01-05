@@ -111,7 +111,7 @@ def import_tarball(tarball_path, target_branch, version, name):
                 continue
             items.append(item)
         if len(items) > 0:
-            execute_command('git rm -rf ' + ' '.join(items))
+            execute_command('git rm -rf ' + ' '.join(['"%s"' % i for i in items if i]))
         # Clear out any untracked files
         execute_command('git clean -fdx')
 
@@ -147,7 +147,7 @@ def import_tarball(tarball_path, target_branch, version, name):
                 continue
             items.append(item)
         if len(items) > 0:
-            execute_command('git add ' + ' '.join(items))
+            execute_command('git add ' + ' '.join(['"%s"' % i for i in items if i]))
         # Remove any straggling untracked files
         execute_command('git clean -dXf')
         # Only if we have local changes commit

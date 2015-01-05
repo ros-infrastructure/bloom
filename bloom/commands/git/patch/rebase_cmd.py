@@ -47,7 +47,7 @@ def non_git_rebase(upstream_branch, directory=None):
             items.append(item)
         # Remove all files
         if len(items) > 0:
-            execute_command('git rm -rf ' + ' '.join(items), cwd=directory)
+            execute_command('git rm -rf ' + ' '.join(['"%s"' % i for i in items if i]), cwd=directory)
 
         # Copy the parent source into the newly cleaned directory
         my_copytree(parent_source, git_root)
