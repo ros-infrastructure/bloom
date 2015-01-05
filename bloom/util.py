@@ -407,7 +407,7 @@ def segment_version(full_version):
 def execute_command(cmd, shell=True, autofail=True, silent=True,
                     silent_error=False, cwd=None, return_io=False):
     """
-    Executes a given command using vcstools' run_shell_command function.
+    Executes a given command using Popen.
     """
     out_io = None
     err_io = None
@@ -416,7 +416,7 @@ def execute_command(cmd, shell=True, autofail=True, silent=True,
         out_io = PIPE
         err_io = STDOUT
     debug(((cwd) if cwd else os.getcwd()) + ":$ " + str(cmd))
-    p = Popen(cmd, shell=True, cwd=cwd, stdout=out_io, stderr=err_io)
+    p = Popen(cmd, shell=shell, cwd=cwd, stdout=out_io, stderr=err_io)
     out, err = p.communicate()
     if out is not None and not isinstance(out, str):
         out = out.decode('utf-8')
