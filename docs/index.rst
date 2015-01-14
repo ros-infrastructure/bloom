@@ -30,7 +30,7 @@ Bloom supports releasing arbitrary software packages, but is optimized for use w
 How do I install bloom?
 -----------------------
 
-On Ubuntu the recommend method is to use apt::
+On Ubuntu the recommended method is to use apt::
 
     $ sudo apt-get install python-bloom
 
