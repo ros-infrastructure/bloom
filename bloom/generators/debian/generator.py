@@ -77,6 +77,7 @@ from bloom.commands.git.patch.common import set_patch_config
 
 from bloom.packages import get_package_data
 
+from bloom.util import code
 from bloom.util import to_unicode
 from bloom.util import execute_command
 from bloom.util import get_rfc_2822_date
@@ -594,8 +595,8 @@ class DebianGenerator(BloomGenerator):
             error("You can try to address the issues which appear above and try again if you wish.")
             try:
                 if not maybe_continue(msg="Would you like to try again?"):
-                    error("User aborted after rosdep keys were not resolved.",
-                          exit=True)
+                    error("User aborted after rosdep keys were not resolved.")
+                    sys.exit(code.GENERATOR_NO_ROSDEP_KEY_FOR_DISTRO)
             except (KeyboardInterrupt, EOFError):
                 error("\nUser quit.", exit=True)
             update_rosdep()
