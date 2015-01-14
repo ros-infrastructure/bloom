@@ -32,6 +32,7 @@
 
 from __future__ import print_function
 
+import collections
 import datetime
 import json
 import os
@@ -47,10 +48,13 @@ from distutils.version import LooseVersion
 from time import strptime
 
 from bloom.generators import BloomGenerator
+from bloom.generators import GeneratorError
 from bloom.generators import resolve_dependencies
 from bloom.generators import update_rosdep
 
 from bloom.generators.common import default_fallback_resolver
+from bloom.generators.common import invalidate_view_cache
+from bloom.generators.common import resolve_rosdep_key
 
 from bloom.git import inbranch
 from bloom.git import get_branches
@@ -486,6 +490,37 @@ class RpmGenerator(BloomGenerator):
         update_rosdep()
         self.has_run_rosdep = True
 
+    def _check_all_keys_are_valid(self, peer_packages):
+        keys_to_resolve = []
+        key_to_packages_which_depends_on = collections.defaultdict(list)
+        for package in self.packages.values():
+            depends = package.run_depends + package.buildtool_export_depends
+            build_depends = package.build_depends + package.buildtool_depends + package.test_depends
+            unresolved_keys = depends + build_depends + package.replaces + package.conflicts
+            keys = [d.name for d in unresolved_keys]
+            keys_to_resolve.extend(keys)
+            for key in keys:
+                key_to_packages_which_depends_on[key].append(package.name)
+
+        os_name = self.os_name
+        rosdistro = self.rosdistro
+        all_keys_valid = True
+        for key in sorted(set(keys_to_resolve)):
+            for os_version in self.distros:
+                try:
+                    extended_peer_packages = peer_packages + [d.name for d in package.replaces + package.conflicts]
+                    resolve_rosdep_key(key, os_name, os_version,
+                                       rosdistro, extended_peer_packages,
+                                       retry=False)
+                except (GeneratorError, RuntimeError) as e:
+                    print(fmt("Failed to resolve @{cf}@!{key}@| on @{bf}{os_name}@|:@{cf}@!{os_version}@| with: {e}")
+                          .format(**locals()))
+                    print(fmt("@{cf}@!{0}@| is depended on by these packages: ").format(key) +
+                          str(list(set(key_to_packages_which_depends_on[key]))))
+                    print(fmt("@{kf}@!<== @{rf}@!Failed@|"))
+                    all_keys_valid = False
+        return all_keys_valid
+
     def pre_modify(self):
         info("\nPre-verifying RPM dependency keys...")
         # Run rosdep update is needed
@@ -494,15 +529,17 @@ class RpmGenerator(BloomGenerator):
 
         peer_packages = [p.name for p in self.packages.values()]
 
-        for package in self.packages.values():
-            depends = package.run_depends + package.buildtool_export_depends
-            build_depends = package.build_depends + package.buildtool_depends + package.test_depends
-            unresolved_keys = depends + build_depends + package.replaces + package.conflicts
-            for os_version in self.distros:
-                resolve_dependencies(unresolved_keys, self.os_name,
-                                     os_version, self.rosdistro,
-                                     peer_packages + [d.name for d in package.replaces + package.conflicts],
-                                     fallback_resolver=missing_dep_resolver)
+        while not self._check_all_keys_are_valid(peer_packages):
+            error("Some of the dependencies for packages in this repository could not be resolved by rosdep.")
+            error("You can try to address the issues which appear above and try again if you wish.")
+            try:
+                if not maybe_continue(msg="Would you like to try again?"):
+                    error("User aborted after rosdep keys were not resolved.",
+                          exit=True)
+            except (KeyboardInterrupt, EOFError):
+                error("\nUser quit.", exit=True)
+            update_rosdep()
+            invalidate_view_cache()
 
         info("All keys are " + ansi('greenf') + "OK" + ansi('reset') + "\n")
 
