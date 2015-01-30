@@ -349,12 +349,15 @@ def get_repo_uri(repository, distro):
     return url
 
 
-def get_release_repo(repository, distro):
+def get_release_repo(repository, distro, override_url):
     global _repositories
     url = get_repo_uri(repository, distro)
     if repository not in _repositories.values():
         temp_dir = tempfile.mkdtemp()
         _repositories[repository] = get_vcs_client('git', temp_dir)
+        if override_url is not None:
+            warning("Overriding the release repository url, using '{0}'".format(override_url))
+            url = override_url
         info(fmt("@{gf}@!==> @|") +
              "Fetching '{0}' repository from '{1}'".format(repository, url))
         _repositories[repository].checkout(url, 'master')
@@ -369,8 +372,8 @@ def check_for_bloom_conf(repository):
     return 'bloom.conf' in bloom_files
 
 
-def list_tracks(repository, distro):
-    release_repo = get_release_repo(repository, distro)
+def list_tracks(repository, distro, override_release_repository_url):
+    release_repo = get_release_repo(repository, distro, override_release_repository_url)
     tracks_dict = None
     with change_directory(release_repo.get_path()):
         upconvert_bloom_to_config_branch()
@@ -973,14 +976,39 @@ Versions of tools used:
     summary_file.write(msg)
 
 
-def _perform_release(repository, track, distro, new_track, interactive, pretend, tracks_dict):
+def _perform_release(
+    repository, track, distro, new_track, interactive, pretend, tracks_dict,
+    override_release_repository_url, override_release_repository_push_url
+):
     # Ensure the track is complete
     track_dict = tracks_dict['tracks'][track]
     track_dict = update_track(track_dict)
     tracks_dict['tracks'][track] = track_dict
     # Set the release repositories' remote if given
     release_repo_url = track_dict.get('release_repo_url', None)
-    if release_repo_url is not None:
+    if override_release_repository_push_url is not None:
+        if release_repo_url is not None and release_repo_url != override_release_repository_push_url:
+            warning("The 'Release Repository Push URL' is set in the track, "
+                    "but is being overridden because the --override-release-repository-push-url option was used.")
+        info(fmt("@{gf}@!==> @|") +
+             "Setting release repository remote url to '{0}'"
+             .format(override_release_repository_push_url))
+        cmd = 'git remote set-url origin ' + override_release_repository_push_url
+        info(fmt("@{bf}@!==> @|@!") + str(cmd))
+        try:
+            subprocess.check_call(cmd, shell=True)
+        except subprocess.CalledProcessError:
+            error("Setting the remote url failed, exiting.", exit=True)
+        # Permanently override the push url before writing the track dict
+        warning("The release repository push url is being set (permanently) to '{0}'"
+                .format(override_release_repository_push_url))
+        tracks_dict['release_repo_url'] = override_release_repository_push_url
+    elif override_release_repository_url is not None:
+        if release_repo_url is not None:
+            warning("The 'Release Repository Push URL' is set in the track, "
+                    "but is being ignored because the --override-release-repository-url option was used.")
+    elif release_repo_url is not None:
+        # We only get here if the release_repo_url is set and neither override option was set
         info(fmt("@{gf}@!==> @|") +
              "Setting release repository remote url to '{0}'"
              .format(release_repo_url))
@@ -1115,8 +1143,11 @@ def check_for_patches_and_ignores(release_repo_path):
         checkout(current_branch)
 
 
-def perform_release(repository, track, distro, new_track, interactive, pretend, pull_request_only):
-    release_repo = get_release_repo(repository, distro)
+def perform_release(
+    repository, track, distro, new_track, interactive, pretend, pull_request_only,
+    override_release_repository_url, override_release_repository_push_url
+):
+    release_repo = get_release_repo(repository, distro, override_release_repository_url)
     with change_directory(release_repo.get_path()):
         # Check to see if the old bloom.conf exists
         if check_for_bloom_conf(repository):
@@ -1127,8 +1158,8 @@ def perform_release(repository, track, distro, new_track, interactive, pretend, 
         upconvert_bloom_to_config_branch()
         # Check that the track is valid
         tracks_dict = get_tracks_dict_raw()
-        # If new_track, create the new track first
-        if new_track:
+
+        def create_a_new_track(track, tracks_dict):
             if not track:
                 error("You must specify a track when creating a new one.", exit=True)
             if track in tracks_dict['tracks']:
@@ -1141,14 +1172,25 @@ def perform_release(repository, track, distro, new_track, interactive, pretend, 
                 # and overriding the ros_distro
                 warning("Creating track '{0}'...".format(track))
                 overrides = {'ros_distro': distro}
+                if override_release_repository_push_url is not None:
+                    overrides['release_repo_url'] = override_release_repository_push_url
                 new_track_cmd(track, copy_track='', overrides=overrides)
                 tracks_dict = get_tracks_dict_raw()
                 check_for_patches_and_ignores(release_repo.get_path())
+            return tracks_dict
+        # If new_track, create the new track first
+        if new_track:
+            tracks_dict = create_a_new_track(track, tracks_dict)
         if track and track not in tracks_dict['tracks']:
             error("Given track '{0}' does not exist in release repository."
                   .format(track))
-            error("Available tracks: " + str(tracks_dict['tracks'].keys()),
-                  exit=True)
+            info("Available tracks: " + str(tracks_dict['tracks'].keys()))
+            if not track:
+                error("Cannot offer to make a new track, since a track name was not provided.",
+                      exit=True)
+            if not maybe_continue(msg="Create a new track called '{0}' now".format(track)):
+                error("User quit.", exit=True)
+            tracks_dict = create_a_new_track(track, tracks_dict)
         elif not track:
             tracks = tracks_dict['tracks'].keys()
             # Error out if there are no tracks
@@ -1177,7 +1219,10 @@ def perform_release(repository, track, distro, new_track, interactive, pretend, 
                 error("User quit.", exit=True)
         start_summary(track)
         if not pull_request_only:
-            _perform_release(repository, track, distro, new_track, interactive, pretend, tracks_dict)
+            _perform_release(
+                repository, track, distro, new_track, interactive, pretend, tracks_dict,
+                override_release_repository_url, override_release_repository_push_url
+            )
         # Propose github pull request
         info(fmt("@{gf}@!==> @|") +
              "Generating pull request to distro file located at '{0}'"
@@ -1216,6 +1261,12 @@ def get_argument_parser():
         help="prevents a web browser from being opened at the end")
     add('--pull-request-only', '-p', default=False, action='store_true',
         help="skips the release actions and only tries to open a pull request")
+    add('--override-release-repository-url', default=None,
+        help="override url release repository; "
+             "the 'Release Repository Push URL' track configuration is ignored if set")
+    add('--override-release-repository-push-url', default=None,
+        help="override the 'Release Repository Push URL' track configuration; "
+             "can be used in conjunction with --override-release-repository-url")
     return parser
 
 _quiet = False
@@ -1228,7 +1279,7 @@ def main(sysargs=None):
     handle_global_arguments(args)
 
     if args.list_tracks:
-        list_tracks(args.repository, args.ros_distro)
+        list_tracks(args.repository, args.ros_distro, args.override_release_repository_url)
         return
 
     if args.no_web:
@@ -1240,6 +1291,8 @@ def main(sysargs=None):
         quiet_git_clone_warning(True)
         perform_release(args.repository, args.track, args.ros_distro,
                         args.new_track, not args.non_interactive, args.pretend,
-                        args.pull_request_only)
+                        args.pull_request_only,
+                        args.override_release_repository_url,
+                        args.override_release_repository_push_url)
     except (KeyboardInterrupt, EOFError) as exc:
         error("\nReceived '{0}', aborting.".format(type(exc).__name__))
