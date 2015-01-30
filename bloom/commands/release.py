@@ -399,7 +399,8 @@ def generate_release_tag(distro):
     return ('release/%s/{package}/{version}' % distro).encode('utf-8')
 
 
-def generate_ros_distro_diff(track, repository, distro):
+def generate_ros_distro_diff(track, repository, distro, override_release_repository_url):
+    global _user_provided_release_url
     distribution_dict = get_distribution_file(distro).get_data()
     # Get packages
     packages = get_packages()
@@ -412,15 +413,17 @@ def generate_ros_distro_diff(track, repository, distro):
     version = '{0}-{1}'.format(last_version, release_inc).encode('utf-8')
     # Create a repository if there isn't already one
     if repository not in distribution_dict['repositories']:
-        global _user_provided_release_url
         distribution_dict['repositories'][repository] = {}
     # Create a release entry if there isn't already one
     if 'release' not in distribution_dict['repositories'][repository]:
         distribution_dict['repositories'][repository]['release'.encode('utf-8')] = {
-            'url'.encode('utf-8'): _user_provided_release_url
+            'url'.encode('utf-8'): override_release_repository_url or _user_provided_release_url
         }
     # Update the repository
     repo = distribution_dict['repositories'][repository]['release']
+    # Consider the override
+    if override_release_repository_url is not None:
+        repo['url'.encode('utf-8')] = override_release_repository_url
     if 'tags' not in repo:
         repo['tags'.encode('utf-8')] = {}
     repo['tags']['release'.encode('utf-8')] = generate_release_tag(distro)
@@ -742,7 +745,7 @@ def get_changelog_summary(release_tag):
     return summary
 
 
-def open_pull_request(track, repository, distro, interactive):
+def open_pull_request(track, repository, distro, interactive, override_release_repository_url):
     global _rosdistro_index_commit
     # Get the diff
     distribution_file = get_distribution_file(distro)
@@ -751,7 +754,7 @@ def open_pull_request(track, repository, distro, interactive):
         orig_version = distribution_file.repositories[repository].release_repository.version
     else:
         orig_version = None
-    updated_distribution_file = generate_ros_distro_diff(track, repository, distro)
+    updated_distribution_file = generate_ros_distro_diff(track, repository, distro, override_release_repository_url)
     if updated_distribution_file is None:
         # There were no changes, no pull request required
         return None
@@ -1228,7 +1231,9 @@ def perform_release(
              "Generating pull request to distro file located at '{0}'"
              .format(get_disitrbution_file_url(distro)))
         try:
-            pull_request_url = open_pull_request(track, repository, distro, interactive)
+            pull_request_url = open_pull_request(
+                track, repository, distro, interactive, override_release_repository_url
+            )
             if pull_request_url:
                 info(fmt(_success) + "Pull request opened at: {0}".format(pull_request_url))
                 if 'BLOOM_NO_WEBBROWSER' not in os.environ and platform.system() in ['Darwin']:
@@ -1262,8 +1267,8 @@ def get_argument_parser():
     add('--pull-request-only', '-p', default=False, action='store_true',
         help="skips the release actions and only tries to open a pull request")
     add('--override-release-repository-url', default=None,
-        help="override url release repository; "
-             "the 'Release Repository Push URL' track configuration is ignored if set")
+        help="override the release repository url; "
+             "the 'Release Repository Push URL' track configuration is ignored")
     add('--override-release-repository-push-url', default=None,
         help="override the 'Release Repository Push URL' track configuration; "
              "can be used in conjunction with --override-release-repository-url")
