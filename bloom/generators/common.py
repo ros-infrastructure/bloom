@@ -47,7 +47,6 @@ from bloom.util import print_exc
 try:
     from rosdep2 import create_default_installer_context
     from rosdep2.catkin_support import get_catkin_view
-    from rosdep2.catkin_support import resolve_for_os
     from rosdep2.lookup import ResolutionError
     import rosdep2.catkin_support
 except ImportError as err:
@@ -97,6 +96,27 @@ def update_rosdep():
               exit=True)
 
 
+def resolve_more_for_os(rosdep_key, view, installer, os_name, os_version):
+    """
+    Resolve rosdep key to dependencies and installer key.
+    (This was copied from rosdep2.catkin_support)
+
+    :param os_name: OS name, e.g. 'ubuntu'
+    :returns: resolved key, resolved installer key, and default installer key
+
+    :raises: :exc:`rosdep2.ResolutionError`
+    """
+    d = view.lookup(rosdep_key)
+    ctx = create_default_installer_context()
+    os_installers = ctx.get_os_installer_keys(os_name)
+    default_os_installer = ctx.get_default_os_installer_key(os_name)
+    inst_key, rule = d.get_rule_for_platform(os_name, os_version,
+                                             os_installers,
+                                             default_os_installer)
+    assert inst_key in os_installers
+    return installer.resolve(rule), inst_key, default_os_installer
+
+
 def resolve_rosdep_key(
     key,
     os_name,
@@ -116,11 +136,11 @@ def resolve_rosdep_key(
     ros_distro = ros_distro or DEFAULT_ROS_DISTRO
     view = get_view(os_name, os_version, ros_distro)
     try:
-        return resolve_for_os(key, view, installer, os_name, os_version)
+        return resolve_more_for_os(key, view, installer, os_name, os_version)
     except (KeyError, ResolutionError) as exc:
         debug(traceback.format_exc())
         if key in ignored:
-            return None
+            return None, None, None
         if isinstance(exc, KeyError):
             error("Could not resolve rosdep key '{0}'".format(key))
             returncode = code.GENERATOR_NO_SUCH_ROSDEP_KEY
@@ -160,8 +180,11 @@ def resolve_dependencies(
     resolved_keys = {}
     keys = [k.name for k in keys]
     for key in keys:
-        resolved_key = resolve_rosdep_key(key, os_name, os_version, ros_distro,
-                                          peer_packages, retry=True)
+        resolved_key, installer_key, default_installer_key = \
+            resolve_rosdep_key(key, os_name, os_version, ros_distro,
+                               peer_packages, retry=True)
+        # Do not compare the installer key here since this is a general purpose function
+        # They installer is verified in the OS specific generator, when the keys are pre-checked.
         if resolved_key is None:
             resolved_key = fallback_resolver(key, peer_packages)
         resolved_keys[key] = resolved_key
