@@ -574,6 +574,8 @@ class DebianGenerator(BloomGenerator):
                     rule, installer_key, default_installer_key = \
                         resolve_rosdep_key(key, os_name, os_version, rosdistro, extended_peer_packages,
                                            retry=False)
+                    if rule is None:
+                        continue
                     if installer_key != default_installer_key:
                         error("Key '{0}' resolved to '{1}' with installer '{2}', "
                               "which does not match the default installer '{3}'."

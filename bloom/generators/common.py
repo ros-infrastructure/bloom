@@ -140,7 +140,7 @@ def resolve_rosdep_key(
     except (KeyError, ResolutionError) as exc:
         debug(traceback.format_exc())
         if key in ignored:
-            return None
+            return None, None, None
         if isinstance(exc, KeyError):
             error("Could not resolve rosdep key '{0}'".format(key))
             returncode = code.GENERATOR_NO_SUCH_ROSDEP_KEY
