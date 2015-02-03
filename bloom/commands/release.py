@@ -67,11 +67,6 @@ except ImportError:
 
 import bloom
 
-from bloom.commands.git.config import convert_old_bloom_conf
-from bloom.commands.git.config import edit as edit_track_cmd
-from bloom.commands.git.config import new as new_track_cmd
-from bloom.commands.git.config import update_track
-
 from bloom.config import get_tracks_dict_raw
 from bloom.config import upconvert_bloom_to_config_branch
 from bloom.config import write_tracks_dict_raw
@@ -983,6 +978,8 @@ def _perform_release(
     repository, track, distro, new_track, interactive, pretend, tracks_dict,
     override_release_repository_url, override_release_repository_push_url
 ):
+    # Import here to allow lazy evaluation of commands/git/__init__.py
+    from bloom.commands.git.config import update_track
     # Ensure the track is complete
     track_dict = tracks_dict['tracks'][track]
     track_dict = update_track(track_dict)
@@ -1150,6 +1147,10 @@ def perform_release(
     repository, track, distro, new_track, interactive, pretend, pull_request_only,
     override_release_repository_url, override_release_repository_push_url
 ):
+    # Import here to allow lazy evaluation of commands/git/__init__.py
+    from bloom.commands.git.config import convert_old_bloom_conf
+    from bloom.commands.git.config import edit as edit_track_cmd
+    from bloom.commands.git.config import new as new_track_cmd
     release_repo = get_release_repo(repository, distro, override_release_repository_url)
     with change_directory(release_repo.get_path()):
         # Check to see if the old bloom.conf exists

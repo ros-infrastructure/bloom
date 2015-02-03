@@ -724,3 +724,21 @@ def has_submodules(directory=None):
     if not output.strip():
         return False
     return True
+
+
+def get_remotes(directory=None):
+    """
+    Returns a list of remote names.
+
+    :param directory: directory to list remotes from
+    :returns: a list of git remotes
+
+    :raises: RuntimeError if directory is not a git repository
+    """
+    root = get_root(directory)
+    checked_dir = directory or os.getcwd()
+    if root is None:
+        raise RuntimeError("Directory '{0}' is not in a git repository.".format(checked_dir))
+    cmd = "git remote -v"
+    output = check_output(cmd, shell=True, cwd=root, stderr=PIPE)
+    return list(set([x.split()[0].strip() for x in output.splitlines() if x.strip()]))
