@@ -43,6 +43,7 @@ from tempfile import mkdtemp
 from bloom.git import branch_exists
 from bloom.git import create_branch
 from bloom.git import has_changes
+from bloom.git import get_remotes
 from bloom.git import get_root
 from bloom.git import inbranch
 from bloom.git import show
@@ -275,10 +276,24 @@ def get_tracks_dict_raw(directory=None):
 _has_checked_bloom_branch = False
 
 
+def check_for_multiple_remotes():
+    remotes = get_remotes()
+    if len(remotes) < 0:
+        error("Current git repository has no remotes. "
+              "If you are running bloom-release, please change directories.",
+              exit=True)
+    if len(remotes) > 1:
+        error("Current git repository has multiple remotes. "
+              "If you are running bloom-release, please change directories.",
+              exit=True)
+
+
 def upconvert_bloom_to_config_branch():
     global _has_checked_bloom_branch
     if _has_checked_bloom_branch:
         return
+    # Assert that this repository does not have multiple remotes
+    check_for_multiple_remotes()
     if get_root() is None:
         # Not a git repository
         return
