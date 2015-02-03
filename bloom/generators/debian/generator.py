@@ -277,6 +277,7 @@ def generate_substitutions_from_package(
     depends = package.run_depends + package.buildtool_export_depends
     build_depends = package.build_depends + package.buildtool_depends + package.test_depends
     unresolved_keys = depends + build_depends + package.replaces + package.conflicts
+    # The installer key is not considered here, but it is checked when the keys are checked before this
     resolved_deps = resolve_dependencies(unresolved_keys, os_name,
                                          os_version, ros_distro,
                                          peer_packages + [d.name for d in package.replaces + package.conflicts],
@@ -570,9 +571,18 @@ class DebianGenerator(BloomGenerator):
             for os_version in self.distros:
                 try:
                     extended_peer_packages = peer_packages + [d.name for d in package.replaces + package.conflicts]
-                    resolve_rosdep_key(key, os_name, os_version,
-                                       rosdistro, extended_peer_packages,
-                                       retry=False)
+                    rule, installer_key, default_installer_key = \
+                        resolve_rosdep_key(key, os_name, os_version, rosdistro, extended_peer_packages,
+                                           retry=False)
+                    if installer_key != default_installer_key:
+                        error("Key '{0}' resolved to '{1}' with installer '{2}', "
+                              "which does not match the default installer '{3}'."
+                              .format(key, rule, installer_key, default_installer_key))
+                        BloomGenerator.exit(
+                            "The Debian generator does not support dependencies "
+                            "which are installed with the '{0}' installer."
+                            .format(installer_key),
+                            returncode=code.GENERATOR_INVALID_INSTALLER_KEY)
                 except (GeneratorError, RuntimeError) as e:
                     print(fmt("Failed to resolve @{cf}@!{key}@| on @{bf}{os_name}@|:@{cf}@!{os_version}@| with: {e}")
                           .format(**locals()))
