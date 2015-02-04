@@ -1,3 +1,16 @@
+0.5.17 (2015-02-03 15:53:10 -0800)
+----------------------------------
+- Now notifies about existing patches and ignore files when creating a new track.
+- Now shows the git remotes before prompting for pushing of the release repository.
+- Now uses reverse alphabetical ordering when selecting track configuration defaults, the idea is that ROS distributions with larger starting characters are more likely to be newer.
+- Now guesses the release repository, the doc entry, and the source entry based on other distributions.
+- Replace ``groovy`` with ``indigo`` in many defaults.
+- Fixed a bug where whitespace in filenames and trailing ``~``'s caused a release failure.
+- Now does a check of all rosdep keys before starting the Debian and RPM generators.
+- Fixed a problem for recovering from platform specific rosdep key errors.
+- Added options to ``bloom-release`` to override the release repository URL and release repository push URL.
+- Now checks that all rosdep keys resolve to an installed that matches the default installer, i.e. ``apt`` and not ``pip``. This affectes the Debian and RPM generators.
+
 0.5.16 (2014-12-15 14:30:00 -0700)
 ----------------------------------
 - Hotfix to the Replaces/Conflicts template generation to prevent error causes extra whitespace.
