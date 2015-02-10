@@ -277,6 +277,8 @@ _has_checked_bloom_branch = False
 
 
 def check_for_multiple_remotes():
+    if get_root() is None:
+        return
     remotes = get_remotes()
     if len(remotes) < 0:
         error("Current git repository has no remotes. "
