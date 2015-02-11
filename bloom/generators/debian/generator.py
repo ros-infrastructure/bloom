@@ -555,10 +555,12 @@ class DebianGenerator(BloomGenerator):
     def _check_all_keys_are_valid(self, peer_packages):
         keys_to_resolve = []
         key_to_packages_which_depends_on = collections.defaultdict(list)
+        keys_to_ignore = set()
         for package in self.packages.values():
             depends = package.run_depends + package.buildtool_export_depends
             build_depends = package.build_depends + package.buildtool_depends + package.test_depends
             unresolved_keys = depends + build_depends + package.replaces + package.conflicts
+            keys_to_ignore = keys_to_ignore.union(package.replaces + package.conflicts)
             keys = [d.name for d in unresolved_keys]
             keys_to_resolve.extend(keys)
             for key in keys:
@@ -570,7 +572,7 @@ class DebianGenerator(BloomGenerator):
         for key in sorted(set(keys_to_resolve)):
             for os_version in self.distros:
                 try:
-                    extended_peer_packages = peer_packages + [d.name for d in package.replaces + package.conflicts]
+                    extended_peer_packages = peer_packages + [d.name for d in keys_to_ignore]
                     rule, installer_key, default_installer_key = \
                         resolve_rosdep_key(key, os_name, os_version, rosdistro, extended_peer_packages,
                                            retry=False)
