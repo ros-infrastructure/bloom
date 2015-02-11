@@ -121,13 +121,13 @@ from vcstools.vcs_abstraction import get_vcs_client
 
 try:
     import rosdistro
+    if parse_version(rosdistro.__version__) < parse_version('0.4.0'):
+        error("rosdistro version 0.4.0 or greater is required, found '{0}' from '{1}'."
+              .format(rosdistro.__version__, os.path.dirname(rosdistro.__file__)),
+              exit=True)
 except ImportError:
     debug(traceback.format_exc())
     error("rosdistro was not detected, please install it.", file=sys.stderr,
-          exit=True)
-if parse_version(rosdistro.__version__) < parse_version('0.4.0'):
-    error("rosdistro version 0.4.0 or greater is required, found '{0}' from '{1}'."
-          .format(rosdistro.__version__, os.path.dirname(rosdistro.__file__)),
           exit=True)
 from rosdistro.writer import yaml_from_distribution_file
 
