@@ -216,6 +216,9 @@ def get_parser():
 
 
 def main(sysargs=None):
+    from bloom.config import upconvert_bloom_to_config_branch
+    upconvert_bloom_to_config_branch()
+
     parser = get_parser()
     parser = add_global_arguments(parser)
 

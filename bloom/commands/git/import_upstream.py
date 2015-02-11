@@ -365,6 +365,9 @@ allows replacement of an existing upstream import of the same version
 
 
 def main(sysargs=None):
+    from bloom.config import upconvert_bloom_to_config_branch
+    upconvert_bloom_to_config_branch()
+
     parser = get_argument_parser()
     parser = add_global_arguments(parser)
     args = parser.parse_args(sysargs)
