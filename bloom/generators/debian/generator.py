@@ -65,7 +65,6 @@ from bloom.git import tag_exists
 from bloom.logging import ansi
 from bloom.logging import debug
 from bloom.logging import enable_drop_first_log_prefix
-enable_drop_first_log_prefix(True)
 from bloom.logging import error
 from bloom.logging import fmt
 from bloom.logging import info
@@ -112,6 +111,9 @@ try:
 except NameError:
     pass
 # End fix
+
+# Drop the first log prefix for this command
+enable_drop_first_log_prefix(True)
 
 TEMPLATE_EXTENSION = '.em'
 

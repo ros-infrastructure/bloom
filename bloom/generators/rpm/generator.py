@@ -67,11 +67,9 @@ from bloom.git import tag_exists
 from bloom.logging import ansi
 from bloom.logging import debug
 from bloom.logging import enable_drop_first_log_prefix
-enable_drop_first_log_prefix(True)
 from bloom.logging import error
 from bloom.logging import fmt
 from bloom.logging import info
-from bloom.logging import is_debug
 from bloom.logging import warning
 
 from bloom.commands.git.patch.common import get_patch_config
@@ -80,16 +78,8 @@ from bloom.commands.git.patch.common import set_patch_config
 from bloom.packages import get_package_data
 
 from bloom.util import code
-from bloom.util import to_unicode
 from bloom.util import execute_command
 from bloom.util import maybe_continue
-
-try:
-    from catkin_pkg.changelog import get_changelog_from_path
-    from catkin_pkg.changelog import CHANGELOG_FILENAME
-except ImportError as err:
-    debug(traceback.format_exc())
-    error("rosdep was not detected, please install it.", exit=True)
 
 try:
     import rosdistro
@@ -102,6 +92,9 @@ try:
 except ImportError:
     debug(traceback.format_exc())
     error("empy was not detected, please install it.", exit=True)
+
+# Drop the first log prefix for this command
+enable_drop_first_log_prefix(True)
 
 TEMPLATE_EXTENSION = '.em'
 
