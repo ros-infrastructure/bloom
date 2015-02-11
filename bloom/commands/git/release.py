@@ -41,11 +41,6 @@ import sys
 import tempfile
 import traceback
 
-# try:
-#     from urllib.parse import urlparse
-# except ImportError:
-#     from urlparse import urlparse
-
 from bloom.config import DEFAULT_TEMPLATE
 from bloom.config import get_tracks_dict_raw
 from bloom.config import template_str
@@ -326,6 +321,9 @@ def get_argument_parser(tracks):
 
 
 def main(sysargs=None):
+    from bloom.config import upconvert_bloom_to_config_branch
+    upconvert_bloom_to_config_branch()
+
     # Check that the current directory is a serviceable git/bloom repo
     ensure_clean_working_env()
     ensure_git_root()

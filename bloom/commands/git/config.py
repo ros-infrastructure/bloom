@@ -336,6 +336,9 @@ Call `git-bloom-config {0} -h` for additional help information on each command.
 
 
 def main(sysargs=None):
+    from bloom.config import upconvert_bloom_to_config_branch
+    upconvert_bloom_to_config_branch()
+
     if len(sysargs if sysargs is not None else sys.argv[1:]) == 0:
         # This means show me the current config, first check we have an env
         ensure_clean_working_env()
