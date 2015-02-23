@@ -1,3 +1,10 @@
+0.5.18 (2015-02-23 15:00:00 -0800)
+----------------------------------
+- Fixed tests so they could be run when multiple remotes were in the local bloom git instance.
+- Fixed a new PEP8 checker test failure.
+- Added a conflicts rule between the python3 and python2 .deb of bloom (python-bloom and python3-bloom) since they collide anyways with the installed scripts.
+- Fixed a bug with Conflicts and Replaces in the debian generator.
+
 0.5.17 (2015-02-03 15:53:10 -0800)
 ----------------------------------
 - Now notifies about existing patches and ignore files when creating a new track.
