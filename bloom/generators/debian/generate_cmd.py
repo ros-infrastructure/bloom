@@ -72,7 +72,7 @@ def prepare_arguments(parser):
     add = parser.add_argument
     add('--os-name', help='OS name, e.g. ubuntu, debian')
     add('--os-version', help='OS version or codename, e.g. precise, wheezy')
-    add('--ros-distro', help='ROS distro, e.g. groovy, hydro (used for rosdep)')
+    add('--ros-distro', help='ROS distro, e.g. indigo, jade (used for rosdep)')
     return parser
 
 
