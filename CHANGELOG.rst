@@ -1,9 +1,19 @@
-0.5.18 (2015-02-23 15:00:00 -0800)
+0.5.20 (2015-04-23 15:00:00 -0800)
+----------------------------------
+- Updated conditional for special GitHub commit handling logic to include raw.githubusercontent.com.
+- Updated GitHub commit handling logic to replace the branch part of the ROS distro index url with the commit for more stability.
+- Set LC_ALL to C when calling out to ``git`` in order to avoid problems from output in different languages.
+
+0.5.19 (2015-02-23 15:00:00 -0800)
 ----------------------------------
 - Fixed tests so they could be run when multiple remotes were in the local bloom git instance.
 - Fixed a new PEP8 checker test failure.
 - Added a conflicts rule between the python3 and python2 .deb of bloom (python-bloom and python3-bloom) since they collide anyways with the installed scripts.
 - Fixed a bug with Conflicts and Replaces in the debian generator.
+
+0.5.18 (2015-02-09 15:53:10 -0800)
+----------------------------------
+- Fixed a bug which required a git repo as cwd.
 
 0.5.17 (2015-02-03 15:53:10 -0800)
 ----------------------------------
