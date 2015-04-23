@@ -172,7 +172,7 @@ def get_index_url():
     global _rosdistro_index_commit
     index_url = rosdistro.get_index_url()
     pr = urlparse(index_url)
-    if pr.netloc == 'raw.github.com':
+    if pr.netloc in ['raw.github.com', 'raw.githubusercontent.com']:
         # Try to determine what the commit hash was
         tokens = [x for x in pr.path.split('/') if x]
         if len(tokens) <= 3:
