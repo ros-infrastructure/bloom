@@ -166,10 +166,11 @@ def exit_cleanup():
 _rosdistro_index = None
 _rosdistro_distribution_files = {}
 _rosdistro_index_commit = None
+_rosdistro_index_original_branch = None
 
 
 def get_index_url():
-    global _rosdistro_index_commit
+    global _rosdistro_index_commit, _rosdistro_index_original_branch
     index_url = rosdistro.get_index_url()
     pr = urlparse(index_url)
     if pr.netloc in ['raw.github.com', 'raw.githubusercontent.com']:
@@ -203,6 +204,7 @@ def get_index_url():
             index_url = index_url.replace("{pr.netloc}/{middle}/{base_branch}/".format(**locals()),
                                           "{pr.netloc}/{middle}/{rosdistro_index_commit}/".format(**locals()))
             info("New ROS Distro index url: '{0}'".format(index_url))
+            _rosdistro_index_original_branch = base_branch
         else:
             debug("Failed to get commit for rosdistro index file: json")
     return index_url
@@ -767,6 +769,9 @@ def open_pull_request(track, repository, distro, interactive, override_release_r
     if None in [base_org, base_repo, base_branch, base_path]:
         warning("Automated pull request only available via github.com")
         return
+    # If we did replace the branch in the url with a commit, restore that now
+    if _rosdistro_index_original_branch is not None:
+        base_branch = _rosdistro_index_original_branch
     # Get the github interface
     gh = get_github_interface()
     if gh is None:
