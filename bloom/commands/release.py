@@ -196,6 +196,13 @@ def get_index_url():
         if _rosdistro_index_commit is not None:
             info("ROS Distro index file associate with commit '{0}'"
                  .format(_rosdistro_index_commit))
+            # Also mutate the index_url to use the commit (rather than the moving branch name)
+            base_org, base_repo, base_branch, base_path = get_gh_info(index_url)
+            rosdistro_index_commit = _rosdistro_index_commit  # Copy global into local for substitution
+            middle = "{base_org}/{base_repo}".format(**locals())
+            index_url = index_url.replace("{pr.netloc}/{middle}/{base_branch}/".format(**locals()),
+                                          "{pr.netloc}/{middle}/{rosdistro_index_commit}/".format(**locals()))
+            info("New ROS Distro index url: '{0}'".format(index_url))
         else:
             debug("Failed to get commit for rosdistro index file: json")
     return index_url
