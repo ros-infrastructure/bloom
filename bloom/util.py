@@ -340,10 +340,25 @@ def pdb_hook():
         pdb.set_trace()
 
 
+def __get_env_for_cmd(cmd):
+    executable = None
+    if isinstance(cmd, list) or isinstance(cmd, tuple):
+        executable = cmd[0]
+    if isinstance(cmd, str) or isinstance(cmd, to_unicode):
+        executable = cmd.split()[0]
+    env = None
+    if executable is not None and executable.startswith('git'):
+        env = os.environ
+        # If the output is from git, force lang to C to prevent output in different languages.
+        env['LC_ALL'] = 'C'
+    return env
+
+
 def check_output(cmd, cwd=None, stdin=None, stderr=None, shell=False):
     """Backwards compatible check_output"""
+    env = __get_env_for_cmd(cmd)
     p = Popen(cmd, cwd=cwd, stdin=stdin, stderr=stderr, shell=shell,
-              stdout=PIPE)
+              stdout=PIPE, env=env)
     out, err = p.communicate()
     if p.returncode:
         raise CalledProcessError(p.returncode, cmd)
@@ -417,7 +432,8 @@ def execute_command(cmd, shell=True, autofail=True, silent=True,
         out_io = PIPE
         err_io = STDOUT
     debug(((cwd) if cwd else os.getcwd()) + ":$ " + str(cmd))
-    p = Popen(cmd, shell=shell, cwd=cwd, stdout=out_io, stderr=err_io)
+    env = __get_env_for_cmd(cmd)
+    p = Popen(cmd, shell=shell, cwd=cwd, stdout=out_io, stderr=err_io, env=env)
     out, err = p.communicate()
     if out is not None and not isinstance(out, str):
         out = out.decode('utf-8')
