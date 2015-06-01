@@ -9,6 +9,7 @@ from bloom.logging import warning
 from bloom.packages import get_package_data
 
 from bloom.util import execute_command
+from bloom.util import get_distro_list_prompt
 
 
 class RosReleaseGenerator(ReleaseGenerator):
@@ -24,7 +25,7 @@ prefix set to 'release'.
     def prepare_arguments(self, parser):
         # Add command line arguments for this generator
         add = parser.add_argument
-        add('rosdistro', help="ROS distro to target (groovy, hydro, etc...)")
+        add('rosdistro', help="ROS distro to target (%s, ...)" % get_distro_list_prompt())
         return ReleaseGenerator.prepare_arguments(self, parser)
 
     def handle_arguments(self, args):
