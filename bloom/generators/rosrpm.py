@@ -53,7 +53,7 @@ class RosRpmGenerator(RpmGenerator):
     def prepare_arguments(self, parser):
         # Add command line arguments for this generator
         add = parser.add_argument
-        add('rosdistro', help="ROS distro to target (groovy, hydro, etc...)")
+        add('rosdistro', help="ROS distro to target (indigo, jade, etc...)")
         return RpmGenerator.prepare_arguments(self, parser)
 
     def handle_arguments(self, args):
