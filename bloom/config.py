@@ -116,7 +116,7 @@ This is used only when version is set to ':{auto}'.
 ''',
     },
     'ros_distro': {
-        '<ROS distro>': 'This can be any valid ROS distro, e.g. groovy, hydro'
+        '<ROS distro>': 'This can be any valid ROS distro, e.g. indigo, jade'
     },
     'patches': {
         '<path in bloom branch>': '''\
