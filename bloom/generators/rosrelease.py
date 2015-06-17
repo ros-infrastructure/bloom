@@ -25,7 +25,7 @@ prefix set to 'release'.
     def prepare_arguments(self, parser):
         # Add command line arguments for this generator
         add = parser.add_argument
-        add('rosdistro', help="ROS distro to target (%s, ...)" % get_distro_list_prompt())
+        add('rosdistro', help="ROS distro to target (%s, etc.)" % get_distro_list_prompt())
         return ReleaseGenerator.prepare_arguments(self, parser)
 
     def handle_arguments(self, args):
