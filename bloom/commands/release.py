@@ -957,6 +957,7 @@ The packages in the `{repository}` repository were released into the \
         release_repo_url = reps[repository].release_repository.url
     msg += """
 Version of package(s) in repository `{repo}`:
+
 - upstream repository: {upstream_repo_url}
 - release repository: {release_repo_url}
 - rosdistro version: `{rosdistro_pv}`
@@ -964,6 +965,7 @@ Version of package(s) in repository `{repo}`:
 - new version: `{new_pv}`
 
 Versions of tools used:
+
 - bloom version: `{bloom_v}`
 - catkin_pkg version: `{catkin_pkg_v}`
 - rosdep version: `{rosdep_v}`
