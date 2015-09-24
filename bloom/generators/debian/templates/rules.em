@@ -30,8 +30,7 @@ override_dh_auto_configure:
 	dh_auto_configure -- \
 		-DCATKIN_BUILD_BINARY_PACKAGE="1" \
 		-DCMAKE_INSTALL_PREFIX="@(InstallationPrefix)" \
-		-DCMAKE_PREFIX_PATH="@(InstallationPrefix)" \
-		-DCMAKE_BUILD_TYPE=RelWithDebInfo
+		-DCMAKE_PREFIX_PATH="@(InstallationPrefix)"
 
 override_dh_auto_build:
 	# In case we're installing to a non-standard location, look for a setup.sh
