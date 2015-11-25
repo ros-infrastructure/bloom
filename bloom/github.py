@@ -165,7 +165,15 @@ class Github(object):
         resp = do_github_post_req('/repos/{parent_org}/{parent_repo}/forks'.format(**locals()), {}, auth=self.auth)
         if '{0}'.format(resp.status) not in ['200', '202']:
             raise GithubException(
-                "Failed to creat a fork of '{parent_org}/{parent_repo}'".format(**locals()), resp)
+                "Failed to create a fork of '{parent_org}/{parent_repo}'".format(**locals()), resp)
+        return json.loads(resp.read())
+
+    def list_forks(self, org, repo):
+        resp = do_github_get_req('/repos/{org}/{repo}/forks'.format(**locals()), auth=self.auth)
+        if '{0}'.format(resp.status) not in ['200', '202']:
+            raise GithubException(
+                "Failed to list forks of '{org}/{repo}'".format(**locals()), resp)
+        return json.loads(resp.read())
 
     def create_pull_request(self, org, repo, branch, fork_org, fork_branch, title, body=""):
         data = {
