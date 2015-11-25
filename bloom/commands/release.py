@@ -791,7 +791,8 @@ def open_pull_request(track, repository, distro, interactive, override_release_r
         try:
             repo_forks = gh.list_forks(base_org, base_repo)
             user_forks = [r for r in repo_forks if r.get('owner', {}).get('login', '') == gh.username]
-            head_repo = user_forks[0]  # github allows only 1 fork per org as far as I know. We just take the first one.
+            # github allows only 1 fork per org as far as I know. We just take the first one.
+            head_repo = user_forks[0] if user_forks else None
 
         except GithubException as exc:
             debug("Received GithubException while checking for fork: {exc}".format(**locals()))
@@ -799,7 +800,7 @@ def open_pull_request(track, repository, distro, interactive, override_release_r
 
         # If not head_repo still, a fork does not exist and must be created
         if head_repo is None:
-            warning("Could not find a fork of {base_full_name} on the {gh.username} GitHub account."
+            warning("Could not find a fork of {base_org}/{base_repo} on the {gh.username} GitHub account."
                     .format(**locals()))
             warning("Would you like to create one now?")
             if not maybe_continue():
