@@ -17,5 +17,5 @@ Package: @(Package)-dbg
 Architecture: any
 Section: debug
 Priority: extra
-Depends: @(Package) (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Depends: @(Package) (= ${binary:Version}), ${misc:Depends}
 Description: Debug symbols for @(Package)
