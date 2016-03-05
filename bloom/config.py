@@ -242,7 +242,7 @@ def write_tracks_dict_raw(tracks_dict, cmt_msg=None, directory=None):
     cmt_msg = cmt_msg if cmt_msg is not None else 'Modified tracks.yaml'
     with inbranch(BLOOM_CONFIG_BRANCH):
         with open('tracks.yaml', 'w') as f:
-            f.write(yaml.dump(tracks_dict, indent=2, default_flow_style=False))
+            f.write(yaml.safe_dump(tracks_dict, indent=2, default_flow_style=False))
         execute_command('git add tracks.yaml', cwd=directory)
         execute_command('git commit --allow-empty -m "{0}"'.format(cmt_msg),
                         cwd=directory)
