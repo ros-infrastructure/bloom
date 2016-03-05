@@ -525,6 +525,9 @@ class DebianGenerator(BloomGenerator):
             help="overrides the default installation prefix (/usr)")
         add('--os-name', default='ubuntu',
             help="overrides os_name, set to 'ubuntu' by default")
+        add('--os-not-required', default=False, action="store_true",
+            help="Do not error if this os is not in the platforms "
+                 "list for rosdistro")
 
     def handle_arguments(self, args):
         self.interactive = args.interactive
@@ -535,6 +538,11 @@ class DebianGenerator(BloomGenerator):
             index = rosdistro.get_index(rosdistro.get_index_url())
             distribution_file = rosdistro.get_distribution_file(index, self.rosdistro)
             if self.os_name not in distribution_file.release_platforms:
+                if args.os_not_required:
+                    warning("No platforms defined for os '{0}' in release file for the "
+                            "'{1}' distro. This os was not required; continuing without error."
+                            .format(self.os_name, self.rosdistro))
+                    sys.exit(0)
                 error("No platforms defined for os '{0}' in release file for the '{1}' distro."
                       .format(self.os_name, self.rosdistro), exit=True)
             self.distros = distribution_file.release_platforms[self.os_name]
