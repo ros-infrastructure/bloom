@@ -1,3 +1,12 @@
+0.5.21 (2016-03-04 18:30:00 -0800)
+----------------------------------
+- Debian pkg descriptions are now split into a synopsis and long description.
+- The Conflicts and Replaces fields were moved to the general section in the Debian control file.
+- Generated RPM's now explicitly set the library directory.
+- Added option to allow quiet exit when a given OS has no platforms in the rosdistro.
+- Added new default action item to generate for Debian (e.g. Jessie) in addition to Ubuntu and RPM.
+- Fixed unnecessary ``!!python/unicode`` tags being put in the tracks.yaml.
+
 0.5.20 (2015-04-23 15:00:00 -0800)
 ----------------------------------
 - Updated conditional for special GitHub commit handling logic to include raw.githubusercontent.com.
