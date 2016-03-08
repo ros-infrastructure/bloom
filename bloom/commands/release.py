@@ -1167,6 +1167,12 @@ def perform_release(
     from bloom.commands.git.config import new as new_track_cmd
     release_repo = get_release_repo(repository, distro, override_release_repository_url)
     with change_directory(release_repo.get_path()):
+
+        def validate_repository_name(repository):
+            return '/' not in repository
+        if not validate_repository_name(repository):
+            error("Invalid repository name: {0}".format(repository), exit=True)
+
         # Check to see if the old bloom.conf exists
         if check_for_bloom_conf(repository):
             # Convert to a track
