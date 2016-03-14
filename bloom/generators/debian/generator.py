@@ -218,7 +218,7 @@ def format_description(value):
 
     https://www.debian.org/doc/debian-policy/ch-controlfields.html#s-f-Description
     """
-    value = debianize_string(value)
+    value = debianize_string(value.encode('ascii', 'replace'))
     # NOTE: bit naive, only works for 'properly formatted' pkg descriptions (ie:
     #       'Text. Text'). Extra space to avoid splitting on arbitrary sequences
     #       of characters broken up by dots (version nrs fi).
