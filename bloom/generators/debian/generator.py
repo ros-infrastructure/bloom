@@ -227,7 +227,7 @@ def format_description(value):
         # most likely single line description
         return value
     # format according to rules in linked field documentation
-    return "{0}.\n {1}".format(parts[0], parts[1].strip())
+    return u"{0}.\n {1}".format(parts[0], parts[1].strip())
 
 
 def get_changelogs(package, releaser_history=None):
