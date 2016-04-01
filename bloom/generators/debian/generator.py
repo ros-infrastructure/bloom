@@ -207,6 +207,29 @@ def format_depends(depends, resolved_deps):
     return formatted
 
 
+def format_description(value):
+    """
+    Format proper <synopsis, long desc> string following Debian control file
+    formatting rules. Treat first line in given string as synopsis, everything
+    else as a single, large paragraph.
+
+    Future extensions of this function could convert embedded newlines and / or
+    html into paragraphs in the Description field.
+
+    https://www.debian.org/doc/debian-policy/ch-controlfields.html#s-f-Description
+    """
+    value = debianize_string(value)
+    # NOTE: bit naive, only works for 'properly formatted' pkg descriptions (ie:
+    #       'Text. Text'). Extra space to avoid splitting on arbitrary sequences
+    #       of characters broken up by dots (version nrs fi).
+    parts = value.split('. ', 1)
+    if len(parts) == 1 or len(parts[1]) == 0:
+        # most likely single line description
+        return value
+    # format according to rules in linked field documentation
+    return "{0}.\n {1}".format(parts[0], parts[1].strip())
+
+
 def get_changelogs(package, releaser_history=None):
     if releaser_history is None:
         warning("No historical releaser history, using current maintainer name "
@@ -262,7 +285,7 @@ def generate_substitutions_from_package(
     # Name, Version, Description
     data['Name'] = package.name
     data['Version'] = package.version
-    data['Description'] = debianize_string(package.description)
+    data['Description'] = format_description(package.description)
     # Websites
     websites = [str(url) for url in package.urls if url.type == 'website']
     homepage = websites[0] if websites else ''

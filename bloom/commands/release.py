@@ -262,7 +262,7 @@ def get_distribution_file(distro):
 _rosdistro_distribution_file_urls = {}
 
 
-def get_disitrbution_file_url(distro):
+def get_distribution_file_url(distro):
     global _rosdistro_distribution_file_urls
     if distro not in _rosdistro_distribution_file_urls:
         index = get_index()
@@ -309,7 +309,7 @@ def get_repo_uri(repository, distro):
         url = distribution_file.repositories[repository].release_repository.url
     else:
         error("Specified repository '{0}' is not in the distribution file located at '{1}'"
-              .format(repository, get_disitrbution_file_url(distro)))
+              .format(repository, get_distribution_file_url(distro)))
         matches = difflib.get_close_matches(repository, distribution_file.repositories)
         if matches:
             info(fmt("@{yf}Did you mean one of these: '" + "', '".join([m for m in matches]) + "'?"))
@@ -393,7 +393,7 @@ def list_tracks(repository, distro, override_release_repository_url):
 
 
 def get_relative_distribution_file_path(distro):
-    distribution_file_url = urlparse(get_disitrbution_file_url(distro))
+    distribution_file_url = urlparse(get_distribution_file_url(distro))
     index_file_url = urlparse(rosdistro.get_index_url())
     return os.path.relpath(distribution_file_url.path,
                            os.path.commonprefix([index_file_url.path, distribution_file_url.path]))
@@ -569,7 +569,7 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
     distro_file_name = get_relative_distribution_file_path(distro)
     updated_distribution_file = rosdistro.DistributionFile(distro, distribution_dict)
     distro_dump = yaml_from_distribution_file(updated_distribution_file)
-    distro_file_raw = load_url_to_file_handle(get_disitrbution_file_url(distro)).read()
+    distro_file_raw = load_url_to_file_handle(get_distribution_file_url(distro)).read()
     if distro_file_raw != distro_dump:
         # Calculate the diff
         udiff = difflib.unified_diff(distro_file_raw.splitlines(), distro_dump.splitlines(),
@@ -765,7 +765,7 @@ def open_pull_request(track, repository, distro, interactive, override_release_r
     version = updated_distribution_file.repositories[repository].release_repository.version
     updated_distro_file_yaml = yaml_from_distribution_file(updated_distribution_file)
     # Determine if the distro file is hosted on github...
-    base_org, base_repo, base_branch, base_path = get_gh_info(get_disitrbution_file_url(distro))
+    base_org, base_repo, base_branch, base_path = get_gh_info(get_distribution_file_url(distro))
     if None in [base_org, base_repo, base_branch, base_path]:
         warning("Automated pull request only available via github.com")
         return
@@ -946,6 +946,7 @@ The packages in the `{repository}` repository were released into the \
         release_repo_url = reps[repository].release_repository.url
     msg += """
 Version of package(s) in repository `{repo}`:
+
 - upstream repository: {upstream_repo_url}
 - release repository: {release_repo_url}
 - rosdistro version: `{rosdistro_pv}`
@@ -953,6 +954,7 @@ Version of package(s) in repository `{repo}`:
 - new version: `{new_pv}`
 
 Versions of tools used:
+
 - bloom version: `{bloom_v}`
 - catkin_pkg version: `{catkin_pkg_v}`
 - rosdep version: `{rosdep_v}`
@@ -1231,7 +1233,7 @@ def perform_release(
         # Propose github pull request
         info(fmt("@{gf}@!==> @|") +
              "Generating pull request to distro file located at '{0}'"
-             .format(get_disitrbution_file_url(distro)))
+             .format(get_distribution_file_url(distro)))
         try:
             pull_request_url = open_pull_request(
                 track, repository, distro, interactive, override_release_repository_url
@@ -1243,7 +1245,7 @@ def perform_release(
             else:
                 info("The release of your packages was successful, but the pull request failed.")
                 info("Please manually open a pull request by editing the file here: '{0}'"
-                     .format(get_disitrbution_file_url(distro)))
+                     .format(get_distribution_file_url(distro)))
                 info(fmt(_error) + "No pull request opened.")
         except Exception as e:
             debug(traceback.format_exc())
