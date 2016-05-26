@@ -786,32 +786,21 @@ def open_pull_request(track, repository, distro, interactive, override_release_r
     else:
         info(fmt("@{bf}@!==> @|@!Checking on GitHub for a fork to make the pull request from..."))
         # It is not, so a fork will be required
-        # Check if a fork already exists on the user's account with the same name
-        base_full_name = '{base_org}/{base_repo}'.format(**locals())
+        # Check if a fork already exists on the user's account
+
         try:
-            repo_data = gh.get_repo(gh.username, base_repo)
-            if repo_data.get('fork', False):  # Check if it is a fork
-                # If it is, check that it is a fork of the destination
-                parent = repo_data.get('parent', {}).get('full_name', None)
-                if parent == base_full_name:
-                    # This is a valid fork
-                    head_repo = base_repo
+            repo_forks = gh.list_forks(base_org, base_repo)
+            user_forks = [r for r in repo_forks if r.get('owner', {}).get('login', '') == gh.username]
+            # github allows only 1 fork per org as far as I know. We just take the first one.
+            head_repo = user_forks[0] if user_forks else None
+
         except GithubException as exc:
             debug("Received GithubException while checking for fork: {exc}".format(**locals()))
             pass  # 404 or unauthorized, but unauthorized should have been caught above
-        # If not head_repo, then either the fork has a different name, or there isn't one
-        if head_repo is None:
-            info(fmt("@{bf}@!==> @|@!" + "{head_org}/{base_repo} is not a fork, searching...".format(**locals())))
-            # First we should look at every repository for the user and see if they are a fork
-            user_repos = gh.list_repos(gh.username)
-            for repo in user_repos:
-                # If it is a fork and the parent is base_org/base_repo
-                if repo.get('fork', False) and repo.get('parent', {}).get('full_name', '') == base_full_name:
-                    # Then this is a valid fork
-                    head_repo = repo['name']
+
         # If not head_repo still, a fork does not exist and must be created
         if head_repo is None:
-            warning("Could not find a fork of {base_full_name} on the {gh.username} GitHub account."
+            warning("Could not find a fork of {base_org}/{base_repo} on the {gh.username} GitHub account."
                     .format(**locals()))
             warning("Would you like to create one now?")
             if not maybe_continue():
@@ -819,11 +808,11 @@ def open_pull_request(track, repository, distro, interactive, override_release_r
                 return
             # Create a fork
             try:
-                gh.create_fork(base_org, base_repo)  # Will raise if not successful
-                head_repo = base_repo
+                head_repo = gh.create_fork(base_org, base_repo)  # Will raise if not successful
             except GithubException as exc:
                 error("Aborting pull request: {0}".format(exc))
                 return
+    head_repo = head_repo.get('name', '')
     info(fmt("@{bf}@!==> @|@!" +
              "Using this fork to make a pull request from: {head_org}/{head_repo}".format(**locals())))
     # Clone the fork
