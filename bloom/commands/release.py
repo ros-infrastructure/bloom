@@ -54,11 +54,6 @@ import yaml
 
 from pkg_resources import parse_version
 
-try:
-    from httplib import HTTPSConnection
-except ImportError:
-    from http.client import HTTPSConnection
-
 # python2/3 compatibility
 try:
     from urllib.parse import urlparse
@@ -628,18 +623,6 @@ def get_gh_info(url):
     if len(url_paths) < 5:
         return None, None, None, None
     return url_paths[1], url_paths[2], url_paths[3], '/'.join(url_paths[4:])
-
-
-def create_fork(org, repo, user, password):
-    msg = "Creating fork: {0}:{1} => {2}:{1}".format(org, repo, user)
-    info(fmt("@{bf}@!==> @|@!" + str(msg)))
-    headers = {}
-    headers["Authorization"] = "Basic {0}".format(base64.b64encode('{0}:{1}'.format(user, password)))
-    conn = HTTPSConnection('api.github.com')
-    conn.request('POST', '/repos/{0}/{1}/forks'.format(org, repo), json.dumps({}), headers)
-    resp = conn.getresponse()
-    if str(resp.status) != '202':
-        error("Failed to create fork: {0} {1}".format(resp.status, resp.reason), exit=True)
 
 
 _gh = None

@@ -42,10 +42,19 @@ import datetime
 import json
 import socket
 
+from urlparse import urlunsplit
+from urllib import urlencode
+
 try:
-    from httplib import HTTPSConnection
+    # Python2
+    from urllib2 import HTTPError
+    from urllib2 import URLError
+    from urllib2 import Request, urlopen
 except ImportError:
-    from http.client import HTTPSConnection
+    # Python3
+    from urllib.error import HTTPError
+    from urllib.error import URLError
+    from urllib.request import Request, urlopen
 
 import bloom
 
@@ -68,24 +77,36 @@ def get_bloom_headers(auth=None):
 
 
 def do_github_get_req(path, auth=None, site='api.github.com'):
-    headers = get_bloom_headers(auth)
-    conn = HTTPSConnection(site)
-    conn.request('GET', path, '', headers)
-    return conn.getresponse()
+    return do_github_post_req(path, None, auth, site)
 
 
-def do_github_post_req(path, data, auth=None, site='api.github.com'):
+def do_github_post_req(path, data=None, auth=None, site='api.github.com'):
     headers = get_bloom_headers(auth)
-    conn = HTTPSConnection(site)
-    conn.request('POST', path, json.dumps(data), headers)
-    return conn.getresponse()
+    url = urlunsplit(['https', site, path, '', ''])
+    if data is None:
+        request = Request(url, headers=headers)  # GET
+    else:
+        request = Request(url, data=json.dumps(data), headers=headers)  # POST
+
+    try:
+        response = urlopen(request, timeout=120)
+    except HTTPError as e:
+        raise GithubException(str(e) + ' (%s)' % url)
+    except URLError as e:
+        raise GithubException(str(e) + ' (%s)' % url)
+
+    return response
 
 
 class GithubException(Exception):
-    def __init__(self, msg, resp):
-        msg = "{msg}: {resp.status} {resp.reason}".format(**locals())
+    def __init__(self, msg, resp=None):
+        if resp:
+            msg = "{msg}: {resp.getcode()}".format(**locals())
+        else:
+            msg = "{msg}: {resp}".format(**locals())
         super(GithubException, self).__init__(msg)
-        self.resp = resp
+        if resp:
+            self.resp = resp
 
 
 class Github(object):
@@ -105,7 +126,7 @@ class Github(object):
         }
         resp = do_github_post_req('/authorizations', payload, self.auth)
         resp_data = json.loads(resp.read())
-        resp_code = '{0}'.format(resp.status)
+        resp_code = '{0}'.format(resp.getcode())
         if resp_code not in ['201', '202'] or 'token' not in resp_data:
             raise GithubException("Failed to create a new oauth authorization", resp)
         token = resp_data['token']
@@ -116,7 +137,7 @@ class Github(object):
 
     def get_repo(self, owner, repo):
         resp = do_github_get_req('/repos/{owner}/{repo}'.format(**locals()), auth=self.auth)
-        if '{0}'.format(resp.status) not in ['200']:
+        if '{0}'.format(resp.getcode()) not in ['200']:
             raise GithubException(
                 "Failed to get information for repository '{owner}/{repo}'".format(**locals()), resp)
         resp_data = json.loads(resp.read())
@@ -128,7 +149,7 @@ class Github(object):
         while True:
             url = '/users/{user}/repos?page={page}'.format(**locals())
             resp = do_github_get_req(url, auth=self.auth)
-            if '{0}'.format(resp.status) not in ['200']:
+            if '{0}'.format(resp.getcode()) not in ['200']:
                 raise GithubException(
                     "Failed to list repositories for user '{user}' using url '{url}'".format(**locals()), resp)
             new_repos = json.loads(resp.read())
@@ -140,7 +161,7 @@ class Github(object):
     def get_branch(self, owner, repo, branch):
         url = '/repos/{owner}/{repo}/branches/{branch}'.format(**locals())
         resp = do_github_get_req(url, auth=self.auth)
-        if '{0}'.format(resp.status) not in ['200']:
+        if '{0}'.format(resp.getcode()) not in ['200']:
             raise GithubException("Failed to get branch information for '{branch}' on '{owner}/{repo}' using '{url}'"
                                   .format(**locals()),
                                   resp)
@@ -152,7 +173,7 @@ class Github(object):
         while True:
             url = '/repos/{owner}/{repo}/branches?page={page}&per_page=2'.format(**locals())
             resp = do_github_get_req(url, auth=self.auth)
-            if '{0}'.format(resp.status) not in ['200']:
+            if '{0}'.format(resp.getcode()) not in ['200']:
                 raise GithubException(
                     "Failed to list branches for '{owner}/{repo}' using url '{url}'".format(**locals()), resp)
             new_branches = json.loads(resp.read())
@@ -163,7 +184,7 @@ class Github(object):
 
     def create_fork(self, parent_org, parent_repo):
         resp = do_github_post_req('/repos/{parent_org}/{parent_repo}/forks'.format(**locals()), {}, auth=self.auth)
-        if '{0}'.format(resp.status) not in ['200', '202']:
+        if '{0}'.format(resp.getcode()) not in ['200', '202']:
             raise GithubException(
                 "Failed to create a fork of '{parent_org}/{parent_repo}'".format(**locals()), resp)
         return json.loads(resp.read())
@@ -174,7 +195,7 @@ class Github(object):
         while True:
             url = '/repos/{org}/{repo}/forks?page={page}'.format(**locals())
             resp = do_github_get_req(url, auth=self.auth)
-            if '{0}'.format(resp.status) not in ['200', '202']:
+            if '{0}'.format(resp.getcode()) not in ['200', '202']:
                 raise GithubException(
                     "Failed to list forks of '{org}/{repo}'".format(**locals()), resp)
             new_forks = json.loads(resp.read())
@@ -191,7 +212,7 @@ class Github(object):
             'base': branch
         }
         resp = do_github_post_req('/repos/{org}/{repo}/pulls'.format(**locals()), data, self.auth)
-        if '{0}'.format(resp.status) not in ['200', '201']:
+        if '{0}'.format(resp.getcode()) not in ['200', '201']:
             raise GithubException("Failed to create pull request", resp)
         resp_json = json.loads(resp.read())
         return resp_json['html_url']
