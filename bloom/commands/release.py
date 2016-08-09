@@ -1017,9 +1017,9 @@ def _perform_release(
         info(fmt("@{bf}@!==> @|@!") + str(cmd))
         subprocess.check_call(cmd, shell=True)
     except subprocess.CalledProcessError:
-        error("Cannot push to remote release repository."
-              "Hint: If you typed in your username/password just now and you have two-factor authentication,"
-              "see http://wiki.ros.org/bloom/Tutorials/GithubManualAuthorization", exit=True)
+        error("Cannot push to remote release repository.\n"
+              "Hint: If you just typed in your username/password and you have two-factor authentication,"
+              "see:\n  http://wiki.ros.org/bloom/Tutorials/GithubManualAuthorization", exit=True)
     # Write the track config before releasing
     write_tracks_dict_raw(tracks_dict)
     # Run the release
