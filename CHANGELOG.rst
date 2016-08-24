@@ -1,3 +1,11 @@
+0.5.22 (2016-08-24 13:30:00 -0800)
+----------------------------------
+- Repository names are now checked for bogus contents, to help detect accidental input.
+- Fixed to allow use of unicode in the long description.
+- Fixed a pagination related bug that occurred when trying to find a users rosdistro fork on GitHub.
+- Updated GitHub interactions to allow for use from behind proxy servers.
+- Added a new message to help people who have two-factor authentication.
+
 0.5.21 (2016-03-04 18:30:00 -0800)
 ----------------------------------
 - Debian pkg descriptions are now split into a synopsis and long description.
