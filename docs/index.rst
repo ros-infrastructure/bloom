@@ -40,6 +40,11 @@ On other systems you can install bloom via pypi::
 
 Note: pip will not notify you of updates, but bloom will notify you when you are using a version of bloom that is not the latest released.
 
+From source::
+
+    $ python setup.py build
+    $ sudo python setup.py install
+
 How do I release something with bloom?
 ---------------------------------------
 
