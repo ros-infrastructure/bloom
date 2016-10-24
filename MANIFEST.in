@@ -1,2 +1,3 @@
 recursive-include bloom/generators/debian/templates *
 recursive-include bloom/generators/rpm/templates *
+recursive-include bloom/generators/arch/templates *
