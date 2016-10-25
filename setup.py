@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import sys
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 install_requires = [
     'catkin-pkg >= 0.2.2',
@@ -22,7 +22,7 @@ if sys.version_info[0] == 2 and sys.version_info[1] <= 6:
 
 setup(
     name='bloom',
-    version='0.5.22',
+    version='0.5.23',
     packages=find_packages(exclude=['test']),
     package_data={
         'bloom.generators.debian': [

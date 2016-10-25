@@ -1,3 +1,8 @@
+0.5.23 (2016-10-25 11:45:00 -0800)
+----------------------------------
+- Fix to support change in output with git 2.9.3.
+- Added more detailed message about skipping non-required distributions, e.g. Fedora.
+
 0.5.22 (2016-08-24 13:30:00 -0800)
 ----------------------------------
 - Repository names are now checked for bogus contents, to help detect accidental input.
