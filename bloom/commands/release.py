@@ -765,7 +765,7 @@ def open_pull_request(track, repository, distro, interactive, override_release_r
     # Check if the github user and the base org are the same
     if gh.username == base_org:
         # If it is, then a fork is not necessary
-        head_repo = base_repo
+        head_repo = gh.get_repo(base_org, base_repo)
     else:
         info(fmt("@{bf}@!==> @|@!Checking on GitHub for a fork to make the pull request from..."))
         # It is not, so a fork will be required
