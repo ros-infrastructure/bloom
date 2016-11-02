@@ -223,7 +223,7 @@ def generate_substitutions_from_package(
         warning("No homepage set")
     # Package Release Number
     # Bloom's release number starts at 0 however Arch Linux expects it to starts at 1 by convention.
-    data['Pkgrel'] = str(int(pkgrel)+1)
+    data['Pkgrel'] = pkgrel
     # Package name
     data['Package'] = sanitize_package_name(package.name)
     # Installation prefix
