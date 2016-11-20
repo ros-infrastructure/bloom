@@ -1259,6 +1259,8 @@ def get_argument_parser():
         help="Pretends to push and release")
     add('--no-web', default=False, action='store_true',
         help="prevents a web browser from being opened at the end")
+    add('--skip-pip', default=False, action='store_true',
+        help="skip all pip rosdep keys")
     add('--pull-request-only', '-p', default=False, action='store_true',
         help="skips the release actions and only tries to open a pull request")
     add('--override-release-repository-url', default=None,
@@ -1284,6 +1286,9 @@ def main(sysargs=None):
 
     if args.no_web:
         os.environ['BLOOM_NO_WEBBROWSER'] = '1'
+
+    if args.skip_pip:
+        os.environ['BLOOM_SKIP_PIP'] = '1'
 
     try:
         os.environ['BLOOM_TRACK'] = args.track
