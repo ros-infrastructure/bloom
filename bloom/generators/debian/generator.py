@@ -278,7 +278,8 @@ def generate_substitutions_from_package(
     deb_inc=0,
     peer_packages=None,
     releaser_history=None,
-    fallback_resolver=None
+    fallback_resolver=None,
+    native=False
 ):
     peer_packages = peer_packages or []
     data = {}
@@ -293,7 +294,9 @@ def generate_substitutions_from_package(
         warning("No homepage set, defaulting to ''")
     data['Homepage'] = homepage
     # Debian Increment Number
-    data['DebianInc'] = deb_inc
+    data['DebianInc'] = '' if native else '-{0}'.format(deb_inc)
+    # Debian Package Format
+    data['format'] = 'native' if native else 'quilt'
     # Package name
     data['Package'] = sanitize_package_name(package.name)
     # Installation prefix
@@ -836,7 +839,7 @@ class DebianGenerator(BloomGenerator):
                                             self.debian_inc)
 
     def generate_tag_name(self, data):
-        tag_name = '{Package}_{Version}-{DebianInc}_{Distribution}'
+        tag_name = '{Package}_{Version}{DebianInc}_{Distribution}'
         tag_name = 'debian/' + tag_name.format(**data)
         return tag_name
 
