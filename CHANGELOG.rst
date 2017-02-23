@@ -1,3 +1,9 @@
+0.5.24 (2017-02-23 11:45:00 -0800)
+----------------------------------
+- Fixed the way ros/rosdistro is forked.
+- Added a ``--native`` option as an alternative to the default ``quilt`` for the Debian format.
+- Added a prompt to ask users if they want to enable pull request building with the build farm.
+
 0.5.23 (2016-10-25 11:45:00 -0800)
 ----------------------------------
 - Fix to support change in output with git 2.9.3.
