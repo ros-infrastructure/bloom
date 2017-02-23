@@ -527,6 +527,14 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
             info("Please enter information which points to the active development branch for this repository.")
             info("This information is used to run continuous integration jobs and for developers to checkout from.")
             source = get_repository_info_from_user('source', defaults)
+
+            if validate_github_url(source['url'], 'source'):
+                info("Since you are on github we can add a job to run your tests on each pull request."
+                     "If you would like to turn this on please see "
+                     "http://wiki.ros.org/buildfarm/Pull%20request%20testing for more information. "
+                     "There is more setup required to setup the hooks correctly. ")
+                if maybe_continue(msg='Would you like to turn on pull request testing?', default='no'):
+                    source['test_pull_requests'] = 'true'
         distribution_dict['repositories'][repository]['source'] = source
 
     # Ask for maintainership information
