@@ -512,7 +512,8 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
         source = distribution_dict['repositories'][repository].get('source', {})
         if not source and maybe_continue(msg='Would you like to add source information for this repository?'):
             defaults = None
-            info(fmt("@{gf}@!==> @|") + "Looking for a source entry for this repository in a different distribution...")
+            info(fmt("@{gf}@!==> @|") +
+                 "Looking for a source entry for this repository in a different distribution...")
             default_distro, default_source = get_most_recent('source', repository)
             if default_distro is None:
                 warning("No existing source entries found for use as defaults.")
