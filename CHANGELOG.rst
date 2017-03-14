@@ -1,3 +1,8 @@
+0.5.25 (2017-02-23 11:45:00 -0800)
+----------------------------------
+- Added the ``auto-commit`` option to quilt so that ``orig.tar.gz`` are reused release to release.
+  See: `#419 <https://github.com/ros-infrastructure/bloom/pull/419>`_
+
 0.5.24 (2017-02-23 11:45:00 -0800)
 ----------------------------------
 - Fixed the way ros/rosdistro is forked.
