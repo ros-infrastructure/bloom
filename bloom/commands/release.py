@@ -534,7 +534,7 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
                      "If you would like to turn this on please see "
                      "http://wiki.ros.org/buildfarm/Pull%20request%20testing for more information. "
                      "There is more setup required to setup the hooks correctly. ")
-                if maybe_continue(msg='Would you like to turn on pull request testing?', default='no'):
+                if maybe_continue(msg='Would you like to turn on pull request testing?', default='n'):
                     source['test_pull_requests'] = 'true'
         distribution_dict['repositories'][repository]['source'] = source
 
