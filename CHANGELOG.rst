@@ -1,3 +1,7 @@
+0.5.26 (2017-03-28 6:15:00 -0800)
+---------------------------------
+- Fix default answer to prompt in pull request field.
+
 0.5.25 (2017-02-23 11:45:00 -0800)
 ----------------------------------
 - Added the ``auto-commit`` option to quilt so that ``orig.tar.gz`` are reused release to release.
