@@ -40,3 +40,4 @@ pre-release:
 
 release: pre-release
 	@echo "Now push the result with git push --all"
+butts lol
