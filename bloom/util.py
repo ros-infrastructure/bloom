@@ -263,9 +263,9 @@ _quiet = False
 _disable_git_clone = False
 _disable_git_clone_quiet = False
 _distro_list_prompt = [
-    'hydro',
     'indigo',
-    'jade',
+    'kinetic',
+    'lunar',
 ]
 
 
