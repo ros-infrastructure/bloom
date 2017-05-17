@@ -326,6 +326,8 @@ def generate_substitutions_from_package(
     data['Conflicts'] = sorted(
         set(format_depends(package.conflicts, resolved_deps))
     )
+
+    data['debhelper_buildsystem_options'] = get_debhelper_buildsystem(package)
     # Set the distribution
     data['Distribution'] = os_version
     # Use the time stamp to set the date strings
@@ -509,6 +511,26 @@ def debianize_string(value):
 
 def sanitize_package_name(name):
     return name.replace('_', '-')
+
+def get_debhelper_buildsystem(package):
+    build_types = {
+            'ament_cmake': '--buildsystem=cmake',
+            'ament_python': '--buildsystem=pybuild --with python3',
+            }
+    # This inlines changes upcoming in catkin_pkg
+    # https://github.com/ros-infrastructure/catkin_pkg/pull/168
+    # We can simplify this function when catkin_pkg is released.
+    build_type = [e.content for e in package.exports if e.tagname == 'build_type']
+    if build_type is None:
+        error('ROS 2 packages currently need an explicit build type.', exit=True)
+    if len(build_type) == 1:
+        build_type = build_type[0]
+        if build_type not in build_types:
+            error('The build type `{build_type}`is not supported by this version of bloom.'
+                    .format(build_type=package_build_type), exit=True)
+        return build_types[build_type]
+    else:
+        error('Only one build_type can be supported.', exit=True)
 
 
 class DebianGenerator(BloomGenerator):
