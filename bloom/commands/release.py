@@ -547,10 +547,11 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
             info("Valid maintenance statuses:")
             info("- developed: active development is in progress")
             info("- maintained: no new development, but bug fixes and pull requests are addressed")
+            info("- unmaintained: looking for new maintainer, bug fixes and pull requests will not be addressed, but release into new ros distro")
             info("- end-of-life: should not be used, will disappear at some point")
             while True:
                 status = safe_input('Status: ')
-                if status in ['developed', 'maintained', 'end-of-life']:
+                if status in ['developed', 'maintained', 'unmaintained', 'end-of-life']:
                     break
                 error("'{0}' is not a valid status.".format(status))
                 if not maybe_continue(msg='Try again'):
