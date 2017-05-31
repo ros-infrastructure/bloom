@@ -308,6 +308,7 @@ def generate_substitutions_from_package(
     # Resolve dependencies
     depends = package.run_depends + package.buildtool_export_depends
     build_depends = package.build_depends + package.buildtool_depends + package.test_depends
+
     unresolved_keys = depends + build_depends + package.replaces + package.conflicts
     # The installer key is not considered here, but it is checked when the keys are checked before this
     resolved_deps = resolve_dependencies(unresolved_keys, os_name,
@@ -326,6 +327,8 @@ def generate_substitutions_from_package(
     data['Conflicts'] = sorted(
         set(format_depends(package.conflicts, resolved_deps))
     )
+
+    set_debhelper_options(data, package)
     # Set the distribution
     data['Distribution'] = os_version
     # Use the time stamp to set the date strings
@@ -509,6 +512,32 @@ def debianize_string(value):
 
 def sanitize_package_name(name):
     return name.replace('_', '-')
+
+def set_debhelper_options(data, package):
+    debhelper_options = {
+            'ament_cmake': {
+                'toplevel': '--buildsystem=cmake',
+                'autoconfigure': '-- -DCMAKE_INSTALL_PREFIX="{0}" -DAMENT_PREFIX_PATH="{0}"'.format(data['InstallationPrefix'])
+                },
+            'ament_python': {
+                'toplevel': '--buildsystem=pybuild --with python3',
+                },
+            }
+    # This inlines changes upcoming in catkin_pkg
+    # https://github.com/ros-infrastructure/catkin_pkg/pull/168
+    # We can simplify this function when catkin_pkg is released.
+    build_type = [e.content for e in package.exports if e.tagname == 'build_type']
+    if build_type is None:
+        error('ROS 2 packages currently need an explicit build type.', exit=True)
+    if len(build_type) == 1:
+        build_type = build_type[0]
+        if build_type not in debhelper_options:
+            error('The build type `{build_type}`is not supported by this version of bloom.'
+                    .format(build_type=build_type), exit=True)
+        data['debhelper_toplevel_options'] = debhelper_options[build_type].get('toplevel', '')
+        data['debhelper_autoconfigure_options'] = debhelper_options[build_type].get('autoconfigure', '')
+    else:
+        error('Only one build_type can be supported.', exit=True)
 
 
 class DebianGenerator(BloomGenerator):
