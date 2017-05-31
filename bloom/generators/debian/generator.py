@@ -522,6 +522,10 @@ def set_debhelper_options(data, package):
             'ament_python': {
                 'toplevel': '--buildsystem=pybuild --with python3',
                 },
+            'cmake': {
+                'toplevel': '--buildsystem=cmake',
+                'autoconfigure': '-- -DCMAKE_INSTALL_PREFIX="{0}"'.format(data['InstallationPrefix'])
+                },
             }
     # This inlines changes upcoming in catkin_pkg
     # https://github.com/ros-infrastructure/catkin_pkg/pull/168
