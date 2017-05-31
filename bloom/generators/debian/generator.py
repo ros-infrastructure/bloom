@@ -513,20 +513,22 @@ def debianize_string(value):
 def sanitize_package_name(name):
     return name.replace('_', '-')
 
+
 def set_debhelper_options(data, package):
     debhelper_options = {
-            'ament_cmake': {
-                'toplevel': '--buildsystem=cmake',
-                'autoconfigure': '-- -DCMAKE_INSTALL_PREFIX="{0}" -DAMENT_PREFIX_PATH="{0}"'.format(data['InstallationPrefix'])
-                },
-            'ament_python': {
-                'toplevel': '--buildsystem=pybuild --with python3',
-                },
-            'cmake': {
-                'toplevel': '--buildsystem=cmake',
-                'autoconfigure': '-- -DCMAKE_INSTALL_PREFIX="{0}"'.format(data['InstallationPrefix'])
-                },
-            }
+        'ament_cmake': {
+            'toplevel': '--buildsystem=cmake',
+            'autoconfigure': '-- -DCMAKE_INSTALL_PREFIX="{0}" -DAMENT_PREFIX_PATH="{0}"'
+            .format(data['InstallationPrefix'])
+        },
+        'ament_python': {
+            'toplevel': '--buildsystem=pybuild --with python3',
+        },
+        'cmake': {
+            'toplevel': '--buildsystem=cmake',
+            'autoconfigure': '-- -DCMAKE_INSTALL_PREFIX="{0}"'.format(data['InstallationPrefix'])
+        },
+    }
     # This inlines changes upcoming in catkin_pkg
     # https://github.com/ros-infrastructure/catkin_pkg/pull/168
     # We can simplify this function when catkin_pkg is released.
@@ -537,7 +539,7 @@ def set_debhelper_options(data, package):
         build_type = build_type[0]
         if build_type not in debhelper_options:
             error('The build type `{build_type}`is not supported by this version of bloom.'
-                    .format(build_type=build_type), exit=True)
+                  .format(build_type=build_type), exit=True)
         data['debhelper_toplevel_options'] = debhelper_options[build_type].get('toplevel', '')
         data['debhelper_autoconfigure_options'] = debhelper_options[build_type].get('autoconfigure', '')
     else:
