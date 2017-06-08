@@ -19,6 +19,9 @@ export PKG_CONFIG_PATH=@(InstallationPrefix)/lib/pkgconfig
 # 	https://github.com/ros-infrastructure/bloom/issues/327
 export DEB_CXXFLAGS_MAINT_APPEND=-DNDEBUG
 
+@[if LibDir is not None]export CMAKE_ADDITIONAL_FLAGS="-DCMAKE_INSTALL_LIBDIR='@(LibDir)'"@[end if]
+
+
 %:
 	dh  $@@
 
@@ -28,9 +31,11 @@ override_dh_auto_configure:
 	# set things like CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
 	if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi && \
 	dh_auto_configure -- \
-		-DCATKIN_BUILD_BINARY_PACKAGE="1" \
-		-DCMAKE_INSTALL_PREFIX="@(InstallationPrefix)" \
-		-DCMAKE_PREFIX_PATH="@(InstallationPrefix)"
+		-DCATKIN_BUILD_BINARY_PACKAGE="1"		\
+		-DCMAKE_INSTALL_PREFIX="@(InstallationPrefix)"	\
+		-DCMAKE_PREFIX_PATH="@(InstallationPrefix)"	\
+		$(CMAKE_ADDITIONAL_FLAGS)
+
 
 override_dh_auto_build:
 	# In case we're installing to a non-standard location, look for a setup.sh
