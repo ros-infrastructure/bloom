@@ -36,7 +36,6 @@ from __future__ import unicode_literals
 
 import argparse
 import atexit
-import base64
 import datetime
 import difflib
 import getpass
@@ -73,8 +72,6 @@ from bloom.git import get_current_branch
 from bloom.git import inbranch
 from bloom.git import ls_tree
 
-from bloom.github import auth_header_from_basic_auth
-from bloom.github import auth_header_from_oauth_token
 from bloom.github import Github
 from bloom.github import GithubException
 
@@ -104,6 +101,7 @@ from bloom.util import quiet_git_clone_warning
 from bloom.util import safe_input
 from bloom.util import temporary_directory
 from bloom.util import to_unicode
+from bloom.util import auth_header
 
 try:
     import vcstools
@@ -395,7 +393,7 @@ def get_relative_distribution_file_path(distro):
 
 
 def generate_release_tag(distro):
-    return ('release/%s/{package}/{version}' % distro).encode('utf-8')
+    return 'release/%s/{package}/{version}' % distro
 
 
 def generate_ros_distro_diff(track, repository, distro, override_release_repository_url):
@@ -409,26 +407,26 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
     track_dict = get_tracks_dict_raw()['tracks'][track]
     last_version = track_dict['last_version']
     release_inc = track_dict['release_inc']
-    version = '{0}-{1}'.format(last_version, release_inc).encode('utf-8')
+    version = '{0}-{1}'.format(last_version, release_inc)
     # Create a repository if there isn't already one
     if repository not in distribution_dict['repositories']:
         distribution_dict['repositories'][repository] = {}
     # Create a release entry if there isn't already one
     if 'release' not in distribution_dict['repositories'][repository]:
-        distribution_dict['repositories'][repository]['release'.encode('utf-8')] = {
-            'url'.encode('utf-8'): override_release_repository_url or _user_provided_release_url
+        distribution_dict['repositories'][repository]['release'] = {
+            'url': override_release_repository_url or _user_provided_release_url
         }
     # Update the repository
     repo = distribution_dict['repositories'][repository]['release']
     # Consider the override
     if override_release_repository_url is not None:
-        repo['url'.encode('utf-8')] = override_release_repository_url
+        repo['url'] = override_release_repository_url
     if 'tags' not in repo:
-        repo['tags'.encode('utf-8')] = {}
-    repo['tags']['release'.encode('utf-8')] = generate_release_tag(distro)
-    repo['version'.encode('utf-8')] = version
+        repo['tags'] = {}
+    repo['tags']['release'] = generate_release_tag(distro)
+    repo['version'] = version
     if 'packages' not in repo:
-        repo['packages'.encode('utf-8')] = []
+        repo['packages'] = []
     for path, pkg in packages.items():
         if pkg.name not in repo['packages']:
             repo['packages'].append(pkg.name)
@@ -577,8 +575,10 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
     distro_file_raw = load_url_to_file_handle(get_distribution_file_url(distro)).read()
     if distro_file_raw != distro_dump:
         # Calculate the diff
-        udiff = difflib.unified_diff(distro_file_raw.splitlines(), distro_dump.splitlines(),
-                                     fromfile=distro_file_name, tofile=distro_file_name)
+        udiff = difflib.unified_diff(
+                list(map(str, distro_file_raw.splitlines())),
+                list(map(str, distro_dump.splitlines())),
+                fromfile=distro_file_name, tofile=distro_file_name)
         temp_dir = tempfile.mkdtemp()
         udiff_file = os.path.join(temp_dir, repository + '-' + version + '.patch')
         udiff_raw = ''
@@ -625,7 +625,6 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
 
 
 def get_gh_info(url):
-    from urlparse import urlparse
     o = urlparse(url)
     if 'raw.github.com' not in o.netloc and 'raw.githubusercontent.com' not in o.netloc:
         return None, None, None, None
@@ -651,7 +650,7 @@ def get_github_interface(quiet=False):
             token = config.get('oauth_token', None)
             username = config.get('github_user', None)
             if token and username:
-                return Github(username, auth=auth_header_from_oauth_token(token), token=token)
+                return Github(username, auth=auth_header(token=token), token=token)
     if not os.path.isdir(os.path.dirname(oauth_config_path)):
         os.makedirs(os.path.dirname(oauth_config_path))
     if quiet:
@@ -679,7 +678,7 @@ def get_github_interface(quiet=False):
         if not password:
             error("No password was given, aborting.")
             return None
-        gh = Github(username, auth=auth_header_from_basic_auth(username, password))
+        gh = Github(username, auth=auth_header(username=username, password=password))
         try:
             token = gh.create_new_bloom_authorization(update_auth=True)
             with open(oauth_config_path, 'a') as f:

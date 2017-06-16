@@ -38,6 +38,7 @@ from __future__ import print_function
 
 import argparse
 import os
+import base64
 import shutil
 import socket
 import sys
@@ -48,12 +49,12 @@ try:
     # Python2
     from urllib2 import HTTPError
     from urllib2 import URLError
-    from urllib2 import urlopen
+    from urllib2 import urlopen, Request
 except ImportError:
     # Python3
     from urllib.error import HTTPError
     from urllib.error import URLError
-    from urllib.request import urlopen
+    from urllib.request import urlopen, Request
 
 from email.utils import formatdate
 
@@ -77,6 +78,23 @@ from bloom.logging import fmt
 from bloom.logging import info
 from bloom.logging import sanitize
 from bloom.logging import warning
+
+
+GITHUB_USER = os.getenv('GITHUB_USER', None)
+GITHUB_PASSWORD = os.getenv('GITHUB_PASSWORD', None)
+
+
+def auth_header(username=None, password=None, token=None):
+    if username and password:
+        if sys.version_info > (3, 0):
+            userandpass = base64.b64encode(bytes('%s:%s' % (username, password), 'utf-8'))
+        else:
+            userandpass = base64.b64encode('%s:%s' % (username, password))
+        userandpass = userandpass.decode('ascii')
+        return 'Basic %s' % userandpass
+    elif token:
+        return 'token %s' % token
+
 
 try:
     to_unicode = unicode
@@ -195,8 +213,12 @@ def load_url_to_file_handle(url, retry=2, retry_period=1, timeout=10):
     :param timeout: timeout for opening the URL in seconds
     :type timeout: float
     """
+    req = Request(url)
+    if GITHUB_USER and GITHUB_PASSWORD:
+        req.add_header('Authorization', auth_header(
+            username=GITHUB_USER, password=GITHUB_PASSWORD))
     try:
-        fh = urlopen(url, timeout=timeout)
+        fh = urlopen(req, timeout=timeout)
     except HTTPError as e:
         if e.code == 503 and retry:
             time.sleep(retry_period)
