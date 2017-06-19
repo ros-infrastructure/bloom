@@ -86,6 +86,7 @@ from bloom.util import maybe_continue
 try:
     from catkin_pkg.changelog import get_changelog_from_path
     from catkin_pkg.changelog import CHANGELOG_FILENAME
+    from catkin_pkg.package import Dependency
 except ImportError as err:
     debug(traceback.format_exc())
     error("catkin_pkg was not detected, please install it.", exit=True)
@@ -305,9 +306,26 @@ def generate_substitutions_from_package(
     data['Package'] = sanitize_package_name(package.name)
     # Installation prefix
     data['InstallationPrefix'] = installation_prefix
+
     # Resolve dependencies
     depends = package.run_depends + package.buildtool_export_depends
     build_depends = package.build_depends + package.buildtool_depends + package.test_depends
+
+
+    # XXX inject build type specific dependencies.
+    build_type = package.get_build_type()
+    if build_type == 'ament_cmake':
+        pass
+    elif build_type == 'ament_python':
+        build_depends.extend([
+            Dependency('dh-python'),
+            Dependency('python3-all', version_gte='3.5'),
+            Dependency('python3-setuptools'), ])
+    elif build_type == 'cmake':
+        pass
+    else:
+        error('The build type `{build_type}`is not supported by this version of bloom.'
+              .format(build_type=build_type), exit=True)
 
     unresolved_keys = depends + build_depends + package.replaces + package.conflicts
     # The installer key is not considered here, but it is checked when the keys are checked before this
@@ -519,31 +537,27 @@ def set_debhelper_options(data, package):
         'ament_cmake': {
             'toplevel': '--buildsystem=cmake',
             'autoconfigure': '-- -DCMAKE_INSTALL_PREFIX="{0}" -DAMENT_PREFIX_PATH="{0}"'
-            .format(data['InstallationPrefix'])
+            .format(data['InstallationPrefix']),
+            'depends': '${shlibs:Depends}',
         },
         'ament_python': {
             'toplevel': '--buildsystem=pybuild --with python3',
+            'depends': '${python3:Depends}',
         },
         'cmake': {
             'toplevel': '--buildsystem=cmake',
-            'autoconfigure': '-- -DCMAKE_INSTALL_PREFIX="{0}"'.format(data['InstallationPrefix'])
+            'autoconfigure': '-- -DCMAKE_INSTALL_PREFIX="{0}"'.format(data['InstallationPrefix']),
+            'depends': '${shlibs:Depends}',
         },
     }
-    # This inlines changes upcoming in catkin_pkg
-    # https://github.com/ros-infrastructure/catkin_pkg/pull/168
-    # We can simplify this function when catkin_pkg is released.
-    build_type = [e.content for e in package.exports if e.tagname == 'build_type']
-    if build_type is None:
-        error('ROS 2 packages currently need an explicit build type.', exit=True)
-    if len(build_type) == 1:
-        build_type = build_type[0]
-        if build_type not in debhelper_options:
-            error('The build type `{build_type}`is not supported by this version of bloom.'
-                  .format(build_type=build_type), exit=True)
-        data['debhelper_toplevel_options'] = debhelper_options[build_type].get('toplevel', '')
-        data['debhelper_autoconfigure_options'] = debhelper_options[build_type].get('autoconfigure', '')
-    else:
-        error('Only one build_type can be supported.', exit=True)
+
+    build_type = package.get_build_type()
+    if build_type not in debhelper_options:
+        error('The build type `{build_type}`is not supported by this version of bloom.'
+              .format(build_type=build_type), exit=True)
+    data['debhelper_toplevel_options'] = debhelper_options[build_type].get('toplevel', '')
+    data['debhelper_autoconfigure_options'] = debhelper_options[build_type].get('autoconfigure', '')
+    data['DebhelperDepends'] = debhelper_options[build_type].get('depends', '')
 
 
 class DebianGenerator(BloomGenerator):
