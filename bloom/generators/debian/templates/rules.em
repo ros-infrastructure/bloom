@@ -18,6 +18,11 @@ export PKG_CONFIG_PATH=@(InstallationPrefix)/lib/pkgconfig
 # 	https://github.com/ros-infrastructure/bloom/issues/327
 export DEB_CXXFLAGS_MAINT_APPEND=-DNDEBUG
 
+# Build type specific exports if any.
+@[for var in exportvars]@
+export @(var[0])=@(var[1])
+@[end for]@
+
 %:
 	dh $@@ -v @(debhelper_toplevel_options)
 

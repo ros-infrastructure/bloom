@@ -311,7 +311,6 @@ def generate_substitutions_from_package(
     depends = package.run_depends + package.buildtool_export_depends
     build_depends = package.build_depends + package.buildtool_depends + package.test_depends
 
-
     # XXX inject build type specific dependencies.
     build_type = package.get_build_type()
     if build_type == 'ament_cmake':
@@ -543,11 +542,15 @@ def set_debhelper_options(data, package):
         'ament_python': {
             'toplevel': '--buildsystem=pybuild --with python3',
             'depends': '${python3:Depends}',
+            'exportvars': [('PYBUILD_INSTALL_ARGS',
+                           '--prefix="{0}" --install-lib="{0}/{{interpreter}}/site-packages"'
+                            .format(data['InstallationPrefix']))],
         },
         'cmake': {
             'toplevel': '--buildsystem=cmake',
             'autoconfigure': '-- -DCMAKE_INSTALL_PREFIX="{0}"'.format(data['InstallationPrefix']),
             'depends': '${shlibs:Depends}',
+            'exportvars': [],
         },
     }
 
@@ -558,6 +561,7 @@ def set_debhelper_options(data, package):
     data['debhelper_toplevel_options'] = debhelper_options[build_type].get('toplevel', '')
     data['debhelper_autoconfigure_options'] = debhelper_options[build_type].get('autoconfigure', '')
     data['DebhelperDepends'] = debhelper_options[build_type].get('depends', '')
+    data['exportvars'] = debhelper_options[build_type].get('exportvars', [])
 
 
 class DebianGenerator(BloomGenerator):
