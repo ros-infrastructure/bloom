@@ -543,7 +543,7 @@ def set_debhelper_options(data, package):
             'toplevel': '--buildsystem=pybuild --with python3',
             'depends': '${python3:Depends}',
             'exportvars': [('PYBUILD_INSTALL_ARGS',
-                           '--prefix="{0}" --install-lib="{0}/{{interpreter}}/site-packages"'
+                           '--prefix="{0}" --install-lib="{0}/lib/{{interpreter}}/site-packages"'
                             .format(data['InstallationPrefix']))],
         },
         'cmake': {
