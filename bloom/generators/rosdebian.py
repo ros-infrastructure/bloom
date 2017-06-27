@@ -87,7 +87,8 @@ class RosDebianGenerator(DebianGenerator):
         )
         subs['Package'] = rosify_package_name(subs['Package'], self.rosdistro)
         # XXX Add workspace package to runtime and buildtime dependencies.
-        # This is a ros2-specific hack that should be factored better into the buildfarm/bloom release process.
+        # This is a ros2-specific hack that should be factored better into the buildfarm/bloom
+        # release process. Also, it's likely to create a circular dependency if we're not careful.
         if package.name not in ['ament_cmake_core', 'ament_package', 'ros_workspace']:
             workspace_pkg_name = rosify_package_name('ros-workspace', self.rosdistro)
             subs['BuildDepends'].append(workspace_pkg_name)
