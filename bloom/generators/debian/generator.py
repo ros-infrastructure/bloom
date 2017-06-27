@@ -311,27 +311,13 @@ def generate_substitutions_from_package(
     depends = package.run_depends + package.buildtool_export_depends
     build_depends = package.build_depends + package.buildtool_depends + package.test_depends
 
-    # XXX inject build type specific dependencies.
-    build_type = package.get_build_type()
-    if build_type == 'ament_cmake':
-        pass
-    elif build_type == 'ament_python':
-        build_depends.extend([
-            Dependency('dh-python'),
-            Dependency('python3-all', version_gte='3.5'),
-            Dependency('python3-setuptools'), ])
-    elif build_type == 'cmake':
-        pass
-    else:
-        error('The build type `{build_type}`is not supported by this version of bloom.'
-              .format(build_type=build_type), exit=True)
-
     unresolved_keys = depends + build_depends + package.replaces + package.conflicts
     # The installer key is not considered here, but it is checked when the keys are checked before this
     resolved_deps = resolve_dependencies(unresolved_keys, os_name,
                                          os_version, ros_distro,
                                          peer_packages + [d.name for d in package.replaces + package.conflicts],
                                          fallback_resolver)
+
     data['Depends'] = sorted(
         set(format_depends(depends, resolved_deps))
     )
@@ -344,6 +330,20 @@ def generate_substitutions_from_package(
     data['Conflicts'] = sorted(
         set(format_depends(package.conflicts, resolved_deps))
     )
+
+    # XXX inject build type specific dependencies.  For now this needs to be done
+    # after resolving rosdep keys as these are platform-specific dependencies.
+    build_type = package.get_build_type()
+    if build_type == 'ament_cmake':
+        pass
+    elif build_type == 'ament_python':
+        data['BuildDepends'] = list(set(['dh-python', 'python3-all (>= 3.5)', 'python3-setuptools'] +
+                                    data['BuildDepends']))
+    elif build_type == 'cmake':
+        pass
+    else:
+        error('The build type `{build_type}`is not supported by this version of bloom.'
+              .format(build_type=build_type), exit=True)
 
     set_debhelper_options(data, package)
     # Set the distribution
