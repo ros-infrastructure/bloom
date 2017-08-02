@@ -855,7 +855,7 @@ Increasing version of package(s) in repository `{repository}` to `{version}`:
             info(fmt("@{cf}Pull Request Title: @{yf}" + sanitize(title)))
             info(fmt("@{cf}Pull Request Body : \n@{yf}" + sanitize(body)))
             msg = fmt("@!Open a @|@{cf}pull request@| @!@{kf}from@| @!'@|@!@{bf}" +
-                      "{head_repo}/{head_repo}:{new_branch}".format(**locals()) +
+                      "{head_org}/{head_repo}:{new_branch}".format(**locals()) +
                       "@|@!' @!@{kf}into@| @!'@|@!@{bf}" +
                       "{base_org}/{base_repo}:{base_branch}".format(**locals()) +
                       "@|@!'?")
