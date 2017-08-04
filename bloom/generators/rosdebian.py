@@ -86,11 +86,13 @@ class RosDebianGenerator(DebianGenerator):
             fallback_resolver=fallback_resolver
         )
         subs['Package'] = rosify_package_name(subs['Package'], self.rosdistro)
-        # Add workspace package to runtime and buildtime dependencies.
-        if package.name not in ['ament_cmake_core', 'ament_package']:
-            workspace_pkg_name = rosify_package_name('ros-workspace', self.rosdistro)
-            subs['BuildDepends'].append(workspace_pkg_name)
-            subs['Depends'].append(workspace_pkg_name)
+
+        # XXX Add workspace package to runtime and buildtime dependencies for ROS 2 only.
+        if self.rosdistro in ['r2b2', 'r2b3'] and \
+                package.name not in ['ament_cmake_core', 'ament_package', 'ros-workspace']:
+                    workspace_pkg_name = rosify_package_name('ros-workspace', self.rosdistro)
+                    subs['BuildDepends'].append(workspace_pkg_name)
+                    subs['Depends'].append(workspace_pkg_name)
         return subs
 
     def generate_branching_arguments(self, package, branch):
