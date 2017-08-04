@@ -18,15 +18,20 @@ export PKG_CONFIG_PATH=@(InstallationPrefix)/lib/pkgconfig
 # 	https://github.com/ros-infrastructure/bloom/issues/327
 export DEB_CXXFLAGS_MAINT_APPEND=-DNDEBUG
 
+# Python package installation variables
+export PYBUILD_INSTALL_ARGS='--prefix "@(InstallationPrefix)" \
+	--install-lib "\$$base/lib/{{interpreter}}/site-packages" \
+	--install-scripts "\$$base/bin"'
+
 %:
-	dh $@@ -v @(debhelper_toplevel_options)
+	dh $@@ -v --buildsystem=pybuild --with python3
 
 override_dh_auto_configure:
 	# In case we're installing to a non-standard location, look for a setup.sh
 	# in the install tree that was dropped by catkin, and source it.  It will
 	# set things like CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
 	if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi && \
-	dh_auto_configure @(debhelper_autoconfigure_options)
+	dh_auto_configure
 
 override_dh_auto_build:
 	# In case we're installing to a non-standard location, look for a setup.sh
