@@ -154,7 +154,7 @@ def __place_template_folder(group, src, dst, gbp=False):
             shutil.copystat(template_abs_path, template_dst)
 
 
-def place_template_files(path, gbp=False):
+def place_template_files(path, build_type, gbp=False):
     info(fmt("@!@{bf}==>@| Placing templates files in the 'debian' folder."))
     debian_path = os.path.join(path, 'debian')
     # Create/Clean the debian folder
@@ -162,7 +162,8 @@ def place_template_files(path, gbp=False):
         os.makedirs(debian_path)
     # Place template files
     group = 'bloom.generators.debian'
-    __place_template_folder(group, 'templates', debian_path, gbp)
+    templates = os.path.join('templates', build_type)
+    __place_template_folder(group, templates, debian_path, gbp)
 
 
 def summarize_dependency_mapping(data, deps, build_deps, resolved_deps):
@@ -728,7 +729,7 @@ class DebianGenerator(BloomGenerator):
                  .format(destination))
             # Then this is a debian branch
             # Place the raw template files
-            self.place_template_files()
+            self.place_template_files(package.get_build_type())
         else:
             # This is a distro specific debian branch
             # Determine the current package being generated
@@ -800,7 +801,7 @@ class DebianGenerator(BloomGenerator):
             return config_store
         return json.loads(config_store)
 
-    def place_template_files(self, debian_dir='debian'):
+    def place_template_files(self, build_type, debian_dir='debian'):
         # Create/Clean the debian folder
         if os.path.exists(debian_dir):
             if self.interactive:
@@ -817,7 +818,7 @@ class DebianGenerator(BloomGenerator):
             else:
                 warning("Not overwriting debian directory.")
         # Use generic place template files command
-        place_template_files('.', gbp=True)
+        place_template_files('.', build_type, gbp=True)
         # Commit results
         execute_command('git add ' + debian_dir)
         execute_command('git commit -m "Placing debian template files"')
