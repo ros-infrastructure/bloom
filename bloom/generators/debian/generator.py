@@ -87,7 +87,7 @@ try:
     from catkin_pkg.changelog import CHANGELOG_FILENAME
 except ImportError as err:
     debug(traceback.format_exc())
-    error("rosdep was not detected, please install it.", exit=True)
+    error("catkin_pkg was not detected, please install it.", exit=True)
 
 try:
     import rosdistro
