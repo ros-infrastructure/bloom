@@ -38,6 +38,7 @@ import shutil
 import tarfile
 import tempfile
 
+from io import open
 from pkg_resources import parse_version
 
 try:
@@ -205,6 +206,12 @@ def handle_tree(tree, directory, root_path, version):
                 file_data = show(BLOOM_CONFIG_BRANCH, os.path.join(root_path, rel_path))
             # Write file
             with open(rel_path, 'wb') as f:
+                # Python 2 will treat this as an ascii string but
+                # Python 3 will not re-decode a utf-8 string.
+                try:
+                    file_data = file_data.encode('utf-8')
+                except UnicodeDecodeError:
+                    file_data = file_data.decode('utf-8').encode('utf-8')
                 f.write(file_data)
             # Add it with git
             execute_command('git add {0}'.format(rel_path), shell=True)
