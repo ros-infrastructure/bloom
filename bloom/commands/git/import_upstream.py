@@ -38,7 +38,6 @@ import shutil
 import tarfile
 import tempfile
 
-from io import open
 from pkg_resources import parse_version
 
 try:
