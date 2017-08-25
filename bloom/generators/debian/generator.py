@@ -428,6 +428,8 @@ def generate_substitutions_from_package(
             return tuple(obj_tmp)
         elif isinstance(obj, int):
             return obj
+        elif isinstance(obj, dict):
+            return {convertToUnicode(k): convertToUnicode(v) for k, v in obj.items()}
         raise RuntimeError('need to deal with type %s' % (str(type(obj))))
 
     for item in data.items():
@@ -542,17 +544,15 @@ def set_debhelper_options(data, package):
         'ament_python': {
             'toplevel': '--buildsystem=pybuild --with python3',
             'depends': '${python3:Depends}',
-            'exportvars': [('PYBUILD_INSTALL_ARGS',
-                           '--prefix "{0}" '
-                            '--install-lib "\$$base/lib/{{interpreter}}/site-packages" '
-                            '--install-scripts "\$$base/bin"'
-                            .format(data['InstallationPrefix']))],
+            'exportvars': {'PYBUILD_INSTALL_ARGS':
+                           '--prefix="{0}" '
+                           '--install-lib="\$$base/lib/{{interpreter}}/site-packages" '
+                           .format(data['InstallationPrefix']), },
         },
         'cmake': {
             'toplevel': '--buildsystem=cmake',
             'autoconfigure': '-- -DCMAKE_INSTALL_PREFIX="{0}"'.format(data['InstallationPrefix']),
             'depends': '${shlibs:Depends}',
-            'exportvars': [],
         },
     }
 
@@ -563,7 +563,24 @@ def set_debhelper_options(data, package):
     data['debhelper_toplevel_options'] = debhelper_options[build_type].get('toplevel', '')
     data['debhelper_autoconfigure_options'] = debhelper_options[build_type].get('autoconfigure', '')
     data['DebhelperDepends'] = debhelper_options[build_type].get('depends', '')
-    data['exportvars'] = debhelper_options[build_type].get('exportvars', [])
+    data['exportvars'] = debhelper_options[build_type].get('exportvars', {})
+
+    # Set `--install-scripts` unless it is specified in setup.cfg.
+    if build_type == 'ament_python':
+        pass_install_scripts = True
+        package_path = os.path.abspath(os.path.dirname(package.filename))
+        setup_cfg_path = os.path.join(package_path, "setup.cfg")
+        if os.path.isfile(setup_cfg_path):
+            from configparser import SafeConfigParser
+            setup_cfg = SafeConfigParser()
+            setup_cfg.read([setup_cfg_path])
+            if (
+                setup_cfg.has_option('install', 'install-scripts') or
+                setup_cfg.has_option('install', 'install_scripts')
+            ):
+                pass_install_scripts = False
+        if pass_install_scripts:
+            data['exportvars']['PYBUILD_INSTALL_ARGS'] += ' --install-scripts="\$$base/bin" '
 
 
 class DebianGenerator(BloomGenerator):

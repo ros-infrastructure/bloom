@@ -19,8 +19,8 @@ export PKG_CONFIG_PATH=@(InstallationPrefix)/lib/pkgconfig
 export DEB_CXXFLAGS_MAINT_APPEND=-DNDEBUG
 
 # Build type specific exports if any.
-@[for var in exportvars]@
-export @(var[0])=@(var[1])
+@[for name, value in exportvars.items()]@
+export @(name)=@(value)
 @[end for]@
 
 %:
