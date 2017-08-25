@@ -12,3 +12,9 @@ Depends: ${shlibs:Depends}, ${misc:Depends}, @(', '.join(Depends))
 @[if Conflicts]Conflicts: @(', '.join(Conflicts))@\n@[end if]@
 @[if Replaces]Replaces: @(', '.join(Replaces))@\n@[end if]@
 Description: @(Description)
+
+Package: @(Package)-dbg
+Section: debug
+Architecture: any
+Depends: @(Package) (= ${binary:Version}), ${misc:Depends}
+Description: @(Description)

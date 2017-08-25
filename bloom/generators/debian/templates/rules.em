@@ -54,6 +54,10 @@ override_dh_shlibdeps:
 	if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi && \
 	dh_shlibdeps -l$(CURDIR)/debian/@(Package)/@(InstallationPrefix)/lib/
 
+override_dh_strip:
+	# Strip debug symbols from the package and put them into the dbg package. 
+	dh_strip --dbg-package=@(Package)-dbg
+
 override_dh_auto_install:
 	# In case we're installing to a non-standard location, look for a setup.sh
 	# in the install tree that was dropped by catkin, and source it.  It will

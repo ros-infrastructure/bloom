@@ -435,7 +435,7 @@ def __process_template_folder(path, subs):
         # Expand template
         info("Expanding '{0}' -> '{1}'".format(
             os.path.relpath(item),
-            os.path.relpath(template_path)))
+            os.path.relpath(em.expand(template_path, **subs))))
         result = em.expand(template, **subs)
         # Write the result
         with io.open(template_path, 'w', encoding='utf-8') as f:
