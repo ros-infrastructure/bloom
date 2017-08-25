@@ -86,7 +86,6 @@ from bloom.util import maybe_continue
 try:
     from catkin_pkg.changelog import get_changelog_from_path
     from catkin_pkg.changelog import CHANGELOG_FILENAME
-    from catkin_pkg.package import Dependency
 except ImportError as err:
     debug(traceback.format_exc())
     error("catkin_pkg was not detected, please install it.", exit=True)
