@@ -34,6 +34,7 @@ from __future__ import print_function
 
 import collections
 import datetime
+import io
 import json
 import os
 import pkg_resources
@@ -143,8 +144,11 @@ def __place_template_folder(group, src, dst, gbp=False):
             if os.path.exists(template_dst):
                 debug("Removing existing file '{0}'".format(template_dst))
                 os.remove(template_dst)
-            with open(template_dst, 'w') as f:
+            with io.open(template_dst, 'w', encoding='utf-8') as f:
                 if not isinstance(template, str):
+                    template = template.decode('utf-8')
+                # Python 2 API needs a `unicode` not a utf-8 string.
+                elif sys.version_info.major == 2:
                     template = template.decode('utf-8')
                 f.write(template)
             shutil.copystat(template_abs_path, template_dst)
@@ -434,7 +438,9 @@ def __process_template_folder(path, subs):
             os.path.relpath(template_path)))
         result = em.expand(template, **subs)
         # Write the result
-        with open(template_path, 'w') as f:
+        with io.open(template_path, 'w', encoding='utf-8') as f:
+            if sys.version_info.major == 2:
+                result = result.decode('utf-8')
             f.write(result)
         # Copy the permissions
         shutil.copymode(item, template_path)
