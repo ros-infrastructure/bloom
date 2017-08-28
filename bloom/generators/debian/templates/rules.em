@@ -47,6 +47,13 @@ override_dh_auto_test:
 	if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi && \
 	dh_auto_test || true
 
+override_dh_makeshlibs:
+	# Add strict dependency on the soversion, because the name of the
+	# library package does not contain it.
+	dh_makeshlibs -V
+	sed -i 's/>//' debian/*/DEBIAN/shlibs
+
+
 override_dh_shlibdeps:
 	# In case we're installing to a non-standard location, look for a setup.sh
 	# in the install tree that was dropped by catkin, and source it.  It will
