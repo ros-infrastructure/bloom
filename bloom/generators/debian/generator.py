@@ -326,6 +326,9 @@ def generate_substitutions_from_package(
     data['Conflicts'] = sorted(
         set(format_depends(package.conflicts, resolved_deps))
     )
+
+    # Set different build options for different build types.
+    set_build_type_options(data, package)
     # Set the distribution
     data['Distribution'] = os_version
     # Use the time stamp to set the date strings
@@ -408,6 +411,8 @@ def generate_substitutions_from_package(
             return tuple(obj_tmp)
         elif isinstance(obj, int):
             return obj
+        elif isinstance(obj, dict):
+            return {convertToUnicode(k): convertToUnicode(v) for k, v in obj.items()}
         raise RuntimeError('need to deal with type %s' % (str(type(obj))))
 
     for item in data.items():
@@ -509,6 +514,77 @@ def debianize_string(value):
 
 def sanitize_package_name(name):
     return name.replace('_', '-')
+
+
+def set_build_type_options(data, package):
+    debhelper_options = {
+        'ament_cmake': {
+            'toplevel': '--buildsystem=cmake',
+            'autoconfigure': '-- -DCMAKE_INSTALL_PREFIX="{0}" -DAMENT_PREFIX_PATH="{0}"'
+            .format(data['InstallationPrefix']),
+            'depends': '${shlibs:Depends}',
+        },
+        'ament_python': {
+            'toplevel': '--buildsystem=pybuild --with python3',
+            'depends': '${python3:Depends}',
+            'exportvars': {'PYBUILD_INSTALL_ARGS':
+                           '--prefix="{0}" '
+                           '--install-lib="\$$base/lib/{{interpreter}}/site-packages" '
+                           .format(data['InstallationPrefix']), },
+        },
+        'cmake': {
+            'toplevel': '--buildsystem=cmake',
+            'autoconfigure': '-- -DCMAKE_INSTALL_PREFIX="{0}"'.format(data['InstallationPrefix']),
+            'depends': '${shlibs:Depends}',
+        },
+    }
+
+    build_type = package.get_build_type()
+
+    if build_type not in debhelper_options:
+        error('The build type `{build_type}`is not supported by this version of bloom.'
+              .format(build_type=build_type), exit=True)
+    data['debhelper_toplevel_options'] = debhelper_options[build_type].get('toplevel', '')
+    data['debhelper_autoconfigure_options'] = debhelper_options[build_type].get('autoconfigure', '')
+    data['DebhelperDepends'] = debhelper_options[build_type].get('depends', '')
+    data['exportvars'] = debhelper_options[build_type].get('exportvars', {})
+
+    # Build-type specific changes.
+    # This whole section is ripe for refator but it will do for now.
+    # Add build_types to the conditional block in alphabetical order.
+    if build_type == 'ament_cmake':
+        pass
+    elif build_type == 'ament_python':
+        # XXX inject build type specific dependencies.  For now this needs to be done
+        # after resolving rosdep keys as these are Debian platform-specific dependencies.
+        data['BuildDepends'] = list(set([
+                                        'dh-python',
+                                        'python3-all (>= 3.5)',
+                                        'python3-setuptools'
+                                        ] + data['BuildDepends']))
+        # Set `--install-scripts` unless it is specified in setup.cfg.
+        pass_install_scripts = True
+        package_path = os.path.abspath(os.path.dirname(package.filename))
+        setup_cfg_path = os.path.join(package_path, "setup.cfg")
+        if os.path.isfile(setup_cfg_path):
+            from configparser import SafeConfigParser
+            setup_cfg = SafeConfigParser()
+            setup_cfg.read([setup_cfg_path])
+            if (
+                setup_cfg.has_option('install', 'install-scripts') or
+                setup_cfg.has_option('install', 'install_scripts')
+            ):
+                pass_install_scripts = False
+        if pass_install_scripts:
+            data['exportvars']['PYBUILD_INSTALL_ARGS'] += ' --install-scripts="\$$base/bin" '
+    elif build_type == 'cmake':
+        pass
+    else:
+        # Even though we check supported build_types in debhelper options,
+        # preserve this so that forgetting to add a new build type to both the debhelper
+        # options and this conditional block will raise an error.
+        error('The build type `{build_type}`is not supported by this version of bloom.'
+              .format(build_type=build_type), exit=True)
 
 
 class DebianGenerator(BloomGenerator):

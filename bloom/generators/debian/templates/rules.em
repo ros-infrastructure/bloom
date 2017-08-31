@@ -8,7 +8,6 @@
 
 # Uncomment this to turn on verbose mode.
 export DH_VERBOSE=1
-export DH_OPTIONS=-v --buildsystem=cmake
 # TODO: remove the LDFLAGS override.  It's here to avoid esoteric problems
 # of this sort:
 #  https://code.ros.org/trac/ros/ticket/2977
@@ -19,18 +18,20 @@ export PKG_CONFIG_PATH=@(InstallationPrefix)/lib/pkgconfig
 # 	https://github.com/ros-infrastructure/bloom/issues/327
 export DEB_CXXFLAGS_MAINT_APPEND=-DNDEBUG
 
+# Build type specific exports if any.
+@[for name, value in exportvars.items()]@
+export @(name)=@(value)
+@[end for]@
+
 %:
-	dh  $@@
+	dh $@@ -v @(debhelper_toplevel_options)
 
 override_dh_auto_configure:
 	# In case we're installing to a non-standard location, look for a setup.sh
 	# in the install tree that was dropped by catkin, and source it.  It will
 	# set things like CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
 	if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi && \
-	dh_auto_configure -- \
-		-DCATKIN_BUILD_BINARY_PACKAGE="1" \
-		-DCMAKE_INSTALL_PREFIX="@(InstallationPrefix)" \
-		-DCMAKE_PREFIX_PATH="@(InstallationPrefix)"
+	dh_auto_configure @(debhelper_autoconfigure_options)
 
 override_dh_auto_build:
 	# In case we're installing to a non-standard location, look for a setup.sh
