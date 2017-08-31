@@ -329,6 +329,33 @@ def generate_substitutions_from_package(
         set(format_depends(package.conflicts, resolved_deps))
     )
 
+    # Build-type specific substitutions.
+    build_type = package.get_build_type()
+    if build_type == 'catkin':
+        pass
+    elif build_type == 'cmake':
+        pass
+    elif build_type == 'ament_cmake':
+        pass
+    elif build_type == 'ament_python':
+        # Don't set the install-scripts flag if it's already set in setup.cfg.
+        package_path = os.path.abspath(os.path.dirname(package.filename))
+        setup_cfg_path = os.path.join(package_path, 'setup.cfg')
+        data['pass_install_scripts'] = True
+        if os.path.isfile(setup_cfg_path):
+            from configparser import SafeConfigParser
+            setup_cfg = SafeConfigParser()
+            setup_cfg.read([setup_cfg_path])
+            if (
+                    setup_cfg.has_option('install', 'install-scripts') or
+                    setup_cfg.has_option('install', 'install_scripts')
+            ):
+                data['pass_install_scripts'] = False
+    else:
+        error('Build type `{}` is not supported by this version of bloom.'.format(build_type),
+                exit=True)
+
+
     # Set the distribution
     data['Distribution'] = os_version
     # Use the time stamp to set the date strings

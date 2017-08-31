@@ -21,7 +21,10 @@ export DEB_CXXFLAGS_MAINT_APPEND=-DNDEBUG
 # Python package installation variables
 export PYBUILD_INSTALL_ARGS='--prefix "@(InstallationPrefix)" \
 	--install-lib "\$$base/lib/{{interpreter}}/site-packages" \
-	--install-scripts "\$$base/bin"'
+@[ if pass_install_scripts ]@
+	--install-scripts "\$$base/bin" \
+@[end if]@
+'
 
 %:
 	dh $@@ -v --buildsystem=pybuild --with python3
