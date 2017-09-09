@@ -43,7 +43,11 @@ import shutil
 import sys
 import traceback
 
-from configparser import SafeConfigParser
+# Python 2/3 support.
+try:
+    from configparser import SafeConfigParser
+except ImportError:
+    from ConfigParser import SafeConfigParser
 from dateutil import tz
 from pkg_resources import parse_version
 
