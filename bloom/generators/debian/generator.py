@@ -43,6 +43,7 @@ import shutil
 import sys
 import traceback
 
+from configparser import SafeConfigParser
 from dateutil import tz
 from pkg_resources import parse_version
 
@@ -343,7 +344,6 @@ def generate_substitutions_from_package(
         setup_cfg_path = os.path.join(package_path, 'setup.cfg')
         data['pass_install_scripts'] = True
         if os.path.isfile(setup_cfg_path):
-            from configparser import SafeConfigParser
             setup_cfg = SafeConfigParser()
             setup_cfg.read([setup_cfg_path])
             if (
@@ -352,9 +352,9 @@ def generate_substitutions_from_package(
             ):
                 data['pass_install_scripts'] = False
     else:
-        error('Build type `{}` is not supported by this version of bloom.'.format(build_type),
-                exit=True)
-
+        error(
+            "Build type '{}' is not supported by this version of bloom.".
+            format(build_type), exit=True)
 
     # Set the distribution
     data['Distribution'] = os_version
