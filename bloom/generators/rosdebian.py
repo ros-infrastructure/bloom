@@ -89,7 +89,7 @@ class RosDebianGenerator(DebianGenerator):
 
         # XXX Add workspace package to runtime and buildtime dependencies for ROS 2 only.
         if self.rosdistro in ['r2b2', 'r2b3'] and \
-                package.name not in ['ament_cmake_core', 'ament_package', 'ros-workspace']:
+                package.name not in ['ament_cmake_core', 'ament_package', 'ros_workspace']:
                     workspace_pkg_name = rosify_package_name('ros-workspace', self.rosdistro)
                     subs['BuildDepends'].append(workspace_pkg_name)
                     subs['Depends'].append(workspace_pkg_name)
