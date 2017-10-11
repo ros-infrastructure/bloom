@@ -43,6 +43,11 @@ import sys
 import traceback
 import textwrap
 
+# Python 2/3 support.
+try:
+    from configparser import SafeConfigParser
+except ImportError:
+    from ConfigParser import SafeConfigParser
 from dateutil import tz
 from distutils.version import LooseVersion
 from time import strptime
@@ -128,7 +133,7 @@ def __place_template_folder(group, src, dst, gbp=False):
             shutil.copystat(template_abs_path, template_dst)
 
 
-def place_template_files(path, gbp=False):
+def place_template_files(path, build_type, gbp=False):
     info(fmt("@!@{bf}==>@| Placing templates files in the 'rpm' folder."))
     rpm_path = os.path.join(path, 'rpm')
     # Create/Clean the rpm folder
@@ -136,7 +141,8 @@ def place_template_files(path, gbp=False):
         os.makedirs(rpm_path)
     # Place template files
     group = 'bloom.generators.rpm'
-    __place_template_folder(group, 'templates', rpm_path, gbp)
+    templates = os.path.join('templates', build_type)
+    __place_template_folder(group, templates, rpm_path, gbp)
 
 
 def summarize_dependency_mapping(data, deps, build_deps, resolved_deps):
@@ -244,6 +250,38 @@ def generate_substitutions_from_package(
     data['Conflicts'] = sorted(
         set(format_depends(package.conflicts, resolved_deps))
     )
+
+    # Build-type specific substitutions.
+    build_type = package.get_build_type()
+    if build_type == 'catkin':
+        pass
+    elif build_type == 'cmake':
+        pass
+    elif build_type == 'ament_cmake':
+        error(
+            "Build type '{}' is not supported by this version of bloom.".
+            format(build_type), exit=True)
+    elif build_type == 'ament_python':
+        error(
+            "Build type '{}' is not supported by this version of bloom.".
+            format(build_type), exit=True)
+        # Don't set the install-scripts flag if it's already set in setup.cfg.
+        package_path = os.path.abspath(os.path.dirname(package.filename))
+        setup_cfg_path = os.path.join(package_path, 'setup.cfg')
+        data['pass_install_scripts'] = True
+        if os.path.isfile(setup_cfg_path):
+            setup_cfg = SafeConfigParser()
+            setup_cfg.read([setup_cfg_path])
+            if (
+                    setup_cfg.has_option('install', 'install-scripts') or
+                    setup_cfg.has_option('install', 'install_scripts')
+            ):
+                data['pass_install_scripts'] = False
+    else:
+        error(
+            "Build type '{}' is not supported by this version of bloom.".
+            format(build_type), exit=True)
+
     # Set the distribution
     data['Distribution'] = os_version
     # Use the time stamp to set the date strings
@@ -589,7 +627,7 @@ class RpmGenerator(BloomGenerator):
                  .format(destination))
             # Then this is an rpm branch
             # Place the raw template files
-            self.place_template_files()
+            self.place_template_files(package.get_build_type())
         else:
             # This is a distro specific rpm branch
             # Determine the current package being generated
@@ -661,7 +699,7 @@ class RpmGenerator(BloomGenerator):
             return config_store
         return json.loads(config_store)
 
-    def place_template_files(self, rpm_dir='rpm'):
+    def place_template_files(self, build_type, rpm_dir='rpm'):
         # Create/Clean the rpm folder
         if os.path.exists(rpm_dir):
             if self.interactive:
@@ -676,7 +714,7 @@ class RpmGenerator(BloomGenerator):
             if os.path.exists(rpm_dir):
                 shutil.rmtree(rpm_dir)
         # Use generic place template files command
-        place_template_files('.', gbp=True)
+        place_template_files('.', build_type, gbp=True)
         # Commit results
         execute_command('git add ' + rpm_dir)
         execute_command('git commit -m "Placing rpm template files"')
