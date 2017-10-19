@@ -1,3 +1,11 @@
+0.6.0 (2017-10-19 10:30:00 -0800)
+---------------------------------
+- Added artful support to release configuration.
+- Added support for 'unmaintained' package status. `#427 <https://github.com/ros-infrastructure/bloom/pull/427>`_
+- Fixed prompt for opening a pull request from a fork. `#431 <https://github.com/ros-infrastructure/bloom/pull/431>`_
+- Fixed UTF-8 encoded text across Python 2 and 3. `#432 <https://github.com/ros-infrastructure/bloom/pull/432>`_
+- Added support for ament packages on Debian. `#435 <https://github.com/ros-infrastructure/bloom/pull/435>`_
+
 0.5.26 (2017-03-28 6:15:00 -0800)
 ---------------------------------
 - Fix default answer to prompt in pull request field.
