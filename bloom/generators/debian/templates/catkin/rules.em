@@ -8,7 +8,6 @@
 
 # Uncomment this to turn on verbose mode.
 export DH_VERBOSE=1
-export DH_OPTIONS=-v --buildsystem=cmake
 # TODO: remove the LDFLAGS override.  It's here to avoid esoteric problems
 # of this sort:
 #  https://code.ros.org/trac/ros/ticket/2977
@@ -20,7 +19,7 @@ export PKG_CONFIG_PATH=@(InstallationPrefix)/lib/pkgconfig
 export DEB_CXXFLAGS_MAINT_APPEND=-DNDEBUG
 
 %:
-	dh  $@@
+	dh $@@ -v --buildsystem=cmake
 
 override_dh_auto_configure:
 	# In case we're installing to a non-standard location, look for a setup.sh

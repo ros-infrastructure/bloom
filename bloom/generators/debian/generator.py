@@ -43,6 +43,11 @@ import shutil
 import sys
 import traceback
 
+# Python 2/3 support.
+try:
+    from configparser import SafeConfigParser
+except ImportError:
+    from ConfigParser import SafeConfigParser
 from dateutil import tz
 from pkg_resources import parse_version
 
@@ -154,7 +159,7 @@ def __place_template_folder(group, src, dst, gbp=False):
             shutil.copystat(template_abs_path, template_dst)
 
 
-def place_template_files(path, gbp=False):
+def place_template_files(path, build_type, gbp=False):
     info(fmt("@!@{bf}==>@| Placing templates files in the 'debian' folder."))
     debian_path = os.path.join(path, 'debian')
     # Create/Clean the debian folder
@@ -162,7 +167,8 @@ def place_template_files(path, gbp=False):
         os.makedirs(debian_path)
     # Place template files
     group = 'bloom.generators.debian'
-    __place_template_folder(group, 'templates', debian_path, gbp)
+    templates = os.path.join('templates', build_type)
+    __place_template_folder(group, templates, debian_path, gbp)
 
 
 def summarize_dependency_mapping(data, deps, build_deps, resolved_deps):
@@ -308,6 +314,7 @@ def generate_substitutions_from_package(
     # Resolve dependencies
     depends = package.run_depends + package.buildtool_export_depends
     build_depends = package.build_depends + package.buildtool_depends + package.test_depends
+
     unresolved_keys = depends + build_depends + package.replaces + package.conflicts
     # The installer key is not considered here, but it is checked when the keys are checked before this
     resolved_deps = resolve_dependencies(unresolved_keys, os_name,
@@ -326,6 +333,33 @@ def generate_substitutions_from_package(
     data['Conflicts'] = sorted(
         set(format_depends(package.conflicts, resolved_deps))
     )
+
+    # Build-type specific substitutions.
+    build_type = package.get_build_type()
+    if build_type == 'catkin':
+        pass
+    elif build_type == 'cmake':
+        pass
+    elif build_type == 'ament_cmake':
+        pass
+    elif build_type == 'ament_python':
+        # Don't set the install-scripts flag if it's already set in setup.cfg.
+        package_path = os.path.abspath(os.path.dirname(package.filename))
+        setup_cfg_path = os.path.join(package_path, 'setup.cfg')
+        data['pass_install_scripts'] = True
+        if os.path.isfile(setup_cfg_path):
+            setup_cfg = SafeConfigParser()
+            setup_cfg.read([setup_cfg_path])
+            if (
+                    setup_cfg.has_option('install', 'install-scripts') or
+                    setup_cfg.has_option('install', 'install_scripts')
+            ):
+                data['pass_install_scripts'] = False
+    else:
+        error(
+            "Build type '{}' is not supported by this version of bloom.".
+            format(build_type), exit=True)
+
     # Set the distribution
     data['Distribution'] = os_version
     # Use the time stamp to set the date strings
@@ -693,7 +727,7 @@ class DebianGenerator(BloomGenerator):
                  .format(destination))
             # Then this is a debian branch
             # Place the raw template files
-            self.place_template_files()
+            self.place_template_files(package.get_build_type())
         else:
             # This is a distro specific debian branch
             # Determine the current package being generated
@@ -765,7 +799,7 @@ class DebianGenerator(BloomGenerator):
             return config_store
         return json.loads(config_store)
 
-    def place_template_files(self, debian_dir='debian'):
+    def place_template_files(self, build_type, debian_dir='debian'):
         # Create/Clean the debian folder
         if os.path.exists(debian_dir):
             if self.interactive:
@@ -782,7 +816,7 @@ class DebianGenerator(BloomGenerator):
             else:
                 warning("Not overwriting debian directory.")
         # Use generic place template files command
-        place_template_files('.', gbp=True)
+        place_template_files('.', build_type, gbp=True)
         # Commit results
         execute_command('git add ' + debian_dir)
         execute_command('git commit -m "Placing debian template files"')
