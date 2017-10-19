@@ -106,7 +106,7 @@ def fetch_update(user_bloom):
     if os.path.exists(user_bloom):
         return
     open(user_bloom, 'w').close()  # Touch the file
-    pypi = ServerProxy('http://pypi.python.org/pypi')
+    pypi = ServerProxy('https://pypi.python.org/pypi')
     newest_version = pypi.package_releases('bloom')
     newest_version = newest_version[0] if newest_version else None
     current_version = bloom.__version__
