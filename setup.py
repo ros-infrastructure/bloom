@@ -4,7 +4,7 @@ import sys
 from setuptools import find_packages, setup
 
 install_requires = [
-    'catkin-pkg >= 0.2.2',
+    'catkin-pkg >= 0.3.8',
     'setuptools',
     'empy',
     'python-dateutil',
