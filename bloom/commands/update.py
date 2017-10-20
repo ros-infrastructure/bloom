@@ -41,10 +41,10 @@ import sys
 
 try:
     # Python2
-    from xmlrpclib import ServerProxy
+    from urllib2 import urlopen
 except ImportError:
     # Python3
-    from xmlrpc.client import ServerProxy
+    from urllib.request import urlopen
 
 from bloom.logging import warning
 
@@ -106,9 +106,13 @@ def fetch_update(user_bloom):
     if os.path.exists(user_bloom):
         return
     open(user_bloom, 'w').close()  # Touch the file
-    pypi = ServerProxy('http://pypi.python.org/pypi')
-    newest_version = pypi.package_releases('bloom')
-    newest_version = newest_version[0] if newest_version else None
+    resp = urlopen('https://pypi.python.org/pypi/bloom/json')
+    if sys.version_info.major == 2:
+        pypi_result = json.loads(resp.read())
+    else:
+        pypi_result = json.loads(resp.read().decode('utf-8'))
+
+    newest_version = pypi_result['info']['version']
     current_version = bloom.__version__
     if newest_version and bloom.__version__ != 'unset':
         if parse_version(bloom.__version__) < parse_version(newest_version):
