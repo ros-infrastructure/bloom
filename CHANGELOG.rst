@@ -1,3 +1,9 @@
+0.6.1 (2017-10-20 13:45:00 -0800)
+---------------------------------
+- Switched to PyPI JSON API for online updates check. `#438 <https://github.com/ros-infrastructure/bloom/pull/438>`_
+- Fixed regression in bloom-generate. `#440 <https://github.com/ros-infrastructure/bloom/pull/440>`_
+- Fixed bloom-release in python3. `#441 <https://github.com/ros-infrastructure/bloom/pull/441>`_
+
 0.6.0 (2017-10-19 10:30:00 -0800)
 ---------------------------------
 - Added artful support to release configuration.
