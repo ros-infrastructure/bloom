@@ -42,18 +42,19 @@ import datetime
 import json
 import socket
 
-from urlparse import urlunsplit
-from urllib import urlencode
 
 try:
     # Python2
+    from urllib import urlencode
     from urllib2 import HTTPError
-    from urllib2 import URLError
     from urllib2 import Request, urlopen
+    from urllib2 import URLError
+    from urlparse import urlunsplit
 except ImportError:
     # Python3
     from urllib.error import HTTPError
     from urllib.error import URLError
+    from urllib.parse import urlunsplit
     from urllib.request import Request, urlopen
 
 import bloom
