@@ -25,3 +25,4 @@ MANIFEST
 *.DS_Store
 deb_dist
 .fuse_*
+*.swp

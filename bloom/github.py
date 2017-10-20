@@ -41,30 +41,24 @@ import base64
 import datetime
 import json
 import socket
+import os
 
-from urlparse import urlunsplit
-from urllib import urlencode
 
 try:
     # Python2
+    from urlparse import urlencode, urlunsplit
     from urllib2 import HTTPError
     from urllib2 import URLError
     from urllib2 import Request, urlopen
 except ImportError:
     # Python3
+    from urllib.parse import urlencode, urlunsplit
     from urllib.error import HTTPError
     from urllib.error import URLError
     from urllib.request import Request, urlopen
 
 import bloom
-
-
-def auth_header_from_basic_auth(user, password):
-    return "Basic {0}".format(base64.b64encode('{0}:{1}'.format(user, password)))
-
-
-def auth_header_from_oauth_token(token):
-    return "token " + token
+from bloom.util import auth_header, GITHUB_USER, GITHUB_PASSWORD
 
 
 def get_bloom_headers(auth=None):
@@ -86,8 +80,11 @@ def do_github_post_req(path, data=None, auth=None, site='api.github.com'):
     if data is None:
         request = Request(url, headers=headers)  # GET
     else:
-        request = Request(url, data=json.dumps(data), headers=headers)  # POST
+        request = Request(url, data=json.dumps(data).encode('utf-8'), headers=headers)  # POST
 
+    if GITHUB_USER and GITHUB_PASSWORD:
+        request.add_header('Authorization', auth_header(
+            username=GITHUB_USER, password=GITHUB_PASSWORD))
     try:
         response = urlopen(request, timeout=120)
     except HTTPError as e:
@@ -125,13 +122,13 @@ class Github(object):
             "note_url": 'http://bloom.readthedocs.org/' if note_url is None else note_url
         }
         resp = do_github_post_req('/authorizations', payload, self.auth)
-        resp_data = json.loads(resp.read())
+        resp_data = json.loads(str(resp.read()))
         resp_code = '{0}'.format(resp.getcode())
         if resp_code not in ['201', '202'] or 'token' not in resp_data:
             raise GithubException("Failed to create a new oauth authorization", resp)
         token = resp_data['token']
         if update_auth:
-            self.auth = auth_header_from_oauth_token(token)
+            self.auth = auth_header(token=token)
             self.token = token
         return token
 
@@ -140,7 +137,7 @@ class Github(object):
         if '{0}'.format(resp.getcode()) not in ['200']:
             raise GithubException(
                 "Failed to get information for repository '{owner}/{repo}'".format(**locals()), resp)
-        resp_data = json.loads(resp.read())
+        resp_data = json.loads(str(resp.read()))
         return resp_data
 
     def list_repos(self, user, start_page=None):
@@ -152,7 +149,7 @@ class Github(object):
             if '{0}'.format(resp.getcode()) not in ['200']:
                 raise GithubException(
                     "Failed to list repositories for user '{user}' using url '{url}'".format(**locals()), resp)
-            new_repos = json.loads(resp.read())
+            new_repos = json.loads(str(resp.read()))
             if not new_repos:
                 return repos
             repos.extend(new_repos)
@@ -165,7 +162,8 @@ class Github(object):
             raise GithubException("Failed to get branch information for '{branch}' on '{owner}/{repo}' using '{url}'"
                                   .format(**locals()),
                                   resp)
-        return json.loads(resp.read())
+        txt = resp.read().decode('utf-8')
+        return json.loads(txt)
 
     def list_branches(self, owner, repo, start_page=None):
         page = start_page or 1
@@ -176,7 +174,8 @@ class Github(object):
             if '{0}'.format(resp.getcode()) not in ['200']:
                 raise GithubException(
                     "Failed to list branches for '{owner}/{repo}' using url '{url}'".format(**locals()), resp)
-            new_branches = json.loads(resp.read())
+            txt = resp.read().decode('utf-8')
+            new_branches = json.loads(txt)
             if not new_branches:
                 return branches
             branches.extend(new_branches)
@@ -187,7 +186,8 @@ class Github(object):
         if '{0}'.format(resp.getcode()) not in ['200', '202']:
             raise GithubException(
                 "Failed to create a fork of '{parent_org}/{parent_repo}'".format(**locals()), resp)
-        return json.loads(resp.read())
+        txt = resp.read().decode('utf-8')
+        return json.loads(txt)
 
     def list_forks(self, org, repo, start_page=None):
         page = start_page or 1
@@ -198,7 +198,8 @@ class Github(object):
             if '{0}'.format(resp.getcode()) not in ['200', '202']:
                 raise GithubException(
                     "Failed to list forks of '{org}/{repo}'".format(**locals()), resp)
-            new_forks = json.loads(resp.read())
+            txt = resp.read().decode('utf-8')
+            new_forks = json.loads(txt)
             if not new_forks:
                 return forks
             forks.extend(new_forks)
@@ -214,5 +215,6 @@ class Github(object):
         resp = do_github_post_req('/repos/{org}/{repo}/pulls'.format(**locals()), data, self.auth)
         if '{0}'.format(resp.getcode()) not in ['200', '201']:
             raise GithubException("Failed to create pull request", resp)
-        resp_json = json.loads(resp.read())
+        txt = resp.read().decode('utf-8')
+        resp_json = json.loads(txt)
         return resp_json['html_url']
