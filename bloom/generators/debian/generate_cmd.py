@@ -126,13 +126,13 @@ def main(args=None, get_subs_fn=None):
             subs = get_subs_fn(pkg, os_name, os_version, ros_distro, args.native)
             if _place_template_files:
                 # Place template files
-                place_template_files(path)
+                place_template_files(path, pkg.get_build_type())
             if _process_template_files:
                 # Just process existing template files
                 template_files = process_template_files(path, subs)
             if not _place_template_files and not _process_template_files:
                 # If neither, do both
-                place_template_files(path)
+                place_template_files(path, pkg.get_build_type())
                 template_files = process_template_files(path, subs)
             if template_files is not None:
                 for template_file in template_files:
