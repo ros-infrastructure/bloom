@@ -98,6 +98,7 @@ def do_github_post_req(path, data=None, auth=None, site='api.github.com'):
 
     return response
 
+
 def json_loads(resp):
     try:
         charset = resp.headers.getparam('charset')
@@ -106,6 +107,7 @@ def json_loads(resp):
         charset = resp.headers.get_content_charset()
 
     return json.loads(resp.read().decode(charset))
+
 
 class GithubException(Exception):
     def __init__(self, msg, resp=None):
