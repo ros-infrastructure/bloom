@@ -98,6 +98,14 @@ def do_github_post_req(path, data=None, auth=None, site='api.github.com'):
 
     return response
 
+def json_loads(resp):
+    try:
+        charset = resp.headers.getparam('charset')
+        charset = 'utf8' if not charset else charset
+    except AttributeError:
+        charset = resp.headers.get_content_charset()
+
+    return json.loads(resp.read().decode(charset))
 
 class GithubException(Exception):
     def __init__(self, msg, resp=None):
@@ -126,7 +134,7 @@ class Github(object):
             "note_url": 'http://bloom.readthedocs.org/' if note_url is None else note_url
         }
         resp = do_github_post_req('/authorizations', payload, self.auth)
-        resp_data = json.loads(resp.read())
+        resp_data = json_loads(resp)
         resp_code = '{0}'.format(resp.getcode())
         if resp_code not in ['201', '202'] or 'token' not in resp_data:
             raise GithubException("Failed to create a new oauth authorization", resp)
@@ -141,7 +149,7 @@ class Github(object):
         if '{0}'.format(resp.getcode()) not in ['200']:
             raise GithubException(
                 "Failed to get information for repository '{owner}/{repo}'".format(**locals()), resp)
-        resp_data = json.loads(resp.read())
+        resp_data = json_loads(resp)
         return resp_data
 
     def list_repos(self, user, start_page=None):
@@ -153,7 +161,7 @@ class Github(object):
             if '{0}'.format(resp.getcode()) not in ['200']:
                 raise GithubException(
                     "Failed to list repositories for user '{user}' using url '{url}'".format(**locals()), resp)
-            new_repos = json.loads(resp.read())
+            new_repos = json_loads(resp)
             if not new_repos:
                 return repos
             repos.extend(new_repos)
@@ -166,7 +174,7 @@ class Github(object):
             raise GithubException("Failed to get branch information for '{branch}' on '{owner}/{repo}' using '{url}'"
                                   .format(**locals()),
                                   resp)
-        return json.loads(resp.read())
+        return json_loads(resp)
 
     def list_branches(self, owner, repo, start_page=None):
         page = start_page or 1
@@ -177,7 +185,7 @@ class Github(object):
             if '{0}'.format(resp.getcode()) not in ['200']:
                 raise GithubException(
                     "Failed to list branches for '{owner}/{repo}' using url '{url}'".format(**locals()), resp)
-            new_branches = json.loads(resp.read())
+            new_branches = json_loads(resp)
             if not new_branches:
                 return branches
             branches.extend(new_branches)
@@ -188,7 +196,7 @@ class Github(object):
         if '{0}'.format(resp.getcode()) not in ['200', '202']:
             raise GithubException(
                 "Failed to create a fork of '{parent_org}/{parent_repo}'".format(**locals()), resp)
-        return json.loads(resp.read())
+        return json_loads(resp)
 
     def list_forks(self, org, repo, start_page=None):
         page = start_page or 1
@@ -199,7 +207,7 @@ class Github(object):
             if '{0}'.format(resp.getcode()) not in ['200', '202']:
                 raise GithubException(
                     "Failed to list forks of '{org}/{repo}'".format(**locals()), resp)
-            new_forks = json.loads(resp.read())
+            new_forks = json_loads(resp)
             if not new_forks:
                 return forks
             forks.extend(new_forks)
@@ -215,5 +223,5 @@ class Github(object):
         resp = do_github_post_req('/repos/{org}/{repo}/pulls'.format(**locals()), data, self.auth)
         if '{0}'.format(resp.getcode()) not in ['200', '201']:
             raise GithubException("Failed to create pull request", resp)
-        resp_json = json.loads(resp.read())
+        resp_json = json_loads(resp)
         return resp_json['html_url']
