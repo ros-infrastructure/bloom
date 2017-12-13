@@ -92,11 +92,15 @@ def do_github_post_req(path, data=None, auth=None, site='api.github.com'):
     try:
         response = urlopen(request, timeout=120)
     except HTTPError as e:
-        raise GithubException(str(e) + ' (%s)' % url)
+        if e.code in [401]:
+            raise GitHubAuthException(str(e) + ' (%s)' % url)
+        else:
+            raise GithubException(str(e) + ' (%s)' % url)
     except URLError as e:
         raise GithubException(str(e) + ' (%s)' % url)
 
     return response
+
 
 
 class GithubException(Exception):
@@ -108,6 +112,11 @@ class GithubException(Exception):
         super(GithubException, self).__init__(msg)
         if resp:
             self.resp = resp
+
+
+class GitHubAuthException(GithubException):
+    def __init__(self, msg):
+        super(GithubException, self).__init__(msg)
 
 
 class Github(object):
