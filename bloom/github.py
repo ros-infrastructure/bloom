@@ -102,7 +102,6 @@ def do_github_post_req(path, data=None, auth=None, site='api.github.com'):
     return response
 
 
-
 class GithubException(Exception):
     def __init__(self, msg, resp=None):
         if resp:
