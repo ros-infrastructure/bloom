@@ -100,6 +100,7 @@ def do_github_post_req(path, data=None, auth=None, site='api.github.com'):
 
 
 def json_loads(resp):
+    """Handle parsing json from an HTTP response for both Python 2 and Python 3."""
     try:
         charset = resp.headers.getparam('charset')
         charset = 'utf8' if not charset else charset
