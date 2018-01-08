@@ -1,3 +1,11 @@
+0.6.2 (2018-01-08 13:45:00 -0800)
+---------------------------------
+- Removed test.* subpackages from installation. `#444 <https://github.com/ros-infrastructure/bloom/pull/444>`_
+- Prepared for release supporting Ubuntu Bionic Beaver. `#452 <https://github.com/ros-infrastructure/bloom/pull/452>`_
+- Fixed error message when GitHub Multi-Factor auth is enabled. `#451 <https://github.com/ros-infrastructure/bloom/pull/451>`_
+- Added support for ROS 2 Ardent Apalone. `#453 <https://github.com/ros-infrastructure/bloom/pull/453>`_
+- Fixed an HTTP/JSON encoding issue in bloom-release for Python 3. `#445 <https://github.com/ros-infrastructure/bloom/pull/445>`_
+
 0.6.1 (2017-10-20 13:45:00 -0800)
 ---------------------------------
 - Switched to PyPI JSON API for online updates check. `#438 <https://github.com/ros-infrastructure/bloom/pull/438>`_
