@@ -77,6 +77,7 @@ from bloom.github import auth_header_from_basic_auth
 from bloom.github import auth_header_from_oauth_token
 from bloom.github import Github
 from bloom.github import GithubException
+from bloom.github import GitHubAuthException
 
 from bloom.logging import debug
 from bloom.logging import error
@@ -638,6 +639,19 @@ _gh = None
 
 
 def get_github_interface(quiet=False):
+    def mfa_prompt(oauth_config_path, username):
+        """Explain how to create a token for users with Multi-Factor Authentication configured."""
+        warning("Receiving 401 when trying to create an oauth token can be caused by the user "
+                "having two-factor authentication enabled.")
+        warning("If 2FA is enabled, the user will have to create an oauth token manually.")
+        warning("A token can be created at https://github.com/settings/applications")
+        warning("The resulting token can be placed in the '{oauth_config_path}' file as such:"
+                .format(**locals()))
+        info("")
+        warning('{{"github_user": "{username}", "oauth_token": "TOKEN_GOES_HERE"}}'
+                .format(**locals()))
+        info("")
+
     global _gh
     if _gh is not None:
         return _gh
@@ -686,20 +700,14 @@ def get_github_interface(quiet=False):
                 f.write(json.dumps(config))
             info("The token '{token}' was created and stored in the bloom config file: '{oauth_config_path}'"
                  .format(**locals()))
+        except GitHubAuthException as exc:
+            error("{0}".format(exc))
+            mfa_prompt(oauth_config_path, username)
         except GithubException as exc:
             error("{0}".format(exc))
             info("")
-            if '{0}'.format(exc.resp.status) in ['401']:
-                warning("Receiving 401 when trying to create an oauth token can be caused by the user "
-                        "having two-factor authentication enabled.")
-                warning("If 2FA is enabled, the user will have to create an oauth token manually.")
-                warning("A token can be created at https://github.com/settings/applications")
-                warning("The resulting token can be placed in the '{oauth_config_path}' file as such:"
-                        .format(**locals()))
-                info("")
-                warning('{{"github_user": "{username}", "oauth_token": "TOKEN_GOES_HERE"}}'
-                        .format(**locals()))
-                info("")
+            if hasattr(exc, 'resp') and '{0}'.format(exc.resp.status) in ['401']:
+                mfa_prompt(oauth_config_path, username)
             warning("This sometimes fails when the username or password are incorrect, try again?")
             if not maybe_continue():
                 return None
