@@ -1266,7 +1266,7 @@ def get_argument_parser():
     add('repository', help="repository to run bloom on")
     add('--list-tracks', '-l', action='store_true', default=False,
         help="list available tracks for repository")
-    add('--track', '-t', required=True, help="track to run")
+    add('--track', '-t', required=False, help="track to run; defaults to rosdistro name")
     add('--non-interactive', '-y', action='store_true', default=False)
     add('--ros-distro', '--rosdistro', '-r', required=True,
         help="determines the ROS distro file used")
@@ -1293,6 +1293,8 @@ def main(sysargs=None):
     parser = get_argument_parser()
     parser = add_global_arguments(parser)
     args = parser.parse_args(sysargs)
+    if args.track is None:
+        args.track = args.ros_distro
     handle_global_arguments(args)
 
     if args.list_tracks:
