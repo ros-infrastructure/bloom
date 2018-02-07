@@ -298,6 +298,11 @@ def validate_github_url(url, url_type):
 
 
 def infer_release_repo_from_env(repository):
+    """
+        If the environment var BLOOM_RELEASE_REPO_BASE exists, and
+        BLOOM_RELEASE_REPO_BASE + repository + '-release.git' exists online,
+        then this function will return the newly composed url
+    """
     base = os.environ.get('BLOOM_RELEASE_REPO_BASE', None)
     if base is None:
         return None
