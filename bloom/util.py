@@ -266,6 +266,7 @@ _distro_list_prompt = [
     'indigo',
     'kinetic',
     'lunar',
+    'melodic',
 ]
 
 
