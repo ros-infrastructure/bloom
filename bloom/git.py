@@ -708,26 +708,6 @@ def get_last_tag_by_date(directory=None):
     return output[-1]
 
 
-def has_submodules(directory=None):
-    """
-    Returns True if the git repository at this directory has submodules
-
-    :param directory: directory to check for submodules in
-    :returns: True if there are submodules, False otherwise
-
-    :raises: RuntimeError if directory is not a git repository
-    """
-    root = get_root(directory)
-    checked_dir = directory or os.getcwd()
-    if root is None:
-        raise RuntimeError("Directory '{0}' is not in a git repository.".format(checked_dir))
-    cmd = "git submodule status"
-    output = check_output(cmd, shell=True, cwd=root, stderr=PIPE)
-    if not output.strip():
-        return False
-    return True
-
-
 def get_remotes(directory=None):
     """
     Returns a list of remote names.

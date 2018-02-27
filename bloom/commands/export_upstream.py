@@ -51,7 +51,6 @@ from bloom.logging import warning
 
 from bloom.git import branch_exists
 from bloom.git import get_root
-from bloom.git import has_submodules
 from bloom.git import tag_exists
 
 from bloom.util import add_global_arguments
