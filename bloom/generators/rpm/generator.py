@@ -34,6 +34,7 @@ from __future__ import print_function
 
 import collections
 import datetime
+import io
 import json
 import os
 import pkg_resources
@@ -374,7 +375,9 @@ def __process_template_folder(path, subs):
             os.path.relpath(template_path)))
         result = em.expand(template, **subs)
         # Write the result
-        with open(template_path, 'w') as f:
+        with io.open(template_path, 'w', encoding='utf-8') as f:
+            if sys.version_info.major == 2:
+                result = result.decode('utf-8')
             f.write(result)
         # Copy the permissions
         shutil.copymode(item, template_path)
