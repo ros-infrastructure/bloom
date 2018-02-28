@@ -44,6 +44,7 @@ import json
 import os
 import pkg_resources
 import platform
+import requests
 import shutil
 import subprocess
 import sys
@@ -296,6 +297,21 @@ def validate_github_url(url, url_type):
     return True
 
 
+def infer_release_repo_from_env(repository):
+    """
+        If the environment var BLOOM_RELEASE_REPO_BASE exists, and
+        BLOOM_RELEASE_REPO_BASE + repository + '-release.git' exists online,
+        then this function will return the newly composed url
+    """
+    base = os.environ.get('BLOOM_RELEASE_REPO_BASE', None)
+    if base is None:
+        return None
+    url = base + repository + '-release.git'
+    r = requests.get(url)
+    if r.status_code == requests.codes.ok:
+        return url
+
+
 def get_repo_uri(repository, distro):
     url = None
     # Fetch the distro file
@@ -309,6 +325,8 @@ def get_repo_uri(repository, distro):
         matches = difflib.get_close_matches(repository, distribution_file.repositories)
         if matches:
             info(fmt("@{yf}Did you mean one of these: '" + "', '".join([m for m in matches]) + "'?"))
+    if url is None:
+        url = infer_release_repo_from_env(repository)
     if url is None:
         info("Could not determine release repository url for repository '{0}' of distro '{1}'"
              .format(repository, distro))
