@@ -1,3 +1,13 @@
+0.6.3 (2018-03-09 11:05:00 -0800)
+---------------------------------
+- Released for Debian buster. `#457 <https://github.com/ros-infrastructure/bloom/pull/457>`_
+- Updated bloom-release: The --track/-t argument is now optional and defaults to the rosdistro. `#459 <https://github.com/ros-infrastructure/bloom/pull/459>`_
+- Added bouncy to the list of ROS 2 rosdistros. `#462 <https://github.com/ros-infrastructure/bloom/pull/462>`_
+- Added melodic to the list of rosdistros. `#463 <https://github.com/ros-infrastructure/bloom/pull/463>`_
+- Added support for releasing repositories with submodules. `#461 <https://github.com/ros-infrastructure/bloom/pull/461>`_
+- Improved release repository discovery with optional environment variable. `#460 <https://github.com/ros-infrastructure/bloom/pull/460>`_
+- Fixed python3 encoding issue when processing rpm templates. `#464 <https://github.com/ros-infrastructure/bloom/pull/464>`_
+
 0.6.2 (2018-01-08 13:45:00 -0800)
 ---------------------------------
 - Removed test.* subpackages from installation. `#444 <https://github.com/ros-infrastructure/bloom/pull/444>`_
