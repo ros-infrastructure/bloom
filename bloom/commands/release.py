@@ -44,7 +44,6 @@ import json
 import os
 import pkg_resources
 import platform
-import requests
 import shutil
 import subprocess
 import sys
@@ -57,8 +56,11 @@ from pkg_resources import parse_version
 
 # python2/3 compatibility
 try:
+    from urllib.error import HTTPError, URLError
     from urllib.parse import urlparse
+    from urllib.request import Request, urlopen
 except ImportError:
+    from urllib2 import HTTPError, Request, URLError, urlopen
     from urlparse import urlparse
 
 import bloom
@@ -307,9 +309,13 @@ def infer_release_repo_from_env(repository):
     if base is None:
         return None
     url = base + repository + '-release.git'
-    r = requests.get(url)
-    if r.status_code == requests.codes.ok:
-        return url
+    try:
+        urlopen(Request(url))
+    except URLError:
+        return None
+    except HTTPError:
+        return None
+    return url
 
 
 def get_repo_uri(repository, distro):
