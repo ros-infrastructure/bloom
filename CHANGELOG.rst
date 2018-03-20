@@ -1,3 +1,7 @@
+0.6.4 (2018-03-20 13:15:00 -0800)
+---------------------------------
+- Fixed use of non-dependency library. `#468 <https://github.com/ros-infrastructure/bloom/pull/468>`_
+
 0.6.3 (2018-03-09 11:05:00 -0800)
 ---------------------------------
 - Released for Debian buster. `#457 <https://github.com/ros-infrastructure/bloom/pull/457>`_
