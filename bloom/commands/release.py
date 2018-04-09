@@ -347,7 +347,7 @@ def get_repo_uri(repository, distro):
         default_distro, default_release = get_most_recent('release', repository)
         default_release_repo_url = default_release.url if default_release else "press enter to abort"
         if default_distro is not None:
-            warning("A previous distribution, '{0}', released this repository.".format(default_distro))
+            warning("A different distribution, '{0}', released this repository.".format(default_distro))
         else:
             warning("No reasonable default release repository url could be determined from previous releases.")
         while True:
