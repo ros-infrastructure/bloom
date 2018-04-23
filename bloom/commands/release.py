@@ -454,6 +454,8 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
         repo['tags'.encode('utf-8')] = {}
     repo['tags']['release'.encode('utf-8')] = generate_release_tag(distro)
     repo['version'.encode('utf-8')] = version
+    if 'last_release' in track_dict:
+        repo['upstream_tag'.encode('utf-8')] = track_dict['last_release']
     if 'packages' not in repo:
         repo['packages'.encode('utf-8')] = []
     for path, pkg in packages.items():

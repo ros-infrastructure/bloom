@@ -304,6 +304,9 @@ def execute_track(track, track_dict, release_inc, pretend=True, debug=False, fas
         tracks_dict = get_tracks_dict_raw()
         tracks_dict['tracks'][track]['release_inc'] = settings['release_inc']
         tracks_dict['tracks'][track]['last_version'] = settings['version']
+        # if release tag is set to ask and a custom value is used
+        if settings['version'] != settings['release_tag']:
+            tracks_dict['tracks'][track]['last_release'] = settings['release_tag']
         write_tracks_dict_raw(tracks_dict,
                               'Updating release inc to: ' + str(settings['release_inc']))
 
