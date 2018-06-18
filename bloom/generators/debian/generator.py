@@ -484,6 +484,9 @@ def __process_template_folder(path, subs):
             os.path.relpath(item),
             os.path.relpath(template_path)))
         result = em.expand(template, **subs)
+        # Skip if content is empty (for copyright)
+        if len(result) == 0:
+            continue
         # Write the result
         with io.open(template_path, 'w', encoding='utf-8') as f:
             if sys.version_info.major == 2:

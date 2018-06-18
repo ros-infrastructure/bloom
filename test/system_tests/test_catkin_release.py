@@ -354,10 +354,11 @@ def test_multi_package_repository(directory=None):
                     format_version = int(re.search('format="(\d+)"',
                                                    package_xml).group(1))
                 # Is there a copyright file for this pkg?
-                assert os.path.exists(
-                    os.path.join('debian', 'copyright')), \
-                    "debian/copyright is not generated"
-                if format_version > 2:
+                if format_version <= 2:
+                    assert not os.path.exists(
+                        os.path.join('debian', 'copyright')), \
+                        "debian/copyright should not be generated"
+                else:
                     with open('debian/copyright', 'r') as f:
                         assert pkg + ' license' in f.read(), \
                             "debian/copyright does not include right license text"
