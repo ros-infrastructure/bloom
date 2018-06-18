@@ -212,7 +212,7 @@ def test_multi_package_repository(directory=None):
     directory = directory if directory is not None else os.getcwd()
     # Setup
     pkgs = ['foo', 'bar_ros', 'baz']
-    upstream_dir = create_upstream_repository(pkgs, directory, format_versions=[1, 2, 2])
+    upstream_dir = create_upstream_repository(pkgs, directory, format_versions=[1, 2, 3])
     upstream_url = 'file://' + upstream_dir
     release_url = create_release_repo(
         upstream_url,
