@@ -419,6 +419,7 @@ def generate_substitutions_from_package(
     summarize_dependency_mapping(data, depends, build_depends, resolved_deps)
     # Copyright
     licenses = []
+    separator = '\n' + '=' * 80 + '\n\n'
     for l in package.licenses:
         if hasattr(l, 'file') and l.file is not None:
             license_file = os.path.join(os.path.dirname(package.filename), l.file)
@@ -429,7 +430,7 @@ def generate_substitutions_from_package(
             if not license_text.endswith('\n'):
                 license_text += '\n'
             licenses.append(license_text)
-    data['Copyright'] = '\n'.join(licenses)
+    data['Copyright'] = separator.join(licenses)
 
     def convertToUnicode(obj):
         if sys.version_info.major == 2:
