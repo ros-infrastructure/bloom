@@ -87,12 +87,29 @@ class RosDebianGenerator(DebianGenerator):
         )
         subs['Package'] = rosify_package_name(subs['Package'], self.rosdistro)
 
-        # XXX Add workspace package to runtime and buildtime dependencies for ROS 2 only.
-        if self.rosdistro in ['r2b2', 'r2b3', 'ardent', 'bouncy'] and \
-                package.name not in ['ament_cmake_core', 'ament_package', 'ros_workspace']:
-                    workspace_pkg_name = rosify_package_name('ros-workspace', self.rosdistro)
-                    subs['BuildDepends'].append(workspace_pkg_name)
-                    subs['Depends'].append(workspace_pkg_name)
+        # ROS 2 specific bloom extensions.
+        # TODO(nuclearsandwich) explore other ways to enable these extensions, reduce their necessity,
+        # or make them configurable rather than relying on distro names.
+        if self.rosdistro in ['r2b2', 'r2b3', 'ardent', 'bouncy']:
+            # Add ros-workspace package as a dependency to any package other
+            # than ros_workspace and its dependencies.
+            if package.name not in ['ament_cmake_core', 'ament_package', 'ros_workspace']:
+                workspace_pkg_name = rosify_package_name('ros-workspace', self.rosdistro)
+                subs['BuildDepends'].append(workspace_pkg_name)
+                subs['Depends'].append(workspace_pkg_name)
+
+            # Add vendor typesupport packages to build dependencies for rosidl_interface_packages.
+            if self.rosdistro in ['bouncy'] and \
+                    'rosidl_interface_packages' in [p.name for p in package.member_of_groups]:
+                ROS2_VENDOR_TYPESUPPORT_PACKAGES = [
+                    'rosidl-typesupport-connext-c',
+                    'rosidl-typesupport-connext-cpp',
+                    'rosidl-typesupport-opensplice-c',
+                    'rosidl-typesupport-opensplice-cpp',
+                ]
+
+                subs['BuildDepends'] += [
+                    rosify_package_name(name, self.rosdistro) for name in ROS2_VENDOR_TYPESUPPORT_PACKAGES]
         return subs
 
     def generate_branching_arguments(self, package, branch):
