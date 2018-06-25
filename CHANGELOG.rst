@@ -1,3 +1,9 @@
+0.6.5 (2018-06-25 07:00:00 -0800)
+---------------------------------
+- Added injection of vendor typesupport packages into build deps for ROS 2. `#475 <https://github.com/ros-infrastructure/bloom/pull/475>`_
+- Updated message wording. `#471 <https://github.com/ros-infrastructure/bloom/pull/471>`_
+- Updated tested python versions. `#466 <https://github.com/ros-infrastructure/bloom/pull/466>`_
+
 0.6.4 (2018-03-20 13:15:00 -0800)
 ---------------------------------
 - Fixed use of non-dependency library. `#468 <https://github.com/ros-infrastructure/bloom/pull/468>`_
