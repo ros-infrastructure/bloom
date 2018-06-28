@@ -98,10 +98,15 @@ class RosDebianGenerator(DebianGenerator):
                 subs['BuildDepends'].append(workspace_pkg_name)
                 subs['Depends'].append(workspace_pkg_name)
 
-            # Add vendor typesupport packages to build dependencies for rosidl_interface_packages.
+            # Add packages necessary to build vendor typesupport for rosidl_interface_packages to their
+            # build dependencies.
             if self.rosdistro in ['bouncy'] and \
                     'rosidl_interface_packages' in [p.name for p in package.member_of_groups]:
-                ROS2_VENDOR_TYPESUPPORT_PACKAGES = [
+                ROS2_VENDOR_TYPESUPPORT_DEPENDENCIES = [
+                    'rmw-connext-cpp',
+                    'rmw-fastrtps-cpp',
+                    'rmw-implementation',
+                    'rmw-opensplice-cpp',
                     'rosidl-typesupport-connext-c',
                     'rosidl-typesupport-connext-cpp',
                     'rosidl-typesupport-opensplice-c',
@@ -109,7 +114,7 @@ class RosDebianGenerator(DebianGenerator):
                 ]
 
                 subs['BuildDepends'] += [
-                    rosify_package_name(name, self.rosdistro) for name in ROS2_VENDOR_TYPESUPPORT_PACKAGES]
+                    rosify_package_name(name, self.rosdistro) for name in ROS2_VENDOR_TYPESUPPORT_DEPENDENCIES]
         return subs
 
     def generate_branching_arguments(self, package, branch):
