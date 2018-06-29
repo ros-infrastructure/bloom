@@ -1,3 +1,7 @@
+0.6.6 (2018-06-28 19:44:00 -0800)
+---------------------------------
+- Updated vendor typesupport injection for ROS 2. `#477 <https://github.com/ros-infrastructure/bloom/pull/477>`_
+
 0.6.5 (2018-06-25 07:00:00 -0800)
 ---------------------------------
 - Added injection of vendor typesupport packages into build deps for ROS 2. `#475 <https://github.com/ros-infrastructure/bloom/pull/475>`_
