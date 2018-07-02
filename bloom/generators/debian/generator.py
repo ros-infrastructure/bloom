@@ -485,8 +485,10 @@ def __process_template_folder(path, subs):
             os.path.relpath(item),
             os.path.relpath(template_path)))
         result = em.expand(template, **subs)
-        # Skip if content is empty (for copyright)
-        if len(result) == 0:
+        # Don't write an empty file
+        if len(result) == 0 and \
+           os.path.basename(template_path) in ['copyright']:
+            processed_items.append(item)
             continue
         # Write the result
         with io.open(template_path, 'w', encoding='utf-8') as f:
