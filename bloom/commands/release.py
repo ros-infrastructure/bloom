@@ -606,10 +606,22 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
     distro_file_raw = load_url_to_file_handle(get_distribution_file_url(distro)).read()
     if distro_file_raw != distro_dump:
         # Calculate the diff
-        udiff = difflib.unified_diff(distro_file_raw.splitlines(), distro_dump.splitlines(),
-                                     fromfile=distro_file_name, tofile=distro_file_name)
+        dist_file_lines = distro_file_raw.splitlines()
+        dist_dump_lines = distro_dump.splitlines()
+        if sys.version_info[0] >= 3:
+            dist_file_lines = [str(l) for l in dist_file_lines]
+            dist_dump_lines = [str(l) for l in dist_dump_lines]
+        udiff = difflib.unified_diff(
+            dist_file_lines,
+            dist_dump_lines,
+            fromfile=distro_file_name,
+            tofile=distro_file_name
+        )
         temp_dir = tempfile.mkdtemp()
-        udiff_file = os.path.join(temp_dir, repository + '-' + version + '.patch')
+        if sys.version_info[0] < 3:
+            udiff_file = os.path.join(temp_dir, repository + '-' + version + '.patch')
+        else:
+            udiff_file = os.path.join(temp_dir, repository + '-' + version.decode() + '.patch')
         udiff_raw = ''
         info("Unified diff for the ROS distro file located at '{0}':".format(udiff_file))
         for line in udiff:
@@ -748,7 +760,7 @@ def get_changelog_summary(release_tag):
     packages = dict([(p.name, p) for p in get_packages().values()])
     for package_name in sorted(packages.keys()):
         package = packages[package_name]
-        release_branch = '/'.join(release_tag.split('/')[:-1]).format(package=package.name)
+        release_branch = '/'.join(str(release_tag).split('/')[:-1]).format(package=package.name)
         if not branch_exists(release_branch):
             continue
         with inbranch(release_branch):
@@ -848,23 +860,20 @@ def open_pull_request(track, repository, distro, interactive, override_release_r
     new_branch = None
     title = "{0}: {1} in '{2}' [bloom]".format(repository, version, base_path)
     track_dict = get_tracks_dict_raw()['tracks'][track]
-    body = u"""\
-Increasing version of package(s) in repository `{repository}` to `{version}`:
-
-- upstream repository: {upstream_repo}
-- release repository: {release_repo}
-- distro file: `{distro_file}`
-- bloom version: `{bloom_version}`
-- previous version for package: `{orig_version}`
-""".format(
-        repository=repository,
-        orig_version=orig_version or 'null',
-        version=version,
-        distro_file=base_path,
-        bloom_version=bloom.__version__,
-        upstream_repo=track_dict['vcs_uri'],
-        release_repo=updated_distribution_file.repositories[repository].release_repository.url,
-    )
+    body = "Increasing version of package(s) in repository `{repository}` to `{version}`:" \
+        "- upstream repository: {upstream_repo}"\
+        "- release repository: {release_repo}"\
+        "- distro file: `{distro_file}`"\
+        "- bloom version: `{bloom_version}`"\
+        "- previous version for package: `{orig_version}`".format(
+            repository=repository,
+            orig_version=orig_version or 'null',
+            version=version,
+            distro_file=base_path,
+            bloom_version=bloom.__version__,
+            upstream_repo=track_dict['vcs_uri'],
+            release_repo=updated_distribution_file.repositories[repository].release_repository.url,
+        )
     body += get_changelog_summary(generate_release_tag(distro))
     with temporary_directory() as temp_dir:
         def _my_run(cmd, msg=None):

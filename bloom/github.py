@@ -87,7 +87,10 @@ def do_github_post_req(path, data=None, auth=None, site='api.github.com'):
     if data is None:
         request = Request(url, headers=headers)  # GET
     else:
-        request = Request(url, data=json.dumps(data), headers=headers)  # POST
+        _data = json.dumps(data)
+        if type(_data) != type(b""):
+            _data = _data.encode()
+        request = Request(url, data=_data, headers=headers)  # POST
 
     try:
         response = urlopen(request, timeout=120)
