@@ -672,7 +672,7 @@ def get_github_interface(quiet=False):
         warning("Receiving 401 when trying to create an oauth token can be caused by the user "
                 "having two-factor authentication enabled.")
         warning("If 2FA is enabled, the user will have to create an oauth token manually.")
-        warning("A token can be created at https://github.com/settings/applications")
+        warning("A token can be created at https://github.com/settings/tokens")
         warning("The resulting token can be placed in the '{oauth_config_path}' file as such:"
                 .format(**locals()))
         info("")
