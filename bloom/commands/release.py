@@ -881,7 +881,8 @@ Increasing version of package(s) in repository `{repository}` to `{version}`:
                 check_call(cmd, shell=True)
             # Use the oauth token to clone
             rosdistro_url = 'https://{gh.token}:x-oauth-basic@github.com/{base_org}/{base_repo}.git'.format(**locals())
-            rosdistro_fork_url = 'https://{gh.token}:x-oauth-basic@github.com/{head_org}/{head_repo}.git'.format(**locals())
+            fork_template = 'https://{gh.token}:x-oauth-basic@github.com/{head_org}/{head_repo}.git'
+            rosdistro_fork_url = fork_template.format(**locals())
             _my_run('mkdir -p {base_repo}'.format(**locals()))
             with change_directory(base_repo):
                 _my_run('git init')
