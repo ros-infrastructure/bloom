@@ -958,7 +958,8 @@ Increasing version of package(s) in repository `{repository}` to `{version}`:
                 check_call(cmd, shell=True)
             # Use the oauth token to clone
             rosdistro_url = 'https://{gh.token}:x-oauth-basic@github.com/{base_org}/{base_repo}.git'.format(**locals())
-            fork_url = 'https://{gh.token}:x-oauth-basic@github.com/{head_org}/{head_repo}.git'.format(**locals())
+            fork_template = 'https://{gh.token}:x-oauth-basic@github.com/{head_org}/{head_repo}.git'
+            rosdistro_fork_url = fork_template.format(**locals())
             _my_run('mkdir -p {base_repo}'.format(**locals()))
             with change_directory(base_repo):
                 _my_run('git init')
@@ -989,7 +990,7 @@ Increasing version of package(s) in repository `{repository}` to `{version}`:
                     f.write(updated_distro_file_yaml)
                 _my_run('git add {0}'.format(base_path))
                 _my_run('git commit -m "{0}"'.format(title))
-                _my_run('git push {fork_url} {new_branch}'.format(**locals()), "Pushing changes to fork")
+                _my_run('git push {rosdistro_fork_url} {new_branch}'.format(**locals()), "Pushing changes to fork")
         # Open the pull request
         return gh.create_pull_request(base_org, base_repo, base_branch, head_org, new_branch, title, body)
     else:
