@@ -723,7 +723,7 @@ def get_github_interface(quiet=False):
         gh = Github(username, auth=auth_header_from_basic_auth(username, password))
         try:
             token = gh.create_new_bloom_authorization(update_auth=True)
-            with open(oauth_config_path, 'a') as f:
+            with open(oauth_config_path, 'w') as f:
                 config.update({'oauth_token': token, 'github_user': username})
                 f.write(json.dumps(config))
             info("The token '{token}' was created and stored in the bloom config file: '{oauth_config_path}'"
@@ -792,11 +792,16 @@ def open_pull_request(track, repository, distro, interactive, override_release_r
         return None
     version = updated_distribution_file.repositories[repository].release_repository.version
     updated_distro_file_yaml = yaml_from_distribution_file(updated_distribution_file)
-    # Determine if the distro file is hosted on github...
-    base_org, base_repo, base_branch, base_path = get_gh_info(get_distribution_file_url(distro))
-    if None in [base_org, base_repo, base_branch, base_path]:
+
+    # Determine where the distro file is hosted...
+    distro_url = get_distribution_file_url(distro)
+    base_org, base_repo, base_branch, base_path = get_gh_info(distro_url)
+    if None not in [base_org, base_repo, base_branch, base_path]:
+        server = 'http://github.com'
+    else:
         warning("Automated pull request only available via github.com")
         return
+
     # If we did replace the branch in the url with a commit, restore that now
     if _rosdistro_index_original_branch is not None:
         base_branch = _rosdistro_index_original_branch
@@ -823,7 +828,7 @@ Increasing version of package(s) in repository `{repository}` to `{version}`:
     )
     body += get_changelog_summary(generate_release_tag(distro))
 
-    if True:
+    if server == 'http://github.com':
         # Get the github interface
         gh = get_github_interface()
         if gh is None:
