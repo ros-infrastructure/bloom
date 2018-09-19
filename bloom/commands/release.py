@@ -845,6 +845,7 @@ Increasing version of package(s) in repository `{repository}` to `{version}`:
         # Determine the head org/repo for the pull request
         head_org = gh.username  # The head org will always be gh user
         head_repo = None
+        base_repo_id = '{org}/{repo}'.format(**base_info)
         # Check if the github user and the base org are the same
         if gh.username == base_info['org']:
             # If it is, then a fork is not necessary
@@ -866,7 +867,7 @@ Increasing version of package(s) in repository `{repository}` to `{version}`:
 
             # If not head_repo still, a fork does not exist and must be created
             if head_repo is None:
-                warning("Could not find a fork of {base_info['org']}/{base_info['repo']} on the {gh.username} GitHub account."
+                warning("Could not find a fork of {base_repo_id} on the {gh.username} GitHub account."
                         .format(**locals()))
                 warning("Would you like to create one now?")
                 if not maybe_continue():
@@ -894,7 +895,7 @@ Increasing version of package(s) in repository `{repository}` to `{version}`:
                 from subprocess import check_call
                 check_call(cmd, shell=True)
             # Use the oauth token to clone
-            rosdistro_url = 'https://{gh.token}:x-oauth-basic@github.com/{base_info['org']}/{base_info['repo']}.git'.format(**locals())
+            rosdistro_url = 'https://{gh.token}:x-oauth-basic@github.com/{base_repo_id}.git'.format(**locals())
             fork_template = 'https://{gh.token}:x-oauth-basic@github.com/{head_org}/{head_repo}.git'
             rosdistro_fork_url = fork_template.format(**locals())
             _my_run('mkdir -p {base_info['repo']}'.format(**locals()))
@@ -912,14 +913,15 @@ Increasing version of package(s) in repository `{repository}` to `{version}`:
                 msg = fmt("@!Open a @|@{cf}pull request@| @!@{kf}from@| @!'@|@!@{bf}" +
                           "{head_org}/{head_repo}:{new_branch}".format(**locals()) +
                           "@|@!' @!@{kf}into@| @!'@|@!@{bf}" +
-                          "{base_info['org']}/{base_info['repo']}:{base_info['branch']}".format(**locals()) +
+                          "{base_repo_id}:{base_info['branch']}".format(**locals()) +
                           "@|@!'?")
                 info(msg)
                 if interactive and not maybe_continue():
                     warning("Skipping the pull request...")
                     return
                 _my_run('git checkout -b {new_branch}'.format(**locals()))
-                _my_run('git pull {rosdistro_url} {base_info['branch']}'.format(**locals()), "Pulling latest rosdistro branch")
+                _my_run('git pull {rosdistro_url} {base_info['branch']}'.format(**locals()),
+                        "Pulling latest rosdistro branch")
                 if _rosdistro_index_commit is not None:
                     _my_run('git reset --hard {_rosdistro_index_commit}'.format(**globals()))
                 with open('{0}'.format(base_info['path']), 'w') as f:
@@ -929,7 +931,8 @@ Increasing version of package(s) in repository `{repository}` to `{version}`:
                 _my_run('git commit -m "{0}"'.format(title))
                 _my_run('git push {rosdistro_fork_url} {new_branch}'.format(**locals()), "Pushing changes to fork")
         # Open the pull request
-        return gh.create_pull_request(base_info['org'], base_info['repo'], base_info['branch'], head_org, new_branch, title, body)
+        return gh.create_pull_request(base_info['org'], base_info['repo'], base_info['branch'],
+                                      head_org, new_branch, title, body)
 
 _original_version = None
 
