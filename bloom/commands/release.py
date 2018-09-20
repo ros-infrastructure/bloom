@@ -198,7 +198,7 @@ def get_index_url():
                  .format(_rosdistro_index_commit))
             # Also mutate the index_url to use the commit (rather than the moving branch name)
             base_info = get_gh_info(index_url)
-            base_branch = base_info[branch]
+            base_branch = base_info['branch']
             rosdistro_index_commit = _rosdistro_index_commit  # Copy global into local for substitution
             middle = "{org}/{repo}".format(**base_info)
             index_url = index_url.replace("{pr.netloc}/{middle}/{base_branch}/".format(**locals()),
@@ -661,7 +661,7 @@ def get_gh_info(url):
     url_paths = o.path.split('/')
     if len(url_paths) < 5:
         return None
-    return {'server': 'github.com'
+    return {'server': 'github.com',
             'org': url_paths[1],
             'repo': url_paths[2],
             'branch': url_paths[3],
@@ -898,7 +898,7 @@ Increasing version of package(s) in repository `{repository}` to `{version}`:
             rosdistro_url = 'https://{gh.token}:x-oauth-basic@github.com/{base_repo_id}.git'.format(**locals())
             fork_template = 'https://{gh.token}:x-oauth-basic@github.com/{head_org}/{head_repo}.git'
             rosdistro_fork_url = fork_template.format(**locals())
-            _my_run('mkdir -p {base_info['repo']}'.format(**locals()))
+            _my_run("mkdir -p {base_info[repo]}".format(**locals()))
             with change_directory(base_info['repo']):
                 _my_run('git init')
                 branches = [x['name'] for x in gh.list_branches(head_org, head_repo)]
@@ -913,14 +913,14 @@ Increasing version of package(s) in repository `{repository}` to `{version}`:
                 msg = fmt("@!Open a @|@{cf}pull request@| @!@{kf}from@| @!'@|@!@{bf}" +
                           "{head_org}/{head_repo}:{new_branch}".format(**locals()) +
                           "@|@!' @!@{kf}into@| @!'@|@!@{bf}" +
-                          "{base_repo_id}:{base_info['branch']}".format(**locals()) +
+                          "{base_repo_id}:{base_info[branch]}".format(**locals()) +
                           "@|@!'?")
                 info(msg)
                 if interactive and not maybe_continue():
                     warning("Skipping the pull request...")
                     return
                 _my_run('git checkout -b {new_branch}'.format(**locals()))
-                _my_run('git pull {rosdistro_url} {base_info['branch']}'.format(**locals()),
+                _my_run("git pull {rosdistro_url} {base_info[branch]}".format(**locals()),
                         "Pulling latest rosdistro branch")
                 if _rosdistro_index_commit is not None:
                     _my_run('git reset --hard {_rosdistro_index_commit}'.format(**globals()))
