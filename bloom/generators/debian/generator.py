@@ -417,6 +417,20 @@ def generate_substitutions_from_package(
     data['debhelper_version'] = 7 if os_version in ['oneiric'] else 9
     # Summarize dependencies
     summarize_dependency_mapping(data, depends, build_depends, resolved_deps)
+    # Copyright
+    licenses = []
+    separator = '\n' + '=' * 80 + '\n\n'
+    for l in package.licenses:
+        if hasattr(l, 'file') and l.file is not None:
+            license_file = os.path.join(os.path.dirname(package.filename), l.file)
+            if not os.path.exists(license_file):
+                error("License file '{}' is not found.".
+                      format(license_file), exit=True)
+            license_text = open(license_file, 'r').read()
+            if not license_text.endswith('\n'):
+                license_text += '\n'
+            licenses.append(license_text)
+    data['Copyright'] = separator.join(licenses)
 
     def convertToUnicode(obj):
         if sys.version_info.major == 2:
@@ -471,6 +485,11 @@ def __process_template_folder(path, subs):
             os.path.relpath(item),
             os.path.relpath(template_path)))
         result = em.expand(template, **subs)
+        # Don't write an empty file
+        if len(result) == 0 and \
+           os.path.basename(template_path) in ['copyright']:
+            processed_items.append(item)
+            continue
         # Write the result
         with io.open(template_path, 'w', encoding='utf-8') as f:
             if sys.version_info.major == 2:
