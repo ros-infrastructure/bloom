@@ -1,3 +1,10 @@
+0.6.7 (2018-09-24 06:30:00 -0800)
+---------------------------------
+- Added debian/copyright file to debian package when license file is specified in package.xml. `#470 <https://github.com/ros-infrastructure/bloom/pull/470>`_
+- Refactored release command to prepare for GitLab pull request support. `#483 <https://github.com/ros-infrastructure/bloom/pull/483>`_
+- Fixed outdated GitHub URL in help text. `#484 <https://github.com/ros-infrastructure/bloom/pull/484>`_
+- Added entry to tracks.yaml to store the upstream tag of the last release. `#472 <https://github.com/ros-infrastructure/bloom/pull/472>`_
+
 0.6.6 (2018-06-28 19:44:00 -0800)
 ---------------------------------
 - Updated vendor typesupport injection for ROS 2. `#477 <https://github.com/ros-infrastructure/bloom/pull/477>`_
