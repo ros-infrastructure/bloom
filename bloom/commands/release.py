@@ -657,7 +657,7 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
 def get_gh_info(url):
     o = urlparse(url)
     if 'raw.github.com' not in o.netloc and 'raw.githubusercontent.com' not in o.netloc:
-        return None, None, None, None
+        return None
     url_paths = o.path.split('/')
     if len(url_paths) < 5:
         return None
