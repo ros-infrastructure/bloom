@@ -41,6 +41,7 @@ import base64
 import datetime
 import json
 import socket
+import sys
 
 
 try:
@@ -87,7 +88,10 @@ def do_github_post_req(path, data=None, auth=None, site='api.github.com'):
     if data is None:
         request = Request(url, headers=headers)  # GET
     else:
-        request = Request(url, data=json.dumps(data), headers=headers)  # POST
+        data = json.dumps(data)
+        if sys.version_info[0] >= 3:
+            data = data.encode('utf-8')
+        request = Request(url, data=data, headers=headers)  # POST
 
     try:
         response = urlopen(request, timeout=120)
