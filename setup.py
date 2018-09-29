@@ -4,7 +4,7 @@ import sys
 from setuptools import find_packages, setup
 
 install_requires = [
-    'catkin-pkg >= 0.3.8',
+    'catkin-pkg >= 0.4.3',
     'setuptools',
     'empy',
     'python-dateutil',
@@ -22,7 +22,7 @@ if sys.version_info[0] == 2 and sys.version_info[1] <= 6:
 
 setup(
     name='bloom',
-    version='0.6.6',
+    version='0.6.7',
     packages=find_packages(exclude=['test', 'test.*']),
     package_data={
         'bloom.generators.debian': [
