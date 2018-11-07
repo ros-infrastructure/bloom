@@ -120,8 +120,8 @@ from vcstools.vcs_abstraction import get_vcs_client
 
 try:
     import rosdistro
-    if parse_version(rosdistro.__version__) < parse_version('0.4.0'):
-        error("rosdistro version 0.4.0 or greater is required, found '{0}' from '{1}'."
+    if parse_version(rosdistro.__version__) < parse_version('0.7.0'):
+        error("rosdistro version 0.7.0 or greater is required, found '{0}' from '{1}'."
               .format(rosdistro.__version__, os.path.dirname(rosdistro.__file__)),
               exit=True)
 except ImportError:
@@ -218,7 +218,7 @@ def get_index():
             error("This version of bloom does not support rosdistro version "
                   "'{0}', please use an older version of bloom."
                   .format(_rosdistro_index.version), exit=True)
-        if _rosdistro_index.version > 3:
+        if _rosdistro_index.version > 4:
             error("This version of bloom does not support rosdistro version "
                   "'{0}', please update bloom.".format(_rosdistro_index.version), exit=True)
     return _rosdistro_index
