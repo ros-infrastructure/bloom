@@ -1,3 +1,9 @@
+0.6.8 (2018-11-07 06:45:00 -0800)
+---------------------------------
+- Added support for rosdistro index v4. Bloom now requires rosdistro 0.7.0. `#493 <https://github.com/ros-infrastructure/bloom/pull/493>`_
+- Refactored for future GitLab pull request support. `#486 <https://github.com/ros-infrastructure/bloom/pull/486>`_
+- Added basic command execution test. `#487 <https://github.com/ros-infrastructure/bloom/pull/487>`_
+
 0.6.7 (2018-09-24 06:30:00 -0800)
 ---------------------------------
 - Added debian/copyright file to debian package when license file is specified in package.xml. `#470 <https://github.com/ros-infrastructure/bloom/pull/470>`_
