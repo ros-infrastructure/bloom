@@ -90,7 +90,7 @@ class RosDebianGenerator(DebianGenerator):
         # ROS 2 specific bloom extensions.
         # TODO(nuclearsandwich) explore other ways to enable these extensions, reduce their necessity,
         # or make them configurable rather than relying on distro names.
-        if self.rosdistro in ['r2b2', 'r2b3', 'ardent', 'bouncy']:
+        if self.rosdistro in ['r2b2', 'r2b3', 'ardent', 'bouncy', 'crystal']:
             # Add ros-workspace package as a dependency to any package other
             # than ros_workspace and its dependencies.
             if package.name not in ['ament_cmake_core', 'ament_package', 'ros_workspace']:
@@ -100,7 +100,7 @@ class RosDebianGenerator(DebianGenerator):
 
             # Add packages necessary to build vendor typesupport for rosidl_interface_packages to their
             # build dependencies.
-            if self.rosdistro in ['bouncy'] and \
+            if self.rosdistro in ['bouncy', 'crystal'] and \
                     'rosidl_interface_packages' in [p.name for p in package.member_of_groups]:
                 ROS2_VENDOR_TYPESUPPORT_DEPENDENCIES = [
                     'rmw-connext-cpp',
