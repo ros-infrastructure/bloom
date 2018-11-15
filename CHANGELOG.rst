@@ -1,3 +1,7 @@
+0.6.9 (2018-11-15 08:45:00 -0800)
+---------------------------------
+- Added Crystal Clemmys (crystal) to the list of ROS 2 rosdistros. `#495 <https://github.com/ros-infrastructure/bloom/pull/495>`_
+
 0.6.8 (2018-11-07 06:45:00 -0800)
 ---------------------------------
 - Added support for rosdistro index v4. Bloom now requires rosdistro 0.7.0. `#493 <https://github.com/ros-infrastructure/bloom/pull/493>`_
