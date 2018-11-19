@@ -120,8 +120,8 @@ from vcstools.vcs_abstraction import get_vcs_client
 
 try:
     import rosdistro
-    if parse_version(rosdistro.__version__) < parse_version('0.4.0'):
-        error("rosdistro version 0.4.0 or greater is required, found '{0}' from '{1}'."
+    if parse_version(rosdistro.__version__) < parse_version('0.7.0'):
+        error("rosdistro version 0.7.0 or greater is required, found '{0}' from '{1}'."
               .format(rosdistro.__version__, os.path.dirname(rosdistro.__file__)),
               exit=True)
 except ImportError:
@@ -218,7 +218,7 @@ def get_index():
             error("This version of bloom does not support rosdistro version "
                   "'{0}', please use an older version of bloom."
                   .format(_rosdistro_index.version), exit=True)
-        if _rosdistro_index.version > 3:
+        if _rosdistro_index.version > 4:
             error("This version of bloom does not support rosdistro version "
                   "'{0}', please update bloom.".format(_rosdistro_index.version), exit=True)
     return _rosdistro_index
@@ -423,10 +423,24 @@ def get_relative_distribution_file_path(distro):
 
 
 def generate_release_tag(distro):
-    return ('release/%s/{package}/{version}' % distro).encode('utf-8')
+    tag = ('release/%s/{package}/{version}' % distro)
+    if sys.version_info[0] < 3:
+        tag == tag.encode('utf-8')
+    return tag
 
 
 def generate_ros_distro_diff(track, repository, distro, override_release_repository_url):
+    def convert_unicode_dict_to_str(d):
+        for key, value in d.items():
+            if type(key) == unicode:
+                del d[key]
+                key = key.encode('utf-8')
+                if type(value) == unicode:
+                    value = value.encode('utf-8')
+                if type(value) == dict:
+                    convert_unicode_dict_to_str(value)
+                d[key] = value
+
     global _user_provided_release_url
     distribution_dict = get_distribution_file(distro).get_data()
     # Get packages
@@ -437,28 +451,27 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
     track_dict = get_tracks_dict_raw()['tracks'][track]
     last_version = track_dict['last_version']
     release_inc = track_dict['release_inc']
-    version = '{0}-{1}'.format(last_version, release_inc).encode('utf-8')
     # Create a repository if there isn't already one
     if repository not in distribution_dict['repositories']:
         distribution_dict['repositories'][repository] = {}
     # Create a release entry if there isn't already one
     if 'release' not in distribution_dict['repositories'][repository]:
-        distribution_dict['repositories'][repository]['release'.encode('utf-8')] = {
-            'url'.encode('utf-8'): override_release_repository_url or _user_provided_release_url
+        distribution_dict['repositories'][repository]['release'] = {
+            'url': override_release_repository_url or _user_provided_release_url
         }
     # Update the repository
     repo = distribution_dict['repositories'][repository]['release']
     # Consider the override
     if override_release_repository_url is not None:
-        repo['url'.encode('utf-8')] = override_release_repository_url
+        repo['url'] = override_release_repository_url
     if 'tags' not in repo:
-        repo['tags'.encode('utf-8')] = {}
-    repo['tags']['release'.encode('utf-8')] = generate_release_tag(distro)
-    repo['version'.encode('utf-8')] = version
+        repo['tags'] = {}
+    repo['tags']['release'] = generate_release_tag(distro)
+    repo['version'] = '{0}-{1}'.format(last_version, release_inc)
     if 'last_release' in track_dict:
-        repo['upstream_tag'.encode('utf-8')] = track_dict['last_release']
+        repo['upstream_tag'] = track_dict['last_release']
     if 'packages' not in repo:
-        repo['packages'.encode('utf-8')] = []
+        repo['packages'] = []
     for path, pkg in packages.items():
         if pkg.name not in repo['packages']:
             repo['packages'].append(pkg.name)
@@ -468,6 +481,8 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
         if pkg_name not in packages_being_released:
             repo['packages'].remove(pkg_name)
     repo['packages'].sort()
+    if sys.version_info[0] < 3:
+        convert_unicode_dict_to_str(repo)
 
     def get_repository_info_from_user(url_type, defaults=None):
         data = {}
@@ -604,7 +619,7 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
     distro_file_name = get_relative_distribution_file_path(distro)
     updated_distribution_file = rosdistro.DistributionFile(distro, distribution_dict)
     distro_dump = yaml_from_distribution_file(updated_distribution_file)
-    distro_file_raw = load_url_to_file_handle(get_distribution_file_url(distro)).read()
+    distro_file_raw = load_url_to_file_handle(get_distribution_file_url(distro)).read().decode('utf-8')
     if distro_file_raw != distro_dump:
         # Calculate the diff
         udiff = difflib.unified_diff(distro_file_raw.splitlines(), distro_dump.splitlines(),

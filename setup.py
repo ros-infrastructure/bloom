@@ -10,7 +10,7 @@ install_requires = [
     'python-dateutil',
     'PyYAML',
     'rosdep >= 0.10.25',
-    'rosdistro >= 0.4.0',
+    'rosdistro >= 0.7.0',
     'vcstools >= 0.1.22',
 ]
 
@@ -22,7 +22,7 @@ if sys.version_info[0] == 2 and sys.version_info[1] <= 6:
 
 setup(
     name='bloom',
-    version='0.6.7',
+    version='0.6.9',
     packages=find_packages(exclude=['test', 'test.*']),
     package_data={
         'bloom.generators.debian': [
