@@ -764,7 +764,7 @@ class RpmGenerator(BloomGenerator):
         template_files = process_template_files('.', subs)
         # Remove any residual template files
         execute_command('git rm -rf ' +
-                ' '.join("'%s'".format(t) for t in template_files))
+                ' '.join("'{}'".format(t) for t in template_files))
         # Add changes to the rpm folder
         execute_command('git add ' + rpm_dir)
         # Commit changes
