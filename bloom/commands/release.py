@@ -228,7 +228,12 @@ def list_distributions():
     return sorted(get_index().distributions.keys())
 
 
-def get_most_recent(thing_name, repository):
+def get_distribution_type(distro):
+    return get_index().distributions[distro].get('distribution_type')
+
+
+def get_most_recent(thing_name, repository, reference_distro):
+    reference_distro_type = get_distribution_type(reference_distro)
     distros_with_entry = {}
     get_things = {
         'release': lambda r: None if r.release_repository is None else r.release_repository,
@@ -237,6 +242,10 @@ def get_most_recent(thing_name, repository):
     }
     get_thing = get_things[thing_name]
     for distro in list_distributions():
+        # skip distros with a different type if the information is available
+        if reference_distro_type is not None:
+            if get_distribution_type(distro) != reference_distro_type:
+                continue
         distro_file = get_distribution_file(distro)
         if repository in distro_file.repositories:
             thing = get_thing(distro_file.repositories[repository])
@@ -345,7 +354,7 @@ def get_repo_uri(repository, distro):
         info("Here is the url for a typical release repository on GitHub: https://github.com/ros-gbp/rviz-release.git")
         # Calculate a reasonable default from the list of previous distros
         info(fmt("@{gf}@!==> @|") + "Looking for a release of this repository in a different distribution...")
-        default_distro, default_release = get_most_recent('release', repository)
+        default_distro, default_release = get_most_recent('release', repository, distro)
         default_release_repo_url = default_release.url if default_release else "press enter to abort"
         if default_distro is not None:
             warning("A different distribution, '{0}', released this repository.".format(default_distro))
@@ -536,7 +545,7 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
         if not docs and maybe_continue(msg='Would you like to add documentation information for this repository?'):
             defaults = None
             info(fmt("@{gf}@!==> @|") + "Looking for a doc entry for this repository in a different distribution...")
-            default_distro, default_doc = get_most_recent('doc', repository)
+            default_distro, default_doc = get_most_recent('doc', repository, distro)
             if default_distro is None:
                 warning("No existing doc entries found for use as defaults.")
             else:
@@ -559,7 +568,7 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
             defaults = None
             info(fmt("@{gf}@!==> @|") +
                  "Looking for a source entry for this repository in a different distribution...")
-            default_distro, default_source = get_most_recent('source', repository)
+            default_distro, default_source = get_most_recent('source', repository, distro)
             if default_distro is None:
                 warning("No existing source entries found for use as defaults.")
             else:
