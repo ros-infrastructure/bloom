@@ -39,9 +39,18 @@ from __future__ import print_function
 
 import base64
 import datetime
+import getpass
 import json
+import os
 import socket
 import sys
+
+from bloom.logging import error
+from bloom.logging import info
+from bloom.logging import warning
+
+from bloom.util import maybe_continue
+from bloom.util import safe_input
 
 
 try:
@@ -50,11 +59,13 @@ try:
     from urllib2 import HTTPError
     from urllib2 import Request, urlopen
     from urllib2 import URLError
+    from urlparse import urlparse
     from urlparse import urlunsplit
 except ImportError:
     # Python3
     from urllib.error import HTTPError
     from urllib.error import URLError
+    from urllib.parse import urlparse
     from urllib.parse import urlunsplit
     from urllib.request import Request, urlopen
 
@@ -240,3 +251,97 @@ class Github(object):
             raise GithubException("Failed to create pull request", resp)
         resp_json = json_loads(resp)
         return resp_json['html_url']
+
+
+def get_gh_info(url):
+    o = urlparse(url)
+    if 'raw.github.com' not in o.netloc and 'raw.githubusercontent.com' not in o.netloc:
+        return None
+    url_paths = o.path.split('/')
+    if len(url_paths) < 5:
+        return None
+    return {'server': 'github.com',
+            'org': url_paths[1],
+            'repo': url_paths[2],
+            'branch': url_paths[3],
+            'path': '/'.join(url_paths[4:])}
+
+
+_gh = None
+
+
+def get_github_interface(quiet=False):
+    def mfa_prompt(oauth_config_path, username):
+        """Explain how to create a token for users with Multi-Factor Authentication configured."""
+        warning("Receiving 401 when trying to create an oauth token can be caused by the user "
+                "having two-factor authentication enabled.")
+        warning("If 2FA is enabled, the user will have to create an oauth token manually.")
+        warning("A token can be created at https://github.com/settings/tokens")
+        warning("The resulting token can be placed in the '{oauth_config_path}' file as such:"
+                .format(**locals()))
+        info("")
+        warning('{{"github_user": "{username}", "oauth_token": "TOKEN_GOES_HERE"}}'
+                .format(**locals()))
+        info("")
+
+    global _gh
+    if _gh is not None:
+        return _gh
+    # First check to see if the oauth token is stored
+    oauth_config_path = os.path.join(os.path.expanduser('~'), '.config', 'bloom')
+    config = {}
+    if os.path.exists(oauth_config_path):
+        with open(oauth_config_path, 'r') as f:
+            config = json.loads(f.read())
+            token = config.get('oauth_token', None)
+            username = config.get('github_user', None)
+            if token and username:
+                return Github(username, auth=auth_header_from_oauth_token(token), token=token)
+    if not os.path.isdir(os.path.dirname(oauth_config_path)):
+        os.makedirs(os.path.dirname(oauth_config_path))
+    if quiet:
+        return None
+    # Ok, now we have to ask for the user name and pass word
+    info("")
+    warning("Looks like bloom doesn't have an oauth token for you yet.")
+    warning("Therefore bloom will require your GitHub username and password just this once.")
+    warning("With your GitHub username and password bloom will create an oauth token on your behalf.")
+    warning("The token will be stored in `~/.config/bloom`.")
+    warning("You can delete the token from that file to have a new token generated.")
+    warning("Guard this token like a password, because it allows someone/something to act on your behalf.")
+    warning("If you need to unauthorize it, remove it from the 'Applications' menu in your GitHub account page.")
+    info("")
+    if not maybe_continue('y', "Would you like to create an OAuth token now"):
+        return None
+    token = None
+    while token is None:
+        try:
+            username = getpass.getuser()
+            username = safe_input("GitHub username [{0}]: ".format(username)) or username
+            password = getpass.getpass("GitHub password (never stored): ")
+        except (KeyboardInterrupt, EOFError):
+            return None
+        if not password:
+            error("No password was given, aborting.")
+            return None
+        gh = Github(username, auth=auth_header_from_basic_auth(username, password))
+        try:
+            token = gh.create_new_bloom_authorization(update_auth=True)
+            with open(oauth_config_path, 'w') as f:
+                config.update({'oauth_token': token, 'github_user': username})
+                f.write(json.dumps(config))
+            info("The token '{token}' was created and stored in the bloom config file: '{oauth_config_path}'"
+                 .format(**locals()))
+        except GitHubAuthException as exc:
+            error("{0}".format(exc))
+            mfa_prompt(oauth_config_path, username)
+        except GithubException as exc:
+            error("{0}".format(exc))
+            info("")
+            if hasattr(exc, 'resp') and '{0}'.format(exc.resp.status) in ['401']:
+                mfa_prompt(oauth_config_path, username)
+            warning("This sometimes fails when the username or password are incorrect, try again?")
+            if not maybe_continue():
+                return None
+    _gh = gh
+    return gh
