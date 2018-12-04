@@ -104,7 +104,7 @@ def _trim(config, force, directory):
             items.append(item)
         # Remove and .* files missed by 'git rm -rf *'
         if len(items) > 0:
-            execute_command('git rm -rf ' + ' '.join(['"%s"' % i for i in items if i]), cwd=directory)
+            execute_command('git rm -rf ' + ' '.join(["'{}'".format(i) for i in items if i]), cwd=directory)
         # Copy the sub directory back
         for item in os.listdir(storage):
             src = os.path.join(storage, item)
