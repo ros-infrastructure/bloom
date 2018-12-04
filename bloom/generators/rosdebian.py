@@ -44,6 +44,8 @@ from bloom.generators.debian.generate_cmd import prepare_arguments
 
 from bloom.logging import info
 
+from bloom.rosdistro_api import get_index
+
 from bloom.util import get_distro_list_prompt
 
 
@@ -88,9 +90,10 @@ class RosDebianGenerator(DebianGenerator):
         subs['Package'] = rosify_package_name(subs['Package'], self.rosdistro)
 
         # ROS 2 specific bloom extensions.
-        # TODO(nuclearsandwich) explore other ways to enable these extensions, reduce their necessity,
-        # or make them configurable rather than relying on distro names.
-        if self.rosdistro in ['r2b2', 'r2b3', 'ardent', 'bouncy', 'crystal']:
+        ros2_distros = [
+            name for name, values in get_index().distributions.items()
+            if values.get('distribution_type') == 'ros2']
+        if self.rosdistro in ros2_distros:
             # Add ros-workspace package as a dependency to any package other
             # than ros_workspace and its dependencies.
             if package.name not in ['ament_cmake_core', 'ament_package', 'ros_workspace']:
@@ -100,7 +103,8 @@ class RosDebianGenerator(DebianGenerator):
 
             # Add packages necessary to build vendor typesupport for rosidl_interface_packages to their
             # build dependencies.
-            if self.rosdistro in ['bouncy', 'crystal'] and \
+            if self.rosdistro in ros2_distros and \
+                    self.rosdistro not in ('r2b2', 'r2b3', 'ardent') and \
                     'rosidl_interface_packages' in [p.name for p in package.member_of_groups]:
                 ROS2_VENDOR_TYPESUPPORT_DEPENDENCIES = [
                     'rmw-connext-cpp',
