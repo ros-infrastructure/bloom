@@ -82,6 +82,10 @@ from bloom.github import Github
 from bloom.github import GithubException
 from bloom.github import GitHubAuthException
 
+from bloom.gitlab import Gitlab
+from bloom.gitlab import GitlabException
+from bloom.gitlab import GitlabAuthException
+
 from bloom.logging import debug
 from bloom.logging import error
 from bloom.logging import fmt
@@ -683,13 +687,30 @@ def get_gh_info(url):
             'path': '/'.join(url_paths[4:])}
 
 
+def get_gl_info(url):
+    o = urlparse(url)
+    if 'gitlab' not in o.netloc:
+        return None
+    url_paths = o.path.split('/')
+    if len(url_paths) < 6:
+        return None
+    return {'server': '{}://{}'.format(o.scheme, o.netloc),
+            'org': url_paths[1],
+            'repo': url_paths[2],
+            'branch': url_paths[4],
+            'path': '/'.join(url_paths[5:])}
+
+
 def get_repo_info(distro_url):
     gh_info = get_gh_info(distro_url)
     if gh_info:
         return gh_info
+    else:
+        return get_gl_info(distro_url)
 
 
 _gh = None
+_gl = None
 
 
 def get_github_interface(quiet=False):
@@ -767,6 +788,52 @@ def get_github_interface(quiet=False):
                 return None
     _gh = gh
     return gh
+
+
+def get_gitlab_interface(server, quiet=False):
+    global _gl
+    if _gl is not None:
+        return _gl
+
+    config, oauth_config_path = get_bloom_config_and_path()
+    if 'gitlab' in config:
+        _gl = Gitlab(server, token=config['gitlab'])
+        return _gl
+
+    if quiet:
+        return None
+
+    info("")
+    warning("Looks like bloom doesn't have a gitlab token for you yet.")
+    warning("Go to http://{}/profile/personal_access_tokens to create one.".format(server))
+    warning("Make sure you give it API access.")
+    warning("The token will be stored in `~/.config/bloom`.")
+    warning("You can delete the token from that file to have a new token generated.")
+    warning("Guard this token like a password, because it allows someone/something to act on your behalf.")
+    info("")
+    if not maybe_continue('y', "Would you like to input a token now"):
+        return None
+    token = None
+    while token is None:
+        try:
+            token = safe_input("Gitlab Token: ")
+        except (KeyboardInterrupt, EOFError):
+            return None
+        try:
+            gl = Gitlab(server, token=token)
+            gl.auth()
+            with open(oauth_config_path, 'w') as f:
+                config.update({'gitlab': token})
+                f.write(json.dumps(config))
+            info("The token was stored in the bloom config file")
+            _gl = gl
+            break
+        except GitlabAuthException:
+            error("Failed to authenticate your token.")
+            if not maybe_continue():
+                return None
+
+    return _gl
 
 
 def get_changelog_summary(release_tag):
@@ -948,6 +1015,27 @@ Increasing version of package(s) in repository `{repository}` to `{version}`:
         # Open the pull request
         return gh.create_pull_request(base_info['org'], base_info['repo'], base_info['branch'],
                                       head_org, new_branch, title, body)
+    else:  # if base_info['server'] == 'github.com':
+        gl = get_gitlab_interface(server)
+        if gl is None:
+            return None
+
+        repo_obj = gl.get_repo(base_org, base_repo)
+
+        # Determine New Branch Name
+        branches = gl.list_branches(repo_obj)
+        new_branch = 'bloom-{repository}-{count}'
+        count = 0
+        while new_branch.format(repository=repository, count=count) in branches:
+            count += 1
+        new_branch = new_branch.format(repository=repository, count=count)
+
+        gl.create_branch(repo_obj, new_branch, base_branch)
+        gl.update_file(repo_obj, new_branch, title, base_path, updated_distro_file_yaml)
+
+        mr = gl.create_pull_request(repo_obj, new_branch, base_branch, title, body)
+        return mr['web_url']
+
 
 _original_version = None
 
