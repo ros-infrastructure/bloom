@@ -1,3 +1,9 @@
+0.7.0 (2019-01-10 09:45:00 -0800)
+---------------------------------
+- Quote files removed with `git rm -rf`. `#491 <https://github.com/ros-infrastructure/bloom/pull/491>`_
+- Only consider rosdistros of the same type when looking for a repo name in recent distros. `#501 <https://github.com/ros-infrastructure/bloom/pull/501>`_
+- Fix python 3 support for pull request generation. `#489 <https://github.com/ros-infrastructure/bloom/pull/489>`_
+
 0.6.9 (2018-11-15 08:45:00 -0800)
 ---------------------------------
 - Added Crystal Clemmys (crystal) to the list of ROS 2 rosdistros. `#495 <https://github.com/ros-infrastructure/bloom/pull/495>`_
