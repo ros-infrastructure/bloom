@@ -444,11 +444,11 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
             if type(key) == unicode:
                 del d[key]
                 key = key.encode('utf-8')
-                if type(value) == unicode:
-                    value = value.encode('utf-8')
-                if type(value) == dict:
-                    convert_unicode_dict_to_str(value)
-                d[key] = value
+            if type(value) == unicode:
+                value = value.encode('utf-8')
+            if type(value) == dict:
+                convert_unicode_dict_to_str(value)
+            d[key] = value
 
     global _user_provided_release_url
     distribution_dict = get_distribution_file(distro).get_data()
