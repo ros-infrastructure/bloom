@@ -460,6 +460,7 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
     track_dict = get_tracks_dict_raw()['tracks'][track]
     last_version = track_dict['last_version']
     release_inc = track_dict['release_inc']
+    version = '{0}-{1}'.format(last_version, release_inc)
     # Create a repository if there isn't already one
     if repository not in distribution_dict['repositories']:
         distribution_dict['repositories'][repository] = {}
