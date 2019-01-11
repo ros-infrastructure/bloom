@@ -444,11 +444,11 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
             if type(key) == unicode:
                 del d[key]
                 key = key.encode('utf-8')
-                if type(value) == unicode:
-                    value = value.encode('utf-8')
-                if type(value) == dict:
-                    convert_unicode_dict_to_str(value)
-                d[key] = value
+            if type(value) == unicode:
+                value = value.encode('utf-8')
+            if type(value) == dict:
+                convert_unicode_dict_to_str(value)
+            d[key] = value
 
     global _user_provided_release_url
     distribution_dict = get_distribution_file(distro).get_data()
@@ -460,6 +460,7 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
     track_dict = get_tracks_dict_raw()['tracks'][track]
     last_version = track_dict['last_version']
     release_inc = track_dict['release_inc']
+    version = '{0}-{1}'.format(last_version, release_inc)
     # Create a repository if there isn't already one
     if repository not in distribution_dict['repositories']:
         distribution_dict['repositories'][repository] = {}
@@ -476,7 +477,7 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
     if 'tags' not in repo:
         repo['tags'] = {}
     repo['tags']['release'] = generate_release_tag(distro)
-    repo['version'] = '{0}-{1}'.format(last_version, release_inc)
+    repo['version'] = version
     if 'last_release' in track_dict:
         repo['upstream_tag'] = track_dict['last_release']
     if 'packages' not in repo:
