@@ -1,3 +1,7 @@
+0.7.1 (2019-01-11 16:05:00 -0800)
+---------------------------------
+- Fix some bugs from python3 compatibility. `#505 <https://github.com/ros-infrastructure/bloom/pull/505>`_
+
 0.7.0 (2019-01-10 09:45:00 -0800)
 ---------------------------------
 - Quote files removed with `git rm -rf`. `#491 <https://github.com/ros-infrastructure/bloom/pull/491>`_
