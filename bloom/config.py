@@ -273,7 +273,7 @@ def get_tracks_dict_raw(directory=None):
         )
         tracks_yaml = show(BLOOM_CONFIG_BRANCH, 'tracks.yaml',
                            directory=directory)
-    tracks_dict = yaml.load(tracks_yaml)
+    tracks_dict = yaml.safe_load(tracks_yaml)
     validate_track_versions(tracks_dict)
     return tracks_dict
 
