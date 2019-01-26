@@ -1,3 +1,9 @@
+0.7.2 (2019-01-26 07:45:00 -0800)
+---------------------------------
+- Updated a test to support mixed rosdistro index. `#510 <https://github.com/ros-infrastructure/bloom/pull/510>`_
+- Updated to use yaml.safe_load for untrusted yaml input. `#508 <https://github.com/ros-infrastructure/bloom/pull/508>`_
+- Required rosdistro 0.15.0 for package format 3 conditional dependency support. `#511 <https://github.com/ros-infrastructure/bloom/pull/511>`_
+
 0.7.1 (2019-01-11 16:05:00 -0800)
 ---------------------------------
 - Fix some bugs from python3 compatibility. `#505 <https://github.com/ros-infrastructure/bloom/pull/505>`_
