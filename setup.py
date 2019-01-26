@@ -9,7 +9,7 @@ install_requires = [
     'empy',
     'python-dateutil',
     'PyYAML',
-    'rosdep >= 0.10.25',
+    'rosdep >= 0.15.0',
     'rosdistro >= 0.7.0',
     'vcstools >= 0.1.22',
 ]
