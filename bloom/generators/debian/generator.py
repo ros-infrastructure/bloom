@@ -147,16 +147,16 @@ def __place_template_folder(group, src, dst, gbp=False):
             if not os.path.exists(dst):
                 os.makedirs(dst)
             if os.path.exists(template_dst):
-                debug("Removing existing file '{0}'".format(template_dst))
-                os.remove(template_dst)
-            with io.open(template_dst, 'w', encoding='utf-8') as f:
-                if not isinstance(template, str):
-                    template = template.decode('utf-8')
-                # Python 2 API needs a `unicode` not a utf-8 string.
-                elif sys.version_info.major == 2:
-                    template = template.decode('utf-8')
-                f.write(template)
-            shutil.copystat(template_abs_path, template_dst)
+                debug("Not overwriting existing file '{0}'".format(template_dst))
+            else:
+                with io.open(template_dst, 'w', encoding='utf-8') as f:
+                    if not isinstance(template, str):
+                        template = template.decode('utf-8')
+                    # Python 2 API needs a `unicode` not a utf-8 string.
+                    elif sys.version_info.major == 2:
+                        template = template.decode('utf-8')
+                    f.write(template)
+                shutil.copystat(template_abs_path, template_dst)
 
 
 def place_template_files(path, build_type, gbp=False):
@@ -838,7 +838,9 @@ class DebianGenerator(BloomGenerator):
         place_template_files('.', build_type, gbp=True)
         # Commit results
         execute_command('git add ' + debian_dir)
-        execute_command('git commit -m "Placing debian template files"')
+        _, has_files, _ = execute_command('git diff --cached --name-only', return_io=True)
+        if has_files:
+            execute_command('git commit -m "Placing debian template files"')
 
     def get_releaser_history(self):
         # Assumes that this is called in the target branch
