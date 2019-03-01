@@ -58,6 +58,7 @@ from bloom.generators import update_rosdep
 
 from bloom.generators.common import default_fallback_resolver
 from bloom.generators.common import invalidate_view_cache
+from bloom.generators.common import package_conditional_context
 from bloom.generators.common import resolve_rosdep_key
 
 from bloom.git import inbranch
@@ -312,7 +313,7 @@ def generate_substitutions_from_package(
     # Installation prefix
     data['InstallationPrefix'] = installation_prefix
     # Resolve dependencies
-    package.evaluate_conditions(os.environ)
+    package.evaluate_conditions(package_conditional_context(ros_distro))
     depends = [
         dep for dep in (package.run_depends + package.buildtool_export_depends)
         if dep.evaluated_condition]
@@ -654,12 +655,12 @@ class DebianGenerator(BloomGenerator):
         update_rosdep()
         self.has_run_rosdep = True
 
-    def _check_all_keys_are_valid(self, peer_packages):
+    def _check_all_keys_are_valid(self, peer_packages, ros_distro):
         keys_to_resolve = []
         key_to_packages_which_depends_on = collections.defaultdict(list)
         keys_to_ignore = set()
         for package in self.packages.values():
-            package.evaluate_conditions(os.environ)
+            package.evaluate_conditions(package_conditional_context(ros_distro))
             depends = [
                 dep for dep in (package.run_depends + package.buildtool_export_depends)
                 if dep.evaluated_condition]
@@ -715,7 +716,7 @@ class DebianGenerator(BloomGenerator):
 
         peer_packages = [p.name for p in self.packages.values()]
 
-        while not self._check_all_keys_are_valid(peer_packages):
+        while not self._check_all_keys_are_valid(peer_packages, self.rosdistro):
             error("Some of the dependencies for packages in this repository could not be resolved by rosdep.")
             error("You can try to address the issues which appear above and try again if you wish.")
             try:

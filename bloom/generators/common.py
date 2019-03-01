@@ -40,6 +40,8 @@ from bloom.logging import debug
 from bloom.logging import error
 from bloom.logging import info
 
+from bloom.rosdistro_api import get_distribution_type
+
 from bloom.util import code
 from bloom.util import maybe_continue
 from bloom.util import print_exc
@@ -115,6 +117,21 @@ def resolve_more_for_os(rosdep_key, view, installer, os_name, os_version):
                                              default_os_installer)
     assert inst_key in os_installers
     return installer.resolve(rule), inst_key, default_os_installer
+
+
+def package_conditional_context(ros_distro):
+    distribution_type = get_distribution_type(ros_distro)
+    if distribution_type == 'ros1':
+        ros_version = '1'
+    elif distribution_type == 'ros2':
+        ros_version = '2'
+    else:
+        error("Bloom cannot cope with distribution_type '{0}'".format(
+            distribution_type), exit=True)
+    return {
+            'ROS_VERSION': ros_version,
+            'ROS_DISTRO': ros_distro,
+            }
 
 
 def resolve_rosdep_key(
