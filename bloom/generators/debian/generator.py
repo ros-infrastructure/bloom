@@ -652,10 +652,19 @@ class DebianGenerator(BloomGenerator):
         key_to_packages_which_depends_on = collections.defaultdict(list)
         keys_to_ignore = set()
         for package in self.packages.values():
-            depends = package.run_depends + package.buildtool_export_depends
-            build_depends = package.build_depends + package.buildtool_depends + package.test_depends
-            unresolved_keys = depends + build_depends + package.replaces + package.conflicts
-            keys_to_ignore = keys_to_ignore.union(package.replaces + package.conflicts)
+            package.evaluate_conditions(os.environ)
+            depends = [
+                dep for dep in (package.run_depends + package.buildtool_export_depends)
+                if dep.evaluated_condition]
+            build_depends = [
+                dep for dep in (package.build_depends + package.buildtool_depends + package.test_depends)
+                if dep.evaluated_condition]
+            unresolved_keys = [
+                dep for dep in (depends + build_depends + package.replaces + package.conflicts)
+                if dep.evaluated_condition]
+            keys_to_ignore = {
+                    dep for dep in keys_to_ignore.union(package.replaces + package.conflicts)
+                    if dep.evaluated_condition}
             keys = [d.name for d in unresolved_keys]
             keys_to_resolve.extend(keys)
             for key in keys:
