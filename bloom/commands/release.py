@@ -92,6 +92,8 @@ from bloom.packages import get_ignored_packages
 from bloom.rosdistro_api import get_distribution_file
 from bloom.rosdistro_api import get_index
 from bloom.rosdistro_api import get_most_recent
+from bloom.rosdistro_api import get_rosdistro_index_commit
+from bloom.rosdistro_api import get_rosdistro_index_original_branch
 
 from bloom.summary import commit_summary
 from bloom.summary import get_summary_file
@@ -606,7 +608,6 @@ def get_changelog_summary(release_tag):
 
 
 def open_pull_request(track, repository, distro, interactive, override_release_repository_url):
-    global _rosdistro_index_commit
     # Get the diff
     distribution_file = get_distribution_file(distro)
     if repository in distribution_file.repositories and \
@@ -629,8 +630,9 @@ def open_pull_request(track, repository, distro, interactive, override_release_r
         return
 
     # If we did replace the branch in the url with a commit, restore that now
-    if _rosdistro_index_original_branch is not None:
-        base_info['branch'] = _rosdistro_index_original_branch
+    rosdistro_index_original_branch = get_rosdistro_index_original_branch()
+    if rosdistro_index_original_branch is not None:
+        base_info['branch'] = rosdistro_index_original_branch
 
     # Create content for PR
     title = "{0}: {1} in '{2}' [bloom]".format(repository, version, base_info['path'])
@@ -739,8 +741,9 @@ Increasing version of package(s) in repository `{repository}` to `{version}`:
                 _my_run('git checkout -b {new_branch}'.format(**locals()))
                 _my_run("git pull {rosdistro_url} {base_info[branch]}".format(**locals()),
                         "Pulling latest rosdistro branch")
-                if _rosdistro_index_commit is not None:
-                    _my_run('git reset --hard {_rosdistro_index_commit}'.format(**globals()))
+                rosdistro_index_commit = get_rosdistro_index_commit()
+                if rosdistro_index_commit is not None:
+                    _my_run('git reset --hard {rosdistro_index_commit}'.format(**locals()))
                 with open('{0}'.format(base_info['path']), 'w') as f:
                     info(fmt("@{bf}@!==> @|@!Writing new distribution file: ") + str(base_info['path']))
                     f.write(updated_distro_file_yaml)

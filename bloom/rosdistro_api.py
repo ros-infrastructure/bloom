@@ -172,3 +172,11 @@ def get_distribution_file(distro):
                   .format(distro), exit=True)
         _rosdistro_distribution_files[distro] = files[-1]
     return _rosdistro_distribution_files[distro]
+
+
+def get_rosdistro_index_commit():
+    return _rosdistro_index_commit
+
+
+def get_rosdistro_index_original_branch():
+    return _rosdistro_index_original_branch
