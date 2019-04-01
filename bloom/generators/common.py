@@ -218,7 +218,8 @@ class BloomGenerator(object):
     def exit(cls, msg, returncode=code.UNKNOWN):
         raise GeneratorError(msg, returncode)
 
-    def prepare_arguments(self, parser):
+    @staticmethod
+    def prepare_arguments(parser):
         """
         Argument preparation hook, should be implemented in child class
 

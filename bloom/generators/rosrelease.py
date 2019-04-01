@@ -22,11 +22,12 @@ repository, so the source branch should be set to 'upstream' and the
 prefix set to 'release'.
 """
 
-    def prepare_arguments(self, parser):
+    @staticmethod
+    def prepare_arguments(parser):
         # Add command line arguments for this generator
         add = parser.add_argument
         add('rosdistro', help="ROS distro to target (%s, etc.)" % get_distro_list_prompt())
-        return ReleaseGenerator.prepare_arguments(self, parser)
+        return ReleaseGenerator.prepare_arguments(parser)
 
     def handle_arguments(self, args):
         self.rosdistro = args.rosdistro

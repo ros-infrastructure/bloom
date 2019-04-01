@@ -40,7 +40,6 @@ from bloom.generators.debian.generator import sanitize_package_name
 from bloom.generators.debian import DebianGenerator
 from bloom.generators.debian.generator import generate_substitutions_from_package
 from bloom.generators.debian.generate_cmd import main as debian_main
-from bloom.generators.debian.generate_cmd import prepare_arguments
 
 from bloom.logging import info
 
@@ -54,11 +53,12 @@ class RosDebianGenerator(DebianGenerator):
     description = "Generates debians tailored for the given rosdistro"
     default_install_prefix = '/opt/ros/'
 
-    def prepare_arguments(self, parser):
+    @staticmethod
+    def prepare_arguments(parser):
         # Add command line arguments for this generator
         add = parser.add_argument
         add('rosdistro', help="ROS distro to target (%s, etc.)" % get_distro_list_prompt())
-        return DebianGenerator.prepare_arguments(self, parser)
+        return DebianGenerator.prepare_arguments(parser)
 
     def handle_arguments(self, args):
         self.rosdistro = args.rosdistro
@@ -162,5 +162,5 @@ description = dict(
     title='rosdebian',
     description="Generates ROS style debian packaging files for a catkin package",
     main=main,
-    prepare_arguments=prepare_arguments
+    prepare_arguments=RosDebianGenerator.prepare_arguments
 )

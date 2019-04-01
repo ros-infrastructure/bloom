@@ -40,7 +40,6 @@ from bloom.generators.rpm.generator import sanitize_package_name
 from bloom.generators.rpm import RpmGenerator
 from bloom.generators.rpm.generator import generate_substitutions_from_package
 from bloom.generators.rpm.generate_cmd import main as rpm_main
-from bloom.generators.rpm.generate_cmd import prepare_arguments
 
 from bloom.logging import info
 
@@ -52,11 +51,12 @@ class RosRpmGenerator(RpmGenerator):
     description = "Generates RPMs tailored for the given rosdistro"
     default_install_prefix = '/opt/ros/'
 
-    def prepare_arguments(self, parser):
+    @staticmethod
+    def prepare_arguments(parser):
         # Add command line arguments for this generator
         add = parser.add_argument
         add('rosdistro', help="ROS distro to target (%s, etc.)" % get_distro_list_prompt())
-        return RpmGenerator.prepare_arguments(self, parser)
+        return RpmGenerator.prepare_arguments(parser)
 
     def handle_arguments(self, args):
         self.rosdistro = args.rosdistro
@@ -127,5 +127,5 @@ description = dict(
     title='rosrpm',
     description="Generates ROS style RPM packaging files for a catkin package",
     main=main,
-    prepare_arguments=prepare_arguments
+    prepare_arguments=RosRpmGenerator.prepare_arguments
 )

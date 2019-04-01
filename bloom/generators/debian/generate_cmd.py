@@ -76,7 +76,6 @@ def prepare_arguments(parser):
     add('--os-version', help='OS version or codename, e.g. precise, wheezy')
     add('--ros-distro', help="ROS distro, e.g. %s (used for rosdep)" % get_distro_list_prompt())
     add('--native', action='store_true', help="generate native package")
-    return parser
 
 
 def get_subs(pkg, os_name, os_version, ros_distro, native=False):

@@ -456,7 +456,8 @@ class RpmGenerator(BloomGenerator):
     default_install_prefix = '/usr'
     rosdistro = os.environ.get('ROS_DISTRO', 'indigo')
 
-    def prepare_arguments(self, parser):
+    @staticmethod
+    def prepare_arguments(parser):
         # Add command line arguments for this generator
         add = parser.add_argument
         add('-i', '--rpm-inc', help="RPM increment number", default='0')

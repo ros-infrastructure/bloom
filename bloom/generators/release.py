@@ -72,7 +72,8 @@ each package in the upstream repository, so the source branch should be set to
 'upstream' and the prefix set to 'release'.
 """
 
-    def prepare_arguments(self, parser):
+    @staticmethod
+    def prepare_arguments(parser):
         # Add command line arguments for this generator
         add = parser.add_argument
         add('-s', '--src', '--source-branch', default=None, dest='src',
@@ -83,7 +84,7 @@ each package in the upstream repository, so the source branch should be set to
             help="prefix for target branch name(s)")
         add('--release-increment', '-i', default=0,
             help="release increment number")
-        return BloomGenerator.prepare_arguments(self, parser)
+        return BloomGenerator.prepare_arguments(parser)
 
     def handle_arguments(self, args):
         self.interactive = args.interactive
