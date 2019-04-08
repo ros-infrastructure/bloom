@@ -526,7 +526,7 @@ class RpmGenerator(BloomGenerator):
         update_rosdep()
         self.has_run_rosdep = True
 
-    def _check_all_keys_are_valid(self, peer_packages):
+    def _check_all_keys_are_valid(self, peer_packages, rosdistro):
         keys_to_resolve = []
         key_to_packages_which_depends_on = collections.defaultdict(list)
         keys_to_ignore = set()
