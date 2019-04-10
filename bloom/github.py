@@ -73,7 +73,10 @@ import bloom
 
 
 def auth_header_from_basic_auth(user, password):
-    return "Basic {0}".format(base64.b64encode('{0}:{1}'.format(user, password)))
+    auth_str = '{0}:{1}'.format(user, password)
+    if sys.version_info >= (3, 0):
+        auth_str = auth_str.encode()
+    return "Basic {0}".format(base64.b64encode(auth_str))
 
 
 def auth_header_from_oauth_token(token):
