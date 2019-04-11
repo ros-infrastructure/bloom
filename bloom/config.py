@@ -190,7 +190,7 @@ DEFAULT_TEMPLATE = {
     'patches': PromptEntry('Patches Directory', spec=config_spec['patches']),
     'ros_distro': PromptEntry('ROS Distro', default='indigo', spec=config_spec['ros_distro']),
     'release_repo_url': PromptEntry('Release Repository Push URL', spec=config_spec['release_repo_url']),
-    'release_inc': -1,
+    'release_inc': 0,
     'actions': [
         'bloom-export-upstream :{vcs_local_uri} :{vcs_type}'
         ' --tag :{release_tag} --display-uri :{vcs_uri}'

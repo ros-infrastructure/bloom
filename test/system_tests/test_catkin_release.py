@@ -132,7 +132,7 @@ def _test_unary_package_repository(release_dir, version, directory=None):
             "no patches/release/melodic/foo branch"
         # was the release tag created?
         ret, out, err = user('git tag', return_io=True)
-        expected = 'release/melodic/foo/' + version + '-0'
+        expected = 'release/melodic/foo/' + version + '-1'
         assert out.count(expected) == 1, \
             "no release tag created, expected: '{0}'".format(expected)
 
@@ -266,7 +266,7 @@ def test_multi_package_repository(directory=None):
             assert branch_exists('patches/release/melodic/' + pkg), \
                 "no patches/release/melodic/" + pkg + " branch"
             # Did the release tag get created?
-            assert out.count('release/melodic/' + pkg + '/0.1.0-0') == 1, \
+            assert out.count('release/melodic/' + pkg + '/0.1.0-1') == 1, \
                 "no release tag created for " + pkg
             # Is there a package.xml in the top level?
             with inbranch('release/melodic/' + pkg):
@@ -299,7 +299,7 @@ def test_multi_package_repository(directory=None):
             assert branch_exists('patches/release/melodic/' + pkg), \
                 "no patches/release/melodic/" + pkg + " branch"
             # Did the release tag get created?
-            assert out.count('release/melodic/' + pkg + '/0.1.0-0') == 1, \
+            assert out.count('release/melodic/' + pkg + '/0.1.0-1') == 1, \
                 "no release tag created for " + pkg
             # Is there a package.xml in the top level?
             with inbranch('release/melodic/' + pkg):
@@ -329,7 +329,7 @@ def test_multi_package_repository(directory=None):
                 assert branch_exists(patches_branch), \
                     "no " + patches_branch + " branch"
                 # Did the debian tag get created?
-                tag = 'debian/ros-melodic-' + pkg_san + '_0.1.0-0_' + distro
+                tag = 'debian/ros-melodic-' + pkg_san + '_0.1.0-1_' + distro
                 assert out.count(tag) == 1, \
                     "no '" + tag + "'' tag created for '" + pkg + "': `\n" + \
                     out + "\n`"
