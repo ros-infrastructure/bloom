@@ -227,7 +227,7 @@ def process_track_settings(track_dict, release_inc_override):
     settings['ros_distro'] = track_dict['ros_distro']
     # Release increment
     if 'last_version' in track_dict and track_dict['last_version'] != version:
-        next_release_inc = str(0)
+        next_release_inc = str(1)
     else:
         next_release_inc = str(int(track_dict['release_inc']) + 1)
     settings['release_inc'] = release_inc_override or next_release_inc
