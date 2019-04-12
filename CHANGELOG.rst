@@ -1,3 +1,16 @@
+0.8.0 (2019-04-12 13:45:00 -0800)
+---------------------------------
+- Start release increment at 1. `#528 <https://github.com/ros-infrastructure/bloom/pull/528>`_
+- Evaluate conditions in package.xml before resolving dependencies. `#519 <https://github.com/ros-infrastructure/bloom/pull/519>`_
+- Update to prevent overwriting template files that exist in source. `#516 <https://github.com/ros-infrastructure/bloom/pull/516>`_
+- Update debian templates to add trailing newline. `#523 <https://github.com/ros-infrastructure/bloom/pull/523>`_
+- Fix str/bytes issue in Python 3 auth. `#522 <https://github.com/ros-infrastructure/bloom/pull/522>`_
+- Use distribution type from index v4 to set ROS 2-specific behavior. `#502 <https://github.com/ros-infrastructure/bloom/pull/502>`_
+- Fix tests to allow them to run outside of a git context. `#515 <https://github.com/ros-infrastructure/bloom/pull/515>`_
+- Fix tests to allow empty git environment. `#514 <https://github.com/ros-infrastructure/bloom/pull/514>`_
+- Invoke scripts using the current python executable. `#513 <https://github.com/ros-infrastructure/bloom/pull/513>`_
+- Drop support for older distributions. (Retroactive to 0.6.8) `#512 <https://github.com/ros-infrastructure/bloom/pull/512>`_
+
 0.7.2 (2019-01-26 07:45:00 -0800)
 ---------------------------------
 - Updated a test to support mixed rosdistro index. `#510 <https://github.com/ros-infrastructure/bloom/pull/510>`_
