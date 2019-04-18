@@ -1,6 +1,6 @@
 Source: @(Package)
 Section: misc
-Priority: extra
+Priority: optional
 Maintainer: @(Maintainer)
 Build-Depends: debhelper (>= @(debhelper_version).0.0), @(', '.join(BuildDepends)), python3-all, python3-setuptools
 Homepage: @(Homepage)
