@@ -23,7 +23,7 @@ License:        @(License)
 # set things like CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
 if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi
 mkdir -p obj-%{_target_platform} && cd obj-%{_target_platform}
-%cmake \
+%cmake3 \
     -UINCLUDE_INSTALL_DIR \
     -ULIB_INSTALL_DIR \
     -USYSCONF_INSTALL_DIR \
