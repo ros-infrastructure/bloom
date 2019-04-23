@@ -1,3 +1,4 @@
+%global __os_install_post %(echo '%{__os_install_post}' | sed -e 's!/usr/lib[^[:space:]]*/brp-python-bytecompile[[:space:]].*$!!g')
 %global __provides_exclude_from ^@(InstallationPrefix)/.*$
 %global __requires_exclude_from ^@(InstallationPrefix)/.*$
 
