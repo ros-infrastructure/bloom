@@ -1,3 +1,6 @@
+%global __provides_exclude_from ^@(InstallationPrefix)/.*$
+%global __requires_exclude_from ^@(InstallationPrefix)/.*$
+
 Name:           @(Package)
 Version:        @(Version)
 Release:        @(Inc)%{?dist}
