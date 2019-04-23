@@ -11,7 +11,7 @@ License:        @(License)
 @(Description)
 
 %prep
-%setup -q
+%autosetup
 
 %build
 # In case we're installing to a non-standard location, look for a setup.sh
