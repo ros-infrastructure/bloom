@@ -267,25 +267,9 @@ def generate_substitutions_from_package(
     elif build_type == 'cmake':
         pass
     elif build_type == 'ament_cmake':
-        error(
-            "Build type '{}' is not supported by this version of bloom.".
-            format(build_type), exit=True)
+        pass
     elif build_type == 'ament_python':
-        error(
-            "Build type '{}' is not supported by this version of bloom.".
-            format(build_type), exit=True)
-        # Don't set the install-scripts flag if it's already set in setup.cfg.
-        package_path = os.path.abspath(os.path.dirname(package.filename))
-        setup_cfg_path = os.path.join(package_path, 'setup.cfg')
-        data['pass_install_scripts'] = True
-        if os.path.isfile(setup_cfg_path):
-            setup_cfg = SafeConfigParser()
-            setup_cfg.read([setup_cfg_path])
-            if (
-                    setup_cfg.has_option('install', 'install-scripts') or
-                    setup_cfg.has_option('install', 'install_scripts')
-            ):
-                data['pass_install_scripts'] = False
+        pass
     else:
         error(
             "Build type '{}' is not supported by this version of bloom.".

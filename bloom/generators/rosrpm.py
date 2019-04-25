@@ -44,6 +44,8 @@ from bloom.generators.rpm.generate_cmd import prepare_arguments
 
 from bloom.logging import info
 
+from bloom.rosdistro_api import get_index
+
 from bloom.util import get_distro_list_prompt
 
 
@@ -86,6 +88,37 @@ class RosRpmGenerator(RpmGenerator):
             fallback_resolver=fallback_resolver
         )
         subs['Package'] = rosify_package_name(subs['Package'], self.rosdistro)
+
+        # ROS 2 specific bloom extensions.
+        ros2_distros = [
+            name for name, values in get_index().distributions.items()
+            if values.get('distribution_type') == 'ros2']
+        if self.rosdistro in ros2_distros:
+            # Add ros-workspace package as a dependency to any package other
+            # than ros_workspace and its dependencies.
+            if package.name not in ['ament_cmake_core', 'ament_package', 'ros_workspace']:
+                workspace_pkg_name = rosify_package_name('ros-workspace', self.rosdistro)
+                subs['BuildDepends'].append(workspace_pkg_name)
+                subs['Depends'].append(workspace_pkg_name)
+
+            # Add packages necessary to build vendor typesupport for rosidl_interface_packages to their
+            # build dependencies.
+            if self.rosdistro in ros2_distros and \
+                    self.rosdistro not in ('r2b2', 'r2b3', 'ardent') and \
+                    'rosidl_interface_packages' in [p.name for p in package.member_of_groups]:
+                ROS2_VENDOR_TYPESUPPORT_DEPENDENCIES = [
+                    'rmw-connext-cpp',
+                    'rmw-fastrtps-cpp',
+                    'rmw-implementation',
+                    'rmw-opensplice-cpp',
+                    'rosidl-typesupport-connext-c',
+                    'rosidl-typesupport-connext-cpp',
+                    'rosidl-typesupport-opensplice-c',
+                    'rosidl-typesupport-opensplice-cpp',
+                ]
+
+                subs['BuildDepends'] += [
+                    rosify_package_name(name, self.rosdistro) for name in ROS2_VENDOR_TYPESUPPORT_DEPENDENCIES]
         return subs
 
     def generate_branching_arguments(self, package, branch):
