@@ -120,6 +120,13 @@ def resolve_more_for_os(rosdep_key, view, installer, os_name, os_version):
 
 
 def package_conditional_context(ros_distro):
+    """
+    Creates a dict containing the conditional evaluation context for
+    package.xml format three packages.
+
+    :param ros_distro: The codename of the rosdistro to generate context for.
+    :returns: dict defining ROS_VERSION and ROS_DISTRO.
+    """
     distribution_type = get_distribution_type(ros_distro)
     if distribution_type == 'ros1':
         ros_version = '1'
