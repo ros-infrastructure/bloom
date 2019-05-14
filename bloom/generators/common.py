@@ -41,6 +41,7 @@ from bloom.logging import error
 from bloom.logging import info
 
 from bloom.rosdistro_api import get_distribution_type
+from bloom.rosdistro_api import get_index
 
 from bloom.util import code
 from bloom.util import maybe_continue
@@ -127,6 +128,9 @@ def package_conditional_context(ros_distro):
     :param ros_distro: The codename of the rosdistro to generate context for.
     :returns: dict defining ROS_VERSION and ROS_DISTRO.
     """
+    if get_index().version < 4:
+        error("Bloom requires a version 4 or greater rosdistro index to support package format 3.", exit=True)
+
     distribution_type = get_distribution_type(ros_distro)
     if distribution_type == 'ros1':
         ros_version = '1'
