@@ -316,14 +316,14 @@ def generate_substitutions_from_package(
     evaluate_package_conditions(package, ros_distro)
     depends = [
         dep for dep in (package.run_depends + package.buildtool_export_depends)
-        if dep.evaluated_condition]
+        if dep.evaluated_condition is not False]
     build_depends = [
         dep for dep in (package.build_depends + package.buildtool_depends + package.test_depends)
-        if dep.evaluated_condition]
+        if dep.evaluated_condition is not False]
 
     unresolved_keys = [
         dep for dep in (depends + build_depends + package.replaces + package.conflicts)
-        if dep.evaluated_condition]
+        if dep.evaluated_condition is not False]
     # The installer key is not considered here, but it is checked when the keys are checked before this
     resolved_deps = resolve_dependencies(unresolved_keys, os_name,
                                          os_version, ros_distro,
@@ -663,16 +663,16 @@ class DebianGenerator(BloomGenerator):
             evaluate_package_conditions(package, ros_distro)
             depends = [
                 dep for dep in (package.run_depends + package.buildtool_export_depends)
-                if dep.evaluated_condition]
+                if dep.evaluated_condition is not False]
             build_depends = [
                 dep for dep in (package.build_depends + package.buildtool_depends + package.test_depends)
-                if dep.evaluated_condition]
+                if dep.evaluated_condition is not False]
             unresolved_keys = [
                 dep for dep in (depends + build_depends + package.replaces + package.conflicts)
-                if dep.evaluated_condition]
+                if dep.evaluated_condition is not False]
             keys_to_ignore = {
                     dep for dep in keys_to_ignore.union(package.replaces + package.conflicts)
-                    if dep.evaluated_condition}
+                    if dep.evaluated_condition is not False}
             keys = [d.name for d in unresolved_keys]
             keys_to_resolve.extend(keys)
             for key in keys:

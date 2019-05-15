@@ -147,7 +147,7 @@ def package_conditional_context(ros_distro):
 
 def evaluate_package_conditions(package, ros_distro):
     """
-    Evaluates a package's conditional fields.
+    Evaluates a package's conditional fields if it supports them.
 
     :param package: The package to be evaluated.
     :param ros_distro: The codename of the rosdistro use for context.
@@ -156,9 +156,7 @@ def evaluate_package_conditions(package, ros_distro):
     # Conditional fields were introduced in package format 3.
     # Earlier formats should have their conditions evaluated with no context so
     # the evaluated_condition is set to True in all cases.
-    if package.package_format < 3:
-        package.evaluate_conditions({})
-    else:
+    if package.package_format >= 3:
         package.evaluate_conditions(package_conditional_context(ros_distro))
 
 
