@@ -144,6 +144,7 @@ def package_conditional_context(ros_distro):
             'ROS_DISTRO': ros_distro,
             }
 
+
 def evaluate_package_conditions(package, ros_distro):
     """
     Evaluates a package's conditional fields.
