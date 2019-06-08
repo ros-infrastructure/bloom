@@ -97,11 +97,9 @@ each package in the upstream repository, so the source branch should be set to
             self.src = args.src
         self.name = args.name
         self.release_inc = args.release_increment
+        self.branch_list = self.detect_branches()
 
     def summarize(self):
-        self.branch_list = self.detect_branches()
-        if type(self.branch_list) not in [list, tuple]:
-            self.exit(self.branch_list if self.branch_list is not None else 1)
         info("Releasing package" +
              ('' if len(self.branch_list) == 1 else 's') + ": " + str(self.branch_list))
 
