@@ -160,16 +160,15 @@ def __place_template_folder(group, src, dst, gbp=False):
                 shutil.copystat(template_abs_path, template_dst)
 
 
-def place_template_files(path, build_type, gbp=False):
-    info(fmt("@!@{bf}==>@| Placing templates files in the 'debian' folder."))
-    debian_path = os.path.join(path, 'debian')
-    # Create/Clean the debian folder
-    if not os.path.exists(debian_path):
-        os.makedirs(debian_path)
+def place_template_files(path, build_type, package_system, gbp=False):
+    info(fmt("@!@{bf}==>@| Placing templates files in the '" + package_system + "' folder."))
+    dir_path = os.path.join(path, package_system)
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
     # Place template files
-    group = 'bloom.generators.debian'
+    group = 'bloom.generators.' + package_system
     templates = os.path.join('templates', build_type)
-    __place_template_folder(group, templates, debian_path, gbp)
+    __place_template_folder(group, templates, dir_path, gbp)
 
 
 def summarize_dependency_mapping(data, deps, build_deps, resolved_deps):
@@ -280,7 +279,7 @@ def generate_substitutions_from_package(
     os_version,
     ros_distro,
     installation_prefix='/usr',
-    deb_inc=0,
+    inc=0,
     peer_packages=None,
     releaser_history=None,
     fallback_resolver=None,
@@ -298,8 +297,8 @@ def generate_substitutions_from_package(
     if homepage == '':
         warning("No homepage set, defaulting to ''")
     data['Homepage'] = homepage
-    # Debian Increment Number
-    data['DebianInc'] = '' if native else '-{0}'.format(deb_inc)
+    # Increment Number
+    data['Inc'] = '' if native else '-{0}'.format(inc)
     # Debian Package Format
     data['format'] = 'native' if native else 'quilt'
     # Package name
@@ -503,13 +502,13 @@ def __process_template_folder(path, subs):
     return processed_items
 
 
-def process_template_files(path, subs):
-    info(fmt("@!@{bf}==>@| In place processing templates in 'debian' folder."))
-    debian_dir = os.path.join(path, 'debian')
-    if not os.path.exists(debian_dir):
-        sys.exit("No debian directory found at '{0}', cannot process templates."
-                 .format(debian_dir))
-    return __process_template_folder(debian_dir, subs)
+def process_template_files(path, subs, package_system):
+    info(fmt("@!@{bf}==>@| In place processing templates files in '" + package_system + "' folder."))
+    dir_path = os.path.join(path, package_system)
+    if not os.path.exists(dir_path):
+        sys.exit("No {0} directory found at '{1}', cannot process templates."
+                .format(self.package_system, dir_path))
+    return __process_template_folder(dir_path, subs)
 
 
 def match_branches_with_prefix(prefix, get_branches, prune=False):
@@ -568,6 +567,7 @@ def sanitize_package_name(name):
 
 class DebianGenerator(BloomGenerator):
     title = 'debian'
+    package_system = 'debian'
     description = "Generates debians from the catkin meta data"
     has_run_rosdep = False
     default_install_prefix = '/usr'
@@ -576,15 +576,15 @@ class DebianGenerator(BloomGenerator):
     def prepare_arguments(self, parser):
         # Add command line arguments for this generator
         add = parser.add_argument
-        add('-i', '--debian-inc', help="debian increment number", default='0')
+        add('-i', '--inc', help="increment number", default='0')
         add('-p', '--prefix', required=True,
-            help="branch prefix to match, and from which create debians"
+            help="branch prefix to match, and from which create packages"
                  " hint: if you want to match 'release/foo' use 'release'")
         add('-a', '--match-all', default=False, action="store_true",
             help="match all branches with the given prefix, "
                  "even if not in current upstream")
         add('--distros', nargs='+', required=False, default=[],
-            help='A list of debian (ubuntu) distros to generate for')
+            help='A list of os distros to generate for certain package system')
         add('--install-prefix', default=None,
             help="overrides the default installation prefix (/usr)")
         add('--os-name', default='ubuntu',
@@ -595,7 +595,7 @@ class DebianGenerator(BloomGenerator):
 
     def handle_arguments(self, args):
         self.interactive = args.interactive
-        self.debian_inc = args.debian_inc
+        self.inc = args.inc
         self.os_name = args.os_name
         self.distros = args.distros
         if self.distros in [None, []]:
@@ -624,7 +624,7 @@ class DebianGenerator(BloomGenerator):
         self.tag_names = {}
         self.names = []
         self.branch_args = []
-        self.debian_branches = []
+        self.package_system_branches = []
         for branch in self.branches:
             package = get_package_from_branch(branch)
             if package is None:
@@ -633,14 +633,14 @@ class DebianGenerator(BloomGenerator):
             self.packages[package.name] = package
             self.names.append(package.name)
             args = self.generate_branching_arguments(package, branch)
-            # First branch is debian/[<rosdistro>/]<package>
-            self.debian_branches.append(args[0][0])
+            # First branch is package_system/[<rosdistro>/]<package>
+            self.package_system_branches.append(args[0][0])
             self.branch_args.extend(args)
 
     def summarize(self):
-        info("Generating source debs for the packages: " + str(self.names))
-        info("Debian Incremental Version: " + str(self.debian_inc))
-        info("Debian Distributions: " + str(self.distros))
+        info("Generating {0} source for the packages: {1}".format(self.os_name, str(self.names)))
+        info("Incremental Version: " + str(self.inc))
+        info("Distributions: " + str(self.distros))
 
     def get_branching_arguments(self):
         return self.branch_args
@@ -688,10 +688,10 @@ class DebianGenerator(BloomGenerator):
                         error("Key '{0}' resolved to '{1}' with installer '{2}', "
                               "which does not match the default installer '{3}'."
                               .format(key, rule, installer_key, default_installer_key))
-                        BloomGenerator.exit(
-                            "The Debian generator does not support dependencies "
-                            "which are installed with the '{0}' installer."
-                            .format(installer_key),
+                        self.exit(
+                            "The {0} generator does not support dependencies "
+                            "which are installed with the '{1}' installer."
+                            .format(self.package_system, installer_key),
                             returncode=code.GENERATOR_INVALID_INSTALLER_KEY)
                 except (GeneratorError, RuntimeError) as e:
                     print(fmt("Failed to resolve @{cf}@!{key}@| on @{bf}{os_name}@|:@{cf}@!{os_version}@| with: {e}")
@@ -703,7 +703,7 @@ class DebianGenerator(BloomGenerator):
         return all_keys_valid
 
     def pre_modify(self):
-        info("\nPre-verifying Debian dependency keys...")
+        info("\nPre-verifying {0} dependency keys...".format(self.package_system))
         # Run rosdep update is needed
         if not self.has_run_rosdep:
             self.update_rosdep()
@@ -725,7 +725,7 @@ class DebianGenerator(BloomGenerator):
         info("All keys are " + ansi('greenf') + "OK" + ansi('reset') + "\n")
 
     def pre_branch(self, destination, source):
-        if destination in self.debian_branches:
+        if destination in self.package_system_branches:
             return
         # Run rosdep update is needed
         if not self.has_run_rosdep:
@@ -751,20 +751,20 @@ class DebianGenerator(BloomGenerator):
         name = destination.split('/')[-1]
         # Retrieve the package
         package = self.packages[name]
-        # Handle differently if this is a debian vs distro branch
-        if destination in self.debian_branches:
-            info("Placing debian template files into '{0}' branch."
-                 .format(destination))
-            # Then this is a debian branch
+        # Handle differently if this is a package system vs distro branch
+        if destination in self.package_system_branches:
+            info("Placing {0} template files into '{1}' branch."
+                 .format(self.package_system, destination))
+            # Then this is a package system branch
             # Place the raw template files
             self.place_template_files(package.get_build_type())
         else:
-            # This is a distro specific debian branch
+            # This is a distro specific package system branch
             # Determine the current package being generated
             distro = destination.split('/')[-2]
-            # Create debians for each distro
+            # Create package for each distro
             with inbranch(destination):
-                data = self.generate_debian(package, distro)
+                data = self.generate_package(package, distro)
                 # Create the tag name for later
                 self.tag_names[destination] = self.generate_tag_name(data)
         # Update the patch configs
@@ -781,7 +781,7 @@ class DebianGenerator(BloomGenerator):
         set_patch_config(patches_branch, config)
 
     def post_patch(self, destination, color='bluef'):
-        if destination in self.debian_branches:
+        if destination in self.package_system_branches:
             return
         # Tag after patches have been applied
         with inbranch(destination):
@@ -806,10 +806,10 @@ class DebianGenerator(BloomGenerator):
         info(
             ansi(color) + "#### " + ansi('greenf') + "Successfully" +
             ansi(color) + " generated '" + ansi('boldon') + distro +
-            ansi('boldoff') + "' debian for package"
+            ansi('boldoff') + "' {0} for package".format(self.package_system) +
             " '" + ansi('boldon') + package.name + ansi('boldoff') + "'" +
             " at version '" + ansi('boldon') + package.version +
-            "-" + str(self.debian_inc) + ansi('boldoff') + "'" +
+            "-" + str(self.inc) + ansi('boldoff') + "'" +
             ansi('reset'),
             use_prefix=False
         )
@@ -817,41 +817,44 @@ class DebianGenerator(BloomGenerator):
 
     def store_original_config(self, config, patches_branch):
         with inbranch(patches_branch):
-            with open('debian.store', 'w+') as f:
+            with open('{0}.store'.format(self.package_system), 'w+') as f:
                 f.write(json.dumps(config))
-            execute_command('git add debian.store')
+            execute_command('git add {0}.store'.format(self.package_system))
             if has_changes():
                 execute_command('git commit -m "Store original patch config"')
 
     def load_original_config(self, patches_branch):
-        config_store = show(patches_branch, 'debian.store')
+        config_store = show(patches_branch, '{0}.store'.format(self.package_system))
         if config_store is None:
             return config_store
         return json.loads(config_store)
 
-    def place_template_files(self, build_type, debian_dir='debian'):
-        # Create/Clean the debian folder
-        if os.path.exists(debian_dir):
+    def place_template_files(self, build_type, dir_path=None):
+        # Create/Clean the package system folder
+        if dir_path is None:
+            dir_path = os.path.join(".", self.package_system)
+        if os.path.exists(dir_path):
             if self.interactive:
-                warning("debian directory exists: " + debian_dir)
+                warning("{0} directory exists: {1}".format(self.package_system, dir_path))
                 warning("Do you wish to overwrite it?")
                 if not maybe_continue('y'):
                     error("Answered no to continue, aborting.", exit=True)
             elif 'BLOOM_CLEAR_DEBIAN_ON_GENERATION' in os.environ:
-                warning("Overwriting debian directory: " + debian_dir)
-                execute_command('git rm -rf ' + debian_dir)
-                execute_command('git commit -m "Clearing previous debian folder"')
-                if os.path.exists(debian_dir):
-                    shutil.rmtree(debian_dir)
+                warning("Overwriting {0} directory: {1}".format(self.package_system, dir_path))
+                execute_command('git rm -rf ' + dir_path)
+                execute_command('git commit -m "Clearing previous {0} folder"'
+                                .format(self.package_system))
+                if os.path.exists(dir_path):
+                    shutil.rmtree(dir_path)
             else:
-                warning("Not overwriting debian directory.")
+                warning("Not overwriting {0} directory.".format(self.package_system))
         # Use generic place template files command
-        place_template_files('.', build_type, gbp=True)
+        place_template_files('.', build_type, self.package_system, gbp=True)
         # Commit results
-        execute_command('git add ' + debian_dir)
+        execute_command('git add ' + dir_path)
         _, has_files, _ = execute_command('git diff --cached --name-only', return_io=True)
         if has_files:
-            execute_command('git commit -m "Placing debian template files"')
+            execute_command('git commit -m "Placing {0} template files"'.format(self.package_system))
 
     def get_releaser_history(self):
         # Assumes that this is called in the target branch
@@ -882,60 +885,63 @@ class DebianGenerator(BloomGenerator):
             return [sanitize_package_name(key)]
         return default_fallback_resolver(key, peer_packages)
 
-    def get_subs(self, package, debian_distro, releaser_history=None):
+    def get_subs(self, package, os_distro, releaser_history=None):
+        # This is the common part, then the certain generator will add its specic content
         return generate_substitutions_from_package(
             package,
             self.os_name,
-            debian_distro,
+            os_distro,
             self.rosdistro,
             self.install_prefix,
-            self.debian_inc,
+            self.inc,
             [p.name for p in self.packages.values()],
             releaser_history=releaser_history,
             fallback_resolver=self.missing_dep_resolver
         )
 
-    def generate_debian(self, package, debian_distro):
-        info("Generating debian for {0}...".format(debian_distro))
+    # There we need to add post subs action and different commit action
+    def generate_package(self, package, os_distro):
+        info("Generating {0} for {1}...".format(self.package_system, os_distro))
         # Try to retrieve the releaser_history
         releaser_history = self.get_releaser_history()
         # Generate substitution values
-        subs = self.get_subs(package, debian_distro, releaser_history)
+        subs = self.get_subs(package, os_distro, releaser_history)
         # Use subs to create and store releaser history
         releaser_history = [(v, (n, e)) for v, _, _, n, e in subs['changelogs']]
         self.set_releaser_history(dict(releaser_history))
         # Handle gbp.conf
         subs['release_tag'] = self.get_release_tag(subs)
         # Template files
-        template_files = process_template_files('.', subs)
+        template_files = process_template_files(".", subs, self.package_system)
         # Remove any residual template files
         execute_command('git rm -rf ' + ' '.join("'{}'".format(t) for t in template_files))
-        # Add changes to the debian folder
-        execute_command('git add debian')
+        # Add changes to the package system folder
+        execute_command('git add {0}'.format(self.package_system))
         # Commit changes
-        execute_command('git commit -m "Generated debian files for ' +
-                        debian_distro + '"')
+        execute_command('git commit -m "Generated {0} files for {1}"'
+                        .format(self.package_system, os_distro))
         # Return the subs for other use
         return subs
 
     def get_release_tag(self, data):
         return 'release/{0}/{1}-{2}'.format(data['Name'], data['Version'],
-                                            self.debian_inc)
+                                            self.inc)
 
     def generate_tag_name(self, data):
-        tag_name = '{Package}_{Version}{DebianInc}_{Distribution}'
-        tag_name = 'debian/' + tag_name.format(**data)
+        tag_name = '{Package}_{Version}{Inc}_{Distribution}'
+        tag_name = self.package_system + '/' + tag_name.format(**data)
         return tag_name
 
     def generate_branching_arguments(self, package, branch):
         n = package.name
-        # Debian branch
-        deb_branch = 'debian/' + n
-        # Branch first to the debian branch
-        args = [[deb_branch, branch, False]]
-        # Then for each debian distro, branch from the base debian branch
+        # package branch
+        package_branch = self.package_system + '/' + n
+        # Branch first to the package branch
+        args = [[package_branch, branch, False]]
+        # Then for each os distro, branch from the base package branch
         args.extend([
-            ['debian/' + d + '/' + n, deb_branch, False] for d in self.distros
+            [self.package_system + '/' + d + '/' + n, package_branch, False]
+            for d in self.distros
         ])
         return args
 
@@ -943,10 +949,10 @@ class DebianGenerator(BloomGenerator):
         info(ansi(color) + "\n####" + ansi('reset'), use_prefix=False)
         info(
             ansi(color) + "#### Generating '" + ansi('boldon') + distro +
-            ansi('boldoff') + "' debian for package"
+            ansi('boldoff') + "' {0} for package".format(self.package_system) +
             " '" + ansi('boldon') + package.name + ansi('boldoff') + "'" +
             " at version '" + ansi('boldon') + package.version +
-            "-" + str(self.debian_inc) + ansi('boldoff') + "'" +
+            "-" + str(self.inc) + ansi('boldoff') + "'" +
             ansi('reset'),
             use_prefix=False
         )

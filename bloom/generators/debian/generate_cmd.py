@@ -45,6 +45,7 @@ from bloom.logging import info
 from bloom.generators.debian.generator import generate_substitutions_from_package
 from bloom.generators.debian.generator import place_template_files
 from bloom.generators.debian.generator import process_template_files
+from bloom.generators.debian.generator import DebianGenerator
 
 from bloom.util import get_distro_list_prompt
 
@@ -120,20 +121,22 @@ def main(args=None, get_subs_fn=None):
          fmt("Generating debs for @{cf}%s:%s@| for package(s) %s" %
              (os_name, os_version, [p.name for p in pkgs_dict.values()])))
 
+    # TODO: seems troublesome here
+    package_system = DebianGenerator.package_system
     for path, pkg in pkgs_dict.items():
         template_files = None
         try:
             subs = get_subs_fn(pkg, os_name, os_version, ros_distro, args.native)
             if _place_template_files:
                 # Place template files
-                place_template_files(path, pkg.get_build_type())
+                place_template_files(path, pkg.get_build_type(), package_system)
             if _process_template_files:
                 # Just process existing template files
-                template_files = process_template_files(path, subs)
+                template_files = process_template_files(path, subs, package_system)
             if not _place_template_files and not _process_template_files:
                 # If neither, do both
-                place_template_files(path, pkg.get_build_type())
-                template_files = process_template_files(path, subs)
+                place_template_files(path, pkg.get_build_type(), package_system)
+                template_files = process_template_files(path, subs, package_system)
             if template_files is not None:
                 for template_file in template_files:
                     os.remove(os.path.normpath(template_file))

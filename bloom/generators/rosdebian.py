@@ -114,17 +114,17 @@ class RosDebianGenerator(DebianGenerator):
         return subs
 
     def generate_branching_arguments(self, package, branch):
-        deb_branch = 'debian/' + self.rosdistro + '/' + package.name
-        args = [[deb_branch, branch, False]]
-        n, r, b, ds = package.name, self.rosdistro, deb_branch, self.distros
+        package_branch = self.package_system + '/' + self.rosdistro + '/' + package.name
+        args = [[package_branch, branch, False]]
+        n, r, b, ds = package.name, self.rosdistro, package_branch, self.distros
         args.extend([
-            ['debian/' + r + '/' + d + '/' + n, b, False] for d in ds
+            [self.package_system + '/' + r + '/' + d + '/' + n, b, False] for d in ds
         ])
         return args
 
     def get_release_tag(self, data):
         return 'release/{0}/{1}/{2}-{3}'\
-            .format(self.rosdistro, data['Name'], data['Version'], self.debian_inc)
+            .format(self.rosdistro, data['Name'], data['Version'], self.inc)
 
 
 def rosify_package_name(name, rosdistro):
