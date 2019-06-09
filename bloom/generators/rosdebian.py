@@ -71,22 +71,14 @@ class RosDebianGenerator(DebianGenerator):
         info("Releasing for rosdistro: " + self.rosdistro)
         return ret
 
+    @staticmethod
+    def missing_dep_resolver(key, peer_packages, os_name, os_version, ros_distro):
+        if key in peer_packages:
+            return [sanitize_package_name(rosify_package_name(key, ros_distro))]
+        return default_fallback_resolver(key, peer_packages)
+
     def get_subs(self, package, debian_distro, releaser_history, native=False):
-        def fallback_resolver(key, peer_packages, rosdistro=self.rosdistro):
-            if key in peer_packages:
-                return [sanitize_package_name(rosify_package_name(key, rosdistro))]
-            return default_fallback_resolver(key, peer_packages)
-        subs = generate_substitutions_from_package(
-            package,
-            self.os_name,
-            debian_distro,
-            self.rosdistro,
-            self.install_prefix,
-            self.debian_inc,
-            [p.name for p in self.packages.values()],
-            releaser_history=releaser_history,
-            fallback_resolver=fallback_resolver
-        )
+        subs = DebianGenerator.get_subs(self, package, debian_distro, releaser_history)
         subs['Package'] = rosify_package_name(subs['Package'], self.rosdistro)
 
         # ROS 2 specific bloom extensions.

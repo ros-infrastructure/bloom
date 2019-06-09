@@ -203,7 +203,7 @@ def resolve_dependencies(
         # Do not compare the installer key here since this is a general purpose function
         # They installer is verified in the OS specific generator, when the keys are pre-checked.
         if resolved_key is None:
-            resolved_key = fallback_resolver(key, peer_packages)
+            resolved_key = fallback_resolver(key, peer_packages, os_name, os_version, ros_distro)
         resolved_keys[key] = resolved_key
     return resolved_keys
 

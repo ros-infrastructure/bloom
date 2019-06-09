@@ -274,12 +274,6 @@ def get_changelogs(package, releaser_history=None):
         return []
 
 
-def missing_dep_resolver(key, peer_packages):
-    if key in peer_packages:
-        return [sanitize_package_name(key)]
-    return default_fallback_resolver(key, peer_packages)
-
-
 def generate_substitutions_from_package(
     package,
     os_name,
@@ -876,6 +870,18 @@ class DebianGenerator(BloomGenerator):
             if has_changes():
                 execute_command('git commit -m "Store releaser history"')
 
+    @staticmethod
+    def missing_dep_resolver(key, peer_packages, os_name, os_version, ros_distro):
+        """
+        This should be a staticmethod since we will use it when we call
+        `generate_substitutions_from_package` in `get_subs`
+        Notice that os_name, os_version, ros_distro maybe useful when we
+        want to add new resolver in the future
+        """
+        if key in peer_packages:
+            return [sanitize_package_name(key)]
+        return default_fallback_resolver(key, peer_packages)
+
     def get_subs(self, package, debian_distro, releaser_history=None):
         return generate_substitutions_from_package(
             package,
@@ -886,7 +892,7 @@ class DebianGenerator(BloomGenerator):
             self.debian_inc,
             [p.name for p in self.packages.values()],
             releaser_history=releaser_history,
-            fallback_resolver=missing_dep_resolver
+            fallback_resolver=self.missing_dep_resolver
         )
 
     def generate_debian(self, package, debian_distro):
