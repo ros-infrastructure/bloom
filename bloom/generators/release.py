@@ -133,14 +133,14 @@ each package in the upstream repository, so the source branch should be set to
 Cannot automatically tag the release because this is not a catkin project.""")
             warning("""\
 Please checkout the release branch and then create a tag manually with:""")
-            warning("  git checkout release/" + str(self.name))
-            warning("  git tag -f release/" + str(self.name) + "/<version>")
+            warning("  git checkout " + destination)
+            warning("  git tag -f " + destination + "/<version>")
             return
         with inbranch(destination):
             name, version, packages = get_package_data(destination)
         # Execute git tag
-        release_tag = destination + '/' + version + '-' + self.release_inc
-        execute_command('git tag ' + release_tag)
+        execute_command('git tag -f ' + destination + '/' + version +
+                        '-' + str(self.release_inc))
 
     def metapackage_check(self, path, pkg):
         if pkg.is_metapackage():

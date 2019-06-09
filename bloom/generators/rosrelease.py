@@ -47,19 +47,3 @@ prefix set to 'release'.
                 name, self.rosdistro, destination
             )
         )
-
-    def post_patch(self, destination):
-        # Figure out the version of the given package
-        if self.name is not None:
-            warning("""\
-Cannot automatically tag the release because this is not a catkin project.""")
-            warning("""\
-Please checkout the release branch and then create a tag manually with:""")
-            warning("  git checkout " + destination)
-            warning("  git tag -f " + destination + "/<version>")
-            return
-        with inbranch(destination):
-            name, version, packages = get_package_data(destination)
-        # Execute git tag
-        execute_command('git tag -f ' + destination + '/' + version +
-                        '-' + str(self.release_inc))
