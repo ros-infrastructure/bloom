@@ -533,26 +533,6 @@ def match_branches_with_prefix(prefix, get_branches, prune=False):
     return branches
 
 
-def get_package_from_branch(branch):
-    with inbranch(branch):
-        try:
-            package_data = get_package_data(branch)
-        except SystemExit:
-            return None
-        if type(package_data) not in [list, tuple]:
-            # It is a ret code
-            DebianGenerator.exit(package_data)
-    names, version, packages = package_data
-    if type(names) is list and len(names) > 1:
-        DebianGenerator.exit(
-            "Debian generator does not support generating "
-            "from branches with multiple packages in them, use "
-            "the release generator first to split packages into "
-            "individual branches.")
-    if type(packages) is dict:
-        return list(packages.values())[0]
-
-
 def debianize_string(value):
     markup_remover = re.compile(r'<.*?>')
     value = markup_remover.sub('', value)
@@ -593,23 +573,27 @@ class DebianGenerator(BloomGenerator):
             help="Do not error if this os is not in the platforms "
                  "list for rosdistro")
 
+    def get_default_distros(self):
+        index = rosdistro.get_index(rosdistro.get_index_url())
+        distribution_file = rosdistro.get_distribution_file(index, self.rosdistro)
+        if self.os_name not in distribution_file.release_platforms:
+            if self.os_not_required:
+                warning("No platforms defined for os '{0}' in release file for the "
+                        "'{1}' distro. This os was not required; continuing without error."
+                        .format(self.os_name, self.rosdistro))
+                sys.exit(0)
+            error("No platforms defined for os '{0}' in release file for the '{1}' distro."
+                    .format(self.os_name, self.rosdistro), exit=True)
+        self.distros = distribution_file.release_platforms[self.os_name]
+
     def handle_arguments(self, args):
+        self.os_not_required = args.os_not_required
         self.interactive = args.interactive
         self.inc = args.inc
         self.os_name = args.os_name
         self.distros = args.distros
         if self.distros in [None, []]:
-            index = rosdistro.get_index(rosdistro.get_index_url())
-            distribution_file = rosdistro.get_distribution_file(index, self.rosdistro)
-            if self.os_name not in distribution_file.release_platforms:
-                if args.os_not_required:
-                    warning("No platforms defined for os '{0}' in release file for the "
-                            "'{1}' distro. This os was not required; continuing without error."
-                            .format(self.os_name, self.rosdistro))
-                    sys.exit(0)
-                error("No platforms defined for os '{0}' in release file for the '{1}' distro."
-                      .format(self.os_name, self.rosdistro), exit=True)
-            self.distros = distribution_file.release_platforms[self.os_name]
+            self.get_default_distros()
         self.install_prefix = args.install_prefix
         if args.install_prefix is None:
             self.install_prefix = self.default_install_prefix
@@ -626,7 +610,7 @@ class DebianGenerator(BloomGenerator):
         self.branch_args = []
         self.package_system_branches = []
         for branch in self.branches:
-            package = get_package_from_branch(branch)
+            package = self.get_package_from_branch(branch)
             if package is None:
                 # This is an ignored package
                 continue
@@ -636,6 +620,26 @@ class DebianGenerator(BloomGenerator):
             # First branch is package_system/[<rosdistro>/]<package>
             self.package_system_branches.append(args[0][0])
             self.branch_args.extend(args)
+
+    def get_package_from_branch(self, branch):
+        with inbranch(branch):
+            try:
+                package_data = get_package_data(branch)
+            except SystemExit:
+                return None
+            if type(package_data) not in [list, tuple]:
+                # It is a ret code
+                self.exit(package_data)
+        names, version, packages = package_data
+        if type(names) is list and len(names) > 1:
+            self.exit(
+                "{0} generator does not support generating "
+                "from branches with multiple packages in them, use "
+                "the release generator first to split packages into "
+                "individual branches."
+                .format(self.package_system))
+        if type(packages) is dict:
+            return list(packages.values())[0]
 
     def summarize(self):
         info("Generating {0} source for the packages: {1}".format(self.os_name, str(self.names)))
@@ -649,12 +653,12 @@ class DebianGenerator(BloomGenerator):
         update_rosdep()
         self.has_run_rosdep = True
 
-    def _check_all_keys_are_valid(self, peer_packages, ros_distro):
+    def _check_all_keys_are_valid(self, peer_packages, rosdistro):
         keys_to_resolve = []
         key_to_packages_which_depends_on = collections.defaultdict(list)
         keys_to_ignore = set()
         for package in self.packages.values():
-            package.evaluate_conditions(package_conditional_context(ros_distro))
+            package.evaluate_conditions(package_conditional_context(rosdistro))
             depends = [
                 dep for dep in (package.run_depends + package.buildtool_export_depends)
                 if dep.evaluated_condition]
