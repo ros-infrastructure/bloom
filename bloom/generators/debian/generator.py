@@ -62,7 +62,6 @@ from bloom.generators.common import package_conditional_context
 from bloom.generators.common import resolve_rosdep_key
 
 from bloom.git import inbranch
-from bloom.git import get_branches
 from bloom.git import get_commit_hash
 from bloom.git import get_current_branch
 from bloom.git import has_changes
@@ -70,6 +69,7 @@ from bloom.git import show
 from bloom.git import tag_exists
 
 from bloom.logging import ansi
+from bloom.generators.common import PackageSystemGenerator
 from bloom.logging import debug
 from bloom.logging import enable_drop_first_log_prefix
 from bloom.logging import error
@@ -507,30 +507,8 @@ def process_template_files(path, subs, package_system):
     dir_path = os.path.join(path, package_system)
     if not os.path.exists(dir_path):
         sys.exit("No {0} directory found at '{1}', cannot process templates."
-                .format(self.package_system, dir_path))
+                 .format(package_system, dir_path))
     return __process_template_folder(dir_path, subs)
-
-
-def match_branches_with_prefix(prefix, get_branches, prune=False):
-    debug("match_branches_with_prefix(" + str(prefix) + ", " +
-          str(get_branches()) + ")")
-    branches = []
-    # Match branches
-    existing_branches = get_branches()
-    for branch in existing_branches:
-        if branch.startswith('remotes/origin/'):
-            branch = branch.split('/', 2)[-1]
-        if branch.startswith(prefix):
-            branches.append(branch)
-    branches = list(set(branches))
-    if prune:
-        # Prune listed branches by packages in latest upstream
-        with inbranch('upstream'):
-            pkg_names, version, pkgs_dict = get_package_data('upstream')
-            for branch in branches:
-                if branch.split(prefix)[-1].strip('/') not in pkg_names:
-                    branches.remove(branch)
-    return branches
 
 
 def debianize_string(value):
@@ -545,7 +523,7 @@ def sanitize_package_name(name):
     return name.replace('_', '-')
 
 
-class DebianGenerator(BloomGenerator):
+class DebianGenerator(PackageSystemGenerator):
     title = 'debian'
     package_system = 'debian'
     description = "Generates debians from the catkin meta data"
@@ -554,92 +532,18 @@ class DebianGenerator(BloomGenerator):
     rosdistro = os.environ.get('ROS_DISTRO', 'indigo')
 
     def prepare_arguments(self, parser):
-        # Add command line arguments for this generator
         add = parser.add_argument
-        add('-i', '--inc', help="increment number", default='0')
-        add('-p', '--prefix', required=True,
-            help="branch prefix to match, and from which create packages"
-                 " hint: if you want to match 'release/foo' use 'release'")
-        add('-a', '--match-all', default=False, action="store_true",
-            help="match all branches with the given prefix, "
-                 "even if not in current upstream")
-        add('--distros', nargs='+', required=False, default=[],
-            help='A list of os distros to generate for certain package system')
-        add('--install-prefix', default=None,
-            help="overrides the default installation prefix (/usr)")
         add('--os-name', default='ubuntu',
             help="overrides os_name, set to 'ubuntu' by default")
         add('--os-not-required', default=False, action="store_true",
             help="Do not error if this os is not in the platforms "
                  "list for rosdistro")
-
-    def get_default_distros(self):
-        index = rosdistro.get_index(rosdistro.get_index_url())
-        distribution_file = rosdistro.get_distribution_file(index, self.rosdistro)
-        if self.os_name not in distribution_file.release_platforms:
-            if self.os_not_required:
-                warning("No platforms defined for os '{0}' in release file for the "
-                        "'{1}' distro. This os was not required; continuing without error."
-                        .format(self.os_name, self.rosdistro))
-                sys.exit(0)
-            error("No platforms defined for os '{0}' in release file for the '{1}' distro."
-                    .format(self.os_name, self.rosdistro), exit=True)
-        self.distros = distribution_file.release_platforms[self.os_name]
+        return PackageSystemGenerator.prepare_arguments(self, parser)
 
     def handle_arguments(self, args):
         self.os_not_required = args.os_not_required
-        self.interactive = args.interactive
-        self.inc = args.inc
-        self.os_name = args.os_name
-        self.distros = args.distros
-        if self.distros in [None, []]:
-            self.get_default_distros()
-        self.install_prefix = args.install_prefix
-        if args.install_prefix is None:
-            self.install_prefix = self.default_install_prefix
-        self.prefix = args.prefix
-        self.branches = match_branches_with_prefix(self.prefix, get_branches, prune=not args.match_all)
-        if len(self.branches) == 0:
-            error(
-                "No packages found, check your --prefix or --src arguments.",
-                exit=True
-            )
-        self.packages = {}
-        self.tag_names = {}
-        self.names = []
-        self.branch_args = []
-        self.package_system_branches = []
-        for branch in self.branches:
-            package = self.get_package_from_branch(branch)
-            if package is None:
-                # This is an ignored package
-                continue
-            self.packages[package.name] = package
-            self.names.append(package.name)
-            args = self.generate_branching_arguments(package, branch)
-            # First branch is package_system/[<rosdistro>/]<package>
-            self.package_system_branches.append(args[0][0])
-            self.branch_args.extend(args)
-
-    def get_package_from_branch(self, branch):
-        with inbranch(branch):
-            try:
-                package_data = get_package_data(branch)
-            except SystemExit:
-                return None
-            if type(package_data) not in [list, tuple]:
-                # It is a ret code
-                self.exit(package_data)
-        names, version, packages = package_data
-        if type(names) is list and len(names) > 1:
-            self.exit(
-                "{0} generator does not support generating "
-                "from branches with multiple packages in them, use "
-                "the release generator first to split packages into "
-                "individual branches."
-                .format(self.package_system))
-        if type(packages) is dict:
-            return list(packages.values())[0]
+        ret = PackageSystemGenerator.handle_arguments(self, args)
+        return ret
 
     def summarize(self):
         info("Generating {0} source for the packages: {1}".format(self.os_name, str(self.names)))
