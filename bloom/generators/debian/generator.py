@@ -51,7 +51,6 @@ except ImportError:
 from dateutil import tz
 from pkg_resources import parse_version
 
-from bloom.generators import BloomGenerator
 from bloom.generators import GeneratorError
 from bloom.generators import resolve_dependencies
 from bloom.generators import update_rosdep
@@ -59,17 +58,15 @@ from bloom.generators import update_rosdep
 from bloom.generators.common import default_fallback_resolver
 from bloom.generators.common import invalidate_view_cache
 from bloom.generators.common import package_conditional_context
+from bloom.generators.common import PackageSystemGenerator
 from bloom.generators.common import resolve_rosdep_key
 
 from bloom.git import inbranch
-from bloom.git import get_commit_hash
 from bloom.git import get_current_branch
 from bloom.git import has_changes
 from bloom.git import show
-from bloom.git import tag_exists
 
 from bloom.logging import ansi
-from bloom.generators.common import PackageSystemGenerator
 from bloom.logging import debug
 from bloom.logging import enable_drop_first_log_prefix
 from bloom.logging import error
@@ -77,11 +74,6 @@ from bloom.logging import fmt
 from bloom.logging import info
 from bloom.logging import is_debug
 from bloom.logging import warning
-
-from bloom.commands.git.patch.common import get_patch_config
-from bloom.commands.git.patch.common import set_patch_config
-
-from bloom.packages import get_package_data
 
 from bloom.util import code
 from bloom.util import to_unicode
@@ -527,7 +519,6 @@ class DebianGenerator(PackageSystemGenerator):
     title = 'debian'
     package_system = 'debian'
     description = "Generates debians from the catkin meta data"
-    has_run_rosdep = False
     default_install_prefix = '/usr'
     rosdistro = os.environ.get('ROS_DISTRO', 'indigo')
 
@@ -544,18 +535,6 @@ class DebianGenerator(PackageSystemGenerator):
         self.os_not_required = args.os_not_required
         ret = PackageSystemGenerator.handle_arguments(self, args)
         return ret
-
-    def summarize(self):
-        info("Generating {0} source for the packages: {1}".format(self.os_name, str(self.names)))
-        info("Incremental Version: " + str(self.inc))
-        info("Distributions: " + str(self.distros))
-
-    def get_branching_arguments(self):
-        return self.branch_args
-
-    def update_rosdep(self):
-        update_rosdep()
-        self.has_run_rosdep = True
 
     def _check_all_keys_are_valid(self, peer_packages, rosdistro):
         keys_to_resolve = []
@@ -631,111 +610,6 @@ class DebianGenerator(PackageSystemGenerator):
             invalidate_view_cache()
 
         info("All keys are " + ansi('greenf') + "OK" + ansi('reset') + "\n")
-
-    def pre_branch(self, destination, source):
-        if destination in self.package_system_branches:
-            return
-        # Run rosdep update is needed
-        if not self.has_run_rosdep:
-            self.update_rosdep()
-        # Determine the current package being generated
-        name = destination.split('/')[-1]
-        distro = destination.split('/')[-2]
-        # Retrieve the package
-        package = self.packages[name]
-        # Report on this package
-        self.summarize_package(package, distro)
-
-    def pre_rebase(self, destination):
-        # Get the stored configs is any
-        patches_branch = 'patches/' + destination
-        config = self.load_original_config(patches_branch)
-        if config is not None:
-            curr_config = get_patch_config(patches_branch)
-            if curr_config['parent'] == config['parent']:
-                set_patch_config(patches_branch, config)
-
-    def post_rebase(self, destination):
-        name = destination.split('/')[-1]
-        # Retrieve the package
-        package = self.packages[name]
-        # Handle differently if this is a package system vs distro branch
-        if destination in self.package_system_branches:
-            info("Placing {0} template files into '{1}' branch."
-                 .format(self.package_system, destination))
-            # Then this is a package system branch
-            # Place the raw template files
-            self.place_template_files(package.get_build_type())
-        else:
-            # This is a distro specific package system branch
-            # Determine the current package being generated
-            distro = destination.split('/')[-2]
-            # Create package for each distro
-            with inbranch(destination):
-                data = self.generate_package(package, distro)
-                # Create the tag name for later
-                self.tag_names[destination] = self.generate_tag_name(data)
-        # Update the patch configs
-        patches_branch = 'patches/' + destination
-        config = get_patch_config(patches_branch)
-        # Store it
-        self.store_original_config(config, patches_branch)
-        # Modify the base so import/export patch works
-        current_branch = get_current_branch()
-        if current_branch is None:
-            error("Could not determine current branch.", exit=True)
-        config['base'] = get_commit_hash(current_branch)
-        # Set it
-        set_patch_config(patches_branch, config)
-
-    def post_patch(self, destination, color='bluef'):
-        if destination in self.package_system_branches:
-            return
-        # Tag after patches have been applied
-        with inbranch(destination):
-            # Tag
-            tag_name = self.tag_names[destination]
-            if tag_exists(tag_name):
-                if self.interactive:
-                    warning("Tag exists: " + tag_name)
-                    warning("Do you wish to overwrite it?")
-                    if not maybe_continue('y'):
-                        error("Answered no to continue, aborting.", exit=True)
-                else:
-                    warning("Overwriting tag: " + tag_name)
-            else:
-                info("Creating tag: " + tag_name)
-            execute_command('git tag -f ' + tag_name)
-        # Report of success
-        name = destination.split('/')[-1]
-        package = self.packages[name]
-        distro = destination.split('/')[-2]
-        info(ansi(color) + "####" + ansi('reset'), use_prefix=False)
-        info(
-            ansi(color) + "#### " + ansi('greenf') + "Successfully" +
-            ansi(color) + " generated '" + ansi('boldon') + distro +
-            ansi('boldoff') + "' {0} for package".format(self.package_system) +
-            " '" + ansi('boldon') + package.name + ansi('boldoff') + "'" +
-            " at version '" + ansi('boldon') + package.version +
-            "-" + str(self.inc) + ansi('boldoff') + "'" +
-            ansi('reset'),
-            use_prefix=False
-        )
-        info(ansi(color) + "####\n" + ansi('reset'), use_prefix=False)
-
-    def store_original_config(self, config, patches_branch):
-        with inbranch(patches_branch):
-            with open('{0}.store'.format(self.package_system), 'w+') as f:
-                f.write(json.dumps(config))
-            execute_command('git add {0}.store'.format(self.package_system))
-            if has_changes():
-                execute_command('git commit -m "Store original patch config"')
-
-    def load_original_config(self, patches_branch):
-        config_store = show(patches_branch, '{0}.store'.format(self.package_system))
-        if config_store is None:
-            return config_store
-        return json.loads(config_store)
 
     def place_template_files(self, build_type, dir_path=None):
         # Create/Clean the package system folder
@@ -835,33 +709,7 @@ class DebianGenerator(PackageSystemGenerator):
         return 'release/{0}/{1}-{2}'.format(data['Name'], data['Version'],
                                             self.inc)
 
-    def generate_tag_name(self, data):
+    def generate_tag_name(self, subs):
         tag_name = '{Package}_{Version}{Inc}_{Distribution}'
-        tag_name = self.package_system + '/' + tag_name.format(**data)
+        tag_name = self.package_system + '/' + tag_name.format(**subs)
         return tag_name
-
-    def generate_branching_arguments(self, package, branch):
-        n = package.name
-        # package branch
-        package_branch = self.package_system + '/' + n
-        # Branch first to the package branch
-        args = [[package_branch, branch, False]]
-        # Then for each os distro, branch from the base package branch
-        args.extend([
-            [self.package_system + '/' + d + '/' + n, package_branch, False]
-            for d in self.distros
-        ])
-        return args
-
-    def summarize_package(self, package, distro, color='bluef'):
-        info(ansi(color) + "\n####" + ansi('reset'), use_prefix=False)
-        info(
-            ansi(color) + "#### Generating '" + ansi('boldon') + distro +
-            ansi('boldoff') + "' {0} for package".format(self.package_system) +
-            " '" + ansi('boldon') + package.name + ansi('boldoff') + "'" +
-            " at version '" + ansi('boldon') + package.version +
-            "-" + str(self.inc) + ansi('boldoff') + "'" +
-            ansi('reset'),
-            use_prefix=False
-        )
-        info(ansi(color) + "####" + ansi('reset'), use_prefix=False)
