@@ -118,11 +118,11 @@ class RosDebianGenerator(DebianGenerator):
         return subs
 
     def generate_branching_arguments(self, package, branch):
-        package_branch = self.package_system + '/' + self.rosdistro + '/' + package.name
+        package_branch = self.package_manager + '/' + self.rosdistro + '/' + package.name
         args = [[package_branch, branch, False]]
         n, r, b, ds = package.name, self.rosdistro, package_branch, self.distros
         args.extend([
-            [self.package_system + '/' + r + '/' + d + '/' + n, b, False] for d in ds
+            [self.package_manager + '/' + r + '/' + d + '/' + n, b, False] for d in ds
         ])
         return args
 

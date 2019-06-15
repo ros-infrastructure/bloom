@@ -422,13 +422,13 @@ def convertToUnicode(obj):
     raise RuntimeError('need to deal with type %s' % (str(type(obj))))
 
 
-def place_template_files(path, build_type, package_system, gbp=False):
-    info(fmt("@!@{bf}==>@| Placing templates files in the '" + package_system + "' folder."))
-    dir_path = os.path.join(path, package_system)
+def place_template_files(path, build_type, package_manager, gbp=False):
+    info(fmt("@!@{bf}==>@| Placing templates files in the '" + package_manager + "' folder."))
+    dir_path = os.path.join(path, package_manager)
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
     # Place template files
-    group = 'bloom.generators.' + package_system
+    group = 'bloom.generators.' + package_manager
     templates = os.path.join('templates', build_type)
     __place_template_folder(group, templates, dir_path, gbp)
 
@@ -493,12 +493,12 @@ def __process_template_folder(path, subs):
     return processed_items
 
 
-def process_template_files(path, subs, package_system):
-    info(fmt("@!@{bf}==>@| In place processing templates files in '" + package_system + "' folder."))
-    dir_path = os.path.join(path, package_system)
+def process_template_files(path, subs, pacakge_manager):
+    info(fmt("@!@{bf}==>@| In place processing templates files in '" + pacakge_manager + "' folder."))
+    dir_path = os.path.join(path, pacakge_manager)
     if not os.path.exists(dir_path):
         sys.exit("No {0} directory found at '{1}', cannot process templates."
-                 .format(package_system, dir_path))
+                 .format(pacakge_manager, dir_path))
     return __process_template_folder(dir_path, subs)
 
 
@@ -689,8 +689,8 @@ class BloomGenerator(object):
         return 0
 
 
-class PackageSystemGenerator(BloomGenerator):
-    package_system = 'none'
+class PackageManagerGenerator(BloomGenerator):
+    package_manager = 'none'
     has_run_rosdep = False
 
     def prepare_arguments(self, parser):
@@ -724,7 +724,7 @@ class PackageSystemGenerator(BloomGenerator):
                 "from branches with multiple packages in them, use "
                 "the release generator first to split packages into "
                 "individual branches."
-                .format(self.package_system))
+                .format(self.package_manager))
         if type(packages) is dict:
             return list(packages.values())[0]
 
@@ -762,7 +762,7 @@ class PackageSystemGenerator(BloomGenerator):
         self.tag_names = {}
         self.names = []
         self.branch_args = []
-        self.package_system_branches = []
+        self.package_manager_branches = []
         for branch in self.branches:
             package = self.get_package_from_branch(branch)
             if package is None:
@@ -771,8 +771,8 @@ class PackageSystemGenerator(BloomGenerator):
             self.packages[package.name] = package
             self.names.append(package.name)
             args = self.generate_branching_arguments(package, branch)
-            # First branch is package_system/[<rosdistro>/]<package>
-            self.package_system_branches.append(args[0][0])
+            # First branch is package_manager/[<rosdistro>/]<package>
+            self.package_manager_branches.append(args[0][0])
             self.branch_args.extend(args)
 
     def summarize(self):
@@ -829,7 +829,7 @@ class PackageSystemGenerator(BloomGenerator):
                         self.exit(
                             "The {0} generator does not support dependencies "
                             "which are installed with the '{1}' installer."
-                            .format(self.package_system, installer_key),
+                            .format(self.package_manager, installer_key),
                             returncode=code.GENERATOR_INVALID_INSTALLER_KEY)
                 except (GeneratorError, RuntimeError) as e:
                     print(fmt("Failed to resolve @{cf}@!{key}@| on @{bf}{os_name}@|:@{cf}@!{os_version}@| with: {e}")
@@ -841,7 +841,7 @@ class PackageSystemGenerator(BloomGenerator):
         return all_keys_valid
 
     def _pre_modify(self, key_unvalid_error_msg):
-        info("\nPre-verifying {0} dependency keys...".format(self.package_system))
+        info("\nPre-verifying {0} dependency keys...".format(self.package_manager))
         # Run rosdep update is needed
         if not self.has_run_rosdep:
             self.update_rosdep()
@@ -862,7 +862,7 @@ class PackageSystemGenerator(BloomGenerator):
         info("All keys are " + ansi('greenf') + "OK" + ansi('reset') + "\n")
 
     def pre_branch(self, destination, source):
-        if destination in self.package_system_branches:
+        if destination in self.package_manager_branches:
             return
         # Run rosdep update is needed
         if not self.has_run_rosdep:
@@ -889,9 +889,9 @@ class PackageSystemGenerator(BloomGenerator):
         # Retrieve the package
         package = self.packages[name]
         # Handle differently if this is a package system vs distro branch
-        if destination in self.package_system_branches:
+        if destination in self.package_manager_branches:
             info("Placing {0} template files into '{1}' branch."
-                 .format(self.package_system, destination))
+                 .format(self.package_manager, destination))
             # Then this is a package system branch
             # Place the raw template files
             self.place_template_files(package.get_build_type())
@@ -918,7 +918,7 @@ class PackageSystemGenerator(BloomGenerator):
         set_patch_config(patches_branch, config)
 
     def post_patch(self, destination, color='bluef'):
-        if destination in self.package_system_branches:
+        if destination in self.package_manager_branches:
             return
         # Tag after patches have been applied
         with inbranch(destination):
@@ -943,7 +943,7 @@ class PackageSystemGenerator(BloomGenerator):
         info(
             ansi(color) + "#### " + ansi('greenf') + "Successfully" +
             ansi(color) + " generated '" + ansi('boldon') + distro +
-            ansi('boldoff') + "' {0} for package".format(self.package_system) +
+            ansi('boldoff') + "' {0} for package".format(self.package_manager) +
             " '" + ansi('boldon') + package.name + ansi('boldoff') + "'" +
             " at version '" + ansi('boldon') + package.version +
             "-" + str(self.inc) + ansi('boldoff') + "'" +
@@ -954,14 +954,14 @@ class PackageSystemGenerator(BloomGenerator):
 
     def store_original_config(self, config, patches_branch):
         with inbranch(patches_branch):
-            with open('{0}.store'.format(self.package_system), 'w+') as f:
+            with open('{0}.store'.format(self.package_manager), 'w+') as f:
                 f.write(json.dumps(config))
-            execute_command('git add {0}.store'.format(self.package_system))
+            execute_command('git add {0}.store'.format(self.package_manager))
             if has_changes():
                 execute_command('git commit -m "Store original patch config"')
 
     def load_original_config(self, patches_branch):
-        config_store = show(patches_branch, '{0}.store'.format(self.package_system))
+        config_store = show(patches_branch, '{0}.store'.format(self.package_manager))
         if config_store is None:
             return config_store
         return json.loads(config_store)
@@ -998,29 +998,29 @@ class PackageSystemGenerator(BloomGenerator):
     def place_template_files(self, build_type, dir_path=None):
         # Create/Clean the package system folder
         if dir_path is None:
-            dir_path = os.path.join(".", self.package_system)
+            dir_path = os.path.join(".", self.package_manager)
         if os.path.exists(dir_path):
             if self.interactive:
-                warning("{0} directory exists: {1}".format(self.package_system, dir_path))
+                warning("{0} directory exists: {1}".format(self.package_manager, dir_path))
                 warning("Do you wish to overwrite it?")
                 if not maybe_continue('y'):
                     error("Answered no to continue, aborting.", exit=True)
             elif 'BLOOM_CLEAR_TEMPLATE_ON_GENERATION' in os.environ:
-                warning("Overwriting {0} directory: {1}".format(self.package_system, dir_path))
+                warning("Overwriting {0} directory: {1}".format(self.package_manager, dir_path))
                 execute_command('git rm -rf ' + dir_path)
                 execute_command('git commit -m "Clearing previous {0} folder"'
-                                .format(self.package_system))
+                                .format(self.package_manager))
                 if os.path.exists(dir_path):
                     shutil.rmtree(dir_path)
             else:
-                warning("Not overwriting {0} directory.".format(self.package_system))
+                warning("Not overwriting {0} directory.".format(self.package_manager))
         # Use generic place template files command
-        place_template_files('.', build_type, self.package_system, gbp=True)
+        place_template_files('.', build_type, self.package_manager, gbp=True)
         # Commit results
         execute_command('git add ' + dir_path)
         _, has_files, _ = execute_command('git diff --cached --name-only', return_io=True)
         if has_files:
-            execute_command('git commit -m "Placing {0} template files"'.format(self.package_system))
+            execute_command('git commit -m "Placing {0} template files"'.format(self.package_manager))
 
     def get_subs(self, package, os_version, format_description, format_depends, releaser_history=None):
         # This is the common part for generate templacte substitute, then successor of
@@ -1047,7 +1047,7 @@ class PackageSystemGenerator(BloomGenerator):
         info(ansi(color) + "\n####" + ansi('reset'), use_prefix=False)
         info(
             ansi(color) + "#### Generating '" + ansi('boldon') + distro +
-            ansi('boldoff') + "' {0} for package".format(self.package_system) +
+            ansi('boldoff') + "' {0} for package".format(self.package_manager) +
             " '" + ansi('boldon') + package.name + ansi('boldoff') + "'" +
             " at version '" + ansi('boldon') + package.version +
             "-" + str(self.inc) + ansi('boldoff') + "'" +
@@ -1067,19 +1067,19 @@ class PackageSystemGenerator(BloomGenerator):
         """
         n = package.name
         # package branch
-        package_branch = self.package_system + '/' + n
+        package_branch = self.package_manager + '/' + n
         # Branch first to the package branch
         args = [[package_branch, branch, False]]
         # Then for each os distro, branch from the base package branch
         args.extend([
-            [self.package_system + '/' + d + '/' + n, package_branch, False]
+            [self.package_manager + '/' + d + '/' + n, package_branch, False]
             for d in self.distros
         ])
         return args
 
     def generate_package(self, package, os_version):
         """
-        Assume we have the templactes file in <package_system> directory
+        Assume we have the templactes file in <package_manager> directory
         The overriten function should generate the package, including
         1. use the result of get_subs to replace template content
         2. set the newest release history

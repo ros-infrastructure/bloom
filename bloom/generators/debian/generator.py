@@ -41,7 +41,7 @@ import traceback
 from dateutil import tz
 from pkg_resources import parse_version
 
-from bloom.generators.common import PackageSystemGenerator
+from bloom.generators.common import PackageManagerGenerator
 from bloom.generators.common import process_template_files
 
 from bloom.logging import debug
@@ -154,9 +154,9 @@ def get_changelogs(package, releaser_history=None):
         return []
 
 
-class DebianGenerator(PackageSystemGenerator):
+class DebianGenerator(PackageManagerGenerator):
     title = 'debian'
-    package_system = 'debian'
+    package_manager = 'debian'
     description = "Generates debians from the catkin meta data"
     default_install_prefix = '/usr'
     rosdistro = os.environ.get('ROS_DISTRO', 'indigo')
@@ -168,11 +168,11 @@ class DebianGenerator(PackageSystemGenerator):
         add('--os-not-required', default=False, action="store_true",
             help="Do not error if this os is not in the platforms "
                  "list for rosdistro")
-        return PackageSystemGenerator.prepare_arguments(self, parser)
+        return PackageManagerGenerator.prepare_arguments(self, parser)
 
     def handle_arguments(self, args):
         self.os_not_required = args.os_not_required
-        ret = PackageSystemGenerator.handle_arguments(self, args)
+        ret = PackageManagerGenerator.handle_arguments(self, args)
         return ret
 
     def pre_modify(self):
@@ -180,10 +180,10 @@ class DebianGenerator(PackageSystemGenerator):
             "Some of the dependencies for packages in this repository could not be resolved by rosdep.\n",
             "You can try to address the issues which appear above and try again if you wish."
         ])
-        PackageSystemGenerator._pre_modify(self, error_msg)
+        PackageManagerGenerator._pre_modify(self, error_msg)
 
     def generate_package(self, package, os_version):
-        info("Generating {0} for {1}...".format(self.package_system, os_version))
+        info("Generating {0} for {1}...".format(self.package_manager, os_version))
         # Try to retrieve the releaser_history
         releaser_history = self.get_releaser_history()
         # Generate substitution values
@@ -192,14 +192,14 @@ class DebianGenerator(PackageSystemGenerator):
         releaser_history = [(v, (n, e)) for v, _, _, n, e in subs['changelogs']]
         self.set_releaser_history(dict(releaser_history))
         # Template files
-        template_files = process_template_files(".", subs, self.package_system)
+        template_files = process_template_files(".", subs, self.package_manager)
         # Remove any residual template files
         execute_command('git rm -rf ' + ' '.join("'{}'".format(t) for t in template_files))
         # Add changes to the package system folder
-        execute_command('git add {0}'.format(self.package_system))
+        execute_command('git add {0}'.format(self.package_manager))
         # Commit changes
         execute_command('git commit -m "Generated {0} files for {1}"'
-                        .format(self.package_system, os_version))
+                        .format(self.package_manager, os_version))
         # Return the subs for other use
         return subs
 
@@ -281,5 +281,5 @@ class DebianGenerator(PackageSystemGenerator):
 
     def generate_tag_name(self, subs):
         tag_name = '{Package}_{Version}{Inc}_{Distribution}'
-        tag_name = self.package_system + '/' + tag_name.format(**subs)
+        tag_name = self.package_manager + '/' + tag_name.format(**subs)
         return tag_name
