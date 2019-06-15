@@ -158,8 +158,6 @@ class DebianGenerator(PackageManagerGenerator):
     title = 'debian'
     package_manager = 'debian'
     description = "Generates debians from the catkin meta data"
-    default_install_prefix = '/usr'
-    rosdistro = os.environ.get('ROS_DISTRO', 'indigo')
 
     def prepare_arguments(self, parser):
         add = parser.add_argument
@@ -171,6 +169,7 @@ class DebianGenerator(PackageManagerGenerator):
         return PackageManagerGenerator.prepare_arguments(self, parser)
 
     def handle_arguments(self, args):
+        self.os_name = args.os_name
         self.os_not_required = args.os_not_required
         ret = PackageManagerGenerator.handle_arguments(self, args)
         return ret

@@ -1,6 +1,6 @@
 Name:           @(Package)
 Version:        @(Version)
-Release:        @(RPMInc)%{?dist}
+Release:        @(Inc)%{?dist}
 Summary:        ROS @(Name) package
 
 Group:          Development/Libraries

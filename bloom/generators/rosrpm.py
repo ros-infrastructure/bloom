@@ -34,11 +34,13 @@
 from __future__ import print_function
 
 from bloom.generators.common import default_fallback_resolver
-
-from bloom.generators.rpm.generator import sanitize_package_name
+from bloom.generators.common import generate_substitutions_from_package
+from bloom.generators.common import sanitize_package_name
 
 from bloom.generators.rpm import RpmGenerator
-from bloom.generators.rpm.generator import generate_substitutions_from_package
+from bloom.generators.rpm import format_depends
+from bloom.generators.rpm import format_description
+
 from bloom.generators.rpm.generate_cmd import main as rpm_main
 from bloom.generators.rpm.generate_cmd import prepare_arguments
 
@@ -69,37 +71,30 @@ class RosRpmGenerator(RpmGenerator):
         info("Releasing for rosdistro: " + self.rosdistro)
         return ret
 
-    def get_subs(self, package, rpm_distro, releaser_history):
-        def fallback_resolver(key, peer_packages, rosdistro=self.rosdistro):
-            if key in peer_packages:
-                return [sanitize_package_name(rosify_package_name(key, rosdistro))]
-            return default_fallback_resolver(key, peer_packages)
-        subs = generate_substitutions_from_package(
-            package,
-            self.os_name,
-            rpm_distro,
-            self.rosdistro,
-            self.install_prefix,
-            self.rpm_inc,
-            [p.name for p in self.packages.values()],
-            releaser_history=releaser_history,
-            fallback_resolver=fallback_resolver
-        )
-        subs['Package'] = rosify_package_name(subs['Package'], self.rosdistro)
+    @staticmethod
+    def missing_dep_resolver(key, peer_packages, os_name, os_version, ros_distro):
+        if key in peer_packages:
+            return [sanitize_package_name(rosify_package_name(key, ros_distro))]
+        return default_fallback_resolver(key, peer_packages)
+
+    @staticmethod
+    def get_subs_hook(subs, package, rosdistro, releaser_history=None):
+        subs = RpmGenerator.get_subs_hook(subs, package, releaser_history)
+        subs['Package'] = rosify_package_name(subs['Package'], rosdistro)
         return subs
 
     def generate_branching_arguments(self, package, branch):
-        rpm_branch = 'rpm/' + self.rosdistro + '/' + package.name
-        args = [[rpm_branch, branch, False]]
-        n, r, b, ds = package.name, self.rosdistro, rpm_branch, self.distros
+        package_branch = self.package_manager + '/' + self.rosdistro + '/' + package.name
+        args = [[package_branch, branch, False]]
+        n, r, b, ds = package.name, self.rosdistro, package_branch, self.distros
         args.extend([
-            ['rpm/' + r + '/' + d + '/' + n, b, False] for d in ds
+            [self.package_manager + '/' + r + '/' + d + '/' + n, b, False] for d in ds
         ])
         return args
 
     def get_release_tag(self, data):
         return 'release/{0}/{1}/{2}-{3}'\
-            .format(self.rosdistro, data['Name'], data['Version'], self.rpm_inc)
+            .format(self.rosdistro, data['Name'], data['Version'], self.inc)
 
 
 def rosify_package_name(name, rosdistro):
@@ -112,9 +107,12 @@ def get_subs(pkg, os_name, os_version, ros_distro):
         pkg,
         os_name,
         os_version,
-        ros_distro
+        ros_distro,
+        format_description,
+        format_depends,
+        RosRpmGenerator.default_install_prefix + ros_distro,
     )
-    subs['Package'] = rosify_package_name(subs['Package'], ros_distro)
+    subs = RosRpmGenerator.get_subs_hook(subs, pkg, ros_distro)
     return subs
 
 

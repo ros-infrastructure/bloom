@@ -692,6 +692,8 @@ class BloomGenerator(object):
 class PackageManagerGenerator(BloomGenerator):
     package_manager = 'none'
     has_run_rosdep = False
+    default_install_prefix = '/usr'
+    rosdistro = os.environ.get('ROS_DISTRO', 'indigo')
 
     def prepare_arguments(self, parser):
         # The common command line arguments for every package system
@@ -744,7 +746,6 @@ class PackageManagerGenerator(BloomGenerator):
     def handle_arguments(self, args):
         self.interactive = args.interactive
         self.inc = args.inc
-        self.os_name = args.os_name
         self.distros = args.distros
         if self.distros in [None, []]:
             self.get_default_distros()
