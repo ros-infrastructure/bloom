@@ -360,7 +360,7 @@ def generate_substitutions_from_package(
     return data
 
 
-def __place_template_folder(group, src, dst, gbp=False):
+def __place_template_folder(group, src, dst, gbp=False, overwrite=False):
     template_files = pkg_resources.resource_listdir(group, src)
     # For each template, place
     for template_file in template_files:
@@ -382,7 +382,7 @@ def __place_template_folder(group, src, dst, gbp=False):
                       "'{0}': {1}".format(template_file, str(err)), exit=True)
             if not os.path.exists(dst):
                 os.makedirs(dst)
-            if os.path.exists(template_dst):
+            if os.path.exists(template_dst) and not overwrite:
                 debug("Not overwriting existing file '{0}'".format(template_dst))
             else:
                 with io.open(template_dst, 'w', encoding='utf-8') as f:
@@ -422,7 +422,7 @@ def convertToUnicode(obj):
     raise RuntimeError('need to deal with type %s' % (str(type(obj))))
 
 
-def place_template_files(path, build_type, package_manager, gbp=False):
+def place_template_files(path, build_type, package_manager, gbp=False, overwrite=False):
     info(fmt("@!@{bf}==>@| Placing templates files in the '" + package_manager + "' folder."))
     dir_path = os.path.join(path, package_manager)
     if not os.path.exists(dir_path):
@@ -430,7 +430,7 @@ def place_template_files(path, build_type, package_manager, gbp=False):
     # Place template files
     group = 'bloom.generators.' + package_manager
     templates = os.path.join('templates', build_type)
-    __place_template_folder(group, templates, dir_path, gbp)
+    __place_template_folder(group, templates, dir_path, gbp, overwrite=overwrite)
 
 
 def summarize_dependency_mapping(data, deps, build_deps, resolved_deps):
@@ -998,6 +998,7 @@ class PackageManagerGenerator(BloomGenerator):
 
     def place_template_files(self, build_type, dir_path=None):
         # Create/Clean the package system folder
+        overwrite = False
         if dir_path is None:
             dir_path = os.path.join(".", self.package_manager)
         if os.path.exists(dir_path):
@@ -1006,6 +1007,7 @@ class PackageManagerGenerator(BloomGenerator):
                 warning("Do you wish to overwrite it?")
                 if not maybe_continue('y'):
                     error("Answered no to continue, aborting.", exit=True)
+                overwrite = True
             elif 'BLOOM_CLEAR_TEMPLATE_ON_GENERATION' in os.environ:
                 warning("Overwriting {0} directory: {1}".format(self.package_manager, dir_path))
                 execute_command('git rm -rf ' + dir_path)
@@ -1016,7 +1018,7 @@ class PackageManagerGenerator(BloomGenerator):
             else:
                 warning("Not overwriting {0} directory.".format(self.package_manager))
         # Use generic place template files command
-        place_template_files('.', build_type, self.package_manager, gbp=True)
+        place_template_files('.', build_type, self.package_manager, gbp=True, overwrite=overwrite)
         # Commit results
         execute_command('git add ' + dir_path)
         _, has_files, _ = execute_command('git diff --cached --name-only', return_io=True)
