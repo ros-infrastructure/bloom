@@ -841,7 +841,7 @@ class PackageManagerGenerator(BloomGenerator):
                     all_keys_valid = False
         return all_keys_valid
 
-    def _pre_modify(self, key_unvalid_error_msg):
+    def check_all_keys_are_valid(self, key_invalid_error_msg):
         info("\nPre-verifying {0} dependency keys...".format(self.package_manager))
         # Run rosdep update is needed
         if not self.has_run_rosdep:
@@ -850,7 +850,7 @@ class PackageManagerGenerator(BloomGenerator):
         peer_packages = [p.name for p in self.packages.values()]
 
         while not self._check_all_keys_are_valid(peer_packages, self.rosdistro):
-            error(key_unvalid_error_msg)
+            error(key_invalid_error_msg)
             try:
                 if not maybe_continue(msg="Would you like to try again?"):
                     error("User aborted after rosdep keys were not resolved.")

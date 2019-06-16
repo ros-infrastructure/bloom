@@ -170,3 +170,19 @@ def dir_exist_default(data):
             assert content == placed_files_dict[f]
         for f in data.original_normal_files:
             assert f in placed_files_dict.keys()
+
+
+def test_bad_dependency():
+    bad_pkg_name = 'bad_dependency_pkg'
+    bad_pkg = get_package(bad_pkg_name)
+    pkg_bad_dict = {bad_pkg_name: bad_pkg}
+
+    gen = get_generator()
+    gen.packages = pkg_bad_dict
+    gen.rosdistro = 'kinetic'
+    gen.os_name = 'ubuntu'
+    gen.distros = ['xenial']
+    with bloom_answer(['n']):
+        with AssertRaisesContext(SystemExit, str(code.GENERATOR_NO_ROSDEP_KEY_FOR_DISTRO)):
+            with redirected_stdio():
+                gen.check_all_keys_are_valid("")

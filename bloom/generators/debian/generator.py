@@ -179,7 +179,7 @@ class DebianGenerator(PackageManagerGenerator):
             "Some of the dependencies for packages in this repository could not be resolved by rosdep.\n",
             "You can try to address the issues which appear above and try again if you wish."
         ])
-        PackageManagerGenerator._pre_modify(self, error_msg)
+        PackageManagerGenerator.check_all_keys_are_valid(self, error_msg)
 
     def generate_package(self, package, os_version):
         info("Generating {0} for {1}...".format(self.package_manager, os_version))

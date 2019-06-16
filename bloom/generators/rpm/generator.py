@@ -108,7 +108,7 @@ class RpmGenerator(PackageManagerGenerator):
             "You can try to address the issues which appear above and try again if you wish, ",
             "or continue without releasing into RPM-based distributions (e.g. Fedora 24)."
         ])
-        PackageManagerGenerator._pre_modify(self, error_msg)
+        PackageManagerGenerator.check_all_keys_are_valid(self, error_msg)
 
         for package in self.packages.values():
             if not package.licenses or not package.licenses[0]:
