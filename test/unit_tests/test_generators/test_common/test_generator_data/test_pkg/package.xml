@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>test_pkg</name>
+  <version>0.1.0</version>
+  <description>The test_pkg package</description>
+  <url>http://wiki.ros.org/test_common_pkg</url>
+
+  <maintainer email="nobody1@todo.todo">nobody1</maintainer>
+  <maintainer email="nobody2@todo.todo">nobody2</maintainer>
+
+  <license>TODO</license>
+
+  <depend>roscpp</depend>
+  <depend>rospy</depend>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+</package>

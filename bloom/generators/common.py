@@ -730,7 +730,7 @@ class PackageManagerGenerator(BloomGenerator):
         if type(packages) is dict:
             return list(packages.values())[0]
 
-    def get_default_distros(self):
+    def set_default_distros(self):
         index = rosdistro.get_index(rosdistro.get_index_url())
         distribution_file = rosdistro.get_distribution_file(index, self.rosdistro)
         if self.os_name not in distribution_file.release_platforms:
@@ -748,7 +748,7 @@ class PackageManagerGenerator(BloomGenerator):
         self.inc = args.inc
         self.distros = args.distros
         if self.distros in [None, []]:
-            self.get_default_distros()
+            self.set_default_distros()
         self.install_prefix = args.install_prefix
         if args.install_prefix is None:
             self.install_prefix = self.default_install_prefix
