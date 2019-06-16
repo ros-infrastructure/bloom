@@ -285,7 +285,7 @@ def generate_substitutions_from_package(
         warning("No homepage set, defaulting to ''")
     data['Homepage'] = homepage
     # Increment Number
-    data['Inc'] = '' if native else '-{0}'.format(inc)
+    data['Inc'] = '' if native else '{0}'.format(inc)
     # Package name
     data['Package'] = sanitize_package_name(package.name)
     # Installation prefix
@@ -1025,7 +1025,7 @@ class PackageManagerGenerator(BloomGenerator):
         if has_files:
             execute_command('git commit -m "Placing {0} template files"'.format(self.package_manager))
 
-    def get_subs(self, package, os_version, format_description, format_depends, releaser_history=None):
+    def get_subs(self, package, os_version, format_description, format_depends):
         # This is the common part for generate templacte substitute, then successor of
         # the generator will add its specic content via define its get_subs_hook function
         subs = generate_substitutions_from_package(
@@ -1040,7 +1040,8 @@ class PackageManagerGenerator(BloomGenerator):
             [p.name for p in self.packages.values()],
             fallback_resolver=self.missing_dep_resolver
         )
-        subs['release_tag'] = 'release/{0}/{1}-{2}'.format(subs['Name'], subs['Version'], self.inc)
+        # Try to retrieve the releaser_history
+        releaser_history = self.get_releaser_history()
         subs = self.get_subs_hook(subs, package, self.rosdistro, releaser_history=releaser_history)
         for item in subs.items():
             subs[item[0]] = convertToUnicode(item[1])

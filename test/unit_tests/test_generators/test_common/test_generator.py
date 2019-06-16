@@ -186,3 +186,51 @@ def test_bad_dependency():
         with AssertRaisesContext(SystemExit, str(code.GENERATOR_NO_ROSDEP_KEY_FOR_DISTRO)):
             with redirected_stdio():
                 gen.check_all_keys_are_valid("")
+
+
+def format_depends(depends, resolved_deps):
+    formatted = []
+    for d in depends:
+        formatted.append("{0}".format(d))
+    return formatted
+
+
+def format_description(value):
+    return value
+
+
+class OneGenerator(PackageManagerGenerator):
+    package_manager = "test"
+    @staticmethod
+    def get_subs_hook(subs, package, rosdistro, releaser_history=None):
+        subs['Name'] = 'test_pkg improved'
+        subs['specific_part'] = 'none'
+        return subs
+
+
+def test_get_substitute():
+    pkg_name = 'test_pkg'
+    pkg = get_package(pkg_name)
+    pkg_dict = {pkg_name: pkg}
+
+    gen = OneGenerator()
+    gen.packages = pkg_dict
+    gen.os_name = "ubuntu"
+    gen.os_version = "xenial"
+    gen.rosdistro = "kinetic"
+    gen.install_prefix = gen.default_install_prefix
+    gen.inc = "1"
+
+    with redirected_stdio():
+        subs = gen.get_subs(pkg, gen.os_version, format_description, format_depends)
+
+    assert 'test_pkg improved' == subs['Name']
+    assert '0.1.0' == subs['Version']
+    assert 'The test_pkg package' == subs['Description']
+    assert '1' == subs['Inc']
+    assert 'test-pkg' == subs['Package']
+    assert ['roscpp', 'rospy'] == subs['Depends']
+    assert gen.os_version == subs['Distribution']
+    assert "nobody1 <nobody1@todo.todo>" == subs['Maintainer']
+    assert "nobody1 <nobody1@todo.todo>, nobody2 <nobody2@todo.todo>" == subs['Maintainers']
+    assert 'none' == subs['specific_part']

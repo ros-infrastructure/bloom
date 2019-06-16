@@ -183,10 +183,8 @@ class DebianGenerator(PackageManagerGenerator):
 
     def generate_package(self, package, os_version):
         info("Generating {0} for {1}...".format(self.package_manager, os_version))
-        # Try to retrieve the releaser_history
-        releaser_history = self.get_releaser_history()
         # Generate substitution values
-        subs = self.get_subs(package, os_version, format_description, format_depends, releaser_history)
+        subs = self.get_subs(package, os_version, format_description, format_depends)
         # Use subs to create and store releaser history
         releaser_history = [(v, (n, e)) for v, _, _, n, e in subs['changelogs']]
         self.set_releaser_history(dict(releaser_history))
@@ -279,6 +277,6 @@ class DebianGenerator(PackageManagerGenerator):
         return subs
 
     def generate_tag_name(self, subs):
-        tag_name = '{Package}_{Version}{Inc}_{Distribution}'
+        tag_name = '{Package}_{Version}-{Inc}_{Distribution}'
         tag_name = self.package_manager + '/' + tag_name.format(**subs)
         return tag_name

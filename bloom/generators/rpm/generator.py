@@ -116,10 +116,8 @@ class RpmGenerator(PackageManagerGenerator):
 
     def generate_package(self, package, os_version):
         info("Generating {0} for {1}...".format(self.package_manager, os_version))
-        # Try to retrieve the releaser_history
-        releaser_history = self.get_releaser_history()
         # Generate substitution values
-        subs = self.get_subs(package, os_version, format_description, format_depends, releaser_history)
+        subs = self.get_subs(package, os_version, format_description, format_depends)
         # Use subs to create and store releaser history
         self.set_releaser_history(dict(subs['changelogs']))
         # Template files
