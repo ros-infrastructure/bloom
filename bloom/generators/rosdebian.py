@@ -37,7 +37,6 @@ from bloom.generators.common import default_fallback_resolver
 from bloom.generators.common import generate_substitutions_from_package
 from bloom.generators.common import sanitize_package_name
 
-
 from bloom.generators.debian import DebianGenerator
 from bloom.generators.debian import format_description
 from bloom.generators.debian import format_depends
@@ -81,7 +80,7 @@ class RosDebianGenerator(DebianGenerator):
 
     @staticmethod
     def get_subs_hook(subs, package, rosdistro, releaser_history=None):
-        subs = DebianGenerator.get_subs_hook(subs, package, releaser_history)
+        subs = DebianGenerator.get_subs_hook(subs, package, rosdistro, releaser_history=releaser_history)
         subs['Package'] = rosify_package_name(subs['Package'], rosdistro)
 
         # ROS 2 specific bloom extensions.
@@ -127,8 +126,7 @@ class RosDebianGenerator(DebianGenerator):
         return args
 
     def get_release_tag(self, data):
-        return 'release/{0}/{1}/{2}-{3}'\
-            .format(self.rosdistro, data['Name'], data['Version'], self.inc)
+        return 'release/{0}/{1}/{2}-{3}'.format(self.rosdistro, data['Name'], data['Version'], self.inc)
 
 
 def rosify_package_name(name, rosdistro):

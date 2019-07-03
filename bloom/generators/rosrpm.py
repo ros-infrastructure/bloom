@@ -79,7 +79,7 @@ class RosRpmGenerator(RpmGenerator):
 
     @staticmethod
     def get_subs_hook(subs, package, rosdistro, releaser_history=None):
-        subs = RpmGenerator.get_subs_hook(subs, package, releaser_history)
+        subs = RpmGenerator.get_subs_hook(subs, package, rosdistro, releaser_history=releaser_history)
         subs['Package'] = rosify_package_name(subs['Package'], rosdistro)
         return subs
 
@@ -93,8 +93,7 @@ class RosRpmGenerator(RpmGenerator):
         return args
 
     def get_release_tag(self, data):
-        return 'release/{0}/{1}/{2}-{3}'\
-            .format(self.rosdistro, data['Name'], data['Version'], self.inc)
+        return 'release/{0}/{1}/{2}-{3}'.format(self.rosdistro, data['Name'], data['Version'], self.inc)
 
 
 def rosify_package_name(name, rosdistro):

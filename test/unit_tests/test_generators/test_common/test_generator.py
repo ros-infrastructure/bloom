@@ -10,7 +10,7 @@ from ....utils.common import redirected_stdio
 from ....utils.common import temporary_directory
 from ....utils.common import user
 
-from bloom.generators.debian.generator import PackageManagerGenerator
+from bloom.generators.common import PackageManagerGenerator
 
 from bloom.util import code
 
