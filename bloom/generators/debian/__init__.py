@@ -1,4 +1,3 @@
-from .generator import DebianGenerator
-from .generator import sanitize_package_name
+from .generator import DebianGenerator, format_description, format_depends
 
-__all__ = ['DebianGenerator', 'sanitize_package_name']
+__all__ = ['DebianGenerator', 'format_description', 'format_depends']
