@@ -124,8 +124,10 @@ class RpmGenerator(PackageManagerGenerator):
         template_files = process_template_files('.', subs, self.package_manager)
         # Remove any residual template files
         execute_command('git rm -rf ' + ' '.join("'{}'".format(t) for t in template_files))
-        # Add changes to the rpm folder
-        execute_command('git add ' + self.package_manager)
+        # Add marker file to tell mock to archive the sources
+        open('.write_tar', 'a').close()
+        # Add marker file changes to the rpm folder
+        execute_command('git add .write_tar ' + self.package_manager)
         # Commit changes
         execute_command('git commit -m "Generated {0} files for {1}"'
                         .format(self.package_manager, os_version))
