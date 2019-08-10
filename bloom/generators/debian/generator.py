@@ -276,7 +276,8 @@ class DebianGenerator(PackageManagerGenerator):
 
         return subs
 
-    def generate_tag_name(self, subs):
+    @staticmethod
+    def generate_tag_name(subs):
         tag_name = '{Package}_{Version}-{Inc}_{Distribution}'
-        tag_name = self.package_manager + '/' + tag_name.format(**subs)
+        tag_name = DebianGenerator.package_manager + '/' + tag_name.format(**subs)
         return tag_name

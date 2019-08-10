@@ -1110,7 +1110,8 @@ class PackageManagerGenerator(BloomGenerator):
         """
         return subs
 
-    def generate_tag_name(self, subs):
+    @staticmethod
+    def generate_tag_name(subs):
         """
         Generate tag name based on the substitute, this method need be overwriten
 
