@@ -34,11 +34,12 @@
 from __future__ import print_function
 
 from bloom.generators.common import default_fallback_resolver
-
-from bloom.generators.debian.generator import sanitize_package_name
+from bloom.generators.common import generate_substitutions_from_package
+from bloom.generators.common import sanitize_package_name
 
 from bloom.generators.debian import DebianGenerator
-from bloom.generators.debian.generator import generate_substitutions_from_package
+from bloom.generators.debian import format_description
+from bloom.generators.debian import format_depends
 from bloom.generators.debian.generate_cmd import main as debian_main
 from bloom.generators.debian.generate_cmd import prepare_arguments
 
@@ -71,40 +72,33 @@ class RosDebianGenerator(DebianGenerator):
         info("Releasing for rosdistro: " + self.rosdistro)
         return ret
 
-    def get_subs(self, package, debian_distro, releaser_history, native=False):
-        def fallback_resolver(key, peer_packages, rosdistro=self.rosdistro):
-            if key in peer_packages:
-                return [sanitize_package_name(rosify_package_name(key, rosdistro))]
-            return default_fallback_resolver(key, peer_packages)
-        subs = generate_substitutions_from_package(
-            package,
-            self.os_name,
-            debian_distro,
-            self.rosdistro,
-            self.install_prefix,
-            self.debian_inc,
-            [p.name for p in self.packages.values()],
-            releaser_history=releaser_history,
-            fallback_resolver=fallback_resolver
-        )
-        subs['Package'] = rosify_package_name(subs['Package'], self.rosdistro)
+    @staticmethod
+    def missing_dep_resolver(key, peer_packages, os_name, os_version, ros_distro):
+        if key in peer_packages:
+            return [sanitize_package_name(rosify_package_name(key, ros_distro))]
+        return default_fallback_resolver(key, peer_packages)
+
+    @staticmethod
+    def get_subs_hook(subs, package, rosdistro, releaser_history=None):
+        subs = DebianGenerator.get_subs_hook(subs, package, rosdistro, releaser_history=releaser_history)
+        subs['Package'] = rosify_package_name(subs['Package'], rosdistro)
 
         # ROS 2 specific bloom extensions.
         ros2_distros = [
             name for name, values in get_index().distributions.items()
             if values.get('distribution_type') == 'ros2']
-        if self.rosdistro in ros2_distros:
+        if rosdistro in ros2_distros:
             # Add ros-workspace package as a dependency to any package other
             # than ros_workspace and its dependencies.
             if package.name not in ['ament_cmake_core', 'ament_package', 'ros_workspace']:
-                workspace_pkg_name = rosify_package_name('ros-workspace', self.rosdistro)
+                workspace_pkg_name = rosify_package_name('ros-workspace', rosdistro)
                 subs['BuildDepends'].append(workspace_pkg_name)
                 subs['Depends'].append(workspace_pkg_name)
 
             # Add packages necessary to build vendor typesupport for rosidl_interface_packages to their
             # build dependencies.
-            if self.rosdistro in ros2_distros and \
-                    self.rosdistro not in ('r2b2', 'r2b3', 'ardent') and \
+            if rosdistro in ros2_distros and \
+                    rosdistro not in ('r2b2', 'r2b3', 'ardent') and \
                     'rosidl_interface_packages' in [p.name for p in package.member_of_groups]:
                 ROS2_VENDOR_TYPESUPPORT_DEPENDENCIES = [
                     'rmw-connext-cpp',
@@ -118,21 +112,21 @@ class RosDebianGenerator(DebianGenerator):
                 ]
 
                 subs['BuildDepends'] += [
-                    rosify_package_name(name, self.rosdistro) for name in ROS2_VENDOR_TYPESUPPORT_DEPENDENCIES]
+                    rosify_package_name(name, rosdistro) for name in ROS2_VENDOR_TYPESUPPORT_DEPENDENCIES]
+
         return subs
 
     def generate_branching_arguments(self, package, branch):
-        deb_branch = 'debian/' + self.rosdistro + '/' + package.name
-        args = [[deb_branch, branch, False]]
-        n, r, b, ds = package.name, self.rosdistro, deb_branch, self.distros
+        package_branch = self.package_manager + '/' + self.rosdistro + '/' + package.name
+        args = [[package_branch, branch, False]]
+        n, r, b, ds = package.name, self.rosdistro, package_branch, self.distros
         args.extend([
-            ['debian/' + r + '/' + d + '/' + n, b, False] for d in ds
+            [self.package_manager + '/' + r + '/' + d + '/' + n, b, False] for d in ds
         ])
         return args
 
     def get_release_tag(self, data):
-        return 'release/{0}/{1}/{2}-{3}'\
-            .format(self.rosdistro, data['Name'], data['Version'], self.debian_inc)
+        return 'release/{0}/{1}/{2}-{3}'.format(self.rosdistro, data['Name'], data['Version'], self.inc)
 
 
 def rosify_package_name(name, rosdistro):
@@ -146,10 +140,13 @@ def get_subs(pkg, os_name, os_version, ros_distro, native):
         os_name,
         os_version,
         ros_distro,
+        format_description,
+        format_depends,
         RosDebianGenerator.default_install_prefix + ros_distro,
-        native=native
     )
-    subs['Package'] = rosify_package_name(subs['Package'], ros_distro)
+    subs = RosDebianGenerator.get_subs_hook(subs, pkg, ros_distro)
+    # Debian Package Format
+    subs['format'] = 'native' if native else 'quilt'
     return subs
 
 
