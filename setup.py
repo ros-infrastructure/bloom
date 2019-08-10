@@ -31,6 +31,9 @@ setup(
         ],
         'bloom.generators.rpm': [
             'bloom/generators/rpm/templates/*'
+        ],
+        'bloom.generators.vcpkg': [
+            'bloom/generators/vcpkg/templates/*'
         ]
     },
     include_package_data=True,
