@@ -75,13 +75,17 @@ generation of platform specific source packages, like debian's src-debs.""",
             'debian = bloom.generators.debian:DebianGenerator',
             'rosdebian = bloom.generators.rosdebian:RosDebianGenerator',
             'rpm = bloom.generators.rpm:RpmGenerator',
-            'rosrpm = bloom.generators.rosrpm:RosRpmGenerator'
+            'rosrpm = bloom.generators.rosrpm:RosRpmGenerator',
+            'vcpkg = bloom.generators.vcpkg:VcpkgGenerator',
+            'rosvcpkg = bloom.generators.rosvcpkg:RosVcpkgGenerator'
         ],
         'bloom.generate_cmds': [
             'debian = bloom.generators.debian.generate_cmd:description',
             'rosdebian = bloom.generators.rosdebian:description',
             'rpm = bloom.generators.rpm.generate_cmd:description',
-            'rosrpm = bloom.generators.rosrpm:description'
+            'rosrpm = bloom.generators.rosrpm:description',
+            'vcpk = bloom.generators.vcpkg.generate_cmd:description',
+            'rosvcpkg = bloom.generators.rosvcpkg:description'
         ]
     }
 )
