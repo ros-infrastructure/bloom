@@ -46,9 +46,9 @@ from bloom.generators.common import generate_substitutions_from_package
 from bloom.generators.common import place_template_files
 from bloom.generators.common import process_template_files
 
-from bloom.generators.rpm.generator import RpmGenerator
-from bloom.generators.rpm.generator import format_description
-from bloom.generators.rpm.generator import format_depends
+from bloom.generators.vcpkg.generator import VcpkgGenerator
+from bloom.generators.vcpkg.generator import format_description
+from bloom.generators.vcpkg.generator import format_depends
 
 from bloom.util import get_distro_list_prompt
 
@@ -72,18 +72,17 @@ def prepare_arguments(parser):
     action = parser.add_mutually_exclusive_group(required=False)
     add = action.add_argument
     add('--place-template-files', action='store_true',
-        help="places rpm/* template file(s) only")
+        help="places vcpkg/* template files only")
     add('--process-template-files', action='store_true',
-        help="processes templates in rpm/* only")
+        help="processes templates in vcpkg/* only")
     add = parser.add_argument
-    add('--os-name', help='OS name, e.g. fedora, rhel')
-    add('--os-version', help='OS version or codename, e.g. heisenbug, santiago')
+    add('--os-name', help='OS name, e.g. vcpkg')
+    add('--os-version', help='OS version or codename, e.g. precise, wheezy')
     add('--ros-distro', help="ROS distro, e.g. %s (used for rosdep)" % get_distro_list_prompt())
     return parser
 
 
 def get_subs(pkg, os_name, os_version, ros_distro):
-    # No fallback_resolver provided because peer packages not considered.
     subs = generate_substitutions_from_package(
         pkg,
         os_name,
@@ -91,9 +90,8 @@ def get_subs(pkg, os_name, os_version, ros_distro):
         ros_distro,
         format_description,
         format_depends,
-        RpmGenerator.default_install_prefix
-        )
-    subs = RpmGenerator.get_subs_hook(subs, pkg, ros_distro)
+    )
+    subs = VcpkgGenerator.get_subs_hook(subs, pkg, ros_distro)
     return subs
 
 
@@ -125,10 +123,10 @@ def main(args=None, get_subs_fn=None):
 
     # Summarize
     info(fmt("@!@{gf}==> @|") +
-         fmt("Generating RPMs for @{cf}%s:%s@| for package(s) %s" %
+         fmt("Generating ports for @{cf}%s:%s@| for package(s) %s" %
              (os_name, os_version, [p.name for p in pkgs_dict.values()])))
 
-    package_manager = RpmGenerator.package_manager
+    package_manager = VcpkgGenerator.package_manager
     for path, pkg in pkgs_dict.items():
         template_files = None
         try:
@@ -154,8 +152,8 @@ def main(args=None, get_subs_fn=None):
 
 # This describes this command to the loader
 description = dict(
-    title='rpm',
-    description="Generates RPM packaging files for a catkin package",
+    title='vcpkg',
+    description="Generates vcpkg packaging files for a catkin package",
     main=main,
     prepare_arguments=prepare_arguments
 )

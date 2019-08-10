@@ -2,7 +2,7 @@ import os
 
 from ....utils.common import redirected_stdio
 
-from bloom.generators.debian.generator import em
+from bloom.generators.common import em
 from bloom.generators.debian.generator import get_changelogs
 from bloom.generators.debian.generator import format_description
 

@@ -42,9 +42,13 @@ from bloom.logging import error
 from bloom.logging import fmt
 from bloom.logging import info
 
-from bloom.generators.debian.generator import generate_substitutions_from_package
-from bloom.generators.debian.generator import place_template_files
-from bloom.generators.debian.generator import process_template_files
+from bloom.generators.common import generate_substitutions_from_package
+from bloom.generators.common import place_template_files
+from bloom.generators.common import process_template_files
+
+from bloom.generators.debian.generator import DebianGenerator
+from bloom.generators.debian.generator import format_description
+from bloom.generators.debian.generator import format_depends
 
 from bloom.util import get_distro_list_prompt
 
@@ -80,13 +84,18 @@ def prepare_arguments(parser):
 
 
 def get_subs(pkg, os_name, os_version, ros_distro, native=False):
-    return generate_substitutions_from_package(
+    subs = generate_substitutions_from_package(
         pkg,
         os_name,
         os_version,
         ros_distro,
-        native=native
+        format_description,
+        format_depends,
     )
+    subs = DebianGenerator.get_subs_hook(subs, pkg, ros_distro)
+    # Debian Package Format
+    subs['format'] = 'native' if native else 'quilt'
+    return subs
 
 
 def main(args=None, get_subs_fn=None):
@@ -120,20 +129,21 @@ def main(args=None, get_subs_fn=None):
          fmt("Generating debs for @{cf}%s:%s@| for package(s) %s" %
              (os_name, os_version, [p.name for p in pkgs_dict.values()])))
 
+    package_manager = DebianGenerator.package_manager
     for path, pkg in pkgs_dict.items():
         template_files = None
         try:
             subs = get_subs_fn(pkg, os_name, os_version, ros_distro, args.native)
             if _place_template_files:
                 # Place template files
-                place_template_files(path, pkg.get_build_type())
+                place_template_files(path, pkg.get_build_type(), package_manager)
             if _process_template_files:
                 # Just process existing template files
-                template_files = process_template_files(path, subs)
+                template_files = process_template_files(path, subs, package_manager)
             if not _place_template_files and not _process_template_files:
                 # If neither, do both
-                place_template_files(path, pkg.get_build_type())
-                template_files = process_template_files(path, subs)
+                place_template_files(path, pkg.get_build_type(), package_manager)
+                template_files = process_template_files(path, subs, package_manager)
             if template_files is not None:
                 for template_file in template_files:
                     os.remove(os.path.normpath(template_file))

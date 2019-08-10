@@ -97,11 +97,9 @@ each package in the upstream repository, so the source branch should be set to
             self.src = args.src
         self.name = args.name
         self.release_inc = args.release_increment
+        self.branch_list = self.detect_branches()
 
     def summarize(self):
-        self.branch_list = self.detect_branches()
-        if type(self.branch_list) not in [list, tuple]:
-            self.exit(self.branch_list if self.branch_list is not None else 1)
         info("Releasing package" +
              ('' if len(self.branch_list) == 1 else 's') + ": " + str(self.branch_list))
 
@@ -135,14 +133,14 @@ each package in the upstream repository, so the source branch should be set to
 Cannot automatically tag the release because this is not a catkin project.""")
             warning("""\
 Please checkout the release branch and then create a tag manually with:""")
-            warning("  git checkout release/" + str(self.name))
-            warning("  git tag -f release/" + str(self.name) + "/<version>")
+            warning("  git checkout " + destination)
+            warning("  git tag -f " + destination + "/<version>")
             return
         with inbranch(destination):
             name, version, packages = get_package_data(destination)
         # Execute git tag
-        release_tag = destination + '/' + version + '-' + self.release_inc
-        execute_command('git tag ' + release_tag)
+        execute_command('git tag -f ' + destination + '/' + version +
+                        '-' + str(self.release_inc))
 
     def metapackage_check(self, path, pkg):
         if pkg.is_metapackage():

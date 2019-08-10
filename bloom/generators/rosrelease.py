@@ -47,37 +47,3 @@ prefix set to 'release'.
                 name, self.rosdistro, destination
             )
         )
-
-    def post_patch(self, destination):
-        # Figure out the version of the given package
-        if self.name is not None:
-            warning("""\
-Cannot automatically tag the release because this is not a catkin project.""")
-            warning("""\
-Please checkout the release branch and then create a tag manually with:""")
-            warning("  git checkout " + destination)
-            warning("  git tag -f " + destination + "/<version>")
-            return
-        with inbranch(destination):
-            name, version, packages = get_package_data(destination)
-        # Execute git tag
-        execute_command('git tag -f ' + destination + '/' + version +
-                        '-' + str(self.release_inc))
-
-    def detect_branches(self):
-        self.packages = None
-        with inbranch(self.src):
-            if self.name is not None:
-                self.packages = [self.name]
-                return [self.name]
-            package_data = get_package_data(self.src)
-            if type(package_data) not in [list, tuple]:
-                return package_data
-            name, version, packages = package_data
-            self.packages = packages
-            # Check meta packages for valid CMakeLists.txt
-            if isinstance(self.packages, dict):
-                for path, pkg in self.packages.items():
-                    # Check for valid CMakeLists.txt if a metapackage
-                    self.metapackage_check(path, pkg)
-            return name if type(name) is list else [name]

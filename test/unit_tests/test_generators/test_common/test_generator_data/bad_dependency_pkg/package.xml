@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>bad_dependency_pkg</name>
+  <version>0.1.0</version>
+  <description>The bad_dependency_pkg package</description>
+  <url>http://wiki.ros.org/test_common_pkg</url>
+
+  <maintainer email="nobody1@todo.todo">nobody1</maintainer>
+  <maintainer email="nobody2@todo.todo">nobody2</maintainer>
+
+  <license>TODO</license>
+
+  <depend>roscpp</depend>
+  <depend>rospy</depend>
+  <depend>bad_dependency</depend>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+</package>

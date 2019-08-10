@@ -31,7 +31,7 @@ from bloom.commands.git.patch import export_cmd
 from bloom.commands.git.patch import import_cmd
 from bloom.commands.git.patch import remove_cmd
 
-from bloom.generators.debian.generator import sanitize_package_name
+from bloom.generators.common import sanitize_package_name
 
 
 def create_upstream_repository(packages, directory=None, format_versions=None):
