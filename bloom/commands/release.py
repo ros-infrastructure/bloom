@@ -1142,10 +1142,12 @@ def get_argument_parser():
     add('--non-interactive', '-y', action='store_true', default=False)
     add('--ros-distro', '--rosdistro', '-r', required=True,
         help="determines the ROS distro file used")
-    add('--new-track', '--edit-track', '-n', '-e', action='store_true', default=False,
-        help="if used, a new track will be created before running bloom")
+    add('--new-track', '-n', action='store_true', default=False,
+        help="creates a new track before running bloom")
+    add('--edit-track', '-e', action='store_true', default=False,
+        help="edits the existing track before running bloom")
     add('--pretend', '-s', default=False, action='store_true',
-        help="Pretends to push and release")
+        help="pretends to push and release")
     add('--no-web', default=False, action='store_true',
         help="prevents a web browser from being opened at the end")
     add('--pull-request-only', '-p', default=False, action='store_true',
@@ -1169,6 +1171,9 @@ def main(sysargs=None):
         args.track = args.ros_distro
     handle_global_arguments(args)
 
+    if args.new_track and args.edit_track:
+        error("Cannot both create a new track and edit an existing track", exit=True)
+
     if args.list_tracks:
         list_tracks(args.repository, args.ros_distro, args.override_release_repository_url)
         return
@@ -1181,7 +1186,7 @@ def main(sysargs=None):
         disable_git_clone(True)
         quiet_git_clone_warning(True)
         perform_release(args.repository, args.track, args.ros_distro,
-                        args.new_track, not args.non_interactive, args.pretend,
+                        args.new_track or args.edit_track, not args.non_interactive, args.pretend,
                         args.pull_request_only,
                         args.override_release_repository_url,
                         args.override_release_repository_push_url)
