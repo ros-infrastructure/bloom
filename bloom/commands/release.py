@@ -850,7 +850,7 @@ Versions of tools used:
 
 
 def _perform_release(
-    repository, track, distro, new_track, interactive, pretend, tracks_dict,
+    repository, track, distro, interactive, pretend, tracks_dict,
     override_release_repository_url, override_release_repository_push_url
 ):
     # Import here to allow lazy evaluation of commands/git/__init__.py
@@ -1021,7 +1021,7 @@ def check_for_patches_and_ignores(release_repo_path):
 
 
 def perform_release(
-    repository, track, distro, new_track, interactive, pretend, pull_request_only,
+    repository, track, distro, track_action, interactive, pretend, pull_request_only,
     override_release_repository_url, override_release_repository_push_url
 ):
     # Import here to allow lazy evaluation of commands/git/__init__.py
@@ -1041,7 +1041,7 @@ def perform_release(
             # Convert to a track
             info("Old bloom.conf file detected.")
             info(fmt("@{gf}@!==> @|Converting to bloom.conf to track"))
-            convert_old_bloom_conf(None if new_track else distro)
+            convert_old_bloom_conf(None if track_action == 'new' else distro)
         upconvert_bloom_to_config_branch()
         # Check that the track is valid
         tracks_dict = get_tracks_dict_raw()
@@ -1049,32 +1049,31 @@ def perform_release(
         def create_a_new_track(track, tracks_dict):
             if not track:
                 error("You must specify a track when creating a new one.", exit=True)
+            # Create a new track called <track>,
+            # copying an existing track if possible,
+            # and overriding the ros_distro
+            warning("Creating track '{0}'...".format(track))
+            overrides = {'ros_distro': distro}
+            if override_release_repository_push_url is not None:
+                overrides['release_repo_url'] = override_release_repository_push_url
+            new_track_cmd(track, copy_track='', overrides=overrides)
+            tracks_dict = get_tracks_dict_raw()
+            check_for_patches_and_ignores(release_repo.get_path())
+            return tracks_dict
+        # If new_track, create the new track first
+        if track_action == 'new':
+            tracks_dict = create_a_new_track(track, tracks_dict)
+        elif track_action == 'edit':
+            if not track:
+                error("You must specify a track when creating a new one.", exit=True)
             if track in tracks_dict['tracks']:
                 warning("Track '{0}' exists, editing...".format(track))
                 edit_track_cmd(track)
                 tracks_dict = get_tracks_dict_raw()
-            else:
-                # Create a new track called <track>,
-                # copying an existing track if possible,
-                # and overriding the ros_distro
-                warning("Creating track '{0}'...".format(track))
-                overrides = {'ros_distro': distro}
-                if override_release_repository_push_url is not None:
-                    overrides['release_repo_url'] = override_release_repository_push_url
-                new_track_cmd(track, copy_track='', overrides=overrides)
-                tracks_dict = get_tracks_dict_raw()
-                check_for_patches_and_ignores(release_repo.get_path())
-            return tracks_dict
-        # If new_track, create the new track first
-        if new_track:
-            tracks_dict = create_a_new_track(track, tracks_dict)
         if track and track not in tracks_dict['tracks']:
             error("Given track '{0}' does not exist in release repository."
                   .format(track))
             info("Available tracks: " + str(tracks_dict['tracks'].keys()))
-            if not track:
-                error("Cannot offer to make a new track, since a track name was not provided.",
-                      exit=True)
             if not maybe_continue(msg="Create a new track called '{0}' now".format(track)):
                 error("User quit.", exit=True)
             tracks_dict = create_a_new_track(track, tracks_dict)
@@ -1107,7 +1106,7 @@ def perform_release(
         start_summary(track)
         if not pull_request_only:
             _perform_release(
-                repository, track, distro, new_track, interactive, pretend, tracks_dict,
+                repository, track, distro, interactive, pretend, tracks_dict,
                 override_release_repository_url, override_release_repository_push_url
             )
         # Propose github pull request
@@ -1142,10 +1141,12 @@ def get_argument_parser():
     add('--non-interactive', '-y', action='store_true', default=False)
     add('--ros-distro', '--rosdistro', '-r', required=True,
         help="determines the ROS distro file used")
-    add('--new-track', '--edit-track', '-n', '-e', action='store_true', default=False,
-        help="if used, a new track will be created before running bloom")
+    add('--new-track', '-n', action='store_true', default=False,
+        help="creates a new track before running bloom")
+    add('--edit-track', '-e', action='store_true', default=False,
+        help="edits the existing track before running bloom")
     add('--pretend', '-s', default=False, action='store_true',
-        help="Pretends to push and release")
+        help="pretends to push and release")
     add('--no-web', default=False, action='store_true',
         help="prevents a web browser from being opened at the end")
     add('--pull-request-only', '-p', default=False, action='store_true',
@@ -1169,6 +1170,15 @@ def main(sysargs=None):
         args.track = args.ros_distro
     handle_global_arguments(args)
 
+    if args.new_track and args.edit_track:
+        error("Cannot both create a new track and edit an existing track", exit=True)
+    elif args.new_track:
+        track_action = 'new'
+    elif args.edit_track:
+        track_action = 'edit'
+    else:
+        track_action = 'none'
+
     if args.list_tracks:
         list_tracks(args.repository, args.ros_distro, args.override_release_repository_url)
         return
@@ -1181,7 +1191,7 @@ def main(sysargs=None):
         disable_git_clone(True)
         quiet_git_clone_warning(True)
         perform_release(args.repository, args.track, args.ros_distro,
-                        args.new_track, not args.non_interactive, args.pretend,
+                        args.track_action, not args.non_interactive, args.pretend,
                         args.pull_request_only,
                         args.override_release_repository_url,
                         args.override_release_repository_push_url)
