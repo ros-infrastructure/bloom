@@ -24,7 +24,7 @@ export PYBUILD_INSTALL_ARGS=--prefix "@(InstallationPrefix)" \
 	@[ if pass_install_scripts ] --install-scripts "\$$base/bin" @[end if]
 
 %:
-	dh $@@ -v --buildsystem=pybuild --with python3
+	dh $@@ -v --parallel --buildsystem=pybuild --with python3
 
 override_dh_auto_configure:
 	# In case we're installing to a non-standard location, look for a setup.sh

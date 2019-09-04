@@ -19,7 +19,7 @@ export PKG_CONFIG_PATH=@(InstallationPrefix)/lib/pkgconfig
 export DEB_CXXFLAGS_MAINT_APPEND=-DNDEBUG
 
 %:
-	dh $@@ -v --buildsystem=cmake
+	dh $@@ -v --parallel --buildsystem=cmake
 
 override_dh_auto_configure:
 	# In case we're installing to a non-standard location, look for a setup.sh
