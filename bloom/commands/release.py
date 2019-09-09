@@ -1110,26 +1110,27 @@ def perform_release(
                 repository, track, distro, new_track, interactive, pretend, tracks_dict,
                 override_release_repository_url, override_release_repository_push_url
             )
-        # Propose github pull request
-        info(fmt("@{gf}@!==> @|") +
-             "Generating pull request to distro file located at '{0}'"
-             .format(get_distribution_file_url(distro)))
-        try:
-            pull_request_url = open_pull_request(
-                track, repository, distro, interactive, override_release_repository_url
-            )
-            if pull_request_url:
-                info(fmt(_success) + "Pull request opened at: {0}".format(pull_request_url))
-                if 'BLOOM_NO_WEBBROWSER' not in os.environ and platform.system() in ['Darwin']:
-                    webbrowser.open(pull_request_url)
-            else:
-                info("The release of your packages was successful, but the pull request failed.")
-                info("Please manually open a pull request by editing the file here: '{0}'"
-                     .format(get_distribution_file_url(distro)))
-                info(fmt(_error) + "No pull request opened.")
-        except Exception as e:
-            debug(traceback.format_exc())
-            error("Failed to open pull request: {0} - {1}".format(type(e).__name__, e), exit=True)
+        if 'BLOOM_NO_ROSDISTRO_PULL_REQUEST' not in os.environ:
+            # Propose github pull request
+            info(fmt("@{gf}@!==> @|") +
+                 "Generating pull request to distro file located at '{0}'"
+                 .format(get_distribution_file_url(distro)))
+            try:
+                pull_request_url = open_pull_request(
+                    track, repository, distro, interactive, override_release_repository_url
+                )
+                if pull_request_url:
+                    info(fmt(_success) + "Pull request opened at: {0}".format(pull_request_url))
+                    if 'BLOOM_NO_WEBBROWSER' not in os.environ and platform.system() in ['Darwin']:
+                        webbrowser.open(pull_request_url)
+                else:
+                    info("The release of your packages was successful, but the pull request failed.")
+                    info("Please manually open a pull request by editing the file here: '{0}'"
+                         .format(get_distribution_file_url(distro)))
+                    info(fmt(_error) + "No pull request opened.")
+            except Exception as e:
+                debug(traceback.format_exc())
+                error("Failed to open pull request: {0} - {1}".format(type(e).__name__, e), exit=True)
 
 
 def get_argument_parser():
