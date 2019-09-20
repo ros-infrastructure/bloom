@@ -740,7 +740,7 @@ Increasing version of package(s) in repository `{repository}` to `{version}`:
                     warning("Skipping the pull request...")
                     return
                 _my_run('git checkout -b {new_branch}'.format(**locals()))
-                _my_run("git pull --depth 1 {rosdistro_url} {base_info[branch]}".format(**locals()),
+                _my_run("git pull --depth 10 {rosdistro_url} {base_info[branch]}".format(**locals()),
                         "Pulling latest rosdistro branch")
                 rosdistro_index_commit = get_rosdistro_index_commit()
                 if rosdistro_index_commit is not None:
