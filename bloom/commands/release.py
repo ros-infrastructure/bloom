@@ -1147,6 +1147,8 @@ def get_argument_parser():
         help="if used, a new track will be created before running bloom")
     add('--pretend', '-s', default=False, action='store_true',
         help="Pretends to push and release")
+    add('--no-pull-request', default=False, action='store_true',
+        help="Prevents a pull request from being opened after release")
     add('--no-web', default=False, action='store_true',
         help="prevents a web browser from being opened at the end")
     add('--pull-request-only', '-p', default=False, action='store_true',
@@ -1173,6 +1175,9 @@ def main(sysargs=None):
     if args.list_tracks:
         list_tracks(args.repository, args.ros_distro, args.override_release_repository_url)
         return
+
+    if args.no_pull_request:
+        os.environ['BLOOM_NO_ROSDISTRO_PULL_REQUEST'] = '1'
 
     if args.no_web:
         os.environ['BLOOM_NO_WEBBROWSER'] = '1'
