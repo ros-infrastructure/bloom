@@ -10,7 +10,7 @@ install_requires = [
     'python-dateutil',
     'PyYAML',
     'rosdep >= 0.15.0',
-    'rosdistro >= 0.7.0',
+    'rosdistro >= 0.7.5',
     'vcstools >= 0.1.22',
 ]
 
