@@ -136,6 +136,7 @@ def list_distributions():
 def get_distribution_type(distro):
     return get_index().distributions[distro].get('distribution_type')
 
+
 def get_python_version(distro):
     return get_index().distributions[distro].get('python_version')
 
