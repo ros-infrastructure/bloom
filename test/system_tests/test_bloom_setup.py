@@ -49,7 +49,7 @@ def test_create_a_bloom_repository(directory=None):
         assert os.path.exists('tracks.yaml'), \
             "no tracks.yaml file in the 'bloom' branch"
         with open('tracks.yaml', 'r') as f:
-            tracks_dict = yaml.load(f.read())
+            tracks_dict = yaml.safe_load(f.read())
         assert 'tracks' in tracks_dict, "bad bloom configurations"
         assert 'foo' in tracks_dict['tracks'], "bad bloom configurations"
         track = tracks_dict['tracks']['foo']

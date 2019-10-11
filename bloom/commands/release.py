@@ -547,7 +547,7 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
             info(line, use_prefix=False, end='')
         # Assert that only this repository is being changed
         distro_file_yaml = yaml.safe_load(distro_file_raw)
-        distro_yaml = yaml.load(distro_dump)
+        distro_yaml = yaml.safe_load(distro_dump)
         if 'repositories' in distro_file_yaml:
             distro_file_repos = distro_file_yaml['repositories']
             for repo in distro_yaml['repositories']:
