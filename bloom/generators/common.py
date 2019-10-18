@@ -141,7 +141,12 @@ def package_conditional_context(ros_distro):
         error("Bloom cannot cope with distribution_type '{0}'".format(
             distribution_type), exit=True)
     python_version = get_python_version(ros_distro)
-    if python_version == 2:
+    if python_version is None:
+        error(
+            'No python_version found in the rosdistro index. '
+            'The rosdistro index must include this key for bloom to work correctly.',
+            exit=True)
+    elif python_version == 2:
         ros_python_version = '2'
     elif python_version == 3:
         ros_python_version = '3'
