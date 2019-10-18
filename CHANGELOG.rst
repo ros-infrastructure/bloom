@@ -1,3 +1,16 @@
+0.9.0 (2019-10-18 14:15:00 -0800)
+---------------------------------
+- Fixed possibly unescaped logger formatting in version. `#553 <https://github.com/ros-infrastructure/bloom/pull/553>`_
+- Added ament package support to RPM generation. `#534 <https://github.com/ros-infrastructure/bloom/pull/534>`_
+- Added ROS_PYTHON_VERSION to dependency condtionals. `#551 <https://github.com/ros-infrastructure/bloom/pull/551>`_
+  With this change rosdistro v4 indexes must define the ``python_version`` field introduced in `ros-infrastructure/rep#207 <https://github.com/ros-infrastructure/rep/pull/207`_.
+- Fixed deprecation warnings by using yaml.safe_load. `#530 <https://github.com/ros-infrastructure/bloom/pull/530>`_
+- Changed release suites, dropping all older than Ubuntu Xenial and adding Ubuntu Cosmic, Disco, and Eoan. `#543 <https://github.com/ros-infrastructure/bloom/pull/543>`_
+- Improved error handling for package conditions and index files. `#537 <https://github.com/ros-infrastructure/bloom/pull/537>`_
+- Added feature to disable pull request generation via argument or ``BLOOM_NO_ROSDISTRO_PULL_REQUEST`` environment variable. `#548 <https://github.com/ros-infrastructure/bloom/pull/548>`_
+- Updated RPM generator to always create a source archive. `#540 <https://github.com/ros-infrastructure/bloom/pull/540>`_
+- Updated RPM spec templates. `#533 <https://github.com/ros-infrastructure/bloom/pull/533>`_
+
 0.8.0 (2019-04-12 13:45:00 -0800)
 ---------------------------------
 - Start release increment at 1. `#528 <https://github.com/ros-infrastructure/bloom/pull/528>`_
