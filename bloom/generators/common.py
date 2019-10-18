@@ -42,6 +42,7 @@ from bloom.logging import info
 
 from bloom.rosdistro_api import get_distribution_type
 from bloom.rosdistro_api import get_index
+from bloom.rosdistro_api import get_python_version
 
 from bloom.util import code
 from bloom.util import maybe_continue
@@ -139,9 +140,24 @@ def package_conditional_context(ros_distro):
     else:
         error("Bloom cannot cope with distribution_type '{0}'".format(
             distribution_type), exit=True)
+    python_version = get_python_version(ros_distro)
+    if python_version is None:
+        error(
+            'No python_version found in the rosdistro index. '
+            'The rosdistro index must include this key for bloom to work correctly.',
+            exit=True)
+    elif python_version == 2:
+        ros_python_version = '2'
+    elif python_version == 3:
+        ros_python_version = '3'
+    else:
+        error("Bloom cannot cope with python_version '{0}'".format(
+            python_version), exit=True)
+
     return {
             'ROS_VERSION': ros_version,
             'ROS_DISTRO': ros_distro,
+            'ROS_PYTHON_VERSION': ros_python_version,
             }
 
 

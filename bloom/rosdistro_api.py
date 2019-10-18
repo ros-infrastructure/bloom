@@ -137,6 +137,10 @@ def get_distribution_type(distro):
     return get_index().distributions[distro].get('distribution_type')
 
 
+def get_python_version(distro):
+    return get_index().distributions[distro].get('python_version')
+
+
 def get_most_recent(thing_name, repository, reference_distro):
     reference_distro_type = get_distribution_type(reference_distro)
     distros_with_entry = {}
