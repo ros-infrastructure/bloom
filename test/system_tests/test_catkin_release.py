@@ -362,3 +362,27 @@ def test_multi_package_repository(directory=None):
                     with open('debian/copyright', 'r') as f:
                         assert pkg + ' license' in f.read(), \
                             "debian/copyright does not include right license text"
+
+@in_temporary_directory
+def test_upstream_tag_special_tag(directory=None):
+    """
+    Release a single package catkin (melodic) repository, but ensure
+    """
+    directory = directory if directory is not None else os.getcwd()
+    # Setup
+    upstream_dir = create_upstream_repository(['foo'], directory)
+    upstream_url = 'file://' + upstream_dir
+    release_url = create_release_repo(
+        upstream_url,
+        'git',
+        'melodic_devel',
+        'melodic')
+    release_dir = os.path.join(directory, 'foo_release_clone')
+    release_client = get_vcs_client('git', release_dir)
+    assert release_client.checkout(release_url)
+
+    with change_directory(release_dir):
+        user('git tag upstream/0.0.0@baz')
+
+    import bloom.commands.git.release
+    _test_unary_package_repository(release_dir, '0.1.0', directory)
