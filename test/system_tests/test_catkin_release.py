@@ -366,7 +366,9 @@ def test_multi_package_repository(directory=None):
 @in_temporary_directory
 def test_upstream_tag_special_tag(directory=None):
     """
-    Release a single package catkin (melodic) repository, but ensure
+    Release a single package catkin (melodic) repository, first put
+    an upstream tag into the release repository to test that bloom
+    can handle it.
     """
     directory = directory if directory is not None else os.getcwd()
     # Setup
