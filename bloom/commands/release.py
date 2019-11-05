@@ -1110,7 +1110,7 @@ def perform_release(
                 repository, track, distro, new_track, interactive, pretend, tracks_dict,
                 override_release_repository_url, override_release_repository_push_url
             )
-        if 'BLOOM_NO_ROSDISTRO_PULL_REQUEST' not in os.environ:
+        if 'BLOOM_NO_ROSDISTRO_PULL_REQUEST' not in os.environ and not pretend:
             # Propose github pull request
             info(fmt("@{gf}@!==> @|") +
                  "Generating pull request to distro file located at '{0}'"
