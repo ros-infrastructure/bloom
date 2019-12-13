@@ -1,3 +1,45 @@
+0.9.0 (2019-10-18 14:15:00 -0800)
+---------------------------------
+- Fixed possibly unescaped logger formatting in version. `#553 <https://github.com/ros-infrastructure/bloom/pull/553>`_
+- Added ament package support to RPM generation. `#534 <https://github.com/ros-infrastructure/bloom/pull/534>`_
+- Added ROS_PYTHON_VERSION to dependency condtionals. `#551 <https://github.com/ros-infrastructure/bloom/pull/551>`_
+  With this change rosdistro v4 indexes must define the ``python_version`` field introduced in `ros-infrastructure/rep#207 <https://github.com/ros-infrastructure/rep/pull/207`_.
+- Fixed deprecation warnings by using yaml.safe_load. `#530 <https://github.com/ros-infrastructure/bloom/pull/530>`_
+- Changed release suites, dropping all older than Ubuntu Xenial and adding Ubuntu Cosmic, Disco, and Eoan. `#543 <https://github.com/ros-infrastructure/bloom/pull/543>`_
+- Improved error handling for package conditions and index files. `#537 <https://github.com/ros-infrastructure/bloom/pull/537>`_
+- Added feature to disable pull request generation via argument or ``BLOOM_NO_ROSDISTRO_PULL_REQUEST`` environment variable. `#548 <https://github.com/ros-infrastructure/bloom/pull/548>`_
+- Updated RPM generator to always create a source archive. `#540 <https://github.com/ros-infrastructure/bloom/pull/540>`_
+- Updated RPM spec templates. `#533 <https://github.com/ros-infrastructure/bloom/pull/533>`_
+
+0.8.0 (2019-04-12 13:45:00 -0800)
+---------------------------------
+- Start release increment at 1. `#528 <https://github.com/ros-infrastructure/bloom/pull/528>`_
+- Evaluate conditions in package.xml before resolving dependencies. `#519 <https://github.com/ros-infrastructure/bloom/pull/519>`_
+- Update to prevent overwriting template files that exist in source. `#516 <https://github.com/ros-infrastructure/bloom/pull/516>`_
+- Update debian templates to add trailing newline. `#523 <https://github.com/ros-infrastructure/bloom/pull/523>`_
+- Fix str/bytes issue in Python 3 auth. `#522 <https://github.com/ros-infrastructure/bloom/pull/522>`_
+- Use distribution type from index v4 to set ROS 2-specific behavior. `#502 <https://github.com/ros-infrastructure/bloom/pull/502>`_
+- Fix tests to allow them to run outside of a git context. `#515 <https://github.com/ros-infrastructure/bloom/pull/515>`_
+- Fix tests to allow empty git environment. `#514 <https://github.com/ros-infrastructure/bloom/pull/514>`_
+- Invoke scripts using the current python executable. `#513 <https://github.com/ros-infrastructure/bloom/pull/513>`_
+- Drop support for older distributions. (Retroactive to 0.6.8) `#512 <https://github.com/ros-infrastructure/bloom/pull/512>`_
+
+0.7.2 (2019-01-26 07:45:00 -0800)
+---------------------------------
+- Updated a test to support mixed rosdistro index. `#510 <https://github.com/ros-infrastructure/bloom/pull/510>`_
+- Updated to use yaml.safe_load for untrusted yaml input. `#508 <https://github.com/ros-infrastructure/bloom/pull/508>`_
+- Required rosdistro 0.15.0 for package format 3 conditional dependency support. `#511 <https://github.com/ros-infrastructure/bloom/pull/511>`_
+
+0.7.1 (2019-01-11 16:05:00 -0800)
+---------------------------------
+- Fix some bugs from python3 compatibility. `#505 <https://github.com/ros-infrastructure/bloom/pull/505>`_
+
+0.7.0 (2019-01-10 09:45:00 -0800)
+---------------------------------
+- Quote files removed with `git rm -rf`. `#491 <https://github.com/ros-infrastructure/bloom/pull/491>`_
+- Only consider rosdistros of the same type when looking for a repo name in recent distros. `#501 <https://github.com/ros-infrastructure/bloom/pull/501>`_
+- Fix python 3 support for pull request generation. `#489 <https://github.com/ros-infrastructure/bloom/pull/489>`_
+
 0.6.9 (2018-11-15 08:45:00 -0800)
 ---------------------------------
 - Added Crystal Clemmys (crystal) to the list of ROS 2 rosdistros. `#495 <https://github.com/ros-infrastructure/bloom/pull/495>`_

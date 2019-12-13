@@ -58,6 +58,7 @@ from bloom.generators import update_rosdep
 
 from bloom.generators.common import default_fallback_resolver
 from bloom.generators.common import invalidate_view_cache
+from bloom.generators.common import evaluate_package_conditions
 from bloom.generators.common import resolve_rosdep_key
 
 from bloom.git import inbranch
@@ -147,16 +148,16 @@ def __place_template_folder(group, src, dst, gbp=False):
             if not os.path.exists(dst):
                 os.makedirs(dst)
             if os.path.exists(template_dst):
-                debug("Removing existing file '{0}'".format(template_dst))
-                os.remove(template_dst)
-            with io.open(template_dst, 'w', encoding='utf-8') as f:
-                if not isinstance(template, str):
-                    template = template.decode('utf-8')
-                # Python 2 API needs a `unicode` not a utf-8 string.
-                elif sys.version_info.major == 2:
-                    template = template.decode('utf-8')
-                f.write(template)
-            shutil.copystat(template_abs_path, template_dst)
+                debug("Not overwriting existing file '{0}'".format(template_dst))
+            else:
+                with io.open(template_dst, 'w', encoding='utf-8') as f:
+                    if not isinstance(template, str):
+                        template = template.decode('utf-8')
+                    # Python 2 API needs a `unicode` not a utf-8 string.
+                    elif sys.version_info.major == 2:
+                        template = template.decode('utf-8')
+                    f.write(template)
+                shutil.copystat(template_abs_path, template_dst)
 
 
 def place_template_files(path, build_type, gbp=False):
@@ -312,10 +313,17 @@ def generate_substitutions_from_package(
     # Installation prefix
     data['InstallationPrefix'] = installation_prefix
     # Resolve dependencies
-    depends = package.run_depends + package.buildtool_export_depends
-    build_depends = package.build_depends + package.buildtool_depends + package.test_depends
+    evaluate_package_conditions(package, ros_distro)
+    depends = [
+        dep for dep in (package.run_depends + package.buildtool_export_depends)
+        if dep.evaluated_condition is not False]
+    build_depends = [
+        dep for dep in (package.build_depends + package.buildtool_depends + package.test_depends)
+        if dep.evaluated_condition is not False]
 
-    unresolved_keys = depends + build_depends + package.replaces + package.conflicts
+    unresolved_keys = [
+        dep for dep in (depends + build_depends + package.replaces + package.conflicts)
+        if dep.evaluated_condition is not False]
     # The installer key is not considered here, but it is checked when the keys are checked before this
     resolved_deps = resolve_dependencies(unresolved_keys, os_name,
                                          os_version, ros_distro,
@@ -647,15 +655,24 @@ class DebianGenerator(BloomGenerator):
         update_rosdep()
         self.has_run_rosdep = True
 
-    def _check_all_keys_are_valid(self, peer_packages):
+    def _check_all_keys_are_valid(self, peer_packages, ros_distro):
         keys_to_resolve = []
         key_to_packages_which_depends_on = collections.defaultdict(list)
         keys_to_ignore = set()
         for package in self.packages.values():
-            depends = package.run_depends + package.buildtool_export_depends
-            build_depends = package.build_depends + package.buildtool_depends + package.test_depends
-            unresolved_keys = depends + build_depends + package.replaces + package.conflicts
-            keys_to_ignore = keys_to_ignore.union(package.replaces + package.conflicts)
+            evaluate_package_conditions(package, ros_distro)
+            depends = [
+                dep for dep in (package.run_depends + package.buildtool_export_depends)
+                if dep.evaluated_condition is not False]
+            build_depends = [
+                dep for dep in (package.build_depends + package.buildtool_depends + package.test_depends)
+                if dep.evaluated_condition is not False]
+            unresolved_keys = [
+                dep for dep in (depends + build_depends + package.replaces + package.conflicts)
+                if dep.evaluated_condition is not False]
+            keys_to_ignore = {
+                    dep for dep in keys_to_ignore.union(package.replaces + package.conflicts)
+                    if dep.evaluated_condition is not False}
             keys = [d.name for d in unresolved_keys]
             keys_to_resolve.extend(keys)
             for key in keys:
@@ -699,7 +716,7 @@ class DebianGenerator(BloomGenerator):
 
         peer_packages = [p.name for p in self.packages.values()]
 
-        while not self._check_all_keys_are_valid(peer_packages):
+        while not self._check_all_keys_are_valid(peer_packages, self.rosdistro):
             error("Some of the dependencies for packages in this repository could not be resolved by rosdep.")
             error("You can try to address the issues which appear above and try again if you wish.")
             try:
@@ -838,7 +855,9 @@ class DebianGenerator(BloomGenerator):
         place_template_files('.', build_type, gbp=True)
         # Commit results
         execute_command('git add ' + debian_dir)
-        execute_command('git commit -m "Placing debian template files"')
+        _, has_files, _ = execute_command('git diff --cached --name-only', return_io=True)
+        if has_files:
+            execute_command('git commit -m "Placing debian template files"')
 
     def get_releaser_history(self):
         # Assumes that this is called in the target branch
@@ -884,7 +903,7 @@ class DebianGenerator(BloomGenerator):
         # Template files
         template_files = process_template_files('.', subs)
         # Remove any residual template files
-        execute_command('git rm -rf ' + ' '.join(template_files))
+        execute_command('git rm -rf ' + ' '.join("'{}'".format(t) for t in template_files))
         # Add changes to the debian folder
         execute_command('git add debian')
         # Commit changes

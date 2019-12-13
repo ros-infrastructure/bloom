@@ -1,5 +1,5 @@
 """
-These system tests are testing the release of groovy+ catkin projects.
+These system tests are testing the release of melodic+ catkin projects.
 """
 
 from __future__ import print_function
@@ -35,14 +35,14 @@ from bloom.generators.debian.generator import sanitize_package_name
 
 
 def create_upstream_repository(packages, directory=None, format_versions=None):
-    upstream_dir = 'upstream_repo_groovy'
+    upstream_dir = 'upstream_repo_melodic'
     user('mkdir ' + upstream_dir)
     with change_directory(upstream_dir):
         user('git init .')
         user('echo "readme stuff" >> README.md')
         user('git add README.md')
         user('git commit -m "Initial commit" --allow-empty')
-        user('git checkout -b groovy_devel')
+        user('git checkout -b melodic_devel')
         if format_versions is None:
             format_versions = [1] * len(packages)
         for package, format_version in zip(packages, format_versions):
@@ -53,7 +53,7 @@ def create_upstream_repository(packages, directory=None, format_versions=None):
 <package format="{format_version}">
   <name>{package}</name>
   <version>0.1.0</version>
-  <description>A catkin (groovy) ROS package called '{package}'</description>
+  <description>A catkin (melodic) ROS package called '{package}'</description>
   <maintainer email="bar@baz.com">Bar</maintainer>
   <license{license_file_attr}>BSD</license>
 
@@ -93,7 +93,7 @@ def _test_unary_package_repository(release_dir, version, directory=None):
     with change_directory(release_dir):
         # First run everything
         with bloom_answer(bloom_answer.ASSERT_NO_QUESTION):
-            cmd = 'git-bloom-release{0} groovy'
+            cmd = 'git-bloom-release{0} melodic'
             if 'BLOOM_VERBOSE' not in os.environ:
                 cmd = cmd.format(' --quiet')
             else:
@@ -126,20 +126,20 @@ def _test_unary_package_repository(release_dir, version, directory=None):
         # patch import should have reported OK
         assert ret == code.OK, "actually returned ({0})".format(ret)
         # do the proper branches exist?
-        assert branch_exists('release/groovy/foo'), \
-            "no release/groovy/foo branch"
-        assert branch_exists('patches/release/groovy/foo'), \
-            "no patches/release/groovy/foo branch"
+        assert branch_exists('release/melodic/foo'), \
+            "no release/melodic/foo branch"
+        assert branch_exists('patches/release/melodic/foo'), \
+            "no patches/release/melodic/foo branch"
         # was the release tag created?
         ret, out, err = user('git tag', return_io=True)
-        expected = 'release/groovy/foo/' + version + '-0'
+        expected = 'release/melodic/foo/' + version + '-1'
         assert out.count(expected) == 1, \
             "no release tag created, expected: '{0}'".format(expected)
 
         ###
         ### Make patch
         ###
-        with inbranch('release/groovy/foo'):
+        with inbranch('release/melodic/foo'):
             assert os.path.exists(os.path.join('debian', 'something.udev')), \
                 "Lost the debian overlaid files in release branch"
             assert os.path.exists('white space.txt~'), \
@@ -157,7 +157,7 @@ def _test_unary_package_repository(release_dir, version, directory=None):
         ###
         ### Test import and export
         ###
-        with inbranch('release/groovy/foo'):
+        with inbranch('release/melodic/foo'):
             export_cmd.export_patches()
             remove_cmd.remove_patches()
             import_cmd.import_patches()
@@ -168,20 +168,20 @@ def _test_unary_package_repository(release_dir, version, directory=None):
         # patch import should have reported OK
         assert ret == code.OK, "actually returned ({0})".format(ret)
         # do the proper branches exist?
-        assert branch_exists('release/groovy/foo'), \
-            "no release/groovy/foo branch"
-        assert branch_exists('patches/release/groovy/foo'), \
-            "no patches/release/groovy/foo branch"
+        assert branch_exists('release/melodic/foo'), \
+            "no release/melodic/foo branch"
+        assert branch_exists('patches/release/melodic/foo'), \
+            "no patches/release/melodic/foo branch"
         # was the release tag created?
         ret, out, err = user('git tag', return_io=True)
-        assert out.count('release/groovy/foo/' + version) == 1, \
+        assert out.count('release/melodic/foo/' + version) == 1, \
             "no release tag created"
 
 
 @in_temporary_directory
 def test_unary_package_repository(directory=None):
     """
-    Release a single package catkin (groovy) repository.
+    Release a single package catkin (melodic) repository.
     """
     directory = directory if directory is not None else os.getcwd()
     # Setup
@@ -190,8 +190,8 @@ def test_unary_package_repository(directory=None):
     release_url = create_release_repo(
         upstream_url,
         'git',
-        'groovy_devel',
-        'groovy')
+        'melodic_devel',
+        'melodic')
     release_dir = os.path.join(directory, 'foo_release_clone')
     release_client = get_vcs_client('git', release_dir)
     assert release_client.checkout(release_url)
@@ -207,7 +207,7 @@ def test_unary_package_repository(directory=None):
 @in_temporary_directory
 def test_multi_package_repository(directory=None):
     """
-    Release a multi package catkin (groovy) repository.
+    Release a multi package catkin (melodic) repository.
     """
     directory = directory if directory is not None else os.getcwd()
     # Setup
@@ -217,15 +217,15 @@ def test_multi_package_repository(directory=None):
     release_url = create_release_repo(
         upstream_url,
         'git',
-        'groovy_devel',
-        'groovy')
+        'melodic_devel',
+        'melodic')
     release_dir = os.path.join(directory, 'foo_release_clone')
     release_client = get_vcs_client('git', release_dir)
     assert release_client.checkout(release_url)
     with change_directory(release_dir):
         # First run everything
         with bloom_answer(bloom_answer.ASSERT_NO_QUESTION):
-            cmd = 'git-bloom-release{0} groovy'
+            cmd = 'git-bloom-release{0} melodic'
             if 'BLOOM_VERBOSE' not in os.environ:
                 cmd = cmd.format(' --quiet')
             else:
@@ -260,16 +260,16 @@ def test_multi_package_repository(directory=None):
         ret, out, err = user('git tag', return_io=True)
         for pkg in pkgs:
             # Does the release/pkg branch exist?
-            assert branch_exists('release/groovy/' + pkg), \
-                "no release/groovy/" + pkg + " branch"
+            assert branch_exists('release/melodic/' + pkg), \
+                "no release/melodic/" + pkg + " branch"
             # Does the patches/release/pkg branch exist?
-            assert branch_exists('patches/release/groovy/' + pkg), \
-                "no patches/release/groovy/" + pkg + " branch"
+            assert branch_exists('patches/release/melodic/' + pkg), \
+                "no patches/release/melodic/" + pkg + " branch"
             # Did the release tag get created?
-            assert out.count('release/groovy/' + pkg + '/0.1.0-0') == 1, \
+            assert out.count('release/melodic/' + pkg + '/0.1.0-1') == 1, \
                 "no release tag created for " + pkg
             # Is there a package.xml in the top level?
-            with inbranch('release/groovy/' + pkg):
+            with inbranch('release/melodic/' + pkg):
                 assert os.path.exists('package.xml'), "release branch invalid"
                 # Is it the correct package.xml for this pkg?
                 package_xml = open('package.xml', 'r').read()
@@ -277,7 +277,7 @@ def test_multi_package_repository(directory=None):
                     "incorrect package.xml for " + str(pkg)
 
         # Make a patch
-        with inbranch('release/groovy/' + pkgs[0]):
+        with inbranch('release/melodic/' + pkgs[0]):
             user('echo "This is a change" >> README.md')
             user('git add README.md')
             user('git commit -m "added a readme" --allow-empty')
@@ -286,23 +286,23 @@ def test_multi_package_repository(directory=None):
         ### Release generator, again
         ###
         with bloom_answer(bloom_answer.ASSERT_NO_QUESTION):
-            ret = user('git-bloom-generate -y rosrelease groovy -s upstream')
+            ret = user('git-bloom-generate -y rosrelease melodic -s upstream')
         # patch import should have reported OK
         assert ret == code.OK, "actually returned ({0})".format(ret)
         # Check the environment after the release generator
         ret, out, err = user('git tag', return_io=True)
         for pkg in pkgs:
             # Does the release/pkg branch exist?
-            assert branch_exists('release/groovy/' + pkg), \
-                "no release/groovy/" + pkg + " branch"
+            assert branch_exists('release/melodic/' + pkg), \
+                "no release/melodic/" + pkg + " branch"
             # Does the patches/release/pkg branch exist?
-            assert branch_exists('patches/release/groovy/' + pkg), \
-                "no patches/release/groovy/" + pkg + " branch"
+            assert branch_exists('patches/release/melodic/' + pkg), \
+                "no patches/release/melodic/" + pkg + " branch"
             # Did the release tag get created?
-            assert out.count('release/groovy/' + pkg + '/0.1.0-0') == 1, \
+            assert out.count('release/melodic/' + pkg + '/0.1.0-1') == 1, \
                 "no release tag created for " + pkg
             # Is there a package.xml in the top level?
-            with inbranch('release/groovy/' + pkg):
+            with inbranch('release/melodic/' + pkg):
                 assert os.path.exists(os.path.join('debian', 'something.udev')), \
                     "Lost the debian overlaid files in release branch"
                 assert os.path.exists('white space.txt~'), \
@@ -319,22 +319,22 @@ def test_multi_package_repository(directory=None):
         # Check the environment after the release generator
         ret, out, err = user('git tag', return_io=True)
         for pkg in pkgs:
-            for distro in ['oneiric', 'precise', 'quantal']:
+            for distro in ['bionic', 'stretch']:
                 pkg_san = sanitize_package_name(pkg)
                 # Does the debian/distro/pkg branch exist?
-                assert branch_exists('debian/groovy/' + distro + '/' + pkg), \
-                    "no debian/groovy/" + pkg + " branch"
+                assert branch_exists('debian/melodic/' + distro + '/' + pkg), \
+                    "no debian/melodic/" + pkg + " branch"
                 # Does the patches/debian/distro/pkg branch exist?
-                patches_branch = 'patches/debian/groovy/' + distro + '/' + pkg
+                patches_branch = 'patches/debian/melodic/' + distro + '/' + pkg
                 assert branch_exists(patches_branch), \
                     "no " + patches_branch + " branch"
                 # Did the debian tag get created?
-                tag = 'debian/ros-groovy-' + pkg_san + '_0.1.0-0_' + distro
+                tag = 'debian/ros-melodic-' + pkg_san + '_0.1.0-1_' + distro
                 assert out.count(tag) == 1, \
                     "no '" + tag + "'' tag created for '" + pkg + "': `\n" + \
                     out + "\n`"
             # Is there a package.xml in the top level?
-            with inbranch('debian/groovy/' + distro + '/' + pkg):
+            with inbranch('debian/melodic/' + distro + '/' + pkg):
                 assert os.path.exists(
                     os.path.join('debian', 'something.udev')), \
                     "Lost the debian overlaid files in debian branch"
@@ -362,3 +362,29 @@ def test_multi_package_repository(directory=None):
                     with open('debian/copyright', 'r') as f:
                         assert pkg + ' license' in f.read(), \
                             "debian/copyright does not include right license text"
+
+@in_temporary_directory
+def test_upstream_tag_special_tag(directory=None):
+    """
+    Release a single package catkin (melodic) repository, first put
+    an upstream tag into the release repository to test that bloom
+    can handle it.
+    """
+    directory = directory if directory is not None else os.getcwd()
+    # Setup
+    upstream_dir = create_upstream_repository(['foo'], directory)
+    upstream_url = 'file://' + upstream_dir
+    release_url = create_release_repo(
+        upstream_url,
+        'git',
+        'melodic_devel',
+        'melodic')
+    release_dir = os.path.join(directory, 'foo_release_clone')
+    release_client = get_vcs_client('git', release_dir)
+    assert release_client.checkout(release_url)
+
+    with change_directory(release_dir):
+        user('git tag upstream/0.0.0@baz')
+
+    import bloom.commands.git.release
+    _test_unary_package_repository(release_dir, '0.1.0', directory)

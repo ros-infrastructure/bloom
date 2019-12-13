@@ -60,6 +60,7 @@ from bloom.generators import update_rosdep
 
 from bloom.generators.common import default_fallback_resolver
 from bloom.generators.common import invalidate_view_cache
+from bloom.generators.common import evaluate_package_conditions
 from bloom.generators.common import resolve_rosdep_key
 
 from bloom.git import inbranch
@@ -231,9 +232,16 @@ def generate_substitutions_from_package(
     # Installation prefix
     data['InstallationPrefix'] = installation_prefix
     # Resolve dependencies
-    depends = package.run_depends + package.buildtool_export_depends
-    build_depends = package.build_depends + package.buildtool_depends + package.test_depends
-    unresolved_keys = depends + build_depends + package.replaces + package.conflicts
+    evaluate_package_conditions(package, ros_distro)
+    depends = [
+        dep for dep in (package.run_depends + package.buildtool_export_depends)
+        if dep.evaluated_condition is not False]
+    build_depends = [
+        dep for dep in (package.build_depends + package.buildtool_depends + package.test_depends)
+        if dep.evaluated_condition is not False]
+    unresolved_keys = [
+        dep for dep in (depends + build_depends + package.replaces + package.conflicts)
+        if dep.evaluated_condition is not False]
     # The installer key is not considered here, but it is checked when the keys are checked before this
     resolved_deps = resolve_dependencies(unresolved_keys, os_name,
                                          os_version, ros_distro,
@@ -259,25 +267,9 @@ def generate_substitutions_from_package(
     elif build_type == 'cmake':
         pass
     elif build_type == 'ament_cmake':
-        error(
-            "Build type '{}' is not supported by this version of bloom.".
-            format(build_type), exit=True)
+        pass
     elif build_type == 'ament_python':
-        error(
-            "Build type '{}' is not supported by this version of bloom.".
-            format(build_type), exit=True)
-        # Don't set the install-scripts flag if it's already set in setup.cfg.
-        package_path = os.path.abspath(os.path.dirname(package.filename))
-        setup_cfg_path = os.path.join(package_path, 'setup.cfg')
-        data['pass_install_scripts'] = True
-        if os.path.isfile(setup_cfg_path):
-            setup_cfg = SafeConfigParser()
-            setup_cfg.read([setup_cfg_path])
-            if (
-                    setup_cfg.has_option('install', 'install-scripts') or
-                    setup_cfg.has_option('install', 'install_scripts')
-            ):
-                data['pass_install_scripts'] = False
+        pass
     else:
         error(
             "Build type '{}' is not supported by this version of bloom.".
@@ -526,15 +518,24 @@ class RpmGenerator(BloomGenerator):
         update_rosdep()
         self.has_run_rosdep = True
 
-    def _check_all_keys_are_valid(self, peer_packages):
+    def _check_all_keys_are_valid(self, peer_packages, rosdistro):
         keys_to_resolve = []
         key_to_packages_which_depends_on = collections.defaultdict(list)
         keys_to_ignore = set()
         for package in self.packages.values():
-            depends = package.run_depends + package.buildtool_export_depends
-            build_depends = package.build_depends + package.buildtool_depends + package.test_depends
-            unresolved_keys = depends + build_depends + package.replaces + package.conflicts
-            keys_to_ignore = keys_to_ignore.union(package.replaces + package.conflicts)
+            evaluate_package_conditions(package, rosdistro)
+            depends = [
+                dep for dep in (package.run_depends + package.buildtool_export_depends)
+                if dep.evaluated_condition is not False]
+            build_depends = [
+                dep for dep in (package.build_depends + package.buildtool_depends + package.test_depends)
+                if dep.evaluated_condition is not False]
+            unresolved_keys = [
+                dep for dep in (depends + build_depends + package.replaces + package.conflicts)
+                if dep.evaluated_condition is not False]
+            keys_to_ignore = {
+                dep for dep in keys_to_ignore.union(package.replaces + package.conflicts)
+                if dep.evaluated_condition is not False}
             keys = [d.name for d in unresolved_keys]
             keys_to_resolve.extend(keys)
             for key in keys:
@@ -578,7 +579,7 @@ class RpmGenerator(BloomGenerator):
 
         peer_packages = [p.name for p in self.packages.values()]
 
-        while not self._check_all_keys_are_valid(peer_packages):
+        while not self._check_all_keys_are_valid(peer_packages, self.rosdistro):
             error("Some of the dependencies for packages in this repository could not be resolved by rosdep.")
             error("You can try to address the issues which appear above and try again if you wish, "
                   "or continue without releasing into RPM-based distributions (e.g. Fedora 24).")
@@ -763,9 +764,11 @@ class RpmGenerator(BloomGenerator):
         # Template files
         template_files = process_template_files('.', subs)
         # Remove any residual template files
-        execute_command('git rm -rf ' + ' '.join(template_files))
-        # Add changes to the rpm folder
-        execute_command('git add ' + rpm_dir)
+        execute_command('git rm -rf ' + ' '.join("'{}'".format(t) for t in template_files))
+        # Add marker file to tell mock to archive the sources
+        open('.write_tar', 'a').close()
+        # Add marker file changes to the rpm folder
+        execute_command('git add .write_tar ' + rpm_dir)
         # Commit changes
         execute_command('git commit -m "Generated RPM files for ' +
                         rpm_distro + '"')

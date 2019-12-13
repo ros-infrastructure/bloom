@@ -85,7 +85,7 @@ def version_check(version):
         return
     last_tag_version = last_tag.split('/')[-1]
     info(fmt("The latest upstream tag in the release repository is '@!{0}@|'."
-         .format(last_tag)))
+         .format(last_tag.replace('@', '@@'))))
     # Ensure the new version is greater than the last tag
     if parse_version(version) < parse_version(last_tag_version):
         warning("""\

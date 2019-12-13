@@ -40,6 +40,10 @@ from bloom.logging import debug
 from bloom.logging import error
 from bloom.logging import info
 
+from bloom.rosdistro_api import get_distribution_type
+from bloom.rosdistro_api import get_index
+from bloom.rosdistro_api import get_python_version
+
 from bloom.util import code
 from bloom.util import maybe_continue
 from bloom.util import print_exc
@@ -115,6 +119,61 @@ def resolve_more_for_os(rosdep_key, view, installer, os_name, os_version):
                                              default_os_installer)
     assert inst_key in os_installers
     return installer.resolve(rule), inst_key, default_os_installer
+
+
+def package_conditional_context(ros_distro):
+    """
+    Creates a dict containing the conditional evaluation context for
+    package.xml format three packages.
+
+    :param ros_distro: The codename of the rosdistro to generate context for.
+    :returns: dict defining ROS_VERSION and ROS_DISTRO.
+    """
+    if get_index().version < 4:
+        error("Bloom requires a version 4 or greater rosdistro index to support package format 3.", exit=True)
+
+    distribution_type = get_distribution_type(ros_distro)
+    if distribution_type == 'ros1':
+        ros_version = '1'
+    elif distribution_type == 'ros2':
+        ros_version = '2'
+    else:
+        error("Bloom cannot cope with distribution_type '{0}'".format(
+            distribution_type), exit=True)
+    python_version = get_python_version(ros_distro)
+    if python_version is None:
+        error(
+            'No python_version found in the rosdistro index. '
+            'The rosdistro index must include this key for bloom to work correctly.',
+            exit=True)
+    elif python_version == 2:
+        ros_python_version = '2'
+    elif python_version == 3:
+        ros_python_version = '3'
+    else:
+        error("Bloom cannot cope with python_version '{0}'".format(
+            python_version), exit=True)
+
+    return {
+            'ROS_VERSION': ros_version,
+            'ROS_DISTRO': ros_distro,
+            'ROS_PYTHON_VERSION': ros_python_version,
+            }
+
+
+def evaluate_package_conditions(package, ros_distro):
+    """
+    Evaluates a package's conditional fields if it supports them.
+
+    :param package: The package to be evaluated.
+    :param ros_distro: The codename of the rosdistro use for context.
+    :returns: None. The given package will be modified.
+    """
+    # Conditional fields were introduced in package format 3.
+    # Earlier formats should have their conditions evaluated with no context so
+    # the evaluated_condition is set to True in all cases.
+    if package.package_format >= 3:
+        package.evaluate_conditions(package_conditional_context(ros_distro))
 
 
 def resolve_rosdep_key(

@@ -13,8 +13,6 @@ install:
   - cd -
   - sudo `which rosdep` init
   - rosdep update
-  - git config --global user.email "test@example.com"
-  - git config --global user.name "Test User"
 # command to run tests
 script:
   - BLOOM_VERBOSE=1 python setup.py nosetests -s --tests test

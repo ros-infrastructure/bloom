@@ -36,11 +36,8 @@ from __future__ import unicode_literals
 
 import argparse
 import atexit
-import base64
 import datetime
 import difflib
-import getpass
-import json
 import os
 import pkg_resources
 import platform
@@ -76,11 +73,9 @@ from bloom.git import get_current_branch
 from bloom.git import inbranch
 from bloom.git import ls_tree
 
-from bloom.github import auth_header_from_basic_auth
-from bloom.github import auth_header_from_oauth_token
-from bloom.github import Github
 from bloom.github import GithubException
-from bloom.github import GitHubAuthException
+from bloom.github import get_gh_info
+from bloom.github import get_github_interface
 
 from bloom.logging import debug
 from bloom.logging import error
@@ -93,6 +88,12 @@ from bloom.logging import warning
 
 from bloom.packages import get_package_data
 from bloom.packages import get_ignored_packages
+
+from bloom.rosdistro_api import get_distribution_file
+from bloom.rosdistro_api import get_index
+from bloom.rosdistro_api import get_most_recent
+from bloom.rosdistro_api import get_rosdistro_index_commit
+from bloom.rosdistro_api import get_rosdistro_index_original_branch
 
 from bloom.summary import commit_summary
 from bloom.summary import get_summary_file
@@ -118,16 +119,9 @@ except ImportError:
 import vcstools.__version__
 from vcstools.vcs_abstraction import get_vcs_client
 
-try:
-    import rosdistro
-    if parse_version(rosdistro.__version__) < parse_version('0.7.0'):
-        error("rosdistro version 0.7.0 or greater is required, found '{0}' from '{1}'."
-              .format(rosdistro.__version__, os.path.dirname(rosdistro.__file__)),
-              exit=True)
-except ImportError:
-    debug(traceback.format_exc())
-    error("rosdistro was not detected, please install it.", file=sys.stderr,
-          exit=True)
+from rosdistro import DistributionFile
+from rosdistro import get_distribution_files
+from rosdistro import get_index_url
 from rosdistro.writer import yaml_from_distribution_file
 
 try:
@@ -162,102 +156,6 @@ def exit_cleanup():
         if os.path.exists(repo_path):
             shutil.rmtree(repo_path)
 
-_rosdistro_index = None
-_rosdistro_distribution_files = {}
-_rosdistro_index_commit = None
-_rosdistro_index_original_branch = None
-
-
-def get_index_url():
-    global _rosdistro_index_commit, _rosdistro_index_original_branch
-    index_url = rosdistro.get_index_url()
-    pr = urlparse(index_url)
-    if pr.netloc in ['raw.github.com', 'raw.githubusercontent.com']:
-        # Try to determine what the commit hash was
-        tokens = [x for x in pr.path.split('/') if x]
-        if len(tokens) <= 3:
-            debug("Failed to get commit for rosdistro index file: index url")
-            debug(tokens)
-            return index_url
-        owner = tokens[0]
-        repo = tokens[1]
-        branch = tokens[2]
-        gh = get_github_interface(quiet=True)
-        if gh is None:
-            # Failed to get it with auth, try without auth (may fail)
-            gh = Github(username=None, auth=None)
-        try:
-            data = gh.get_branch(owner, repo, branch)
-        except GithubException:
-            debug(traceback.format_exc())
-            debug("Failed to get commit for rosdistro index file: api")
-            return index_url
-        _rosdistro_index_commit = data.get('commit', {}).get('sha', None)
-        if _rosdistro_index_commit is not None:
-            info("ROS Distro index file associate with commit '{0}'"
-                 .format(_rosdistro_index_commit))
-            # Also mutate the index_url to use the commit (rather than the moving branch name)
-            base_info = get_gh_info(index_url)
-            base_branch = base_info['branch']
-            rosdistro_index_commit = _rosdistro_index_commit  # Copy global into local for substitution
-            middle = "{org}/{repo}".format(**base_info)
-            index_url = index_url.replace("{pr.netloc}/{middle}/{base_branch}/".format(**locals()),
-                                          "{pr.netloc}/{middle}/{rosdistro_index_commit}/".format(**locals()))
-            info("New ROS Distro index url: '{0}'".format(index_url))
-            _rosdistro_index_original_branch = base_branch
-        else:
-            debug("Failed to get commit for rosdistro index file: json")
-    return index_url
-
-
-def get_index():
-    global _rosdistro_index
-    if _rosdistro_index is None:
-        _rosdistro_index = rosdistro.get_index(get_index_url())
-        if _rosdistro_index.version == 1:
-            error("This version of bloom does not support rosdistro version "
-                  "'{0}', please use an older version of bloom."
-                  .format(_rosdistro_index.version), exit=True)
-        if _rosdistro_index.version > 4:
-            error("This version of bloom does not support rosdistro version "
-                  "'{0}', please update bloom.".format(_rosdistro_index.version), exit=True)
-    return _rosdistro_index
-
-
-def list_distributions():
-    return sorted(get_index().distributions.keys())
-
-
-def get_most_recent(thing_name, repository):
-    distros_with_entry = {}
-    get_things = {
-        'release': lambda r: None if r.release_repository is None else r.release_repository,
-        'doc': lambda r: None if r.doc_repository is None else r.doc_repository,
-        'source': lambda r: None if r.source_repository is None else r.source_repository,
-    }
-    get_thing = get_things[thing_name]
-    for distro in list_distributions():
-        distro_file = get_distribution_file(distro)
-        if repository in distro_file.repositories:
-            thing = get_thing(distro_file.repositories[repository])
-            if thing is not None:
-                distros_with_entry[distro] = thing
-    # Choose the alphabetical last distro which contained a release of this repository
-    default_distro = (sorted(distros_with_entry.keys()) or [None])[-1]
-    default_thing = distros_with_entry.get(default_distro, None)
-    return default_distro, default_thing
-
-
-def get_distribution_file(distro):
-    global _rosdistro_distribution_files
-    if distro not in _rosdistro_distribution_files:
-        # REP 143, get list of distribution files and take the last one
-        files = rosdistro.get_distribution_files(get_index(), distro)
-        if not files:
-            error("No distribution files listed for distribution '{0}'."
-                  .format(distro), exit=True)
-        _rosdistro_distribution_files[distro] = files[-1]
-    return _rosdistro_distribution_files[distro]
 
 _rosdistro_distribution_file_urls = {}
 
@@ -345,7 +243,7 @@ def get_repo_uri(repository, distro):
         info("Here is the url for a typical release repository on GitHub: https://github.com/ros-gbp/rviz-release.git")
         # Calculate a reasonable default from the list of previous distros
         info(fmt("@{gf}@!==> @|") + "Looking for a release of this repository in a different distribution...")
-        default_distro, default_release = get_most_recent('release', repository)
+        default_distro, default_release = get_most_recent('release', repository, distro)
         default_release_repo_url = default_release.url if default_release else "press enter to abort"
         if default_distro is not None:
             warning("A different distribution, '{0}', released this repository.".format(default_distro))
@@ -417,7 +315,7 @@ def list_tracks(repository, distro, override_release_repository_url):
 
 def get_relative_distribution_file_path(distro):
     distribution_file_url = urlparse(get_distribution_file_url(distro))
-    index_file_url = urlparse(rosdistro.get_index_url())
+    index_file_url = urlparse(get_index_url())
     return os.path.relpath(distribution_file_url.path,
                            os.path.commonprefix([index_file_url.path, distribution_file_url.path]))
 
@@ -435,11 +333,11 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
             if type(key) == unicode:
                 del d[key]
                 key = key.encode('utf-8')
-                if type(value) == unicode:
-                    value = value.encode('utf-8')
-                if type(value) == dict:
-                    convert_unicode_dict_to_str(value)
-                d[key] = value
+            if type(value) == unicode:
+                value = value.encode('utf-8')
+            if type(value) == dict:
+                convert_unicode_dict_to_str(value)
+            d[key] = value
 
     global _user_provided_release_url
     distribution_dict = get_distribution_file(distro).get_data()
@@ -451,6 +349,7 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
     track_dict = get_tracks_dict_raw()['tracks'][track]
     last_version = track_dict['last_version']
     release_inc = track_dict['release_inc']
+    version = '{0}-{1}'.format(last_version, release_inc)
     # Create a repository if there isn't already one
     if repository not in distribution_dict['repositories']:
         distribution_dict['repositories'][repository] = {}
@@ -467,7 +366,7 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
     if 'tags' not in repo:
         repo['tags'] = {}
     repo['tags']['release'] = generate_release_tag(distro)
-    repo['version'] = '{0}-{1}'.format(last_version, release_inc)
+    repo['version'] = version
     if 'last_release' in track_dict:
         repo['upstream_tag'] = track_dict['last_release']
     if 'packages' not in repo:
@@ -536,7 +435,7 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
         if not docs and maybe_continue(msg='Would you like to add documentation information for this repository?'):
             defaults = None
             info(fmt("@{gf}@!==> @|") + "Looking for a doc entry for this repository in a different distribution...")
-            default_distro, default_doc = get_most_recent('doc', repository)
+            default_distro, default_doc = get_most_recent('doc', repository, distro)
             if default_distro is None:
                 warning("No existing doc entries found for use as defaults.")
             else:
@@ -559,7 +458,7 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
             defaults = None
             info(fmt("@{gf}@!==> @|") +
                  "Looking for a source entry for this repository in a different distribution...")
-            default_distro, default_source = get_most_recent('source', repository)
+            default_distro, default_source = get_most_recent('source', repository, distro)
             if default_distro is None:
                 warning("No existing source entries found for use as defaults.")
             else:
@@ -617,7 +516,7 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
 
     # Do the diff
     distro_file_name = get_relative_distribution_file_path(distro)
-    updated_distribution_file = rosdistro.DistributionFile(distro, distribution_dict)
+    updated_distribution_file = DistributionFile(distro, distribution_dict)
     distro_dump = yaml_from_distribution_file(updated_distribution_file)
     distro_file_raw = load_url_to_file_handle(get_distribution_file_url(distro)).read().decode('utf-8')
     if distro_file_raw != distro_dump:
@@ -647,8 +546,8 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
                 udiff_raw += line
             info(line, use_prefix=False, end='')
         # Assert that only this repository is being changed
-        distro_file_yaml = yaml.load(distro_file_raw)
-        distro_yaml = yaml.load(distro_dump)
+        distro_file_yaml = yaml.safe_load(distro_file_raw)
+        distro_yaml = yaml.safe_load(distro_dump)
         if 'repositories' in distro_file_yaml:
             distro_file_repos = distro_file_yaml['repositories']
             for repo in distro_yaml['repositories']:
@@ -669,104 +568,10 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
     return None
 
 
-def get_gh_info(url):
-    o = urlparse(url)
-    if 'raw.github.com' not in o.netloc and 'raw.githubusercontent.com' not in o.netloc:
-        return None
-    url_paths = o.path.split('/')
-    if len(url_paths) < 5:
-        return None
-    return {'server': 'github.com',
-            'org': url_paths[1],
-            'repo': url_paths[2],
-            'branch': url_paths[3],
-            'path': '/'.join(url_paths[4:])}
-
-
 def get_repo_info(distro_url):
     gh_info = get_gh_info(distro_url)
     if gh_info:
         return gh_info
-
-
-_gh = None
-
-
-def get_github_interface(quiet=False):
-    def mfa_prompt(oauth_config_path, username):
-        """Explain how to create a token for users with Multi-Factor Authentication configured."""
-        warning("Receiving 401 when trying to create an oauth token can be caused by the user "
-                "having two-factor authentication enabled.")
-        warning("If 2FA is enabled, the user will have to create an oauth token manually.")
-        warning("A token can be created at https://github.com/settings/tokens")
-        warning("The resulting token can be placed in the '{oauth_config_path}' file as such:"
-                .format(**locals()))
-        info("")
-        warning('{{"github_user": "{username}", "oauth_token": "TOKEN_GOES_HERE"}}'
-                .format(**locals()))
-        info("")
-
-    global _gh
-    if _gh is not None:
-        return _gh
-    # First check to see if the oauth token is stored
-    oauth_config_path = os.path.join(os.path.expanduser('~'), '.config', 'bloom')
-    config = {}
-    if os.path.exists(oauth_config_path):
-        with open(oauth_config_path, 'r') as f:
-            config = json.loads(f.read())
-            token = config.get('oauth_token', None)
-            username = config.get('github_user', None)
-            if token and username:
-                return Github(username, auth=auth_header_from_oauth_token(token), token=token)
-    if not os.path.isdir(os.path.dirname(oauth_config_path)):
-        os.makedirs(os.path.dirname(oauth_config_path))
-    if quiet:
-        return None
-    # Ok, now we have to ask for the user name and pass word
-    info("")
-    warning("Looks like bloom doesn't have an oauth token for you yet.")
-    warning("Therefore bloom will require your GitHub username and password just this once.")
-    warning("With your GitHub username and password bloom will create an oauth token on your behalf.")
-    warning("The token will be stored in `~/.config/bloom`.")
-    warning("You can delete the token from that file to have a new token generated.")
-    warning("Guard this token like a password, because it allows someone/something to act on your behalf.")
-    warning("If you need to unauthorize it, remove it from the 'Applications' menu in your GitHub account page.")
-    info("")
-    if not maybe_continue('y', "Would you like to create an OAuth token now"):
-        return None
-    token = None
-    while token is None:
-        try:
-            username = getpass.getuser()
-            username = safe_input("GitHub username [{0}]: ".format(username)) or username
-            password = getpass.getpass("GitHub password (never stored): ")
-        except (KeyboardInterrupt, EOFError):
-            return None
-        if not password:
-            error("No password was given, aborting.")
-            return None
-        gh = Github(username, auth=auth_header_from_basic_auth(username, password))
-        try:
-            token = gh.create_new_bloom_authorization(update_auth=True)
-            with open(oauth_config_path, 'w') as f:
-                config.update({'oauth_token': token, 'github_user': username})
-                f.write(json.dumps(config))
-            info("The token '{token}' was created and stored in the bloom config file: '{oauth_config_path}'"
-                 .format(**locals()))
-        except GitHubAuthException as exc:
-            error("{0}".format(exc))
-            mfa_prompt(oauth_config_path, username)
-        except GithubException as exc:
-            error("{0}".format(exc))
-            info("")
-            if hasattr(exc, 'resp') and '{0}'.format(exc.resp.status) in ['401']:
-                mfa_prompt(oauth_config_path, username)
-            warning("This sometimes fails when the username or password are incorrect, try again?")
-            if not maybe_continue():
-                return None
-    _gh = gh
-    return gh
 
 
 def get_changelog_summary(release_tag):
@@ -804,7 +609,6 @@ def get_changelog_summary(release_tag):
 
 
 def open_pull_request(track, repository, distro, interactive, override_release_repository_url):
-    global _rosdistro_index_commit
     # Get the diff
     distribution_file = get_distribution_file(distro)
     if repository in distribution_file.repositories and \
@@ -827,8 +631,9 @@ def open_pull_request(track, repository, distro, interactive, override_release_r
         return
 
     # If we did replace the branch in the url with a commit, restore that now
-    if _rosdistro_index_original_branch is not None:
-        base_info['branch'] = _rosdistro_index_original_branch
+    rosdistro_index_original_branch = get_rosdistro_index_original_branch()
+    if rosdistro_index_original_branch is not None:
+        base_info['branch'] = rosdistro_index_original_branch
 
     # Create content for PR
     title = "{0}: {1} in '{2}' [bloom]".format(repository, version, base_info['path'])
@@ -937,8 +742,9 @@ Increasing version of package(s) in repository `{repository}` to `{version}`:
                 _my_run('git checkout -b {new_branch}'.format(**locals()))
                 _my_run("git pull {rosdistro_url} {base_info[branch]}".format(**locals()),
                         "Pulling latest rosdistro branch")
-                if _rosdistro_index_commit is not None:
-                    _my_run('git reset --hard {_rosdistro_index_commit}'.format(**globals()))
+                rosdistro_index_commit = get_rosdistro_index_commit()
+                if rosdistro_index_commit is not None:
+                    _my_run('git reset --hard {rosdistro_index_commit}'.format(**locals()))
                 with open('{0}'.format(base_info['path']), 'w') as f:
                     info(fmt("@{bf}@!==> @|@!Writing new distribution file: ") + str(base_info['path']))
                     f.write(updated_distro_file_yaml)
@@ -1304,26 +1110,27 @@ def perform_release(
                 repository, track, distro, new_track, interactive, pretend, tracks_dict,
                 override_release_repository_url, override_release_repository_push_url
             )
-        # Propose github pull request
-        info(fmt("@{gf}@!==> @|") +
-             "Generating pull request to distro file located at '{0}'"
-             .format(get_distribution_file_url(distro)))
-        try:
-            pull_request_url = open_pull_request(
-                track, repository, distro, interactive, override_release_repository_url
-            )
-            if pull_request_url:
-                info(fmt(_success) + "Pull request opened at: {0}".format(pull_request_url))
-                if 'BLOOM_NO_WEBBROWSER' not in os.environ and platform.system() in ['Darwin']:
-                    webbrowser.open(pull_request_url)
-            else:
-                info("The release of your packages was successful, but the pull request failed.")
-                info("Please manually open a pull request by editing the file here: '{0}'"
-                     .format(get_distribution_file_url(distro)))
-                info(fmt(_error) + "No pull request opened.")
-        except Exception as e:
-            debug(traceback.format_exc())
-            error("Failed to open pull request: {0} - {1}".format(type(e).__name__, e), exit=True)
+        if 'BLOOM_NO_ROSDISTRO_PULL_REQUEST' not in os.environ and not pretend:
+            # Propose github pull request
+            info(fmt("@{gf}@!==> @|") +
+                 "Generating pull request to distro file located at '{0}'"
+                 .format(get_distribution_file_url(distro)))
+            try:
+                pull_request_url = open_pull_request(
+                    track, repository, distro, interactive, override_release_repository_url
+                )
+                if pull_request_url:
+                    info(fmt(_success) + "Pull request opened at: {0}".format(pull_request_url))
+                    if 'BLOOM_NO_WEBBROWSER' not in os.environ and platform.system() in ['Darwin']:
+                        webbrowser.open(pull_request_url)
+                else:
+                    info("The release of your packages was successful, but the pull request failed.")
+                    info("Please manually open a pull request by editing the file here: '{0}'"
+                         .format(get_distribution_file_url(distro)))
+                    info(fmt(_error) + "No pull request opened.")
+            except Exception as e:
+                debug(traceback.format_exc())
+                error("Failed to open pull request: {0} - {1}".format(type(e).__name__, e), exit=True)
 
 
 def get_argument_parser():
@@ -1340,6 +1147,8 @@ def get_argument_parser():
         help="if used, a new track will be created before running bloom")
     add('--pretend', '-s', default=False, action='store_true',
         help="Pretends to push and release")
+    add('--no-pull-request', default=False, action='store_true',
+        help="Prevents a pull request from being opened after release")
     add('--no-web', default=False, action='store_true',
         help="prevents a web browser from being opened at the end")
     add('--pull-request-only', '-p', default=False, action='store_true',
@@ -1366,6 +1175,9 @@ def main(sysargs=None):
     if args.list_tracks:
         list_tracks(args.repository, args.ros_distro, args.override_release_repository_url)
         return
+
+    if args.no_pull_request:
+        os.environ['BLOOM_NO_ROSDISTRO_PULL_REQUEST'] = '1'
 
     if args.no_web:
         os.environ['BLOOM_NO_WEBBROWSER'] = '1'

@@ -190,7 +190,7 @@ DEFAULT_TEMPLATE = {
     'patches': PromptEntry('Patches Directory', spec=config_spec['patches']),
     'ros_distro': PromptEntry('ROS Distro', default='indigo', spec=config_spec['ros_distro']),
     'release_repo_url': PromptEntry('Release Repository Push URL', spec=config_spec['release_repo_url']),
-    'release_inc': -1,
+    'release_inc': 0,
     'actions': [
         'bloom-export-upstream :{vcs_local_uri} :{vcs_type}'
         ' --tag :{release_tag} --display-uri :{vcs_uri}'
@@ -273,7 +273,7 @@ def get_tracks_dict_raw(directory=None):
         )
         tracks_yaml = show(BLOOM_CONFIG_BRANCH, 'tracks.yaml',
                            directory=directory)
-    tracks_dict = yaml.load(tracks_yaml)
+    tracks_dict = yaml.safe_load(tracks_yaml)
     validate_track_versions(tracks_dict)
     return tracks_dict
 
