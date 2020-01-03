@@ -401,7 +401,7 @@ def maybe_continue(default='y', msg='Continue'):
 
         response = response.lower()
         if response not in ['y', 'n', 'q']:
-            error_msg = 'Reponse `' + response + '` was not recognized, ' \
+            error_msg = 'Response `' + response + '` was not recognized, ' \
                         'please use one of y, Y, n, N.'
             error(error_msg)
         else:
