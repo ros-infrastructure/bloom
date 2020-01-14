@@ -151,6 +151,7 @@ def get_subs(pkg, os_name, os_version, ros_distro):
     subs['Provides'] += [
         '%%{name}-%s = %%{version}-%%{release}' % subpackage for subpackage in [
             'devel', 'doc', 'runtime']]
+    return subs
 
 
 def main(args=None):
