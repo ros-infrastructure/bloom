@@ -575,7 +575,7 @@ def sanitize_package_name(name):
 class DebianGenerator(BloomGenerator):
     title = 'debian'
     description = "Generates debians from the catkin meta data"
-    has_run_rosdep = False
+    has_run_rosdep = os.environ.get('BLOOM_SKIP_ROSDEP_UPDATE', '0').lower() not in ['0', 'f', 'false', 'n', 'no']
     default_install_prefix = '/usr'
     rosdistro = os.environ.get('ROS_DISTRO', 'indigo')
 
