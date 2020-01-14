@@ -148,6 +148,11 @@ def get_subs(pkg, os_name, os_version, ros_distro):
         ros_distro
     )
     subs['Package'] = rosify_package_name(subs['Package'], ros_distro)
+    subs['Provides'] += [
+        subs['Package'] + '-devel',
+        subs['Package'] + '-doc',
+        subs['Package'] + '-runtime',
+    ]
     return subs
 
 
