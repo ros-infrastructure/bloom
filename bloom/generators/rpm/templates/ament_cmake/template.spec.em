@@ -4,7 +4,7 @@
 
 Name:           @(Package)
 Version:        @(Version)
-Release:        @(RPMInc)%{?dist}
+Release:        @(RPMInc)%{?dist}%{?release_suffix}
 Summary:        ROS @(Name) package
 
 License:        @(License)
