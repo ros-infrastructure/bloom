@@ -1,3 +1,9 @@
+0.9.1 (2020-02-03 10:00:00 -0800)
+---------------------------------
+- Added a debinc of 100 to prevent conflicts with upstream Ubuntu versions.
+- Added version dependency on ``rosdistro`` version ``0.8.0`` to prevent use of out-of-date version which caused pull requests to fail.
+- Changed to not try and create a pull request if ``--pretend`` is used.
+
 0.9.0 (2019-10-18 14:15:00 -0800)
 ---------------------------------
 - Fixed possibly unescaped logger formatting in version. `#553 <https://github.com/ros-infrastructure/bloom/pull/553>`_
