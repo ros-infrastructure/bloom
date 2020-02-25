@@ -259,6 +259,7 @@ def generate_substitutions_from_package(
     data['Conflicts'] = sorted(
         set(format_depends(package.conflicts, resolved_deps))
     )
+    data['Provides'] = []
 
     # Build-type specific substitutions.
     build_type = package.get_build_type()

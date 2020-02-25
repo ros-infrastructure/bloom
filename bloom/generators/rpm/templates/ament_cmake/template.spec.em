@@ -10,7 +10,7 @@ Summary:        ROS @(Name) package
 License:        @(License)
 @[if Homepage and Homepage != '']URL:            @(Homepage)@\n@[end if]Source0:        %{name}-%{version}.tar.gz
 @[if NoArch]@\nBuildArch:      noarch@\n@[end if]
-@[for p in Depends]Requires:       @p@\n@[end for]@[for p in BuildDepends]BuildRequires:  @p@\n@[end for]@[for p in Conflicts]Conflicts:      @p@\n@[end for]@[for p in Replaces]Obsoletes:      @p@\n@[end for]
+@[for p in Depends]Requires:       @p@\n@[end for]@[for p in BuildDepends]BuildRequires:  @p@\n@[end for]@[for p in Conflicts]Conflicts:      @p@\n@[end for]@[for p in Replaces]Obsoletes:      @p@\n@[end for]@[for p in Provides]Provides:       @p@\n@[end for]
 %description
 @(Description)
 

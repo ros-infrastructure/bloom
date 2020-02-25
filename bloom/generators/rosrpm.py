@@ -89,6 +89,11 @@ class RosRpmGenerator(RpmGenerator):
         )
         subs['Package'] = rosify_package_name(subs['Package'], self.rosdistro)
 
+        # Virtual packages
+        subs['Provides'] += [
+            '%%{name}-%s = %%{version}-%%{release}' % subpackage for subpackage in [
+                'devel', 'doc', 'runtime']]
+
         # ROS 2 specific bloom extensions.
         ros2_distros = [
             name for name, values in get_index().distributions.items()
