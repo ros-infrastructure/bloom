@@ -152,8 +152,8 @@ def summarize_dependency_mapping(data, deps, build_deps, resolved_deps):
         return
     info("Package '" + data['Package'] + "' has dependencies:")
     header = "  " + ansi('boldoff') + ansi('ulon') + \
-             "rosdep key           => " + data['Distribution'] + \
-             " key" + ansi('reset')
+             "rosdep key           => " + data['OSName'] + ' ' + \
+             data['Distribution'] + " key" + ansi('reset')
     template = "  " + ansi('cyanf') + "{0:<20} " + ansi('purplef') + \
                "=> " + ansi('cyanf') + "{1}" + ansi('reset')
     if len(deps) != 0:
@@ -275,7 +275,8 @@ def generate_substitutions_from_package(
             "Build type '{}' is not supported by this version of bloom.".
             format(build_type), exit=True)
 
-    # Set the distribution
+    # Set the OS and distribution
+    data['OSName'] = os_name
     data['Distribution'] = os_version
     # Use the time stamp to set the date strings
     stamp = datetime.datetime.now(tz.tzlocal())
@@ -509,6 +510,7 @@ class RpmGenerator(BloomGenerator):
     def summarize(self):
         info("Generating source RPMs for the packages: " + str(self.names))
         info("RPM Incremental Version: " + str(self.rpm_inc))
+        info("RPM OS: " + str(self.os_name))
         info("RPM Distributions: " + str(self.distros))
 
     def get_branching_arguments(self):
@@ -679,8 +681,8 @@ class RpmGenerator(BloomGenerator):
         info(ansi(color) + "####" + ansi('reset'), use_prefix=False)
         info(
             ansi(color) + "#### " + ansi('greenf') + "Successfully" +
-            ansi(color) + " generated '" + ansi('boldon') + distro +
-            ansi('boldoff') + "' RPM for package"
+            ansi(color) + " generated '" + ansi('boldon') + self.os_name +
+            ' ' + distro + ansi('boldoff') + "' RPM for package"
             " '" + ansi('boldon') + package.name + ansi('boldoff') + "'" +
             " at version '" + ansi('boldon') + package.version +
             "-" + str(self.rpm_inc) + ansi('boldoff') + "'" +
@@ -754,7 +756,7 @@ class RpmGenerator(BloomGenerator):
         )
 
     def generate_rpm(self, package, rpm_distro, rpm_dir='rpm'):
-        info("Generating RPM for {0}...".format(rpm_distro))
+        info("Generating RPM for {0} {1}...".format(self.os_name, rpm_distro))
         # Try to retrieve the releaser_history
         releaser_history = self.get_releaser_history()
         # Generate substitution values
@@ -800,8 +802,8 @@ class RpmGenerator(BloomGenerator):
     def summarize_package(self, package, distro, color='bluef'):
         info(ansi(color) + "\n####" + ansi('reset'), use_prefix=False)
         info(
-            ansi(color) + "#### Generating '" + ansi('boldon') + distro +
-            ansi('boldoff') + "' RPM for package"
+            ansi(color) + "#### Generating '" + ansi('boldon') + self.os_name +
+            ' ' + distro + ansi('boldoff') + "' RPM for package"
             " '" + ansi('boldon') + package.name + ansi('boldoff') + "'" +
             " at version '" + ansi('boldon') + package.version +
             "-" + str(self.rpm_inc) + ansi('boldoff') + "'" +
