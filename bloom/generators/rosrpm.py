@@ -98,11 +98,9 @@ class RosRpmGenerator(RpmGenerator):
         subs['Provides'].extend(
             sanitize_package_name(rosify_package_name(g.name, self.rosdistro)) +
             '(member)' for g in package.member_of_groups)
-        if self.os_name != 'rhel' or not rpm_distro.isnumeric() or int(rpm_distro) >= 8:
-            # Weak dependencies are not supported in RHEL < 8 and will break the package.
-            subs['Supplements'].extend(
-                sanitize_package_name(rosify_package_name(g.name, self.rosdistro)) +
-                '(all)' for g in package.member_of_groups)
+        subs['Supplements'].extend(
+            sanitize_package_name(rosify_package_name(g.name, self.rosdistro)) +
+            '(all)' for g in package.member_of_groups)
 
         # ROS 2 specific bloom extensions.
         ros2_distros = [
