@@ -584,7 +584,8 @@ class RpmGenerator(BloomGenerator):
         peer_packages = [p.name for p in self.packages.values()]
 
         while not self._check_all_keys_are_valid(peer_packages, self.rosdistro):
-            error("Some of the dependencies for packages in this repository could not be resolved by rosdep.")
+            error("Some of the dependencies for packages in this repository could not be resolved by rosdep.",
+                  exit=not self.interactive)
             error("You can try to address the issues which appear above and try again if you wish, "
                   "or continue without releasing into RPM-based distributions (e.g. Fedora 24).")
             try:
