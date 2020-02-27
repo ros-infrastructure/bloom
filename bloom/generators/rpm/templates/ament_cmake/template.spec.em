@@ -1,3 +1,5 @@
+%bcond_without weak_deps
+
 %global __os_install_post %(echo '%{__os_install_post}' | sed -e 's!/usr/lib[^[:space:]]*/brp-python-bytecompile[[:space:]].*$!!g')
 %global __provides_exclude_from ^@(InstallationPrefix)/.*$
 %global __requires_exclude_from ^@(InstallationPrefix)/.*$
@@ -17,7 +19,9 @@ Source0:        %{name}-%{version}.tar.gz
 @[for p in Conflicts]Conflicts:      @p@\n@[end for]@
 @[for p in Replaces]Obsoletes:      @p@\n@[end for]@
 @[for p in Provides]Provides:       @p@\n@[end for]@
+@[if Supplements]@\n%if 0%{?with_weak_deps}
 @[for p in Supplements]Supplements:    @p@\n@[end for]@
+%endif@\n@[end if]@
 
 %description
 @(Description)
