@@ -1,3 +1,7 @@
+0.9.3 (2020-03-02 17:30:00 -0800)
+---------------------------------
+- Fix a packaging bug affecting only Debian packages
+
 0.9.2 (2020-03-02 13:00:00 -0800)
 ---------------------------------
 - Add option to disable weak RPM dependencies. `#574 <https://github.com/cottsay/bloom/issues/574>`_
