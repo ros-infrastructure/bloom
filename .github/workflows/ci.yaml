@@ -37,8 +37,8 @@ jobs:
           python -m pip install nose coverage pep8
       - name: Configure rosdep
         run: |
-          sudo /usr/local/bin/rosdep init
-          /usr/local/bin/rosdep rosdep update
+          sudo `which rosdep` init
+          `which rosdep` update
       - name: Run tests
         run: |
           BLOOM_VERBOSE=1 python setup.py nosetests -s --tests test
