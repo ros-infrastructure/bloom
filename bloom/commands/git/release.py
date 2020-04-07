@@ -152,7 +152,7 @@ def find_version_from_upstream(vcs_uri, vcs_type, devel_branch=None, ros_distro=
     return meta['version'], upstream_repo
 
 
-def process_track_settings(track_dict, release_inc_override):
+def process_track_settings(track_dict, release_inc_override, interactive=True):
     settings = {}
     settings['name'] = track_dict['name']
     vcs_uri = track_dict['vcs_uri']
@@ -193,11 +193,14 @@ def process_track_settings(track_dict, release_inc_override):
         if version is None:
             warning("Could not determine the version automatically.")
     if version is None or version == ':{ask}':
-        ret = safe_input('What version are you releasing '
-                         '(version should normally be MAJOR.MINOR.PATCH)? ')
-        if not ret:
-            error("You must specify a version to continue.", exit=True)
-        version = ret
+        if interactive:
+            ret = safe_input('What version are you releasing '
+                             '(version should normally be MAJOR.MINOR.PATCH)? ')
+            if not ret:
+                error("You must specify a version to continue.", exit=True)
+            version = ret
+        else:
+            error("Interactivity is disabled but version is set to :{ask}", exit=True)
     settings['version'] = version
     vcs_uri = vcs_uri.replace(':{version}', version)
     settings['vcs_local_uri'] = repo.get_path() if repo else vcs_uri
@@ -209,10 +212,13 @@ def process_track_settings(track_dict, release_inc_override):
     release_tag = track_dict['release_tag']
     release_tag_prompt = DEFAULT_TEMPLATE['release_tag']
     if release_tag is not None and release_tag == ':{ask}':
-        ret = safe_input('What upstream tag should bloom import from? ')
-        if not ret:
-            error("You must specify a release tag.", exit=True)
-        release_tag = ret
+        if interactive:
+            ret = safe_input('What upstream tag should bloom import from? ')
+            if not ret:
+                error("You must specify a release tag.", exit=True)
+            release_tag = ret
+        else:
+            error("Interactivity is disabled but release_tag is set to :{ask}", exit=True)
     elif release_tag is None or release_tag.lower() == ':{none}':
         if vcs_type not in ['svn', 'tar']:
             error("'{0}' can not be None unless '{1}' is either 'svn' or 'tar'"
@@ -242,9 +248,9 @@ def find_full_path(cmd):
     raise OSError("[Errno 2] No such file or directory")
 
 
-def execute_track(track, track_dict, release_inc, pretend=True, debug=False, fast=False):
+def execute_track(track, track_dict, release_inc, pretend=True, debug=False, fast=False, interactive=True):
     info("Processing release track settings for '{0}'".format(track))
-    settings = process_track_settings(track_dict, release_inc)
+    settings = process_track_settings(track_dict, release_inc, interactive=interactive)
     # setup extra settings
     archive_dir_path = tempfile.mkdtemp()
     settings['archive_dir_path'] = archive_dir_path
@@ -320,6 +326,8 @@ def get_argument_parser(tracks):
         help="overrides the automatic release increment number")
     add('--pretend', '-p', action="store_true", default=False,
         help="does everything but actually run the commands")
+    add('--non-interactive', '-y', action="store_false", default=True,
+        help="runs without user interaction", dest='interactive')
     return parser
 
 
@@ -353,7 +361,7 @@ def main(sysargs=None):
         disable_git_clone(True)
         execute_track(args.track, tracks_dict['tracks'][args.track],
                       args.release_increment, args.pretend, args.debug,
-                      args.unsafe)
+                      args.unsafe, interactive=args.interactive)
         disable_git_clone(False)
         quiet_git_clone_warning(False)
     git_clone.commit()
