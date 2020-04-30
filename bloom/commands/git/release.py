@@ -296,7 +296,7 @@ def execute_track(track, track_dict, release_inc, pretend=True, debug=False, fas
                 info('', use_prefix=False)
                 error(fmt("@|If you are @!@_@{rf}absolutely@| sure that this key is unavailable for the platform in"))
                 error(fmt("@|question, the generator can be skipped and you can proceed with the release."))
-                if maybe_continue('n', 'Skip generator action and continue with release'):
+                if interactive and maybe_continue('n', 'Skip generator action and continue with release'):
                     info("\nAction skipped, continuing with release.\n")
                     continue
 
