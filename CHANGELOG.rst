@@ -1,3 +1,10 @@
+0.9.4 (2020-04-30 06:30:00 -0800)
+---------------------------------
+- Restored return code of rosdep failure when non-interactive. `#577 <https://github.com/ros-infrastructure/bloom/issues/577>`_
+- Added the development branch to info log when using version auto-detection. `#579 <https://github.com/ros-infrastructure/bloom/issues/579>`_
+- Added non-interactive option to git-bloom-release command. `#581 <https://github.com/ros-infrastructure/bloom/issues/581>`_
+
+
 0.9.3 (2020-03-02 17:30:00 -0800)
 ---------------------------------
 - Fix a packaging bug affecting only Debian packages
