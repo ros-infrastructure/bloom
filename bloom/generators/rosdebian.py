@@ -110,12 +110,16 @@ class RosDebianGenerator(DebianGenerator):
                     'rmw-connext-cpp',
                     'rmw-fastrtps-cpp',
                     'rmw-implementation',
-                    'rmw-opensplice-cpp',
                     'rosidl-typesupport-connext-c',
                     'rosidl-typesupport-connext-cpp',
-                    'rosidl-typesupport-opensplice-c',
-                    'rosidl-typesupport-opensplice-cpp',
                 ]
+                # OpenSplice was dropped after Eloquent.
+                if self.rosdistro in ['bouncy', 'crystal', 'dashing', 'eloquent']:
+                    ROS2_VENDOR_TYPESUPPORT_DEPENDENCIES.extend([
+                        'rmw-opensplice-cpp',
+                        'rosidl-typesupport-opensplice-c',
+                        'rosidl-typesupport-opensplice-cpp',
+                    ])
 
                 subs['BuildDepends'] += [
                     rosify_package_name(name, self.rosdistro) for name in ROS2_VENDOR_TYPESUPPORT_DEPENDENCIES]
