@@ -107,9 +107,6 @@ class RosDebianGenerator(DebianGenerator):
                     self.rosdistro not in ('r2b2', 'r2b3', 'ardent') and \
                     'rosidl_interface_packages' in [p.name for p in package.member_of_groups]:
                 ROS2_VENDOR_TYPESUPPORT_DEPENDENCIES = [
-                    'rmw-connext-cpp',
-                    'rmw-fastrtps-cpp',
-                    'rmw-implementation',
                     'rosidl-typesupport-connext-c',
                     'rosidl-typesupport-connext-cpp',
                 ]
