@@ -1,3 +1,7 @@
+0.9.6 (2020-05-04 05:15:00 -0800)
+---------------------------------
+- Fix a packaging bug affecting only Debian packages
+
 0.9.5 (2020-05-01 15:00:00 -0800)
 ---------------------------------
 - Fixed interactive prompt when not running interactively. `#584 <https://github.com/ros-infrastructure/bloom/issues/584>`_
