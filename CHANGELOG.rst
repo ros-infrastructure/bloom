@@ -1,3 +1,7 @@
+0.9.7 (2020-05-04 12:45:00 -0800)
+---------------------------------
+- Removed rmw implementations from typesupport dependencies for Foxy. `#587 <https://github.com/ros-infrastructure/bloom/issues/587>`_
+
 0.9.6 (2020-05-04 05:15:00 -0800)
 ---------------------------------
 - Fix a packaging bug affecting only Debian packages
