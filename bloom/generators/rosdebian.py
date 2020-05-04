@@ -109,6 +109,8 @@ class RosDebianGenerator(DebianGenerator):
                 ROS2_VENDOR_TYPESUPPORT_DEPENDENCIES = [
                     'rosidl-typesupport-connext-c',
                     'rosidl-typesupport-connext-cpp',
+                    'rosidl-typesupport-fastrtps-c',
+                    'rosidl-typesupport-fastrtps-cpp',
                 ]
                 # OpenSplice was dropped after Eloquent.
                 # rmw implementations are required as dependencies up to Eloquent.
