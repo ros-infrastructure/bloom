@@ -31,8 +31,8 @@ Source0:        %{name}-%{version}.tar.gz
 
 %build
 # In case we're installing to a non-standard location, look for a setup.sh
-# in the install tree that was dropped by catkin, and source it.  It will
-# set things like CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
+# in the install tree and source it.  It will set things like
+# CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
 if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi
 mkdir -p obj-%{_target_platform} && cd obj-%{_target_platform}
 %cmake3 \
@@ -51,8 +51,8 @@ mkdir -p obj-%{_target_platform} && cd obj-%{_target_platform}
 
 %install
 # In case we're installing to a non-standard location, look for a setup.sh
-# in the install tree that was dropped by catkin, and source it.  It will
-# set things like CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
+# in the install tree and source it.  It will set things like
+# CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
 if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi
 %make_install -C obj-%{_target_platform}
 
