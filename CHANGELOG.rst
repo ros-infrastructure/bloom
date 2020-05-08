@@ -1,3 +1,18 @@
+0.9.7 (2020-05-04 12:45:00 -0800)
+---------------------------------
+- Removed rmw implementations from typesupport dependencies for Foxy. `#587 <https://github.com/ros-infrastructure/bloom/issues/587>`_
+
+0.9.6 (2020-05-04 05:15:00 -0800)
+---------------------------------
+- Fix a packaging bug affecting only Debian packages
+
+0.9.5 (2020-05-01 15:00:00 -0800)
+---------------------------------
+- Fixed interactive prompt when not running interactively. `#584 <https://github.com/ros-infrastructure/bloom/issues/584>`_
+- Updated vendor typesupport dependencies for Foxy. `#586 <https://github.com/ros-infrastructure/bloom/issues/586>`_
+- Happy International Workers' Day.
+
+
 0.9.4 (2020-04-30 06:30:00 -0800)
 ---------------------------------
 - Restored return code of rosdep failure when non-interactive. `#577 <https://github.com/ros-infrastructure/bloom/issues/577>`_
