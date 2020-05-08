@@ -16,7 +16,7 @@ Source0:        %{name}-%{version}.tar.gz
 @[if NoArch]@\nBuildArch:      noarch@\n@[end if]@
 
 @[for p in Depends]Requires:       @p@\n@[end for]@
-@[for p in sorted(BuildDepends + ['python%{python3_pkgversion}-devel', 'python%{python3_pkgversion}-pytest'])]BuildRequires:  @p@\n@[end for]@
+@[for p in sorted(BuildDepends + ['python%{python3_pkgversion}-devel'])]BuildRequires:  @p@\n@[end for]@
 @[for p in Conflicts]Conflicts:      @p@\n@[end for]@
 @[for p in Replaces]Obsoletes:      @p@\n@[end for]@
 @[for p in Provides]Provides:       @p@\n@[end for]@
@@ -47,7 +47,7 @@ if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.
 %if 0%{?with_tests}
 %check
 TEST_TARGET=$(ls -d * | grep -m1 "\(test\|tests\)")
-if [ -n "$TEST_TARGET" ]; then
+if [ -n "$TEST_TARGET" ] && %__python3 -m pytest --version; then
 # In case we're installing to a non-standard location, look for a setup.sh
 # in the install tree and source it.  It will set things like
 # CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
