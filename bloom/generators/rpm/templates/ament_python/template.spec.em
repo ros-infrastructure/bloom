@@ -49,8 +49,8 @@ if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.
 TEST_TARGET=$(ls -d * | grep -m1 "\(test\|tests\)")
 if [ -n "$TEST_TARGET" ]; then
 # In case we're installing to a non-standard location, look for a setup.sh
-# in the install tree that was dropped by catkin, and source it.  It will
-# set things like CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
+# in the install tree and source it.  It will set things like
+# CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
 if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi
 %__python3 -m pytest $TEST_TARGET || echo "RPM TESTS FAILED"
 else echo "RPM TESTS SKIPPED"; fi
