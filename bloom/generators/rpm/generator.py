@@ -152,8 +152,8 @@ def summarize_dependency_mapping(data, deps, build_deps, resolved_deps):
         return
     info("Package '" + data['Package'] + "' has dependencies:")
     header = "  " + ansi('boldoff') + ansi('ulon') + \
-             "rosdep key           => " + data['Distribution'] + \
-             " key" + ansi('reset')
+             "rosdep key           => " + data['OSName'] + ' ' + \
+             data['Distribution'] + " key" + ansi('reset')
     template = "  " + ansi('cyanf') + "{0:<20} " + ansi('purplef') + \
                "=> " + ansi('cyanf') + "{1}" + ansi('reset')
     if len(deps) != 0:
@@ -259,6 +259,8 @@ def generate_substitutions_from_package(
     data['Conflicts'] = sorted(
         set(format_depends(package.conflicts, resolved_deps))
     )
+    data['Provides'] = []
+    data['Supplements'] = []
 
     # Build-type specific substitutions.
     build_type = package.get_build_type()
@@ -275,7 +277,8 @@ def generate_substitutions_from_package(
             "Build type '{}' is not supported by this version of bloom.".
             format(build_type), exit=True)
 
-    # Set the distribution
+    # Set the OS and distribution
+    data['OSName'] = os_name
     data['Distribution'] = os_version
     # Use the time stamp to set the date strings
     stamp = datetime.datetime.now(tz.tzlocal())
@@ -444,7 +447,7 @@ def sanitize_package_name(name):
 class RpmGenerator(BloomGenerator):
     title = 'rpm'
     description = "Generates RPMs from the catkin meta data"
-    has_run_rosdep = False
+    has_run_rosdep = os.environ.get('BLOOM_SKIP_ROSDEP_UPDATE', '0').lower() not in ['0', 'f', 'false', 'n', 'no']
     default_install_prefix = '/usr'
     rosdistro = os.environ.get('ROS_DISTRO', 'indigo')
 
@@ -509,6 +512,7 @@ class RpmGenerator(BloomGenerator):
     def summarize(self):
         info("Generating source RPMs for the packages: " + str(self.names))
         info("RPM Incremental Version: " + str(self.rpm_inc))
+        info("RPM OS: " + str(self.os_name))
         info("RPM Distributions: " + str(self.distros))
 
     def get_branching_arguments(self):
@@ -581,6 +585,8 @@ class RpmGenerator(BloomGenerator):
 
         while not self._check_all_keys_are_valid(peer_packages, self.rosdistro):
             error("Some of the dependencies for packages in this repository could not be resolved by rosdep.")
+            if not self.interactive:
+                sys.exit(code.GENERATOR_NO_ROSDEP_KEY_FOR_DISTRO)
             error("You can try to address the issues which appear above and try again if you wish, "
                   "or continue without releasing into RPM-based distributions (e.g. Fedora 24).")
             try:
@@ -679,8 +685,8 @@ class RpmGenerator(BloomGenerator):
         info(ansi(color) + "####" + ansi('reset'), use_prefix=False)
         info(
             ansi(color) + "#### " + ansi('greenf') + "Successfully" +
-            ansi(color) + " generated '" + ansi('boldon') + distro +
-            ansi('boldoff') + "' RPM for package"
+            ansi(color) + " generated '" + ansi('boldon') + self.os_name +
+            ' ' + distro + ansi('boldoff') + "' RPM for package"
             " '" + ansi('boldon') + package.name + ansi('boldoff') + "'" +
             " at version '" + ansi('boldon') + package.version +
             "-" + str(self.rpm_inc) + ansi('boldoff') + "'" +
@@ -754,7 +760,7 @@ class RpmGenerator(BloomGenerator):
         )
 
     def generate_rpm(self, package, rpm_distro, rpm_dir='rpm'):
-        info("Generating RPM for {0}...".format(rpm_distro))
+        info("Generating RPM for {0} {1}...".format(self.os_name, rpm_distro))
         # Try to retrieve the releaser_history
         releaser_history = self.get_releaser_history()
         # Generate substitution values
@@ -800,8 +806,8 @@ class RpmGenerator(BloomGenerator):
     def summarize_package(self, package, distro, color='bluef'):
         info(ansi(color) + "\n####" + ansi('reset'), use_prefix=False)
         info(
-            ansi(color) + "#### Generating '" + ansi('boldon') + distro +
-            ansi('boldoff') + "' RPM for package"
+            ansi(color) + "#### Generating '" + ansi('boldon') + self.os_name +
+            ' ' + distro + ansi('boldoff') + "' RPM for package"
             " '" + ansi('boldon') + package.name + ansi('boldoff') + "'" +
             " at version '" + ansi('boldon') + package.version +
             "-" + str(self.rpm_inc) + ansi('boldoff') + "'" +

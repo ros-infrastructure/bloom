@@ -575,7 +575,7 @@ def sanitize_package_name(name):
 class DebianGenerator(BloomGenerator):
     title = 'debian'
     description = "Generates debians from the catkin meta data"
-    has_run_rosdep = False
+    has_run_rosdep = os.environ.get('BLOOM_SKIP_ROSDEP_UPDATE', '0').lower() not in ['0', 'f', 'false', 'n', 'no']
     default_install_prefix = '/usr'
     rosdistro = os.environ.get('ROS_DISTRO', 'indigo')
 
@@ -718,6 +718,8 @@ class DebianGenerator(BloomGenerator):
 
         while not self._check_all_keys_are_valid(peer_packages, self.rosdistro):
             error("Some of the dependencies for packages in this repository could not be resolved by rosdep.")
+            if not self.interactive:
+                sys.exit(code.GENERATOR_NO_ROSDEP_KEY_FOR_DISTRO)
             error("You can try to address the issues which appear above and try again if you wish.")
             try:
                 if not maybe_continue(msg="Would you like to try again?"):

@@ -1,3 +1,47 @@
+0.9.7 (2020-05-04 12:45:00 -0800)
+---------------------------------
+- Removed rmw implementations from typesupport dependencies for Foxy. `#587 <https://github.com/ros-infrastructure/bloom/issues/587>`_
+
+0.9.6 (2020-05-04 05:15:00 -0800)
+---------------------------------
+- Fix a packaging bug affecting only Debian packages
+
+0.9.5 (2020-05-01 15:00:00 -0800)
+---------------------------------
+- Fixed interactive prompt when not running interactively. `#584 <https://github.com/ros-infrastructure/bloom/issues/584>`_
+- Updated vendor typesupport dependencies for Foxy. `#586 <https://github.com/ros-infrastructure/bloom/issues/586>`_
+- Happy International Workers' Day.
+
+
+0.9.4 (2020-04-30 06:30:00 -0800)
+---------------------------------
+- Restored return code of rosdep failure when non-interactive. `#577 <https://github.com/ros-infrastructure/bloom/issues/577>`_
+- Added the development branch to info log when using version auto-detection. `#579 <https://github.com/ros-infrastructure/bloom/issues/579>`_
+- Added non-interactive option to git-bloom-release command. `#581 <https://github.com/ros-infrastructure/bloom/issues/581>`_
+
+
+0.9.3 (2020-03-02 17:30:00 -0800)
+---------------------------------
+- Fix a packaging bug affecting only Debian packages
+
+0.9.2 (2020-03-02 13:00:00 -0800)
+---------------------------------
+- Add option to disable weak RPM dependencies. `#574 <https://github.com/cottsay/bloom/issues/574>`_
+- If not interactive, don't prompt to fix broken rosdep keys. `#573 <https://github.com/cottsay/bloom/issues/573>`_
+- Make the RPM spec templates look more like the results. `#568 <https://github.com/cottsay/bloom/issues/568>`_
+- Suppress automatic rosdep with BLOOM_SKIP_ROSDEP_UPDATE. `#565 <https://github.com/cottsay/bloom/issues/565>`_
+- Provide group membership information in RPM packages. `#564 <https://github.com/cottsay/bloom/issues/564>`_
+- Add an optional release version suffix to RPM templates. `#569 <https://github.com/cottsay/bloom/issues/569>`_
+- Drop Connext from RPM RMW list. `#566 <https://github.com/cottsay/bloom/issues/566>`_
+- Provide -devel, -doc and -runtime virtual packages in RPM. `#563 <https://github.com/cottsay/bloom/issues/563>`_
+- Print the OS name along with OS version for RPMs. `#562 <https://github.com/cottsay/bloom/issues/562>`_
+
+0.9.1 (2020-02-03 10:00:00 -0800)
+---------------------------------
+- Added a debinc of 100 to prevent conflicts with upstream Ubuntu versions.
+- Added version dependency on ``rosdistro`` version ``0.8.0`` to prevent use of out-of-date version which caused pull requests to fail.
+- Changed to not try and create a pull request if ``--pretend`` is used.
+
 0.9.0 (2019-10-18 14:15:00 -0800)
 ---------------------------------
 - Fixed possibly unescaped logger formatting in version. `#553 <https://github.com/ros-infrastructure/bloom/pull/553>`_
