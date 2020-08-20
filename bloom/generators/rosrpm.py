@@ -85,7 +85,8 @@ class RosRpmGenerator(RpmGenerator):
             self.rpm_inc,
             [p.name for p in self.packages.values()],
             releaser_history=releaser_history,
-            fallback_resolver=fallback_resolver
+            fallback_resolver=fallback_resolver,
+            skip_keys=self.skip_keys
         )
         subs['Package'] = rosify_package_name(subs['Package'], self.rosdistro)
 
