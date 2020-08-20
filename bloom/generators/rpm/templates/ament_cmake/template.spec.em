@@ -59,6 +59,7 @@ if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.
 
 %if 0%{?with_tests}
 %check
+# Look for a Makefile target with a name indicating that it runs tests
 TEST_TARGET=$(%__make -qp -C obj-%{_target_platform} | sed "s/^\(test\|check\):.*/\\1/;t f;d;:f;q0")
 if [ -n "$TEST_TARGET" ]; then
 # In case we're installing to a non-standard location, look for a setup.sh
