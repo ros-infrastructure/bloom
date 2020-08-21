@@ -1,3 +1,12 @@
+0.9.8 (2020-08-21 15:36:00 -0700)
+---------------------------------
+- Run tests in RPM builds for ament and cmake packages. `#585 <https://github.com/ros-infrastructure/bloom/pull/585>`_
+- Add --skip-keys argument to the RPM generator. `#602 <https://github.com/ros-infrastructure/bloom/pull/602>`_
+- Fix conditional evaluation of Conflicts/Replaces. `#601 <https://github.com/ros-infrastructure/bloom/pull/601>`_
+- Set Python2-Depends-Name to allow releasing from Focal. `#595 <https://github.com/ros-infrastructure/bloom/pull/595>`_
+- Drop CATKIN_BUILD_BINARY_PACKAGE from cmake RPMs. `#589 <https://github.com/ros-infrastructure/bloom/pull/589>`_
+- Remove catkin reference from comment in non-catkin pkgs. `#588 <https://github.com/ros-infrastructure/bloom/pull/588>`_
+
 0.9.7 (2020-05-04 12:45:00 -0800)
 ---------------------------------
 - Removed rmw implementations from typesupport dependencies for Foxy. `#587 <https://github.com/ros-infrastructure/bloom/issues/587>`_
