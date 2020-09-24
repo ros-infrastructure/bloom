@@ -533,7 +533,7 @@ class RpmGenerator(BloomGenerator):
         self.has_run_rosdep = True
 
     def _check_all_keys_are_valid(self, peer_packages, rosdistro):
-        keys_to_resolve = []
+        keys_to_resolve = set()
         key_to_packages_which_depends_on = collections.defaultdict(list)
         keys_to_ignore = set()
         for package in self.packages.values():
@@ -551,14 +551,14 @@ class RpmGenerator(BloomGenerator):
                 dep for dep in keys_to_ignore.union(package.replaces + package.conflicts)
                 if dep.evaluated_condition is not False}
             keys = [d.name for d in unresolved_keys]
-            keys_to_resolve.extend(keys)
+            keys_to_resolve.update(keys)
             for key in keys:
                 key_to_packages_which_depends_on[key].append(package.name)
 
         for skip_key in self.skip_keys:
             try:
                 keys_to_resolve.remove(skip_key)
-            except ValueError:
+            except KeyError:
                 warning("Key '{0}' specified by --skip-keys was not found".format(skip_key))
             else:
                 warning("Skipping dependency key '{0}' per --skip-keys".format(skip_key))
@@ -566,7 +566,7 @@ class RpmGenerator(BloomGenerator):
         os_name = self.os_name
         rosdistro = self.rosdistro
         all_keys_valid = True
-        for key in sorted(set(keys_to_resolve)):
+        for key in sorted(keys_to_resolve):
             for os_version in self.distros:
                 try:
                     extended_peer_packages = peer_packages + [d.name for d in keys_to_ignore]
