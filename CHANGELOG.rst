@@ -1,3 +1,9 @@
+0.10.0 (2020-09-28 16:30:00 -0700)
+----------------------------------
+- Add CMAKE_PREFIX_PATH to ament_cmake and cmake templates `#606 <https://github.com/ros-infrastructure/bloom/pull/606>`_
+- Add RHEL to the default action list `#604 <https://github.com/ros-infrastructure/bloom/pull/604>`_
+- Handle skipping keys multiple times `#603 <https://github.com/ros-infrastructure/bloom/pull/603>`_
+
 0.9.8 (2020-08-21 15:36:00 -0700)
 ---------------------------------
 - Run tests in RPM builds for ament and cmake packages. `#585 <https://github.com/ros-infrastructure/bloom/pull/585>`_
