@@ -276,13 +276,16 @@ def get_repo_uri(repository, distro):
 
 def get_release_repo(repository, distro, override_url):
     global _repositories
-    url = get_repo_uri(repository, distro)
+
+    if override_url is not None:
+        warning("Overriding the release repository url, using '{0}'".format(override_url))
+        url = override_url
+    else:
+        url = get_repo_uri(repository, distro)
+
     if repository not in _repositories.values():
         temp_dir = tempfile.mkdtemp()
         _repositories[repository] = get_vcs_client('git', temp_dir)
-        if override_url is not None:
-            warning("Overriding the release repository url, using '{0}'".format(override_url))
-            url = override_url
         info(fmt("@{gf}@!==> @|") +
              "Fetching '{0}' repository from '{1}'".format(repository, url))
         _repositories[repository].checkout(url, 'master')
