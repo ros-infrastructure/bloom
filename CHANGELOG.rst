@@ -41,15 +41,15 @@
 
 0.9.2 (2020-03-02 13:00:00 -0800)
 ---------------------------------
-- Add option to disable weak RPM dependencies. `#574 <https://github.com/cottsay/bloom/issues/574>`_
-- If not interactive, don't prompt to fix broken rosdep keys. `#573 <https://github.com/cottsay/bloom/issues/573>`_
-- Make the RPM spec templates look more like the results. `#568 <https://github.com/cottsay/bloom/issues/568>`_
-- Suppress automatic rosdep with BLOOM_SKIP_ROSDEP_UPDATE. `#565 <https://github.com/cottsay/bloom/issues/565>`_
-- Provide group membership information in RPM packages. `#564 <https://github.com/cottsay/bloom/issues/564>`_
-- Add an optional release version suffix to RPM templates. `#569 <https://github.com/cottsay/bloom/issues/569>`_
-- Drop Connext from RPM RMW list. `#566 <https://github.com/cottsay/bloom/issues/566>`_
-- Provide -devel, -doc and -runtime virtual packages in RPM. `#563 <https://github.com/cottsay/bloom/issues/563>`_
-- Print the OS name along with OS version for RPMs. `#562 <https://github.com/cottsay/bloom/issues/562>`_
+- Add option to disable weak RPM dependencies. `#574 <https://github.com/ros-infrastructure/bloom/issues/574>`_
+- If not interactive, don't prompt to fix broken rosdep keys. `#573 <https://github.com/ros-infrastructure/bloom/issues/573>`_
+- Make the RPM spec templates look more like the results. `#568 <https://github.com/ros-infrastructure/bloom/issues/568>`_
+- Suppress automatic rosdep with BLOOM_SKIP_ROSDEP_UPDATE. `#565 <https://github.com/ros-infrastructure/bloom/issues/565>`_
+- Provide group membership information in RPM packages. `#564 <https://github.com/ros-infrastructure/bloom/issues/564>`_
+- Add an optional release version suffix to RPM templates. `#569 <https://github.com/ros-infrastructure/bloom/issues/569>`_
+- Drop Connext from RPM RMW list. `#566 <https://github.com/ros-infrastructure/bloom/issues/566>`_
+- Provide -devel, -doc and -runtime virtual packages in RPM. `#563 <https://github.com/ros-infrastructure/bloom/issues/563>`_
+- Print the OS name along with OS version for RPMs. `#562 <https://github.com/ros-infrastructure/bloom/issues/562>`_
 
 0.9.1 (2020-02-03 10:00:00 -0800)
 ---------------------------------
