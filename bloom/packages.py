@@ -88,7 +88,6 @@ def get_package_data(branch_name=None, directory=None, quiet=True, release_direc
         else:
             log("found '" + list(packages.values())[0].name + "'.",
                 use_prefix=False)
-        version = verify_equal_package_versions(packages.values())
         ignored_packages = get_ignored_packages(release_directory=release_directory)
         for k, v in dict(packages).items():
             # Check for packages with upper case names
@@ -106,6 +105,7 @@ def get_package_data(branch_name=None, directory=None, quiet=True, release_direc
         if packages == {}:
             error("All packages that were found were also ignored, aborting.",
                   exit=True)
+        version = verify_equal_package_versions(packages.values())
         return [p.name for p in packages.values()], version, packages
     # Otherwise we have a problem
     log("failed.", use_prefix=False)
