@@ -88,7 +88,7 @@ def create_upstream_repository(packages, directory=None, format_versions=None):
         return os.getcwd()
 
 
-def _test_unary_package_repository(release_dir, version, directory=None):
+def _test_unary_package_repository(release_dir, version, directory=None, env=None):
     print("Testing in {0} at version {1}".format(release_dir, version))
     with change_directory(release_dir):
         # First run everything
@@ -98,7 +98,7 @@ def _test_unary_package_repository(release_dir, version, directory=None):
                 cmd = cmd.format(' --quiet')
             else:
                 cmd = cmd.format('')
-            user(cmd, silent=False)
+            user(cmd, silent=False, env=env)
         ###
         ### Import upstream
         ###

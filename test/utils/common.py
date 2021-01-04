@@ -124,6 +124,19 @@ class change_directory(object):
             os.chdir(self.original_cwd)
 
 
+class change_environ(object):
+    def __init__(self, env=None):
+        self.original_env = os.environ
+        self.new_env = dict(env) if env is not None else dict(os.environ)
+
+    def __enter__(self):
+        self.original_env = os.environ
+        os.environ = dict(self.new_env)
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        os.environ = self.original_env
+
+
 def in_temporary_directory(f):
     @functools.wraps(f)
     def decorated(*args, **kwds):
@@ -169,7 +182,7 @@ class temporary_directory(object):
 
 
 def user_bloom(cmd, args=None, directory=None, auto_assert=True,
-               return_io=True, silent=False):
+               return_io=True, silent=False, env=None):
     """Runs the given bloom cmd ('git-bloom-{cmd}') with the given args"""
     assert type(cmd) == str, \
         "user_bloom cmd takes str only, got " + str(type(cmd))
@@ -191,7 +204,8 @@ def user_bloom(cmd, args=None, directory=None, auto_assert=True,
         with redirected_stdio() as (out, err):
             func = load_entry_point('bloom==' + ver, 'console_scripts', cmd)
             try:
-                ret = func(args) or 0
+                with change_environ(env):
+                    ret = func(args) or 0
             except SystemExit as e:
                 ret = e.code
                 if ret != 0 and auto_assert:
@@ -284,7 +298,7 @@ _special_user_commands = {
 
 
 def user(cmd, directory=None, auto_assert=True, return_io=False,
-         bash_only=False, silent=True):
+         bash_only=False, silent=True, env=None):
     """Used in system tests to emulate a user action"""
     if type(cmd) in [list, tuple]:
         cmd = ' '.join(cmd)
@@ -298,11 +312,12 @@ def user(cmd, directory=None, auto_assert=True, return_io=False,
                     directory=directory,
                     auto_assert=auto_assert,
                     return_io=return_io,
-                    silent=silent
+                    silent=silent,
+                    env=env
                 )
     ret = -1
     try:
-        p = Popen(cmd, shell=True, cwd=directory, stdout=PIPE, stderr=PIPE)
+        p = Popen(cmd, shell=True, cwd=directory, env=env, stdout=PIPE, stderr=PIPE)
         out, err = p.communicate()
         if out is not None and not isinstance(out, str):
             out = out.decode('utf-8')
