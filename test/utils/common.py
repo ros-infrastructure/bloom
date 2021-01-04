@@ -20,6 +20,7 @@ except ImportError:
     from io import StringIO
 
 from subprocess import Popen, PIPE, CalledProcessError
+import yaml
 
 
 def assert_raises(exception_classes, callable_obj=None, *args, **kwargs):
@@ -335,3 +336,96 @@ def user(cmd, directory=None, auto_assert=True, return_io=False,
     if return_io:
         return ret, out, err
     return ret
+
+
+def set_up_fake_rosdep(staging_dir, distros={}, rules={}):
+    """
+    Used to create a 'fake' rosdep cache from a locally generated index.
+
+    Example invocation:
+    .. code-block:: python
+
+       env = dict(os.environ)
+       env.update(set_up_fake_rosdep(
+           '/tmp/fake_rosdep',
+           {
+               'melodic': {
+                   'ubuntu': ['bionic']
+               }
+           },
+           {
+               'some_rosdep_key': {
+                   'ubuntu': ['some-package-name']
+               }
+           }))
+
+    :param staging_dir: Scratch directory in which to make infrastructure files.
+    :param distros: Mapping of ROS distributions to populate the index with.
+    :param rules: rosdep rules to populate the rosdep database with.
+
+    :returns: Environment variables which cause Bloom will use the fake cache.
+    """
+    # Construct bare environment
+    rosdistro_dir = os.path.join(staging_dir, 'rosdistro')
+    rosdistro_index_path = os.path.join(rosdistro_dir, 'index.yaml')
+    sources_list_dir = os.path.join(staging_dir, 'sources.list.d')
+    ros_home_dir = os.path.join(staging_dir, 'ros_home')
+    os.makedirs(rosdistro_dir)
+    os.makedirs(sources_list_dir)
+    os.makedirs(ros_home_dir)
+    env = {
+        'BLOOM_SKIP_ROSDEP_UPDATE': '1',
+        'ROSDEP_SOURCE_PATH': os.path.realpath(sources_list_dir),
+        'ROSDISTRO_INDEX_URL': 'file://' + os.path.realpath(rosdistro_index_path),
+        'ROS_HOME': os.path.realpath(ros_home_dir)
+    }
+
+    # Create the specified distributions
+    for distro, platforms in distros.items():
+        distro_dir = os.path.join(rosdistro_dir, distro)
+        distro_yaml_path = os.path.join(distro_dir, 'distribution.yaml')
+        os.makedirs(distro_dir)
+        distro_yaml_data = {
+            'release_platforms': platforms,
+            'repositories': dict({}),
+            'type': 'distribution',
+            'version': 2
+        }
+        with open(distro_yaml_path, 'w') as f:
+            f.write(yaml.dump(distro_yaml_data))
+
+    # Index the specified distributions
+    rosdistro_index_data = {
+        'distributions': {
+            distro: {
+                'distribution': [os.path.join(distro, 'distribution.yaml')],
+                'distribution_cache': 'DOES-NOT-EXIST',
+                'distribution_status': 'active',
+                'distribution_type': 'ros1',
+                'python_version': 2
+            } for distro in distros.keys()
+        },
+        'type': 'index',
+        'version': 4
+    }
+    with open(rosdistro_index_path, 'w') as f:
+        f.write(yaml.dump(rosdistro_index_data))
+
+    # Create the rosdep database
+    rosdep_db_dir = os.path.join(rosdistro_dir, 'rosdep')
+    os.makedirs(rosdep_db_dir)
+    rosdep_db_path = os.path.join(rosdep_db_dir, 'rosdep.yaml')
+    with open(rosdep_db_path, 'w') as f:
+        f.write(yaml.dump(rules))
+
+    # Create the rosdep sources list
+    rosdistro_source_path = os.path.join(sources_list_dir, '50-rosdep.list')
+    with open(rosdistro_source_path, 'w') as f:
+        f.write('yaml file://' + os.path.realpath(rosdep_db_path))
+
+    # Perform the initial rosdep update
+    setup_env = dict(os.environ)
+    setup_env.update(env)
+    user('rosdep update', env=setup_env)
+
+    return env
