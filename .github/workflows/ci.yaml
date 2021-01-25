@@ -49,11 +49,6 @@ jobs:
           python -m pip install --upgrade pip setuptools
           python -m pip install PyYAML argparse empy rosdep vcstools catkin-pkg python-dateutil
           python -m pip install nose coverage pep8
-      - name: Configure rosdep
-        run: |
-          which rosdep
-          sudo `which rosdep` init
-          `which rosdep` update
       - name: Run tests
         run: |
           BLOOM_VERBOSE=1 python setup.py nosetests -s --tests test
