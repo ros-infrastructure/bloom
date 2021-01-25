@@ -20,6 +20,7 @@ except ImportError:
     from io import StringIO
 
 from subprocess import Popen, PIPE, CalledProcessError
+import yaml
 
 
 def assert_raises(exception_classes, callable_obj=None, *args, **kwargs):
@@ -124,6 +125,19 @@ class change_directory(object):
             os.chdir(self.original_cwd)
 
 
+class change_environ(object):
+    def __init__(self, env=None):
+        self.original_env = os.environ
+        self.new_env = dict(env) if env is not None else dict(os.environ)
+
+    def __enter__(self):
+        self.original_env = os.environ
+        os.environ = dict(self.new_env)
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        os.environ = self.original_env
+
+
 def in_temporary_directory(f):
     @functools.wraps(f)
     def decorated(*args, **kwds):
@@ -169,7 +183,7 @@ class temporary_directory(object):
 
 
 def user_bloom(cmd, args=None, directory=None, auto_assert=True,
-               return_io=True, silent=False):
+               return_io=True, silent=False, env=None):
     """Runs the given bloom cmd ('git-bloom-{cmd}') with the given args"""
     assert type(cmd) == str, \
         "user_bloom cmd takes str only, got " + str(type(cmd))
@@ -191,7 +205,8 @@ def user_bloom(cmd, args=None, directory=None, auto_assert=True,
         with redirected_stdio() as (out, err):
             func = load_entry_point('bloom==' + ver, 'console_scripts', cmd)
             try:
-                ret = func(args) or 0
+                with change_environ(env):
+                    ret = func(args) or 0
             except SystemExit as e:
                 ret = e.code
                 if ret != 0 and auto_assert:
@@ -284,7 +299,7 @@ _special_user_commands = {
 
 
 def user(cmd, directory=None, auto_assert=True, return_io=False,
-         bash_only=False, silent=True):
+         bash_only=False, silent=True, env=None):
     """Used in system tests to emulate a user action"""
     if type(cmd) in [list, tuple]:
         cmd = ' '.join(cmd)
@@ -298,11 +313,12 @@ def user(cmd, directory=None, auto_assert=True, return_io=False,
                     directory=directory,
                     auto_assert=auto_assert,
                     return_io=return_io,
-                    silent=silent
+                    silent=silent,
+                    env=env
                 )
     ret = -1
     try:
-        p = Popen(cmd, shell=True, cwd=directory, stdout=PIPE, stderr=PIPE)
+        p = Popen(cmd, shell=True, cwd=directory, env=env, stdout=PIPE, stderr=PIPE)
         out, err = p.communicate()
         if out is not None and not isinstance(out, str):
             out = out.decode('utf-8')
@@ -320,3 +336,96 @@ def user(cmd, directory=None, auto_assert=True, return_io=False,
     if return_io:
         return ret, out, err
     return ret
+
+
+def set_up_fake_rosdep(staging_dir, distros={}, rules={}):
+    """
+    Used to create a 'fake' rosdep cache from a locally generated index.
+
+    Example invocation:
+    .. code-block:: python
+
+       env = dict(os.environ)
+       env.update(set_up_fake_rosdep(
+           '/tmp/fake_rosdep',
+           {
+               'melodic': {
+                   'ubuntu': ['bionic']
+               }
+           },
+           {
+               'some_rosdep_key': {
+                   'ubuntu': ['some-package-name']
+               }
+           }))
+
+    :param staging_dir: Scratch directory in which to make infrastructure files.
+    :param distros: Mapping of ROS distributions to populate the index with.
+    :param rules: rosdep rules to populate the rosdep database with.
+
+    :returns: Environment variables which cause Bloom will use the fake cache.
+    """
+    # Construct bare environment
+    rosdistro_dir = os.path.join(staging_dir, 'rosdistro')
+    rosdistro_index_path = os.path.join(rosdistro_dir, 'index.yaml')
+    sources_list_dir = os.path.join(staging_dir, 'sources.list.d')
+    ros_home_dir = os.path.join(staging_dir, 'ros_home')
+    os.makedirs(rosdistro_dir)
+    os.makedirs(sources_list_dir)
+    os.makedirs(ros_home_dir)
+    env = {
+        'BLOOM_SKIP_ROSDEP_UPDATE': '1',
+        'ROSDEP_SOURCE_PATH': os.path.realpath(sources_list_dir),
+        'ROSDISTRO_INDEX_URL': 'file://' + os.path.realpath(rosdistro_index_path),
+        'ROS_HOME': os.path.realpath(ros_home_dir)
+    }
+
+    # Create the specified distributions
+    for distro, platforms in distros.items():
+        distro_dir = os.path.join(rosdistro_dir, distro)
+        distro_yaml_path = os.path.join(distro_dir, 'distribution.yaml')
+        os.makedirs(distro_dir)
+        distro_yaml_data = {
+            'release_platforms': platforms,
+            'repositories': dict({}),
+            'type': 'distribution',
+            'version': 2
+        }
+        with open(distro_yaml_path, 'w') as f:
+            f.write(yaml.dump(distro_yaml_data))
+
+    # Index the specified distributions
+    rosdistro_index_data = {
+        'distributions': {
+            distro: {
+                'distribution': [os.path.join(distro, 'distribution.yaml')],
+                'distribution_cache': 'DOES-NOT-EXIST',
+                'distribution_status': 'active',
+                'distribution_type': 'ros1',
+                'python_version': 2
+            } for distro in distros.keys()
+        },
+        'type': 'index',
+        'version': 4
+    }
+    with open(rosdistro_index_path, 'w') as f:
+        f.write(yaml.dump(rosdistro_index_data))
+
+    # Create the rosdep database
+    rosdep_db_dir = os.path.join(rosdistro_dir, 'rosdep')
+    os.makedirs(rosdep_db_dir)
+    rosdep_db_path = os.path.join(rosdep_db_dir, 'rosdep.yaml')
+    with open(rosdep_db_path, 'w') as f:
+        f.write(yaml.dump(rules))
+
+    # Create the rosdep sources list
+    rosdistro_source_path = os.path.join(sources_list_dir, '50-rosdep.list')
+    with open(rosdistro_source_path, 'w') as f:
+        f.write('yaml file://' + os.path.realpath(rosdep_db_path))
+
+    # Perform the initial rosdep update
+    setup_env = dict(os.environ)
+    setup_env.update(env)
+    user('rosdep update', env=setup_env)
+
+    return env

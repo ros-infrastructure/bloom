@@ -19,6 +19,7 @@ from .common import create_release_repo
 from ..utils.common import bloom_answer
 from ..utils.common import change_directory
 from ..utils.common import in_temporary_directory
+from ..utils.common import set_up_fake_rosdep
 from ..utils.common import user
 from ..utils.package_version import change_upstream_version
 
@@ -88,7 +89,7 @@ def create_upstream_repository(packages, directory=None, format_versions=None):
         return os.getcwd()
 
 
-def _test_unary_package_repository(release_dir, version, directory=None):
+def _test_unary_package_repository(release_dir, version, directory=None, env=None):
     print("Testing in {0} at version {1}".format(release_dir, version))
     with change_directory(release_dir):
         # First run everything
@@ -98,7 +99,7 @@ def _test_unary_package_repository(release_dir, version, directory=None):
                 cmd = cmd.format(' --quiet')
             else:
                 cmd = cmd.format('')
-            user(cmd, silent=False)
+            user(cmd, silent=False, env=env)
         ###
         ### Import upstream
         ###
@@ -184,6 +185,15 @@ def test_unary_package_repository(directory=None):
     Release a single package catkin (melodic) repository.
     """
     directory = directory if directory is not None else os.getcwd()
+    # Initialize rosdep
+    rosdep_dir = os.path.join(directory, 'foo_rosdep')
+    env = dict(os.environ)
+    fake_distros = {'melodic': {'ubuntu': ['bionic']}}
+    fake_rosdeps = {
+        'catkin': {'ubuntu': []},
+        'roscpp_core': {'ubuntu': []}
+    }
+    env.update(set_up_fake_rosdep(rosdep_dir, fake_distros, fake_rosdeps))
     # Setup
     upstream_dir = create_upstream_repository(['foo'], directory)
     upstream_url = 'file://' + upstream_dir
@@ -198,7 +208,7 @@ def test_unary_package_repository(directory=None):
     versions = ['0.1.0', '0.1.1', '0.2.0']
     import bloom.commands.git.release
     for index in range(len(versions)):
-        _test_unary_package_repository(release_dir, versions[index], directory)
+        _test_unary_package_repository(release_dir, versions[index], directory, env=env)
         bloom.commands.git.release.upstream_repos = {}
         if index != len(versions) - 1:
             change_upstream_version(upstream_dir, versions[index + 1])
@@ -210,6 +220,20 @@ def test_multi_package_repository(directory=None):
     Release a multi package catkin (melodic) repository.
     """
     directory = directory if directory is not None else os.getcwd()
+    # Initialize rosdep
+    rosdep_dir = os.path.join(directory, 'foo_rosdep')
+    env = dict(os.environ)
+    fake_distros = {
+        'melodic': {
+            'debian': ['stretch'],
+            'ubuntu': ['bionic']
+        }
+    }
+    fake_rosdeps = {
+        'catkin': {'debian': [], 'ubuntu': []},
+        'roscpp_core': {'debian': [], 'ubuntu': []}
+    }
+    env.update(set_up_fake_rosdep(rosdep_dir, fake_distros, fake_rosdeps))
     # Setup
     pkgs = ['foo', 'bar_ros', 'baz']
     upstream_dir = create_upstream_repository(pkgs, directory, format_versions=[1, 2, 3])
@@ -230,7 +254,7 @@ def test_multi_package_repository(directory=None):
                 cmd = cmd.format(' --quiet')
             else:
                 cmd = cmd.format('')
-            user(cmd, silent=False)
+            user(cmd, silent=False, env=env)
         ###
         ### Import upstream
         ###
@@ -286,7 +310,7 @@ def test_multi_package_repository(directory=None):
         ### Release generator, again
         ###
         with bloom_answer(bloom_answer.ASSERT_NO_QUESTION):
-            ret = user('git-bloom-generate -y rosrelease melodic -s upstream')
+            ret = user('git-bloom-generate -y rosrelease melodic -s upstream', env=env)
         # patch import should have reported OK
         assert ret == code.OK, "actually returned ({0})".format(ret)
         # Check the environment after the release generator
@@ -371,6 +395,15 @@ def test_upstream_tag_special_tag(directory=None):
     can handle it.
     """
     directory = directory if directory is not None else os.getcwd()
+    # Initialize rosdep
+    rosdep_dir = os.path.join(directory, 'foo_rosdep')
+    env = dict(os.environ)
+    fake_distros = {'melodic': {'ubuntu': ['bionic']}}
+    fake_rosdeps = {
+        'catkin': {'ubuntu': []},
+        'roscpp_core': {'ubuntu': []}
+    }
+    env.update(set_up_fake_rosdep(rosdep_dir, fake_distros, fake_rosdeps))
     # Setup
     upstream_dir = create_upstream_repository(['foo'], directory)
     upstream_url = 'file://' + upstream_dir
@@ -387,4 +420,4 @@ def test_upstream_tag_special_tag(directory=None):
         user('git tag upstream/0.0.0@baz')
 
     import bloom.commands.git.release
-    _test_unary_package_repository(release_dir, '0.1.0', directory)
+    _test_unary_package_repository(release_dir, '0.1.0', directory, env=env)
