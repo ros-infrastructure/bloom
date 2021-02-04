@@ -227,7 +227,7 @@ def user_cd(cmd, **kwargs):
     Used in place of user('cd <new_directory>')
     """
     if type(cmd) is str:
-        assert cmd is not '', "no arguments passed to cd, not allowed"
+        assert cmd != '', "no arguments passed to cd, not allowed"
         cmd = cmd.split()
     new_directory = cmd[0]
     assert os.path.exists(new_directory), \
@@ -262,7 +262,7 @@ def user_mkdir(cmd, **kwargs):
     Used in system tests to emulte a user creating a directory
     """
     if type(cmd) is str:
-        assert cmd is not '', "no arguments passed to mkdir, not allowed"
+        assert cmd != '', "no arguments passed to mkdir, not allowed"
         cmd = cmd.split()
     if len(cmd) == 2:
         assert '-p' in cmd, "two args to mkdir, neither is '-p', not allowed"
