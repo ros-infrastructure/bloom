@@ -1,3 +1,14 @@
+0.10.1 (2021-02-04 15:00:00 -0800)
+----------------------------------
+- Do not verify package version on ignored packages `#610 <https://github.com/ros-infrastructure/bloom/pull/610>`_
+- Update email addresses and remove 404 download url `#607 <https://github.com/ros-infrastructure/bloom/pull/607>`_
+- Align CMake args in RPMs with debs `#617 <https://github.com/ros-infrastructure/bloom/pull/617>`_
+- Add a template substitution for the ROS distro `#612 <https://github.com/ros-infrastructure/bloom/pull/612>`_
+- Create and use a 'fake' rosdep cache for tests `#614 <https://github.com/ros-infrastructure/bloom/pull/614>`_
+- Add --debian-inc option to bloom-generate `#428 <https://github.com/ros-infrastructure/bloom/pull/428>`_
+- Solve shlibdeps errors in REP136 packages that use GNUInstallDirs. `#600 <https://github.com/ros-infrastructure/bloom/pull/600>`_
+- Don't prompt if --override-release-repository-url `#594 <https://github.com/ros-infrastructure/bloom/pull/594>`_
+
 0.10.0 (2020-09-28 16:30:00 -0700)
 ----------------------------------
 - Add CMAKE_PREFIX_PATH to ament_cmake and cmake templates `#606 <https://github.com/ros-infrastructure/bloom/pull/606>`_
