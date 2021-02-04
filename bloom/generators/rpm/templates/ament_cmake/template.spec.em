@@ -42,8 +42,8 @@ mkdir -p obj-%{_target_platform} && cd obj-%{_target_platform}
     -USYSCONF_INSTALL_DIR \
     -USHARE_INSTALL_PREFIX \
     -ULIB_SUFFIX \
-    -DCMAKE_INSTALL_LIBDIR="lib" \
     -DCMAKE_INSTALL_PREFIX="@(InstallationPrefix)" \
+    -DAMENT_PREFIX_PATH="@(InstallationPrefix)" \
     -DCMAKE_PREFIX_PATH="@(InstallationPrefix)" \
     -DSETUPTOOLS_DEB_LAYOUT=OFF \
     ..
