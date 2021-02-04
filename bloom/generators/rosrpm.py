@@ -88,6 +88,7 @@ class RosRpmGenerator(RpmGenerator):
             fallback_resolver=fallback_resolver,
             skip_keys=self.skip_keys
         )
+        subs['Rosdistro'] = self.rosdistro
         subs['Package'] = rosify_package_name(subs['Package'], self.rosdistro)
 
         # Virtual packages

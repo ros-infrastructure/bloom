@@ -87,6 +87,7 @@ class RosDebianGenerator(DebianGenerator):
             releaser_history=releaser_history,
             fallback_resolver=fallback_resolver
         )
+        subs['Rosdistro'] = self.rosdistro
         subs['Package'] = rosify_package_name(subs['Package'], self.rosdistro)
 
         # ROS 2 specific bloom extensions.
