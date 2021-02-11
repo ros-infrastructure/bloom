@@ -34,6 +34,7 @@ from __future__ import print_function
 
 import argparse
 import copy
+import re
 import yaml
 import subprocess
 import sys
@@ -209,10 +210,14 @@ def show(args):
          default_flow_style=False))
 
 
+def drop_skip_keys(action_list):
+    return [re.sub(' --skip-keys.*?(?= -|$)', '', a) for a in action_list]
+
+
 def update_track(track_dict):
     for key, value in DEFAULT_TEMPLATE.items():
         if key in ['actions']:
-            if track_dict[key] != DEFAULT_TEMPLATE[key]:
+            if drop_skip_keys(track_dict[key]) != DEFAULT_TEMPLATE[key]:
                 warning("Your track's '{0}' configuration is not the same as the default."
                         .format(key))
                 default = 'n'
