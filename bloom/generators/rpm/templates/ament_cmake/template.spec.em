@@ -66,7 +66,8 @@ if [ -n "$TEST_TARGET" ]; then
 # in the install tree and source it.  It will set things like
 # CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
 if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi
-%make_build -C obj-%{_target_platform} $TEST_TARGET || echo "RPM TESTS FAILED"
+CTEST_OUTPUT_ON_FAILURE=1 \
+  %make_build -C obj-%{_target_platform} $TEST_TARGET || echo "RPM TESTS FAILED"
 else echo "RPM TESTS SKIPPED"; fi
 %endif
 
