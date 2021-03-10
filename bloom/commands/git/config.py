@@ -38,6 +38,7 @@ import yaml
 import subprocess
 import sys
 
+from bloom.config import ACTION_LIST_HISTORY
 from bloom.config import BLOOM_CONFIG_BRANCH
 from bloom.config import config_template
 from bloom.config import DEFAULT_TEMPLATE
@@ -216,7 +217,7 @@ def update_track(track_dict):
                 warning("Your track's '{0}' configuration is not the same as the default."
                         .format(key))
                 default = 'n'
-                if key == 'actions':
+                if key == 'actions' and track_dict[key] in ACTION_LIST_HISTORY:
                     default = 'y'
                     warning("Unless you have manually modified your 'actions' "
                             "(the commands which get run for a release), "
