@@ -178,20 +178,47 @@ class PromptEntry(object):
             msg += fmt(" @!['@{yf}" + sanitize(self.default) + "@|@!']@|: ")
         return msg
 
-DEFAULT_TEMPLATE = {
-    'name': PromptEntry('Repository Name', spec=config_spec['name'], default='upstream'),
-    'vcs_uri': PromptEntry('Upstream Repository URI', spec=config_spec['vcs_uri']),
-    'vcs_type': PromptEntry(
-        'Upstream VCS Type', default='git', spec=config_spec['vcs_type'],
-        values=['git', 'hg', 'svn', 'tar']),
-    'version': PromptEntry('Version', default=':{auto}', spec=config_spec['version']),
-    'release_tag': PromptEntry('Release Tag', default=':{version}', spec=config_spec['release_tag']),
-    'devel_branch': PromptEntry('Upstream Devel Branch', spec=config_spec['devel_branch']),
-    'patches': PromptEntry('Patches Directory', spec=config_spec['patches']),
-    'ros_distro': PromptEntry('ROS Distro', default='indigo', spec=config_spec['ros_distro']),
-    'release_repo_url': PromptEntry('Release Repository Push URL', spec=config_spec['release_repo_url']),
-    'release_inc': 0,
-    'actions': [
+ACTION_LIST_HISTORY = [
+    [
+        'bloom-export-upstream :{vcs_local_uri} :{vcs_type}'
+        ' --tag :{release_tag} --display-uri :{vcs_uri}'
+        ' --name :{name} --output-dir :{archive_dir_path}',
+        'git-bloom-import-upstream :{archive_path} :{patches}'
+        ' --release-version :{version} --replace',
+        'git-bloom-generate -y rosrelease :{ros_distro}'
+        ' --source upstream -i :{release_inc}',
+        'git-bloom-generate -y rosdebian --prefix release/:{ros_distro}'
+        ' :{ros_distro} -i :{release_inc}'
+    ],
+    [
+        'bloom-export-upstream :{vcs_local_uri} :{vcs_type}'
+        ' --tag :{release_tag} --display-uri :{vcs_uri}'
+        ' --name :{name} --output-dir :{archive_dir_path}',
+        'git-bloom-import-upstream :{archive_path} :{patches}'
+        ' --release-version :{version} --replace',
+        'git-bloom-generate -y rosrelease :{ros_distro}'
+        ' --source upstream -i :{release_inc}',
+        'git-bloom-generate -y rosdebian --prefix release/:{ros_distro}'
+        ' :{ros_distro} -i :{release_inc}',
+        'git-bloom-generate -y rosrpm --prefix release/:{ros_distro}'
+        ' :{ros_distro} -i :{release_inc}'
+    ],
+    [
+        'bloom-export-upstream :{vcs_local_uri} :{vcs_type}'
+        ' --tag :{release_tag} --display-uri :{vcs_uri}'
+        ' --name :{name} --output-dir :{archive_dir_path}',
+        'git-bloom-import-upstream :{archive_path} :{patches}'
+        ' --release-version :{version} --replace',
+        'git-bloom-generate -y rosrelease :{ros_distro}'
+        ' --source upstream -i :{release_inc}',
+        'git-bloom-generate -y rosdebian --prefix release/:{ros_distro}'
+        ' :{ros_distro} -i :{release_inc} --os-name ubuntu',
+        'git-bloom-generate -y rosdebian --prefix release/:{ros_distro}'
+        ' :{ros_distro} -i :{release_inc} --os-name debian --os-not-required',
+        'git-bloom-generate -y rosrpm --prefix release/:{ros_distro}'
+        ' :{ros_distro} -i :{release_inc}'
+    ],
+    [
         'bloom-export-upstream :{vcs_local_uri} :{vcs_type}'
         ' --tag :{release_tag} --display-uri :{vcs_uri}'
         ' --name :{name} --output-dir :{archive_dir_path}',
@@ -208,6 +235,22 @@ DEFAULT_TEMPLATE = {
         'git-bloom-generate -y rosrpm --prefix release/:{ros_distro}'
         ' :{ros_distro} -i :{release_inc} --os-name rhel',
     ]
+]
+
+DEFAULT_TEMPLATE = {
+    'name': PromptEntry('Repository Name', spec=config_spec['name'], default='upstream'),
+    'vcs_uri': PromptEntry('Upstream Repository URI', spec=config_spec['vcs_uri']),
+    'vcs_type': PromptEntry(
+        'Upstream VCS Type', default='git', spec=config_spec['vcs_type'],
+        values=['git', 'hg', 'svn', 'tar']),
+    'version': PromptEntry('Version', default=':{auto}', spec=config_spec['version']),
+    'release_tag': PromptEntry('Release Tag', default=':{version}', spec=config_spec['release_tag']),
+    'devel_branch': PromptEntry('Upstream Devel Branch', spec=config_spec['devel_branch']),
+    'patches': PromptEntry('Patches Directory', spec=config_spec['patches']),
+    'ros_distro': PromptEntry('ROS Distro', default='indigo', spec=config_spec['ros_distro']),
+    'release_repo_url': PromptEntry('Release Repository Push URL', spec=config_spec['release_repo_url']),
+    'release_inc': 0,
+    'actions': ACTION_LIST_HISTORY[-1]
 }
 
 CUSTOM_TEMPLATE = {
