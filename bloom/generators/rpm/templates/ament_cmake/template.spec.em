@@ -67,7 +67,7 @@ if [ -n "$TEST_TARGET" ]; then
 # CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
 if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi
 CTEST_OUTPUT_ON_FAILURE=1 \
-  %make_build -C obj-%{_target_platform} $TEST_TARGET || echo "RPM TESTS FAILED"
+    %make_build -C obj-%{_target_platform} $TEST_TARGET || echo "RPM TESTS FAILED"
 else echo "RPM TESTS SKIPPED"; fi
 %endif
 
