@@ -122,8 +122,6 @@ class RosRpmGenerator(RpmGenerator):
                     self.rosdistro not in ('r2b2', 'r2b3', 'ardent') and \
                     'rosidl_interface_packages' in [p.name for p in package.member_of_groups]:
                 ROS2_VENDOR_TYPESUPPORT_DEPENDENCIES = [
-                    'rosidl-typesupport-connext-c',
-                    'rosidl-typesupport-connext-cpp',
                     'rosidl-typesupport-fastrtps-c',
                     'rosidl-typesupport-fastrtps-cpp',
                 ]
@@ -131,7 +129,6 @@ class RosRpmGenerator(RpmGenerator):
                 # rmw implementations are required as dependencies up to Eloquent.
                 if self.rosdistro in ['bouncy', 'crystal', 'dashing', 'eloquent']:
                     ROS2_VENDOR_TYPESUPPORT_DEPENDENCIES.extend([
-                        'rmw-connext-cpp',
                         'rmw-fastrtps-cpp',
                         'rmw-implementation',
                         'rmw-opensplice-cpp',
