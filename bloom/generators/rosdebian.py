@@ -108,14 +108,20 @@ class RosDebianGenerator(DebianGenerator):
                     self.rosdistro not in ('r2b2', 'r2b3', 'ardent') and \
                     'rosidl_interface_packages' in [p.name for p in package.member_of_groups]:
                 ROS2_VENDOR_TYPESUPPORT_DEPENDENCIES = [
-                    'rosidl-typesupport-connext-c',
-                    'rosidl-typesupport-connext-cpp',
                     'rosidl-typesupport-fastrtps-c',
                     'rosidl-typesupport-fastrtps-cpp',
                 ]
+
+                # Connext was changed to a new rmw that doesn't require typesupport after Foxy
+                if self.rosdistro in ('bouncy', 'crystal', 'dashing', 'eloquent', 'foxy'):
+                    ROS2_VENDOR_TYPESUPPORT_DEPENDENCIES.extend([
+                        'rosidl-typesupport-connext-c',
+                        'rosidl-typesupport-connext-cpp',
+                    ])
+
                 # OpenSplice was dropped after Eloquent.
                 # rmw implementations are required as dependencies up to Eloquent.
-                if self.rosdistro in ['bouncy', 'crystal', 'dashing', 'eloquent']:
+                if self.rosdistro in ('bouncy', 'crystal', 'dashing', 'eloquent'):
                     ROS2_VENDOR_TYPESUPPORT_DEPENDENCIES.extend([
                         'rmw-connext-cpp',
                         'rmw-fastrtps-cpp',
