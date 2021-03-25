@@ -1,8 +1,12 @@
+0.10.3 (2021-03-25 11:08:00 -0700)
+----------------------------------
+- Rewire the typesupport dependencies for post-Foxy. `#625 <https://github.com/ros-infrastructure/bloom/issues/625>`_
+
 0.10.2 (2021-03-11 17:05:00 -0800)
 ----------------------------------
-* Drop Connext from typesupport dependencies for RPMs `#623 <https://github.com/ros-infrastructure/bloom/issues/623>`_
-* Enable output from CTest failures in RPMs `#620 <https://github.com/ros-infrastructure/bloom/issues/620>`_
-* Only suggest resetting action list if it's old `#622 <https://github.com/ros-infrastructure/bloom/issues/622>`_
+- Drop Connext from typesupport dependencies for RPMs `#623 <https://github.com/ros-infrastructure/bloom/issues/623>`_
+- Enable output from CTest failures in RPMs `#620 <https://github.com/ros-infrastructure/bloom/issues/620>`_
+- Only suggest resetting action list if it's old `#622 <https://github.com/ros-infrastructure/bloom/issues/622>`_
 
 0.10.1 (2021-02-04 15:00:00 -0800)
 ----------------------------------
