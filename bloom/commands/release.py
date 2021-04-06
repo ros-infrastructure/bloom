@@ -682,9 +682,9 @@ Increasing version of package(s) in repository `{repository}` to `{version}`:
                 # There are a lot of forks of the ros/rosdistro repository so
                 # listing those forks takes a very long time.
                 # Let's try a little shortcut by checking if the repository of
-                # the same name owned by the current user, if that repository
-                # exists and is in the same fork network as the target repo
-                # let's take it.
+                # the same name owned by the current GitHub user, if that
+                # repository exists and is in the same fork network as the
+                # target repo let's take it.
                 # If it is not, we still fall back to listing forks.
                 target_repo = gh.get_repo(base_info['org'], base_info['repo'])
                 target_repo_source = target_repo['full_name']
