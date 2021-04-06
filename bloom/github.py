@@ -162,6 +162,15 @@ class Github(object):
         self.auth = auth
         self.token = token
 
+    def check_token_validity(self, username, token, update_auth=False):
+        resp = do_github_get_req('/user', self.auth)
+        resp_data = json_loads(resp)
+        if resp.getcode() != 200 or 'login' not in resp_data:
+            raise GithubException('Token authorization unsuccessful', resp)
+        if update_auth:
+            self.username = username
+            self.token = token
+
     def create_new_bloom_authorization(self, note=None, note_url=None, scopes=None, update_auth=False):
         payload = {
             "scopes": ['public_repo'] if scopes is None else scopes,
@@ -316,29 +325,28 @@ def get_github_interface(quiet=False):
     # Ok, now we have to ask for the user name and pass word
     info("")
     warning("Looks like bloom doesn't have an oauth token for you yet.")
-    warning("Therefore bloom will require your GitHub username and password just this once.")
-    warning("With your GitHub username and password bloom will create an oauth token on your behalf.")
-    warning("The token will be stored in `~/.config/bloom`.")
-    warning("You can delete the token from that file to have a new token generated.")
-    warning("Guard this token like a password, because it allows someone/something to act on your behalf.")
-    warning("If you need to unauthorize it, remove it from the 'Applications' menu in your GitHub account page.")
+    warning("You can create a token by visiting https://github.com/settings/tokens in your browser.")
+    warning("For bloom to work the token must have at least `public_repo` scope.")
+    warning("If you want bloom to be able to automatically update your fork of ros/rosdistro (recommended)")
+    warning("then you must also enable the workflow scope for the token.")
+    warning("If you need to unauthorize it, remove it from the 'Tokens' menu in your GitHub account settings.")
     info("")
-    if not maybe_continue('y', "Would you like to create an OAuth token now"):
+    if not maybe_continue('y', 'Would you like to enter an access token now'):
         return None
     token = None
     while token is None:
         try:
             username = getpass.getuser()
             username = safe_input("GitHub username [{0}]: ".format(username)) or username
-            password = getpass.getpass("GitHub password (never stored): ")
+            token = getpass.getpass("GitHub access token: ").strip()
         except (KeyboardInterrupt, EOFError):
             return None
-        if not password:
-            error("No password was given, aborting.")
+        if not token:
+            error("No token was given, aborting.")
             return None
-        gh = Github(username, auth=auth_header_from_basic_auth(username, password))
+        gh = Github(username, auth=auth_header_from_token(username, token))
         try:
-            token = gh.create_new_bloom_authorization(update_auth=True)
+            gh.check_token_validity(username, token, update_auth=True)
             with open(oauth_config_path, 'w') as f:
                 config.update({'oauth_token': token, 'github_user': username})
                 f.write(json.dumps(config))
