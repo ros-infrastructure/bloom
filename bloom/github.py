@@ -80,7 +80,10 @@ def auth_header_from_basic_auth(user, password):
 
 
 def auth_header_from_oauth_token(token):
-    return "token " + token
+    auth_str = '{0}:{1}'.format('nuclearsandwich', token)
+    if sys.version_info >= (3, 0):
+        auth_str = auth_str.encode()
+    return "Basic {0}".format(base64.b64encode(auth_str))
 
 
 def get_bloom_headers(auth=None):
