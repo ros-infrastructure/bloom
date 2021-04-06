@@ -171,26 +171,6 @@ class Github(object):
             self.username = username
             self.token = token
 
-    def create_new_bloom_authorization(self, note=None, note_url=None, scopes=None, update_auth=False):
-        payload = {
-            "scopes": ['public_repo'] if scopes is None else scopes,
-            "note": note or "bloom-{0} for {1} created on {2}".format(
-                bloom.__version__,
-                socket.gethostname(),
-                datetime.datetime.now().isoformat()),
-            "note_url": 'http://bloom.readthedocs.org/' if note_url is None else note_url
-        }
-        resp = do_github_post_req('/authorizations', payload, self.auth)
-        resp_data = json_loads(resp)
-        resp_code = '{0}'.format(resp.getcode())
-        if resp_code not in ['201', '202'] or 'token' not in resp_data:
-            raise GithubException("Failed to create a new oauth authorization", resp)
-        token = resp_data['token']
-        if update_auth:
-            self.auth = auth_header_from_oauth_token(token)
-            self.token = token
-        return token
-
     def get_repo(self, owner, repo):
         resp = do_github_get_req('/repos/{owner}/{repo}'.format(**locals()), auth=self.auth)
         if '{0}'.format(resp.getcode()) not in ['200']:
