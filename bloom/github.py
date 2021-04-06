@@ -79,11 +79,17 @@ def auth_header_from_basic_auth(user, password):
     return "Basic {0}".format(base64.b64encode(auth_str))
 
 
+def auth_header_from_token(username, token):
+    # Handle new GitHub personal access tokens
+    # which are used with basic authentication.
+    if token.startswith('ghp_'):
+        return auth_header_from_basic_auth(username, token)
+    else:
+        return auth_header_from_oauth_token(token)
+
+
 def auth_header_from_oauth_token(token):
-    auth_str = '{0}:{1}'.format('nuclearsandwich', token)
-    if sys.version_info >= (3, 0):
-        auth_str = auth_str.encode()
-    return "Basic {0}".format(base64.b64encode(auth_str))
+    return "token " + token
 
 
 def get_bloom_headers(auth=None):
@@ -302,7 +308,7 @@ def get_github_interface(quiet=False):
             token = config.get('oauth_token', None)
             username = config.get('github_user', None)
             if token and username:
-                return Github(username, auth=auth_header_from_oauth_token(token), token=token)
+                return Github(username, auth=auth_header_from_token(username, token), token=token)
     if not os.path.isdir(os.path.dirname(oauth_config_path)):
         os.makedirs(os.path.dirname(oauth_config_path))
     if quiet:
