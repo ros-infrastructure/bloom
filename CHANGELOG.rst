@@ -1,3 +1,7 @@
+0.10.5 (2021-04-07 10:30:00 -0700)
+---------------------------------
+- Fix a packaging bug affecting only Debian packages.
+
 0.10.4 (2021-04-07 10:00:00 -0700)
 ----------------------------------
 - Use basic authentication with the new personal access tokens. `#627 <https://github.com/ros-infrastructure/bloom/issues/627>`_
