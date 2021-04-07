@@ -27,7 +27,7 @@ Source0:        %{name}-%{version}.tar.gz
 @(Description)
 
 %prep
-%autosetup
+%autosetup -p1
 
 %build
 # In case we're installing to a non-standard location, look for a setup.sh
