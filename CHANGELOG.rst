@@ -1,3 +1,7 @@
+0.10.6 (2021-04-07 11:30:00 -0700)
+---------------------------------
+- Fix a packaging bug affecting only Debian packages.
+
 0.10.5 (2021-04-07 10:30:00 -0700)
 ---------------------------------
 - Fix a packaging bug affecting only Debian packages.
