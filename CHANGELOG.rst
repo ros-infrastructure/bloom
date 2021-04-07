@@ -1,3 +1,10 @@
+0.10.4 (2021-04-07 10:00:00 -0700)
+----------------------------------
+- Use basic authentication with the new personal access tokens. `#627 <https://github.com/ros-infrastructure/bloom/issues/627>`_
+- Add a fast check for the likely fork name. `#629 <https://github.com/ros-infrastructure/bloom/issues/629>`_
+- Specify patch level in RPM templates. `#626 <https://github.com/ros-infrastructure/bloom/issues/626>`_
+- Collect manually created token rather than attempting to create one. `#628 <https://github.com/ros-infrastructure/bloom/issues/628>`_
+
 0.10.3 (2021-03-25 11:08:00 -0700)
 ----------------------------------
 - Rewire the typesupport dependencies for post-Foxy. `#625 <https://github.com/ros-infrastructure/bloom/issues/625>`_
