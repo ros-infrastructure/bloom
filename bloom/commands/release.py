@@ -679,10 +679,31 @@ Increasing version of package(s) in repository `{repository}` to `{version}`:
             # Check if a fork already exists on the user's account
 
             try:
-                repo_forks = gh.list_forks(base_info['org'], base_info['repo'])
-                user_forks = [r for r in repo_forks if r.get('owner', {}).get('login', '') == gh.username]
-                # github allows only 1 fork per org as far as I know. We just take the first one.
-                head_repo = user_forks[0] if user_forks else None
+                # There are a lot of forks of the ros/rosdistro repository so
+                # listing those forks takes a very long time.
+                # Let's try a little shortcut by checking if the repository of
+                # the same name owned by the current GitHub user, if that
+                # repository exists and is in the same fork network as the
+                # target repo let's take it.
+                # If it is not, we still fall back to listing forks.
+                target_repo = gh.get_repo(base_info['org'], base_info['repo'])
+                target_repo_source = target_repo['full_name']
+                if target_repo['fork']:
+                    target_repo_source = target_repo['source']['full_name']
+                try:
+                    user_repo = gh.get_repo(gh.username, base_info['repo'])
+                    if user_repo['fork'] and user_repo['source']['full_name'] == target_repo_source:
+                        head_repo = user_repo
+                except GithubException as exc:
+                    debug("Received GithubException while checking for fork: {exc}".format(**locals()))
+                    # 404 on finding an exact match repo.
+                    # Proceed listing all forks.
+                    pass
+                if head_repo is None:
+                    repo_forks = gh.list_forks(base_info['org'], base_info['repo'])
+                    user_forks = [r for r in repo_forks if r.get('owner', {}).get('login', '') == gh.username]
+                    # github allows only 1 fork per org as far as I know. We just take the first one.
+                    head_repo = user_forks[0] if user_forks else None
 
             except GithubException as exc:
                 debug("Received GithubException while checking for fork: {exc}".format(**locals()))
