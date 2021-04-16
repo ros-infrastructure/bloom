@@ -1,3 +1,7 @@
+0.10.7 (2021-04-16 11:30:00 -0700)
+----------------------------------
+- Fix basic authentication issue affecting new GitHub tokens. `#633 <https://github.com/ros-infrastructure/bloom/issues/633>`_
+
 0.10.6 (2021-04-07 11:30:00 -0700)
 ---------------------------------
 - Fix a packaging bug affecting only Debian packages.
