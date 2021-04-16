@@ -76,7 +76,10 @@ def auth_header_from_basic_auth(user, password):
     auth_str = '{0}:{1}'.format(user, password)
     if sys.version_info >= (3, 0):
         auth_str = auth_str.encode()
-    return "Basic {0}".format(base64.b64encode(auth_str))
+    b64_encoded = base64.b64encode(auth_str)
+    if sys.version_info >= (3, 0):
+        b64_encoded = b64_encoded.decode()
+    return "Basic {0}".format(b64_encoded)
 
 
 def auth_header_from_token(username, token):
