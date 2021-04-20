@@ -90,7 +90,7 @@ def import_patches(directory=None):
         # Now checkout back to the original branch and import them
         checkout(current_branch, directory=directory)
         try:
-            cmd = 'git am {0}*.patch'.format(tmp_dir + os.sep)
+            cmd = 'git am --3way {0}*.patch'.format(tmp_dir + os.sep)
             execute_command(cmd, cwd=directory)
         except subprocess.CalledProcessError as e:
             warning("Failed to apply one or more patches for the "
