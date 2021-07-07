@@ -17,7 +17,7 @@ Build status: |Build Status|
 +---------------+---------------------------------------------------+
 | Issues        | http://github.com/ros-infrastructure/bloom/issues |
 +---------------+---------------------------------------------------+
-| Documentation | http://ros-infrastructure.github.com/bloom/doc    |
+| Documentation | http://bloom.readthedocs.org/                     |
 +---------------+---------------------------------------------------+
 
 
