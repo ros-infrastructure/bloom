@@ -31,6 +31,9 @@ setup(
         ],
         'bloom.generators.rpm': [
             'bloom/generators/rpm/templates/*'
+        ],
+        'bloom.generators.conda': [
+            'bloom/generators/conda/templates/*'
         ]
     },
     include_package_data=True,
@@ -71,13 +74,17 @@ generation of platform specific source packages, like debian's src-debs.""",
             'debian = bloom.generators.debian:DebianGenerator',
             'rosdebian = bloom.generators.rosdebian:RosDebianGenerator',
             'rpm = bloom.generators.rpm:RpmGenerator',
-            'rosrpm = bloom.generators.rosrpm:RosRpmGenerator'
+            'rosrpm = bloom.generators.rosrpm:RosRpmGenerator',
+            'conda = bloom.generators.conda:CondaGenerator',
+            'rosconda = bloom.generators.rosrpm:RosCondaGenerator'
         ],
         'bloom.generate_cmds': [
             'debian = bloom.generators.debian.generate_cmd:description',
             'rosdebian = bloom.generators.rosdebian:description',
             'rpm = bloom.generators.rpm.generate_cmd:description',
-            'rosrpm = bloom.generators.rosrpm:description'
+            'rosrpm = bloom.generators.rosrpm:description',
+            'conda = bloom.generators.conda.generate_cmd:description',
+            'rosconda = bloom.generators.rosconda:description'
         ]
     }
 )
