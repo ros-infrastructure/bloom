@@ -318,7 +318,10 @@ def generate_substitutions_from_package(
         dep for dep in (package.run_depends + package.buildtool_export_depends)
         if dep.evaluated_condition is not False]
     build_depends = [
-        dep for dep in (package.build_depends + package.buildtool_depends + package.test_depends)
+        dep for dep in (package.build_depends + package.buildtool_depends)
+        if dep.evaluated_condition is not False]
+    test_depends = [
+        dep for dep in (package.test_depends)
         if dep.evaluated_condition is not False]
     replaces = [
         dep for dep in package.replaces
@@ -336,7 +339,8 @@ def generate_substitutions_from_package(
         set(format_depends(depends, resolved_deps))
     )
     data['BuildDepends'] = sorted(
-        set(format_depends(build_depends, resolved_deps))
+        set(format_depends(build_depends, resolved_deps)) |
+        set(p + ' <!nocheck>' for p in format_depends(test_depends, resolved_deps))
     )
     data['Replaces'] = sorted(
         set(format_depends(replaces, resolved_deps))

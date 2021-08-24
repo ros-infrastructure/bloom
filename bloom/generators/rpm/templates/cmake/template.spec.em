@@ -23,6 +23,9 @@ Source0:        %{name}-%{version}.tar.gz
 @[if Supplements]@\n%if 0%{?with_weak_deps}
 @[for p in Supplements]Supplements:    @p@\n@[end for]@
 %endif@\n@[end if]@
+@[if TestDepends]@\n%if 0%{?with_tests}
+@[for p in TestDepends]BuildRequires:  @p@\n@[end for]@
+%endif@\n@[end if]@
 
 %description
 @(Description)
@@ -45,6 +48,9 @@ mkdir -p obj-%{_target_platform} && cd obj-%{_target_platform}
     -DCMAKE_INSTALL_PREFIX="@(InstallationPrefix)" \
     -DCMAKE_PREFIX_PATH="@(InstallationPrefix)" \
     -DSETUPTOOLS_DEB_LAYOUT=OFF \
+%if !0%{?with_tests}
+    -DBUILD_TESTING=OFF \
+%endif
     ..
 
 %make_build
