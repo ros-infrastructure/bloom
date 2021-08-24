@@ -21,8 +21,10 @@ export DEB_CXXFLAGS_MAINT_APPEND=-DNDEBUG
 # Solve shlibdeps errors in REP136 packages that use GNUInstallDirs:
 export DEB_HOST_MULTIARCH := $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
+DEB_HOST_GNU_TYPE ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
+
 %:
-	dh $@@ -v --buildsystem=cmake
+	dh $@@ -v --buildsystem=cmake --builddirectory=.obj-$(DEB_HOST_GNU_TYPE)
 
 override_dh_auto_configure:
 	# In case we're installing to a non-standard location, look for a setup.sh
