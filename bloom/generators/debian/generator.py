@@ -304,6 +304,9 @@ def generate_substitutions_from_package(
     if homepage == '':
         warning("No homepage set, defaulting to ''")
     data['Homepage'] = homepage
+    repositories = [str(url) for url in package.urls if url.type == 'repository']
+    repository = repositories[0] if repositories else ''
+    data['Source'] = repository
     # Debian Increment Number
     data['DebianInc'] = '' if native else '-{0}'.format(deb_inc)
     # Debian Package Format
@@ -430,18 +433,17 @@ def generate_substitutions_from_package(
     summarize_dependency_mapping(data, depends, build_depends, resolved_deps)
     # Copyright
     licenses = []
-    separator = '\n' + '=' * 80 + '\n\n'
     for l in package.licenses:
         if hasattr(l, 'file') and l.file is not None:
             license_file = os.path.join(os.path.dirname(package.filename), l.file)
             if not os.path.exists(license_file):
                 error("License file '{}' is not found.".
                       format(license_file), exit=True)
-            license_text = open(license_file, 'r').read()
-            if not license_text.endswith('\n'):
-                license_text += '\n'
-            licenses.append(license_text)
-    data['Copyright'] = separator.join(licenses)
+            license_text = open(license_file, 'r').read().rstrip()
+            licenses.append((str(l), license_text))
+        else:
+            licenses.append((str(l), ''))
+    data['Licenses'] = licenses
 
     def convertToUnicode(obj):
         if sys.version_info.major == 2:
