@@ -241,6 +241,32 @@ def format_description(value):
     return u"{0}.\n {1}".format(parts[0], parts[1].strip())
 
 
+def format_multiline(value):
+    """
+    Format multi-line text to appear in a Debian control file (or similar file)
+    as a 'multiline' field type.
+
+    https://www.debian.org/doc/debian-policy/ch-controlfields#syntax-of-control-files
+    """
+    # Insert a leading '.' if the first line is blank
+    if value.startswith('\n'):
+        value = '.' + value
+
+    # Insert a trailing '.' if the last line is blank
+    if value.endswith('\n'):
+        value = value + '.'
+
+    # Add a '.' to intermediate blank lines
+    value = value.replace('\n\n', '\n.\n')
+    # Once more, to handle consecutive blank lines
+    value = value.replace('\n\n', '\n.\n')
+
+    # Indent each additional line by a single space
+    value = value.replace('\n', '\n ')
+
+    return value
+
+
 def get_changelogs(package, releaser_history=None):
     if releaser_history is None:
         warning("No historical releaser history, using current maintainer name "
@@ -440,7 +466,7 @@ def generate_substitutions_from_package(
                 error("License file '{}' is not found.".
                       format(license_file), exit=True)
             license_text = open(license_file, 'r').read().rstrip()
-            licenses.append((str(l), license_text))
+            licenses.append((str(l), format_multiline(license_text)))
         else:
             licenses.append((str(l), ''))
     data['Licenses'] = licenses

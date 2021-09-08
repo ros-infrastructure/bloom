@@ -7,5 +7,5 @@ Upstream-Contact: @(Maintainers.replace(', ', '\n '))
 Files: *
 Copyright: See package copyright in source code for details
 License: @(License)
-@[if Text and Text != '']@(Text.replace('\n\n', '\n.\n').replace('\n\n', '\n.\n').replace('\n', '\n '))@\n@[end if]@
+@[if Text and Text != ''] @(Text)@\n@[end if]@
 @[end for]@
