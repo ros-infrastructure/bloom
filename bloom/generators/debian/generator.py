@@ -468,7 +468,7 @@ def generate_substitutions_from_package(
             license_text = open(license_file, 'r').read().rstrip()
             licenses.append((str(l), format_multiline(license_text)))
         else:
-            licenses.append((str(l), ''))
+            licenses.append((str(l), 'See repository for full license text'))
     data['Licenses'] = licenses
 
     def convertToUnicode(obj):
