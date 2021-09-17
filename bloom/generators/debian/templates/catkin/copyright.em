@@ -1,10 +1,10 @@
 Format: Bloom subset of https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: @(Name)
-Upstream-Contact: @(Maintainers.replace(', ', '\n '))
+@[if BugTracker and BugTracker != '']Upstream-Contact: @(BugTracker)@\n@[end if]@
 @[if Source and Source != '']Source: @(Source)@\n@[end if]@
 @[for License, Text in Licenses]@
 
-Files: package.xml
+Files: See file headers in repository for details
 Copyright: See package copyright in source code for details
 License: @(License)
  @(Text)

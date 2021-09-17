@@ -333,6 +333,9 @@ def generate_substitutions_from_package(
     repositories = [str(url) for url in package.urls if url.type == 'repository']
     repository = repositories[0] if repositories else ''
     data['Source'] = repository
+    bugtrackers = [str(url) for url in package.urls if url.type == 'bugtracker']
+    bugtracker = bugtrackers[0] if bugtrackers else ''
+    data['BugTracker'] = bugtracker
     # Debian Increment Number
     data['DebianInc'] = '' if native else '-{0}'.format(deb_inc)
     # Debian Package Format
