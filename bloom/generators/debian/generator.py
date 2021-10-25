@@ -329,7 +329,7 @@ def generate_substitutions_from_package(
     conflicts = [
         dep for dep in package.conflicts
         if dep.evaluated_condition is not False]
-    unresolved_keys = depends + build_depends + replaces + conflicts
+    unresolved_keys = depends + build_depends + test_depends + replaces + conflicts
     # The installer key is not considered here, but it is checked when the keys are checked before this
     resolved_deps = resolve_dependencies(unresolved_keys, os_name,
                                          os_version, ros_distro,
