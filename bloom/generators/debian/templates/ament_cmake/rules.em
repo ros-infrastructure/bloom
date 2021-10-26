@@ -17,6 +17,9 @@ export PKG_CONFIG_PATH=@(InstallationPrefix)/lib/pkgconfig
 # Explicitly enable -DNDEBUG, see:
 # 	https://github.com/ros-infrastructure/bloom/issues/327
 export DEB_CXXFLAGS_MAINT_APPEND=-DNDEBUG
+ifneq ($(filter nocheck,$(DEB_BUILD_OPTIONS)),)
+	BUILD_TESTING_ARG=-DBUILD_TESTING=OFF
+endif
 
 %:
 	dh $@@ -v --buildsystem=cmake
@@ -29,7 +32,8 @@ override_dh_auto_configure:
 	dh_auto_configure -- \
 		-DCMAKE_INSTALL_PREFIX="@(InstallationPrefix)" \
 		-DAMENT_PREFIX_PATH="@(InstallationPrefix)" \
-		-DCMAKE_PREFIX_PATH="@(InstallationPrefix)"
+		-DCMAKE_PREFIX_PATH="@(InstallationPrefix)" \
+		$(BUILD_TESTING_ARG)
 
 override_dh_auto_build:
 	# In case we're installing to a non-standard location, look for a setup.sh
