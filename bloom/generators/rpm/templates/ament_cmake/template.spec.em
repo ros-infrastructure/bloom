@@ -78,6 +78,7 @@ else echo "RPM TESTS SKIPPED"; fi
 %endif
 
 %files
+@[for lf in LicenseFiles]%license @lf@\n@[end for]@
 @(InstallationPrefix)
 
 %changelog@

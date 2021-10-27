@@ -221,7 +221,8 @@ def generate_substitutions_from_package(
     # License
     if not package.licenses or not package.licenses[0]:
         error("No license set for package '{0}', aborting.".format(package.name), exit=True)
-    data['License'] = package.licenses[0]
+    data['License'] = ' and '.join(package.licenses)
+    data['LicenseFiles'] = sorted(set(l.file for l in package.licenses if l.file))
     # Websites
     websites = [str(url) for url in package.urls if url.type == 'website']
     data['Homepage'] = websites[0] if websites else ''

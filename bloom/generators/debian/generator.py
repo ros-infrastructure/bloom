@@ -241,6 +241,32 @@ def format_description(value):
     return u"{0}.\n {1}".format(parts[0], parts[1].strip())
 
 
+def format_multiline(value):
+    """
+    Format multi-line text to appear in a Debian control file (or similar file)
+    as a 'multiline' field type.
+
+    https://www.debian.org/doc/debian-policy/ch-controlfields#syntax-of-control-files
+    """
+    # Insert a leading '.' if the first line is blank
+    if value.startswith('\n'):
+        value = '.' + value
+
+    # Insert a trailing '.' if the last line is blank
+    if value.endswith('\n'):
+        value = value + '.'
+
+    # Add a '.' to intermediate blank lines
+    value = value.replace('\n\n', '\n.\n')
+    # Once more, to handle consecutive blank lines
+    value = value.replace('\n\n', '\n.\n')
+
+    # Indent each additional line by a single space
+    value = value.replace('\n', '\n ')
+
+    return value
+
+
 def get_changelogs(package, releaser_history=None):
     if releaser_history is None:
         warning("No historical releaser history, using current maintainer name "
@@ -304,6 +330,12 @@ def generate_substitutions_from_package(
     if homepage == '':
         warning("No homepage set, defaulting to ''")
     data['Homepage'] = homepage
+    repositories = [str(url) for url in package.urls if url.type == 'repository']
+    repository = repositories[0] if repositories else ''
+    data['Source'] = repository
+    bugtrackers = [str(url) for url in package.urls if url.type == 'bugtracker']
+    bugtracker = bugtrackers[0] if bugtrackers else ''
+    data['BugTracker'] = bugtracker
     # Debian Increment Number
     data['DebianInc'] = '' if native else '-{0}'.format(deb_inc)
     # Debian Package Format
@@ -434,18 +466,17 @@ def generate_substitutions_from_package(
     summarize_dependency_mapping(data, depends, build_depends, resolved_deps)
     # Copyright
     licenses = []
-    separator = '\n' + '=' * 80 + '\n\n'
     for l in package.licenses:
         if hasattr(l, 'file') and l.file is not None:
             license_file = os.path.join(os.path.dirname(package.filename), l.file)
             if not os.path.exists(license_file):
                 error("License file '{}' is not found.".
                       format(license_file), exit=True)
-            license_text = open(license_file, 'r').read()
-            if not license_text.endswith('\n'):
-                license_text += '\n'
-            licenses.append(license_text)
-    data['Copyright'] = separator.join(licenses)
+            license_text = open(license_file, 'r').read().rstrip()
+            licenses.append((str(l), format_multiline(license_text)))
+        else:
+            licenses.append((str(l), 'See repository for full license text'))
+    data['Licenses'] = licenses
 
     def convertToUnicode(obj):
         if sys.version_info.major == 2:

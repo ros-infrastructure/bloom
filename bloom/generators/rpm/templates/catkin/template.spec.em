@@ -65,6 +65,7 @@ if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.
 %make_install -C obj-%{_target_platform}
 
 %files
+@[for lf in LicenseFiles]%license @lf@\n@[end for]@
 @(InstallationPrefix)
 
 %changelog@
