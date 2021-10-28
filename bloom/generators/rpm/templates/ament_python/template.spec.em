@@ -20,6 +20,9 @@ Source0:        %{name}-%{version}.tar.gz
 @[for p in Conflicts]Conflicts:      @p@\n@[end for]@
 @[for p in Replaces]Obsoletes:      @p@\n@[end for]@
 @[for p in Provides]Provides:       @p@\n@[end for]@
+@[if TestDepends]@\n%if 0%{?with_tests}
+@[for p in TestDepends]BuildRequires:  @p@\n@[end for]@
+%endif@\n@[end if]@
 @[if Supplements]@\n%if 0%{?with_weak_deps}
 @[for p in Supplements]Supplements:    @p@\n@[end for]@
 %endif@\n@[end if]@

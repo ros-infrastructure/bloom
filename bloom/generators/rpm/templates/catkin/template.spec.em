@@ -1,3 +1,4 @@
+%bcond_without tests
 %bcond_without weak_deps
 
 %global __os_install_post %(echo '%{__os_install_post}' | sed -e 's!/usr/lib[^[:space:]]*/brp-python-bytecompile[[:space:]].*$!!g')
@@ -19,6 +20,9 @@ Source0:        %{name}-%{version}.tar.gz
 @[for p in Conflicts]Conflicts:      @p@\n@[end for]@
 @[for p in Replaces]Obsoletes:      @p@\n@[end for]@
 @[for p in Provides]Provides:       @p@\n@[end for]@
+@[if TestDepends]@\n%if 0%{?with_tests}
+@[for p in TestDepends]BuildRequires:  @p@\n@[end for]@
+%endif@\n@[end if]@
 @[if Supplements]@\n%if 0%{?with_weak_deps}
 @[for p in Supplements]Supplements:    @p@\n@[end for]@
 %endif@\n@[end if]@
@@ -45,6 +49,10 @@ mkdir -p .obj-%{_target_platform} && cd .obj-%{_target_platform}
     -DCMAKE_PREFIX_PATH="@(InstallationPrefix)" \
     -DSETUPTOOLS_DEB_LAYOUT=OFF \
     -DCATKIN_BUILD_BINARY_PACKAGE="1" \
+%if !0%{?with_tests}
+    -DBUILD_TESTING=OFF \
+    -DCATKIN_ENABLE_TESTING=OFF \
+%endif
     ..
 
 %make_build

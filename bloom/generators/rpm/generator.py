@@ -240,7 +240,10 @@ def generate_substitutions_from_package(
         dep for dep in (package.run_depends + package.buildtool_export_depends)
         if dep.evaluated_condition is not False and dep.name not in skip_keys]
     build_depends = [
-        dep for dep in (package.build_depends + package.buildtool_depends + package.test_depends)
+        dep for dep in (package.build_depends + package.buildtool_depends)
+        if dep.evaluated_condition is not False and dep.name not in skip_keys]
+    test_depends = [
+        dep for dep in (package.test_depends)
         if dep.evaluated_condition is not False and dep.name not in skip_keys]
     replaces = [
         dep for dep in package.replaces
@@ -248,7 +251,7 @@ def generate_substitutions_from_package(
     conflicts = [
         dep for dep in package.conflicts
         if dep.evaluated_condition is not False]
-    unresolved_keys = depends + build_depends + replaces + conflicts
+    unresolved_keys = depends + build_depends + test_depends + replaces + conflicts
     # The installer key is not considered here, but it is checked when the keys are checked before this
     resolved_deps = resolve_dependencies(unresolved_keys, os_name,
                                          os_version, ros_distro,
@@ -259,6 +262,9 @@ def generate_substitutions_from_package(
     )
     data['BuildDepends'] = sorted(
         set(format_depends(build_depends, resolved_deps))
+    )
+    data['TestDepends'] = sorted(
+        set(format_depends(test_depends, resolved_deps)).difference(data['BuildDepends'])
     )
     data['Replaces'] = sorted(
         set(format_depends(replaces, resolved_deps))
