@@ -34,7 +34,7 @@ Source0:        %{name}-%{version}.tar.gz
 # in the install tree that was dropped by catkin, and source it.  It will
 # set things like CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
 if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi
-mkdir -p obj-%{_target_platform} && cd obj-%{_target_platform}
+mkdir -p .obj-%{_target_platform} && cd .obj-%{_target_platform}
 %cmake3 \
     -UINCLUDE_INSTALL_DIR \
     -ULIB_INSTALL_DIR \
@@ -54,7 +54,7 @@ mkdir -p obj-%{_target_platform} && cd obj-%{_target_platform}
 # in the install tree that was dropped by catkin, and source it.  It will
 # set things like CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
 if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi
-%make_install -C obj-%{_target_platform}
+%make_install -C .obj-%{_target_platform}
 
 %files
 @[for lf in LicenseFiles]%license @lf@\n@[end for]@

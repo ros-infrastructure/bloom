@@ -23,8 +23,10 @@ export PYBUILD_INSTALL_ARGS=--prefix "@(InstallationPrefix)" \
 	--install-lib "\$$base/lib/{interpreter}/site-packages" \
 	@[ if pass_install_scripts ] --install-scripts "\$$base/bin" @[end if]
 
+DEB_HOST_GNU_TYPE ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
+
 %:
-	dh $@@ -v --buildsystem=pybuild --with python3
+	dh $@@ -v --buildsystem=pybuild --with python3 --builddirectory=.obj-$(DEB_HOST_GNU_TYPE)
 
 override_dh_auto_configure:
 	# In case we're installing to a non-standard location, look for a setup.sh
