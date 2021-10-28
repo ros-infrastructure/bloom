@@ -370,6 +370,8 @@ def generate_substitutions_from_package(
     data['Depends'] = sorted(
         set(format_depends(depends, resolved_deps))
     )
+    # For more information on <!nocheck>, see
+    # https://wiki.debian.org/BuildProfileSpec
     data['BuildDepends'] = sorted(
         set(format_depends(build_depends, resolved_deps)) |
         set(p + ' <!nocheck>' for p in format_depends(test_depends, resolved_deps))
