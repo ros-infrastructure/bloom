@@ -80,8 +80,12 @@ def prepare_arguments(parser):
     return parser
 
 
+def rosify_package_name(name, rosdistro):
+    return 'ros-{0}'.format(name)
+
+
 def get_subs(pkg, os_name, os_version, ros_distro, deb_inc=0, native=False):
-    return generate_substitutions_from_package(
+    subs = generate_substitutions_from_package(
         pkg,
         os_name,
         os_version,
@@ -89,6 +93,8 @@ def get_subs(pkg, os_name, os_version, ros_distro, deb_inc=0, native=False):
         deb_inc=deb_inc,
         native=native
     )
+    subs['Package'] = rosify_package_name(subs['Package'], ros_distro)
+    return subs
 
 
 def main(args=None, get_subs_fn=None):
