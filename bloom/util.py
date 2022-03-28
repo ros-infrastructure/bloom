@@ -305,12 +305,13 @@ def get_git_clone_state_quiet():
 
 def handle_global_arguments(args):
     global _pdb, _quiet
-    enable_debug(args.debug or 'DEBUG' in os.environ)
-    _pdb = args.pdb
-    _quiet = args.quiet
-    if args.no_color:
+    enable_debug(args.debug if 'debug' in args else None or 'DEBUG' in os.environ)
+    _pdb = args.pdb if 'pdb' in args else None
+    _quiet = args.quiet if 'quiet' in args else None
+    no_color = args.no_color if 'no_color' in args else None
+    if no_color:
         disable_ANSI_colors()
-    disable_git_clone(args.unsafe or 'BLOOM_UNSAFE' in os.environ)
+    disable_git_clone(args.unsafe if 'unsafe' in args else None or 'BLOOM_UNSAFE' in os.environ)
     quiet_git_clone_warning('BLOOM_UNSAFE_QUIET' in os.environ)
 
 

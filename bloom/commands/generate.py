@@ -84,4 +84,4 @@ def main(sysargs=None):
     args = parser.parse_args(sysargs)
     handle_global_arguments(args)
 
-    sys.exit(args.func(args) or 0)
+    sys.exit(args.func(args) if 'func' in args else 0)
