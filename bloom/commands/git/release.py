@@ -259,6 +259,9 @@ def execute_track(track, track_dict, release_inc, pretend=True, debug=False, fas
     else:
         archive_file = '{name}.tar.gz'.format(**settings)
     settings['archive_path'] = os.path.join(archive_dir_path, archive_file)
+    actions_env = os.environ.copy()
+    if not interactive:
+        actions_env['BLOOM_NON_INTERACTIVE'] = '1'
     # execute actions
     info("", use_prefix=False)
     info("Executing release track '{0}'".format(track))
@@ -283,7 +286,7 @@ def execute_track(track, track_dict, release_inc, pretend=True, debug=False, fas
         templated_action = templated_action.split()
         templated_action[0] = find_full_path(templated_action[0])
         p = subprocess.Popen(templated_action, stdout=stdout, stderr=stderr,
-                             shell=False, env=os.environ.copy())
+                             shell=False, env=actions_env)
         out, err = p.communicate()
         if bloom.util._quiet:
             info(out, use_prefix=False)
