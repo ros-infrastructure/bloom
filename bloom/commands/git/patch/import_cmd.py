@@ -95,7 +95,7 @@ def import_patches(directory=None):
         except subprocess.CalledProcessError as e:
             if "BLOOM_NON_INTERACTIVE" in os.environ:
                 error("Failed to apply one or more patches for the "
-                        "'{0}' branch.".format(str(e)))
+                      "'{0}' branch.".format(str(e)))
                 sys.exit("'git-bloom-patch import' aborted.")
             warning("Failed to apply one or more patches for the "
                     "'{0}' branch.".format(str(e)))
