@@ -1,3 +1,18 @@
+0.11.0 (2022-04-19 14:30:00 -0700)
+----------------------------------
+- Exit early on patch failure if bloom is being run non-interactively. `#668 <https://github.com/ros-infrastructure/bloom/issues/668>`_
+- Add build dependency dh-python for --with-python3. `#661 <https://github.com/ros-infrastructure/bloom/issues/661>`_
+- Refactor CI platforms. `#659 <https://github.com/ros-infrastructure/bloom/issues/659>`_
+- Un-normalize catkin_pkg dependency name. `#656 <https://github.com/ros-infrastructure/bloom/issues/656>`_
+- Remove references to Travis CI. `#655 <https://github.com/ros-infrastructure/bloom/issues/655>`_
+- Conditionally exclude tests and dependencies. `#649 <https://github.com/ros-infrastructure/bloom/issues/649>`_
+- Begin build directories with '.'. `#647 <https://github.com/ros-infrastructure/bloom/issues/647>`_
+- Drop support for EOL Ubuntu distros. `#653 <https://github.com/ros-infrastructure/bloom/issues/653>`_
+- Include more license information in RPM spec files. `#650 <https://github.com/ros-infrastructure/bloom/issues/650>`_
+- Generate machine-readable debian/copyright file. `#651 <https://github.com/ros-infrastructure/bloom/issues/651>`_
+- Fall back to 3-way merge when applying patches. `#634 <https://github.com/ros-infrastructure/bloom/issues/634>`_
+- Update documentation link in README. `#644 <https://github.com/ros-infrastructure/bloom/issues/644>`_
+
 0.10.7 (2021-04-16 11:30:00 -0700)
 ----------------------------------
 - Fix basic authentication issue affecting new GitHub tokens. `#633 <https://github.com/ros-infrastructure/bloom/issues/633>`_
