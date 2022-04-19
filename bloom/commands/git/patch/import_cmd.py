@@ -93,6 +93,11 @@ def import_patches(directory=None):
             cmd = 'git am --3way {0}*.patch'.format(tmp_dir + os.sep)
             execute_command(cmd, cwd=directory)
         except subprocess.CalledProcessError as e:
+            # Only try interactive resolution if stdin is a terminal.
+            if not sys.stdin.isatty():
+                error("Failed to apply one or more patches for the "
+                      "'{0}' branch.".format(str(e)))
+                sys.exit("'git-bloom-patch import' aborted.")
             warning("Failed to apply one or more patches for the "
                     "'{0}' branch.".format(str(e)))
             info('', use_prefix=False)
