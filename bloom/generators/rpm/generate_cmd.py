@@ -46,7 +46,7 @@ from bloom.generators.rpm.generator import generate_substitutions_from_package
 from bloom.generators.rpm.generator import place_template_files
 from bloom.generators.rpm.generator import process_template_files
 
-from bloom.util import get_distro_list_prompt
+from bloom.rosdistro_api import get_non_eol_distros_prompt
 
 try:
     from rosdep2 import create_default_installer_context
@@ -74,7 +74,7 @@ def prepare_arguments(parser):
     add = parser.add_argument
     add('--os-name', help='OS name, e.g. fedora, rhel')
     add('--os-version', help='OS version or codename, e.g. heisenbug, santiago')
-    add('--ros-distro', help="ROS distro, e.g. %s (used for rosdep)" % get_distro_list_prompt())
+    add('--ros-distro', help="ROS distro, e.g. %s (used for rosdep)" % get_non_eol_distros_prompt())
     return parser
 
 

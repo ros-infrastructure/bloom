@@ -184,3 +184,11 @@ def get_rosdistro_index_commit():
 
 def get_rosdistro_index_original_branch():
     return _rosdistro_index_original_branch
+
+def get_non_eol_distros_prompt():
+    non_eol_distros = []
+    rosdistro_index = get_index()
+    for name, info in rosdistro_index.distributions.items():
+        if info.get('distribution_status') != 'end-of-life':
+            non_eol_distros.append(name)
+    return ', '.join(non_eol_distros)

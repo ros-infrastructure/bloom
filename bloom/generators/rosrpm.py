@@ -45,8 +45,7 @@ from bloom.generators.rpm.generate_cmd import prepare_arguments
 from bloom.logging import info
 
 from bloom.rosdistro_api import get_index
-
-from bloom.util import get_distro_list_prompt
+from bloom.rosdistro_api import get_non_eol_distros_prompt
 
 
 class RosRpmGenerator(RpmGenerator):
@@ -57,7 +56,7 @@ class RosRpmGenerator(RpmGenerator):
     def prepare_arguments(self, parser):
         # Add command line arguments for this generator
         add = parser.add_argument
-        add('rosdistro', help="ROS distro to target (%s, etc.)" % get_distro_list_prompt())
+        add('rosdistro', help="ROS distro to target (%s, etc.)" % get_non_eol_distros_prompt())
         return RpmGenerator.prepare_arguments(self, parser)
 
     def handle_arguments(self, args):
