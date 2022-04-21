@@ -1,3 +1,7 @@
+0.11.1 (2022-04-21 12:20:00 -0700)
+----------------------------------
+- Update release suites. `#672 <https://github.com/ros-infrastructure/bloom/issues/672>`_
+
 0.11.0 (2022-04-19 14:30:00 -0700)
 ----------------------------------
 - Exit early on patch failure if bloom is being run non-interactively. `#668 <https://github.com/ros-infrastructure/bloom/issues/668>`_

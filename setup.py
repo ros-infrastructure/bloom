@@ -22,7 +22,7 @@ if sys.version_info[0] == 2 and sys.version_info[1] <= 6:
 
 setup(
     name='bloom',
-    version='0.11.0',
+    version='0.11.1',
     packages=find_packages(exclude=['test', 'test.*']),
     package_data={
         'bloom.generators.debian': [
