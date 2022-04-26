@@ -86,6 +86,7 @@ def get_subs(pkg, os_name, os_version, ros_distro, deb_inc=0, native=False):
         os_name,
         os_version,
         ros_distro,
+        lambda name, _rosdistro: name,
         deb_inc=deb_inc,
         native=native
     )

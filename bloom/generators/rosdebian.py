@@ -44,8 +44,6 @@ from bloom.generators.debian.generate_cmd import prepare_arguments
 
 from bloom.logging import info
 
-from bloom.rosdistro_api import get_index
-
 from bloom.util import get_distro_list_prompt
 
 
@@ -81,58 +79,13 @@ class RosDebianGenerator(DebianGenerator):
             self.os_name,
             debian_distro,
             self.rosdistro,
+            rosify_package_name,
             self.install_prefix,
             self.debian_inc,
             [p.name for p in self.packages.values()],
             releaser_history=releaser_history,
             fallback_resolver=fallback_resolver
         )
-        subs['Rosdistro'] = self.rosdistro
-        subs['Package'] = rosify_package_name(subs['Package'], self.rosdistro)
-
-        # ROS 2 specific bloom extensions.
-        ros2_distros = [
-            name for name, values in get_index().distributions.items()
-            if values.get('distribution_type') == 'ros2']
-        if self.rosdistro in ros2_distros:
-            # Add ros-workspace package as a dependency to any package other
-            # than ros_workspace and its dependencies.
-            if package.name not in ['ament_cmake_core', 'ament_package', 'ros_workspace']:
-                workspace_pkg_name = rosify_package_name('ros-workspace', self.rosdistro)
-                subs['BuildDepends'].append(workspace_pkg_name)
-                subs['Depends'].append(workspace_pkg_name)
-
-            # Add packages necessary to build vendor typesupport for rosidl_interface_packages to their
-            # build dependencies.
-            if self.rosdistro in ros2_distros and \
-                    self.rosdistro not in ('r2b2', 'r2b3', 'ardent') and \
-                    'rosidl_interface_packages' in [p.name for p in package.member_of_groups]:
-                ROS2_VENDOR_TYPESUPPORT_DEPENDENCIES = [
-                    'rosidl-typesupport-fastrtps-c',
-                    'rosidl-typesupport-fastrtps-cpp',
-                ]
-
-                # Connext was changed to a new rmw that doesn't require typesupport after Foxy
-                if self.rosdistro in ('bouncy', 'crystal', 'dashing', 'eloquent', 'foxy'):
-                    ROS2_VENDOR_TYPESUPPORT_DEPENDENCIES.extend([
-                        'rosidl-typesupport-connext-c',
-                        'rosidl-typesupport-connext-cpp',
-                    ])
-
-                # OpenSplice was dropped after Eloquent.
-                # rmw implementations are required as dependencies up to Eloquent.
-                if self.rosdistro in ('bouncy', 'crystal', 'dashing', 'eloquent'):
-                    ROS2_VENDOR_TYPESUPPORT_DEPENDENCIES.extend([
-                        'rmw-connext-cpp',
-                        'rmw-fastrtps-cpp',
-                        'rmw-implementation',
-                        'rmw-opensplice-cpp',
-                        'rosidl-typesupport-opensplice-c',
-                        'rosidl-typesupport-opensplice-cpp',
-                    ])
-
-                subs['BuildDepends'] += [
-                    rosify_package_name(name, self.rosdistro) for name in ROS2_VENDOR_TYPESUPPORT_DEPENDENCIES]
         return subs
 
     def generate_branching_arguments(self, package, branch):
@@ -160,11 +113,11 @@ def get_subs(pkg, os_name, os_version, ros_distro, deb_inc, native):
         os_name,
         os_version,
         ros_distro,
+        rosify_package_name,
         RosDebianGenerator.default_install_prefix + ros_distro,
         deb_inc=deb_inc,
         native=native
     )
-    subs['Package'] = rosify_package_name(subs['Package'], ros_distro)
     return subs
 
 
