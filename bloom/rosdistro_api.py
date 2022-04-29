@@ -185,6 +185,7 @@ def get_rosdistro_index_commit():
 def get_rosdistro_index_original_branch():
     return _rosdistro_index_original_branch
 
+
 def get_non_eol_distros_prompt():
     non_eol_distros = []
     rosdistro_index = get_index()
