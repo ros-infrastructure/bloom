@@ -262,12 +262,6 @@ _pdb = False
 _quiet = False
 _disable_git_clone = False
 _disable_git_clone_quiet = False
-_distro_list_prompt = [
-    'indigo',
-    'kinetic',
-    'lunar',
-    'melodic',
-]
 
 
 def disable_git_clone(state=True):
@@ -291,11 +285,6 @@ def quiet_git_clone_warning(state=True):
 def get_git_clone_state():
     global _disable_git_clone
     return _disable_git_clone
-
-
-def get_distro_list_prompt():
-    global _distro_list_prompt
-    return ', '.join(_distro_list_prompt)
 
 
 def get_git_clone_state_quiet():

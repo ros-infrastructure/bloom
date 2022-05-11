@@ -56,7 +56,8 @@ from bloom.logging import sanitize
 
 from bloom.util import execute_command
 from bloom.util import my_copytree
-from bloom.util import get_distro_list_prompt
+
+from bloom.rosdistro_api import get_non_eol_distros_prompt
 
 BLOOM_CONFIG_BRANCH = 'master'
 PLACEHOLDER_FILE = 'CONTENT_MOVED_TO_{0}_BRANCH'.format(BLOOM_CONFIG_BRANCH.upper())
@@ -118,7 +119,7 @@ This is used only when version is set to ':{auto}'.
     },
     'ros_distro': {
         '<ROS distro>': "This can be any valid ROS distro, e.g. %s" %
-                        get_distro_list_prompt()
+                        get_non_eol_distros_prompt()
     },
     'patches': {
         '<path in bloom branch>': '''\
