@@ -32,7 +32,7 @@ How do I install bloom?
 
 On Ubuntu the recommended method is to use apt::
 
-    $ sudo apt-get install python-bloom
+    $ sudo apt-get install python3-bloom
 
 On other systems you can install bloom via pypi::
 
