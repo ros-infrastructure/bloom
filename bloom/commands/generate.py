@@ -71,11 +71,14 @@ def create_subparsers(parser, generator_cmds):
         cmd_parser.set_defaults(func=desc['main'])
         add_global_arguments(cmd_parser)
 
-
-def main(sysargs=None):
-    parser = argparse.ArgumentParser(
+def get_argument_parser():
+    return argparse.ArgumentParser(
         description="Calls a generator on a local package, e.g. bloom-generate debian"
     )
+
+
+def main(sysargs=None):
+    parser = get_argument_parser()
 
     generator_cmds = list_generator_commands()
 

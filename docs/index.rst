@@ -49,3 +49,9 @@ How do I release something with bloom?
 ---------------------------------------
 
 Please refer to the documentation and tutorials on the bloom_ ROS wiki page.
+
+.. toctree::
+    :hidden:
+    :maxdepth: 2
+
+    scripts
