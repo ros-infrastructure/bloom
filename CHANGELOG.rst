@@ -1,3 +1,9 @@
+0.11.2 (2022-07-18 14:18:10 -0700)
+----------------------------------
+- Use inspect.getfullargspec where available. `#682 <https://github.com/ros-infrastructure/bloom/issues/682>`_
+- Update index.rst to reflect python3 on Ubuntu. `#673 <https://github.com/ros-infrastructure/bloom/issues/673>`_
+- Get non eol distros from rosdistro index. `#670 <https://github.com/ros-infrastructure/bloom/issues/670>`_
+
 0.11.1 (2022-04-21 12:20:00 -0700)
 ----------------------------------
 - Update release suites. `#672 <https://github.com/ros-infrastructure/bloom/issues/672>`_
