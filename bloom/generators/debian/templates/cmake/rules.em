@@ -32,10 +32,12 @@ DEB_HOST_GNU_TYPE ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
 override_dh_auto_configure:
 	# In case we're installing to a non-standard location, look for a setup.sh
 	# in the install tree and source it.  It will set things like
-	# CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
+	# CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.@[if RosVersion == 1]
+	# CMAKE_INSTALL_LIBDIR is set for packages that use GNUInstallDirs.@[end if]
 	if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi && \
 	dh_auto_configure -- \
-		-DCMAKE_INSTALL_PREFIX="@(InstallationPrefix)" \
+		-DCMAKE_INSTALL_PREFIX="@(InstallationPrefix)" \@[if RosVersion == 1]
+		-DCMAKE_INSTALL_LIBDIR="lib" \@[end if]
 		-DCMAKE_PREFIX_PATH="@(InstallationPrefix)" \
 		$(BUILD_TESTING_ARG)
 
