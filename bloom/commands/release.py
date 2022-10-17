@@ -391,7 +391,7 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
         defaults = defaults or {}
         while True:
             info("VCS Type must be one of git, svn, hg, or bzr.")
-            default = defaults.get('type', None)
+            default = defaults.get('type', track_dict.get('vcs_type'))
             insert = '' if default is None else ' [{0}]'.format(default)
             vcs_type = safe_input('VCS type{0}: '.format(insert))
             if not vcs_type:
@@ -403,7 +403,7 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
                 return {}
         data['type'] = vcs_type
         while True:
-            default = defaults.get('url', None)
+            default = defaults.get('url', track_dict.get('vcs_uri'))
             insert = '' if default is None else ' [{0}]'.format(default)
             url = safe_input('VCS url{0}: '.format(insert))
             if not url:
@@ -419,7 +419,7 @@ def generate_ros_distro_diff(track, repository, distro, override_release_reposit
         data['url'] = url
         while True:
             info("VCS version must be a branch, tag, or commit, e.g. master or 0.1.0")
-            default = defaults.get('version', None)
+            default = defaults.get('version', track_dict.get('devel_branch'))
             insert = '' if default is None else ' [{0}]'.format(default)
             version = safe_input('VCS version{0}: '.format(insert))
             if not version:
