@@ -927,7 +927,7 @@ def _perform_release(
         info(fmt("@{bf}@!==> @|@!") + str(cmd))
         subprocess.check_call(cmd, shell=True)
         # Dry run will authenticate, but not push
-        cmd = f'git push --set-upstream origin {BLOOM_CONFIG_BRANCH} --dry-run'
+        cmd = 'git push --set-upstream origin {0} --dry-run'.format(BLOOM_CONFIG_BRANCH)
         info(fmt("@{bf}@!==> @|@!") + str(cmd))
         subprocess.check_call(cmd, shell=True)
     except subprocess.CalledProcessError:
