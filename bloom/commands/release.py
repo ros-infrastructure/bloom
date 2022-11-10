@@ -62,6 +62,7 @@ except ImportError:
 
 import bloom
 
+from bloom.config import BLOOM_CONFIG_BRANCH
 from bloom.config import get_tracks_dict_raw
 from bloom.config import upconvert_bloom_to_config_branch
 from bloom.config import write_tracks_dict_raw
@@ -926,7 +927,7 @@ def _perform_release(
         info(fmt("@{bf}@!==> @|@!") + str(cmd))
         subprocess.check_call(cmd, shell=True)
         # Dry run will authenticate, but not push
-        cmd = 'git push --dry-run'
+        cmd = 'git push origin {0} --dry-run'.format(BLOOM_CONFIG_BRANCH)
         info(fmt("@{bf}@!==> @|@!") + str(cmd))
         subprocess.check_call(cmd, shell=True)
     except subprocess.CalledProcessError:
