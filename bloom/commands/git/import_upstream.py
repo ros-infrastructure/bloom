@@ -39,7 +39,7 @@ import sys
 import tarfile
 import tempfile
 
-from pkg_resources import parse_version
+from packaging import version
 
 try:
     from urlparse import urlparse
@@ -87,7 +87,7 @@ def version_check(version):
     info(fmt("The latest upstream tag in the release repository is '@!{0}@|'."
          .format(last_tag.replace('@', '@@'))))
     # Ensure the new version is greater than the last tag
-    if parse_version(version) < parse_version(last_tag_version):
+    if version.parse(version) < version.parse(last_tag_version):
         warning("""\
 Version discrepancy:
 The upstream version '{0}' isn't newer than upstream version '{1}'.

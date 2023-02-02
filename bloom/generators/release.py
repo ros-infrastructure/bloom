@@ -53,8 +53,8 @@ from bloom.commands.git.patch.trim_cmd import trim
 
 try:
     import catkin_pkg
-    from pkg_resources import parse_version
-    if parse_version(catkin_pkg.__version__) < parse_version('0.3.8'):
+    from packaging import version
+    if version.parse(catkin_pkg.__version__) < version.parse('0.3.8'):
         warning("This version of bloom requires catkin_pkg version >= '0.3.8',"
                 " the used version of catkin_pkg is '{0}'".format(catkin_pkg.__version__))
     from catkin_pkg import metapackage

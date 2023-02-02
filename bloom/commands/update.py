@@ -51,7 +51,7 @@ from bloom.logging import warning
 from bloom.util import add_global_arguments
 from bloom.util import handle_global_arguments
 
-from pkg_resources import parse_version
+from packaging import version
 from threading import Lock
 
 _updater_running = False
@@ -115,7 +115,7 @@ def fetch_update(user_bloom):
     newest_version = pypi_result['info']['version']
     current_version = bloom.__version__
     if newest_version and bloom.__version__ != 'unset':
-        if parse_version(bloom.__version__) < parse_version(newest_version):
+        if version.parse(bloom.__version__) < version.parse(newest_version):
             version_dict = {
                 'current': str(current_version),
                 'newest': str(newest_version)

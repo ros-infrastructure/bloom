@@ -49,7 +49,7 @@ import traceback
 import webbrowser
 import yaml
 
-from pkg_resources import parse_version
+from packaging import version
 
 # python2/3 compatibility
 try:
