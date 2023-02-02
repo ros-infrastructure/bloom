@@ -686,7 +686,7 @@ def get_last_tag_by_version(directory=None):
     versions = []
     for line in output.splitlines():
         tags.append(line.strip())
-        versions.append(version.parse(line.strip()))
+        versions.append(version.parse(line.lstrip('upstream/').strip()))
     return tags[versions.index(max(versions))] if versions else ''
 
 
