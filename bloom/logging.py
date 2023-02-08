@@ -55,7 +55,7 @@ _drop_first_log_prefix = False
 
 _emoji_check_mark = "✅  "
 _emoji_cross_mark = "❌  "
-_is_mac = (mac_ver()[0] is not '')
+_is_mac = (mac_ver()[0] != '')
 
 
 def ansi(key):
