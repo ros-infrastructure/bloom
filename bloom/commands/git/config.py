@@ -307,7 +307,7 @@ Call `git-bloom-config {0} -h` for additional help information on each command.
     add = new_parser.add_argument
     add('track', help="name of track to create")
     add('--template', '-t',
-        help="tempate to base new track on",
+        help="template to base new track on",
         choices=[x for x in config_template.keys() if x is not None],
         default=None)
     new_parser.set_defaults(func=new_cmd)
