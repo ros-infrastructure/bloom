@@ -38,7 +38,7 @@ import os
 import sys
 import traceback
 
-from packaging import version
+from packaging.version import parse as parse_version
 
 # python2/3 compatibility
 try:
@@ -58,7 +58,7 @@ from bloom.logging import info
 
 try:
     import rosdistro
-    if version.parse(rosdistro.__version__) < version.parse('0.7.0'):
+    if parse_version(rosdistro.__version__) < parse_version('0.7.0'):
         error("rosdistro version 0.7.0 or greater is required, found '{0}' from '{1}'."
               .format(rosdistro.__version__, os.path.dirname(rosdistro.__file__)),
               exit=True)

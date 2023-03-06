@@ -44,8 +44,6 @@ import tempfile
 from subprocess import PIPE
 from subprocess import CalledProcessError
 
-from packaging import version
-
 from bloom.logging import debug
 from bloom.logging import error
 from bloom.logging import fmt
@@ -687,7 +685,7 @@ def get_last_tag_by_version(directory=None):
     versions = []
     for line in output.splitlines():
         tags.append(line.strip())
-        ver = re.match("[0-9]+.[0-9]+.[0-9]+", line)
+        ver = re.match(r"[0-9]+\.[0-9]+\.[0-9]+", line)
         if ver:
             versions.append(ver)
     return tags[versions.index(max(versions))] if versions else ''

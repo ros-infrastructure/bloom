@@ -49,7 +49,7 @@ try:
 except ImportError:
     from ConfigParser import SafeConfigParser
 from dateutil import tz
-from packaging import version
+from packaging.version import parse as parse_version
 
 from bloom.generators import BloomGenerator
 from bloom.generators import GeneratorError
@@ -449,7 +449,7 @@ def generate_substitutions_from_package(
         bad_changelog = True
     # Make sure that the current version is the latest in the changelog
     for changelog in changelogs:
-        if version.parse(package.version) < version.parse(changelog[0]):
+        if parse_version(package.version) < parse_version(changelog[0]):
             error("")
             error("There is at least one changelog entry, '{0}', which has a "
                   "newer version than the version of package '{1}' being released, '{2}'."

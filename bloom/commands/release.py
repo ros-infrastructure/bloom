@@ -49,8 +49,6 @@ import traceback
 import webbrowser
 import yaml
 
-from packaging import version
-
 # python2/3 compatibility
 try:
     from urllib.error import HTTPError, URLError
