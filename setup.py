@@ -36,6 +36,11 @@ setup(
     },
     include_package_data=True,
     install_requires=install_requires,
+    exras_require={
+        'test': [
+            'pep8',
+            'pytest',
+        ]},
     author='Tully Foote, William Woodall',
     author_email='tfoote@openrobotics.org, william@openrobotics.org',
     maintainer='William Woodall',
