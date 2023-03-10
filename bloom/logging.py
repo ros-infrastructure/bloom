@@ -39,11 +39,6 @@ import atexit
 import datetime
 import os
 from platform import mac_ver
-try:
-    from pkg_resources import parse_version
-except OSError:
-    os.chdir(os.path.expanduser('~'))
-    from pkg_resources import parse_version
 import re
 import string
 import sys
@@ -60,7 +55,7 @@ _drop_first_log_prefix = False
 
 _emoji_check_mark = "✅  "
 _emoji_cross_mark = "❌  "
-_is_mac_lion_or_greater = parse_version(mac_ver()[0]) >= parse_version('10.7.0')
+_is_mac = (mac_ver()[0] != '')
 
 
 def ansi(key):
@@ -127,17 +122,17 @@ def disable_ANSI_colors():
         _ansi[key] = ''
 
 
-def is_mac_lion_or_greater():
-    global _is_mac_lion_or_greater
-    return _is_mac_lion_or_greater
+def _is_mac():
+    global _is_mac
+    return _is_mac
 
 
 def get_success_prefix():
-    return _emoji_check_mark if _is_mac_lion_or_greater else "@{gf}<== @|"
+    return _emoji_check_mark if _is_mac else "@{gf}<== @|"
 
 
 def get_error_prefix():
-    return _emoji_cross_mark if _is_mac_lion_or_greater else "@{rf}@!<== @|"
+    return _emoji_cross_mark if _is_mac else "@{rf}@!<== @|"
 
 
 # Default to ansi colors on

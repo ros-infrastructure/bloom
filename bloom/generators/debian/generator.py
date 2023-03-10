@@ -49,7 +49,7 @@ try:
 except ImportError:
     from ConfigParser import SafeConfigParser
 from dateutil import tz
-from pkg_resources import parse_version
+from packaging.version import parse as parse_version
 
 from bloom.generators import BloomGenerator
 from bloom.generators import GeneratorError

@@ -7,6 +7,7 @@ install_requires = [
     'catkin_pkg >= 0.4.3',
     'setuptools',
     'empy',
+    'packaging',
     'python-dateutil',
     'PyYAML',
     'rosdep >= 0.15.0',

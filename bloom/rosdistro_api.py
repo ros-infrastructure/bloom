@@ -38,7 +38,7 @@ import os
 import sys
 import traceback
 
-from pkg_resources import parse_version
+from packaging.version import parse as parse_version
 
 # python2/3 compatibility
 try:

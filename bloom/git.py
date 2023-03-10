@@ -36,14 +36,13 @@ from __future__ import print_function
 
 import os
 import functools
+import re
 import shutil
 import subprocess
 import tempfile
 
 from subprocess import PIPE
 from subprocess import CalledProcessError
-
-from pkg_resources import parse_version
 
 from bloom.logging import debug
 from bloom.logging import error
@@ -686,7 +685,9 @@ def get_last_tag_by_version(directory=None):
     versions = []
     for line in output.splitlines():
         tags.append(line.strip())
-        versions.append(parse_version(line.strip()))
+        ver = re.match(r"[0-9]+\.[0-9]+\.[0-9]+", line)
+        if ver:
+            versions.append(ver)
     return tags[versions.index(max(versions))] if versions else ''
 
 

@@ -51,7 +51,7 @@ from bloom.logging import warning
 from bloom.util import add_global_arguments
 from bloom.util import handle_global_arguments
 
-from pkg_resources import parse_version
+from packaging.version import parse as parse_version
 from threading import Lock
 
 _updater_running = False
