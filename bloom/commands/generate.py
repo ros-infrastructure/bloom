@@ -58,13 +58,21 @@ def load_generator_description(generator_name):
 
 def create_subparsers(parser, generator_cmds):
     metavar = '[' + ' | '.join(generator_cmds) + ']'
-    subparsers = parser.add_subparsers(
-        title='generate commands',
-        metavar=metavar,
-        description='Call `bloom-generate {0} -h` for help on a each generate command.'.format(metavar),
-        dest='generator_cmd',
-        required=True
-    )
+    if sys.version_info < (3, 7):
+        subparsers = parser.add_subparsers(
+            title='generate commands',
+            metavar=metavar,
+            description='Call `bloom-generate {0} -h` for help on a each generate command.'.format(metavar),
+            dest='generator_cmd'
+        )
+    else:
+        subparsers = parser.add_subparsers(
+            title='generate commands',
+            metavar=metavar,
+            description='Call `bloom-generate {0} -h` for help on a each generate command.'.format(metavar),
+            dest='generator_cmd',
+            required=True
+        )
     for generator_cmd in generator_cmds:
         desc = load_generator_description(generator_cmd)
         cmd_parser = subparsers.add_parser(desc['title'], description=desc['description'])
