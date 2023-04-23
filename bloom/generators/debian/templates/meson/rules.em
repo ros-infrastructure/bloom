@@ -32,7 +32,8 @@ override_dh_auto_configure:
 		--prefix="@(InstallationPrefix)" \
 		--cmake-prefix-path="@(InstallationPrefix)" \
 		--libdir=lib \
-		--libexecdir=lib
+		--libexecdir=lib \
+		--strip
 
 override_dh_auto_build:
 	if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi && \
@@ -50,3 +51,7 @@ override_dh_shlibdeps:
 override_dh_auto_install:
 	if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi && \
 	dh_auto_install
+
+# do not strip ELF binaries
+override_dh_strip:
+	true
