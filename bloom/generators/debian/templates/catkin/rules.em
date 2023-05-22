@@ -65,3 +65,12 @@ override_dh_auto_install:
 	# set things like CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
 	if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi && \
 	dh_auto_install
+@[if RuntimePackage]
+
+execute_after_dh_install:
+	true  # no op needed for make
+ifneq (,$(realpath debian/@(Package)-runtime@(InstallationPrefix)/include))
+	install -d "debian/@(Package)@(InstallationPrefix)/include"
+	mv "debian/@(Package)-runtime@(InstallationPrefix)/include" "debian/@(Package)@(InstallationPrefix)"
+endif
+@[end if]
