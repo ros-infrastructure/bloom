@@ -390,7 +390,7 @@ def generate_substitutions_from_package(
     # https://wiki.debian.org/BuildProfileSpec
     data['BuildDepends'] = sorted(
         set(format_depends(build_depends, resolved_deps)) |
-        set(p + ' <!nocheck>' for p in format_depends(test_depends, resolved_deps))
+        set(p + ' <!nocheck>' for p in format_depends(test_depends, resolved_deps, ros_distro if runtime_pkg else ""))
     )
     data['Replaces'] = sorted(
         set(format_depends(replaces, resolved_deps))
