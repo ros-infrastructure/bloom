@@ -36,7 +36,7 @@ setup(
     },
     include_package_data=True,
     install_requires=install_requires,
-    exras_require={
+    extras_require={
         'test': [
             'pep8',
             'pytest',
