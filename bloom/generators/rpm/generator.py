@@ -104,6 +104,7 @@ except ImportError:
 enable_drop_first_log_prefix(True)
 
 TEMPLATE_EXTENSION = '.em'
+EXPERIMENTAL_BUILD_TYPES = []
 
 
 def __place_template_folder(group, src, dst, gbp=False):
@@ -136,6 +137,10 @@ def __place_template_folder(group, src, dst, gbp=False):
 
 
 def place_template_files(path, build_type, gbp=False):
+    if build_type in EXPERIMENTAL_BUILD_TYPES:
+        warning("Build type {0} is marked as EXPERIMENTAL.".format(build_type))
+        warning("Review bloom changelogs carefully as these build types may " +
+                "contain be unstable or make breaking changes.")
     info(fmt("@!@{bf}==>@| Placing templates files in the 'rpm' folder."))
     rpm_path = os.path.join(path, 'rpm')
     # Create/Clean the rpm folder
