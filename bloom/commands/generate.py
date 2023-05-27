@@ -65,7 +65,7 @@ def create_subparsers(parser, generator_cmds):
       'dest': 'generator_cmd'
     }
     if sys.version_info >= (3, 7):
-      subparsers_kwargs['required'] = True
+        subparsers_kwargs['required'] = True
     subparsers = parser.add_subparsers(**subparsers_kwargs)
     for generator_cmd in generator_cmds:
         desc = load_generator_description(generator_cmd)
