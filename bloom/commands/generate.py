@@ -65,6 +65,7 @@ def create_subparsers(parser, generator_cmds):
         dest='generator_cmd',
         required=True
     )
+    subparser.required = True
     for generator_cmd in generator_cmds:
         desc = load_generator_description(generator_cmd)
         cmd_parser = subparsers.add_parser(desc['title'], description=desc['description'])
