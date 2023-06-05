@@ -30,9 +30,12 @@ override_dh_auto_configure:
 	# In case we're installing to a non-standard location, look for a setup.sh
 	# in the install tree that was dropped by catkin, and source it.  It will
 	# set things like CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
+        # Note that CMAKE_INSTALL_LIBDIR is set to lib/<multiarch> by default, but
+        # only affects packages that use GNUInstallDirs.
 	if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi && \
 	dh_auto_configure -- \
 		-DCATKIN_BUILD_BINARY_PACKAGE="1" \
+		-DCMAKE_INSTALL_LIBDIR="lib" \
 		-DCMAKE_INSTALL_PREFIX="@(InstallationPrefix)" \
 		-DCMAKE_PREFIX_PATH="@(InstallationPrefix)" \
 		$(BUILD_TESTING_ARG)

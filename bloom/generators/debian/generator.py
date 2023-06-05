@@ -83,6 +83,8 @@ from bloom.commands.git.patch.common import set_patch_config
 
 from bloom.packages import get_package_data
 
+from bloom.rosdistro_api import get_distribution_type
+
 from bloom.util import code
 from bloom.util import to_unicode
 from bloom.util import execute_command
@@ -344,6 +346,9 @@ def generate_substitutions_from_package(
     data['Package'] = sanitize_package_name(package.name)
     # Installation prefix
     data['InstallationPrefix'] = installation_prefix
+    # ROS version
+    ros_distro_type = get_distribution_type(ros_distro)
+    data['RosVersion'] = int(ros_distro_type[3:])
     # Resolve dependencies
     evaluate_package_conditions(package, ros_distro)
     depends = [
