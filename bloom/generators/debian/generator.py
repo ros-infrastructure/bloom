@@ -574,9 +574,10 @@ def match_branches_with_prefix(prefix, get_branches, prune=False):
         # Prune listed branches by packages in latest upstream
         with inbranch('upstream'):
             pkg_names, version, pkgs_dict = get_package_data('upstream')
-            for branch in branches:
-                if branch.split(prefix)[-1].strip('/') not in pkg_names:
-                    branches.remove(branch)
+
+            def filter_in_upstream(b):
+                return b.split(prefix)[-1].strip('/') in pkg_names
+            branches = list(filter(filter_in_upstream, branches))
     return branches
 
 
