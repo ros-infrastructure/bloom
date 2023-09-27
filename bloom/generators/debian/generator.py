@@ -108,6 +108,12 @@ except ImportError:
     debug(traceback.format_exc())
     error("empy was not detected, please install it.", exit=True)
 
+try:
+    from ros_license_toolkit.package import get_packages_in_path
+except ImportError:
+    debug(traceback.format_exc())
+    error("ros_license_toolkit was not detected, please install it.", exit=True)
+
 # Fix unicode bug in empy
 # This should be removed once upstream empy is fixed
 # See: https://github.com/ros-infrastructure/bloom/issues/196
@@ -118,7 +124,6 @@ try:
 except NameError:
     pass
 # End fix
-
 # Drop the first log prefix for this command
 enable_drop_first_log_prefix(True)
 
@@ -467,6 +472,10 @@ def generate_substitutions_from_package(
     # Summarize dependencies
     summarize_dependency_mapping(data, depends, build_depends, resolved_deps)
     # Copyright
+    package_path = os.path.abspath(os.path.dirname(package.filename))
+    pkg = get_packages_in_path(package_path)[0]
+    data['Copyright_file_content'] = pkg.get_copyright_file_contents()
+    
     licenses = []
     for l in package.licenses:
         if hasattr(l, 'file') and l.file is not None:

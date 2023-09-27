@@ -82,7 +82,7 @@ def create_upstream_repository(packages, directory=None, format_versions=None):
                 os.symlink('../{0}.h'.format(package), 'include/sym/{0}.h'.format(package))
                 user('mkdir debian')
                 user('touch debian/something.udev')
-                user('echo "{0} license" > LICENSE'.format(package))
+                user('echo "{0} license text" > LICENSE'.format(package))
                 user('git add package.xml .cproject .project include debian "white space.txt~" LICENSE')
         user('git commit -m "Releasing version 0.1.0" --allow-empty')
         user('git tag 0.1.0 -m "Releasing version 0.1.0"')
@@ -236,7 +236,8 @@ def test_multi_package_repository(directory=None):
     env.update(set_up_fake_rosdep(rosdep_dir, fake_distros, fake_rosdeps))
     # Setup
     pkgs = ['foo', 'bar_ros', 'baz']
-    upstream_dir = create_upstream_repository(pkgs, directory, format_versions=[1, 2, 3])
+    upstream_dir = create_upstream_repository(
+        pkgs, directory, format_versions=[1, 2, 3])
     upstream_url = 'file://' + upstream_dir
     release_url = create_release_repo(
         upstream_url,
@@ -379,7 +380,7 @@ def test_multi_package_repository(directory=None):
                                                    package_xml).group(1))
                 # Is there a copyright file for this pkg?
                 with open('debian/copyright', 'r') as f:
-                    assert (format_version <= 2) ^ (pkg + ' license' in f.read()), \
+                    assert (format_version <= 2) ^ (pkg + ' license text' in f.read()), \
                         "debian/copyright does not include right license text"
 
 @in_temporary_directory

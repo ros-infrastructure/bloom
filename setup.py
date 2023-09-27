@@ -12,6 +12,7 @@ install_requires = [
     'PyYAML',
     'rosdep >= 0.15.0',
     'rosdistro >= 0.8.0',
+    'ros_license_toolkit',
     'vcstools >= 0.1.22',
 ]
 
