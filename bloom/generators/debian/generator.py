@@ -475,7 +475,7 @@ def generate_substitutions_from_package(
     package_path = os.path.abspath(os.path.dirname(package.filename))
     pkg = get_packages_in_path(package_path)[0]
     data['Copyright_file_content'] = pkg.get_copyright_file_contents()
-    
+
     licenses = []
     for l in package.licenses:
         if hasattr(l, 'file') and l.file is not None:
