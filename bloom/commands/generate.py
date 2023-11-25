@@ -62,8 +62,7 @@ def create_subparsers(parser, generator_cmds):
         title='generate commands',
         metavar=metavar,
         description='Call `bloom-generate {0} -h` for help on a each generate command.'.format(metavar),
-        dest='generator_cmd',
-        required=True
+        dest='generator_cmd'
     )
     for generator_cmd in generator_cmds:
         desc = load_generator_description(generator_cmd)
