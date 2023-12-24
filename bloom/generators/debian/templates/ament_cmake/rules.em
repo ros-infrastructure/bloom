@@ -24,7 +24,7 @@ endif
 DEB_HOST_GNU_TYPE ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
 
 %:
-	dh $@@ -v --buildsystem=cmake --builddirectory=.obj-$(DEB_HOST_GNU_TYPE)
+	dh $@@ -v --buildsystem=cmake --parallel --builddirectory=.obj-$(DEB_HOST_GNU_TYPE)
 
 override_dh_auto_configure:
 	# In case we're installing to a non-standard location, look for a setup.sh
