@@ -6,7 +6,7 @@ from setuptools import find_packages, setup
 install_requires = [
     'catkin_pkg >= 0.4.3',
     'setuptools',
-    'empy',
+    'empy < 4',
     'packaging',
     'python-dateutil',
     'PyYAML',
