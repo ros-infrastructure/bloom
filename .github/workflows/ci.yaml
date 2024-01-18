@@ -12,12 +12,10 @@ jobs:
     build:
       strategy:
         matrix:
-          os: [ubuntu-latest, macos-latest]
-          python: [3.7, 3.8, 3.9]
+          os: [ubuntu-22.04, macos-latest]
+          python: ['3.7', '3.8', '3.9', '3.10', '3.11']
           include:
-          - os: ubuntu-18.04
-            python: 2.7
-          - os: ubuntu-18.04
+          - os: ubuntu-20.04
             python: 3.6
       name: bloom tests
       runs-on: ${{matrix.os}}
