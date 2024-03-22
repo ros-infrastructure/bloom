@@ -1,38 +1,20 @@
-name: bloom-ci
+---
+name: Run tests
 
-on:
+on:  # yamllint disable-line rule:truthy
   push:
     branches: ['master']
   pull_request:
-    branches: ['*']
-  schedule:
-    - cron: '40 7 * * 0'
 
 jobs:
-    build:
-      strategy:
-        matrix:
-          os: [ubuntu-latest, macos-latest]
-          python: [3.7, 3.8, 3.9]
-          include:
-          - os: ubuntu-18.04
-            python: 2.7
-          - os: ubuntu-18.04
-            python: 3.6
-      name: bloom tests
-      runs-on: ${{matrix.os}}
-
-      steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python ${{matrix.python}}
-        uses: actions/setup-python@v1
-        with:
-          python-version: ${{matrix.python}}
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip setuptools
-          python -m pip install PyYAML argparse empy rosdep vcstools catkin-pkg python-dateutil packaging
-          python -m pip install nose coverage pep8
-      - name: Run tests
-        run: |
-          BLOOM_VERBOSE=1 python setup.py nosetests -s --tests test
+  pytest:
+    uses: ros-infrastructure/ci/.github/workflows/pytest.yaml@main
+    with:
+      matrix-filter: >-
+        del(.matrix.os[] | select(contains("windows"))) | del(.matrix.python[] |
+        select(contains("3.10") or contains("3.11") or contains("3.12")))
+  yamllint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: yamllint -f github .
