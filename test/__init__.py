@@ -6,6 +6,12 @@ if 'PATH' in os.environ:
     scripts = os.path.abspath(scripts)
     os.environ['PATH'] = scripts + ':' + os.environ['PATH']
 
+os.environ['ROSDISTRO_INDEX_URL'] = 'file://' + os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    'fake_rosdistro',
+    'index-v4.yaml',
+)
+
 user_email = 'test@example.com'
 user_name = 'Test User'
 
