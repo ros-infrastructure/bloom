@@ -6,7 +6,7 @@ from setuptools import find_packages, setup
 install_requires = [
     'catkin_pkg >= 0.4.3',
     'setuptools',
-    'empy',
+    'empy < 4',
     'packaging',
     'python-dateutil',
     'PyYAML',
@@ -36,6 +36,11 @@ setup(
     },
     include_package_data=True,
     install_requires=install_requires,
+    extras_require={
+        'test': [
+            'pep8',
+            'pytest',
+        ]},
     author='Tully Foote, William Woodall',
     author_email='tfoote@openrobotics.org, william@openrobotics.org',
     maintainer='William Woodall',
