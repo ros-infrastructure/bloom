@@ -44,11 +44,6 @@ import sys
 import traceback
 import textwrap
 
-# Python 2/3 support.
-try:
-    from configparser import SafeConfigParser
-except ImportError:
-    from ConfigParser import SafeConfigParser
 from dateutil import tz
 from distutils.version import LooseVersion
 from time import strptime

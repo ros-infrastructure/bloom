@@ -45,9 +45,9 @@ import traceback
 
 # Python 2/3 support.
 try:
-    from configparser import SafeConfigParser
+    from configparser import ConfigParser
 except ImportError:
-    from ConfigParser import SafeConfigParser
+    from ConfigParser import SafeConfigParser as ConfigParser
 from dateutil import tz
 from packaging.version import parse as parse_version
 
@@ -397,7 +397,7 @@ def generate_substitutions_from_package(
         setup_cfg_path = os.path.join(package_path, 'setup.cfg')
         data['pass_install_scripts'] = True
         if os.path.isfile(setup_cfg_path):
-            setup_cfg = SafeConfigParser()
+            setup_cfg = ConfigParser()
             setup_cfg.read([setup_cfg_path])
             if (
                     setup_cfg.has_option('install', 'install-scripts') or
