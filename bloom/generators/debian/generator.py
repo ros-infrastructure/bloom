@@ -603,7 +603,7 @@ def get_package_from_branch(branch):
 def debianize_string(value):
     markup_remover = re.compile(r'<.*?>')
     value = markup_remover.sub('', value)
-    value = re.sub('\s+', ' ', value)
+    value = re.sub(r'\s+', ' ', value)
     value = value.strip()
     return value
 

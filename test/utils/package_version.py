@@ -48,7 +48,7 @@ def bump_version(version, bump='patch'):
         parts reset to 0
     """
     # split the version number
-    match = re.match('^(\d+)\.(\d+)\.(\d+)$', version)
+    match = re.match(r'^(\d+)\.(\d+)\.(\d+)$', version)
     if match is None:
         raise ValueError(
             'Invalid version string, must be int.int.int: "%s"' % version
@@ -75,8 +75,8 @@ def _replace_version(package_str, new_version):
     """
     # try to replace contens
     new_package_str, number_of_subs = re.subn(
-        '<version([^<>]*)>[^<>]*</version>',
-        '<version\g<1>>%s</version>' % new_version, package_str
+        r'<version([^<>]*)>[^<>]*</version>',
+        r'<version\g<1>>%s</version>' % new_version, package_str
     )
     if number_of_subs != 1:
         raise RuntimeError(
