@@ -1,0 +1,10 @@
+---
+name: Run tests periodically
+
+on:  # yamllint disable-line rule:truthy
+  schedule:
+    - cron: '40 7 * * 0'
+
+jobs:
+  pytest:
+    uses: ./.github/workflows/ci.yaml
