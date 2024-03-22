@@ -27,14 +27,13 @@ setup(
     packages=find_packages(exclude=['test', 'test.*']),
     package_data={
         'bloom.generators.debian': [
-            'bloom/generators/debian/templates/*',
-            'bloom/generators/debian/templates/source/*'
+            'templates/*/*',
+            'templates/*/source/*',
         ],
         'bloom.generators.rpm': [
-            'bloom/generators/rpm/templates/*'
-        ]
+            'templates/*/*.em',
+        ],
     },
-    include_package_data=True,
     install_requires=install_requires,
     extras_require={
         'test': [
