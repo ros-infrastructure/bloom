@@ -1,0 +1,10 @@
+%YAML 1.1
+---
+release_platforms:
+  debian:
+    - buster
+  ubuntu:
+    - bionic
+repositories: []
+type: distribution
+version: 2
