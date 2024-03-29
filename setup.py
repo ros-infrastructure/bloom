@@ -3,23 +3,6 @@
 import sys
 from setuptools import find_packages, setup
 
-install_requires = [
-    'catkin_pkg >= 0.4.3',
-    'setuptools',
-    'empy < 4',
-    'packaging',
-    'python-dateutil',
-    'PyYAML',
-    'rosdep >= 0.15.0',
-    'rosdistro >= 0.8.0',
-    'vcstools >= 0.1.22',
-]
-
-# argparse got moved into the stdlib in py2.7, so we only
-# need to install the pypi version if we're on an older
-# python.
-if sys.version_info[0] == 2 and sys.version_info[1] <= 6:
-    install_requires.append('argparse')
 
 setup(
     name='bloom',
@@ -34,7 +17,17 @@ setup(
             'templates/*/*.em',
         ],
     },
-    install_requires=install_requires,
+    install_requires=[
+        'catkin_pkg >= 0.4.3',
+        'setuptools',
+        'empy < 4',
+        'packaging',
+        'python-dateutil',
+        'PyYAML',
+        'rosdep >= 0.15.0',
+        'rosdistro >= 0.8.0',
+        'vcstools >= 0.1.22',
+    ],
     extras_require={
         'test': [
             'pep8',
