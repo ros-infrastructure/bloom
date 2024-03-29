@@ -1,3 +1,25 @@
+0.12.0 (2024-03-29 17:20:00 -0500)
+----------------------------------
+- Fix regression in RHEL 8 / Python3.6 support. `#700 <https://github.com/ros-infrastructure/bloom/issues/700>`_
+- Drop support for Python <2.7, simplify setup.py. `#733 <https://github.com/ros-infrastructure/bloom/issues/733>`_
+- Add dh_shlibdeps entry for libraries installed by ament_vendor `#732 <https://github.com/ros-infrastructure/bloom/issues/732>`_
+- Fix template file inclusion in Python package. `#731 <https://github.com/ros-infrastructure/bloom/issues/731>`_
+- Use raw strings for regular expressions. `#730 <https://github.com/ros-infrastructure/bloom/issues/730>`_
+- Update deb platforms and drop python2 packaging. `#724 <https://github.com/ros-infrastructure/bloom/issues/724>`_
+- Switch from SafeConfigParser to ConfigParser. `#728 <https://github.com/ros-infrastructure/bloom/issues/728>`_
+- Restore weekly CI job. `#729 <https://github.com/ros-infrastructure/bloom/issues/729>`_
+- Create a fake rosdistro index for better test isolation. `#727 <https://github.com/ros-infrastructure/bloom/issues/727>`_
+- Switch to unified ros-infrastructure CI. `#726 <https://github.com/ros-infrastructure/bloom/issues/726>`_
+- Pin to empy < 4. `#726 <https://github.com/ros-infrastructure/bloom/issues/726>`_
+- Use extras_require.test and pytest for test dependencies. `#726 <https://github.com/ros-infrastructure/bloom/issues/726>`_
+- Add weekly scheduled run to make sure that CI stays green. `#695 <https://github.com/ros-infrastructure/bloom/issues/695>`_
+- Add debian package dependency for new packaging dependency. `#698 <https://github.com/ros-infrastructure/bloom/issues/698>`_
+- Replace pkg_resources.parse_version with packaging.version.parse. `#693 <https://github.com/ros-infrastructure/bloom/issues/693>`_
+- Fix typo 'tempate' -> 'template'. `#694 <https://github.com/ros-infrastructure/bloom/issues/694>`_
+- Dry-run with specific remote target, in case remote repo isn't initialized yet. `#684 <https://github.com/ros-infrastructure/bloom/pull/684>`_
+- Add Defaults for src/doc information. `#686 <https://github.com/ros-infrastructure/bloom/issues/686>`_
+- Ensure subparser is required. `#683 <https://github.com/ros-infrastructure/bloom/issues/683>`_
+
 0.11.2 (2022-07-18 14:18:10 -0700)
 ----------------------------------
 - Use inspect.getfullargspec where available. `#682 <https://github.com/ros-infrastructure/bloom/issues/682>`_
