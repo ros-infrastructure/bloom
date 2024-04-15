@@ -1,0 +1,18 @@
+%bloom_prefix /opt/ros/%{ros_distro}
+
+# This MUST be called ONCE somewhere in the preamble section
+%bloom_package() \
+%bcond_without tests \
+%define _empty_manifest_terminate_build %{nil} \
+%define __bloom_package 1 \
+%global __provides_exclude_from ^%{bloom_prefix}/.*$ \
+%global __requires_exclude_from ^%{bloom_prefix}/.*$ \
+%global ___build_pre %___build_pre \\\
+%{expand:%define _prefix %{bloom_prefix} \
+  if [ -f "%{_prefix}/setup.sh" ]; then . "%{_prefix}/setup.sh"; else PYTHONPATH=$PYTHONPATH:%{python3_sitelib}; export PYTHONPATH; fi \\\
+  } \
+
+# This MAY be called from the generate_buildrequires section
+# Pass -g to disable group resolution
+%bloom_buildrequires(g) \
+echo package.xml | %{_rpmconfigdir}/bloom-deps.py '%{_builddir}/%{buildsubdir}/package.xml' '%{name}' --requires-build %{?with_tests:--requires-check} %{?_bloom_skip_keys:--skip-keys %{_bloom_skip_keys}} %{!-g:--resolve-groups}
