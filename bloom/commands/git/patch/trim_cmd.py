@@ -34,7 +34,7 @@ def _set_trim_sub_dir(sub_dir, force, config, directory):
                     sub_dir + ", but it is already set to " +
                     config['trim'] + ".")
             if not force:
-                warning("Changing the sud directory is not advised. "
+                warning("Changing the sub directory is not advised. "
                         "If you are sure you want to do this, use "
                         "'--force'")
                 return None
