@@ -3,40 +3,37 @@
 import sys
 from setuptools import find_packages, setup
 
-install_requires = [
-    'catkin_pkg >= 0.4.3',
-    'setuptools',
-    'empy',
-    'packaging',
-    'python-dateutil',
-    'PyYAML',
-    'rosdep >= 0.15.0',
-    'rosdistro >= 0.8.0',
-    'ros_license_toolkit >= 1.2.2',
-    'vcstools >= 0.1.22',
-]
-
-# argparse got moved into the stdlib in py2.7, so we only
-# need to install the pypi version if we're on an older
-# python.
-if sys.version_info[0] == 2 and sys.version_info[1] <= 6:
-    install_requires.append('argparse')
 
 setup(
     name='bloom',
-    version='0.11.2',
+    version='0.12.0',
     packages=find_packages(exclude=['test', 'test.*']),
     package_data={
         'bloom.generators.debian': [
-            'bloom/generators/debian/templates/*',
-            'bloom/generators/debian/templates/source/*'
+            'templates/*/*',
+            'templates/*/source/*',
         ],
         'bloom.generators.rpm': [
-            'bloom/generators/rpm/templates/*'
-        ]
+            'templates/*/*.em',
+        ],
     },
-    include_package_data=True,
-    install_requires=install_requires,
+    install_requires=[
+        'catkin_pkg >= 0.4.3',
+        'setuptools',
+        'empy < 4',
+        'packaging',
+        'python-dateutil',
+        'PyYAML',
+        'ros_license_toolkit >= 2.0.0',
+        'rosdep >= 0.15.0',
+        'rosdistro >= 0.8.0',
+        'vcstools >= 0.1.22',
+    ],
+    extras_require={
+        'test': [
+            'pep8',
+            'pytest',
+        ]},
     author='Tully Foote, William Woodall',
     author_email='tfoote@openrobotics.org, william@openrobotics.org',
     maintainer='William Woodall',

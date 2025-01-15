@@ -382,7 +382,7 @@ def test_multi_package_repository(directory=None):
                     package_xml = f.read()
                     assert package_xml.count('<name>' + pkg + '</name>'), \
                         "incorrect package.xml for " + str(pkg)
-                    format_version = int(re.search('format="(\d+)"',
+                    format_version = int(re.search(r'format="(\d+)"',
                                                    package_xml).group(1))
                 # Is there a copyright file for this pkg?
                 with open('debian/copyright', 'r') as f:

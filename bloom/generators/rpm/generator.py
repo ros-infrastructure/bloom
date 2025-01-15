@@ -44,11 +44,6 @@ import sys
 import traceback
 import textwrap
 
-# Python 2/3 support.
-try:
-    from configparser import SafeConfigParser
-except ImportError:
-    from ConfigParser import SafeConfigParser
 from dateutil import tz
 from distutils.version import LooseVersion
 from time import strptime
@@ -447,7 +442,7 @@ def get_package_from_branch(branch):
 def rpmify_string(value):
     markup_remover = re.compile(r'<.*?>')
     value = markup_remover.sub('', value)
-    value = re.sub('\s+', ' ', value)
+    value = re.sub(r'\s+', ' ', value)
     value = '\n'.join([v.strip() for v in
                       textwrap.TextWrapper(width=80, break_long_words=False, replace_whitespace=False).wrap(value)])
     return value
