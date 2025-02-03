@@ -67,6 +67,7 @@ def prepare_arguments(parser):
         help="path to or containing the package.xml of a package")
     action = parser.add_mutually_exclusive_group(required=False)
     add = action.add_argument
+    add('--skip-pip', default=False, action='store_true', help="skip all pip rosdep keys")
     add('--place-template-files', action='store_true',
         help="places debian/* template files only")
     add('--process-template-files', action='store_true',
@@ -111,6 +112,8 @@ def main(args=None, get_subs_fn=None):
     os_data = create_default_installer_context().get_os_name_and_version()
     os_name, os_version = os_data
     ros_distro = os.environ.get('ROS_DISTRO', 'indigo')
+    if args.skip_pip:
+        os.environ['BLOOM_SKIP_PIP'] = '1'
 
     # Allow args overrides
     os_name = args.os_name or os_name
