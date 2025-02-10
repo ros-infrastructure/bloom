@@ -24,6 +24,7 @@ setup(
         'packaging',
         'python-dateutil',
         'PyYAML',
+        'ros_license_toolkit >= 2.0.0',
         'rosdep >= 0.15.0',
         'rosdistro >= 0.8.0',
         'vcstools >= 0.1.22',
