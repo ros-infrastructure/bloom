@@ -5,6 +5,8 @@
 %global __provides_exclude_from ^@(InstallationPrefix)/.*$
 %global __requires_exclude_from ^@(InstallationPrefix)/.*$
 
+%global __cmake_in_source_build 1
+
 Name:           @(Package)
 Version:        @(Version)
 Release:        @(RPMInc)%{?dist}%{?release_suffix}
