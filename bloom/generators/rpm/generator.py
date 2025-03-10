@@ -276,6 +276,8 @@ def generate_substitutions_from_package(
         pass
     elif build_type == 'cmake':
         pass
+    elif build_type == 'meson':
+        pass
     elif build_type == 'ament_cmake':
         pass
     elif build_type == 'ament_python':
