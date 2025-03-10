@@ -272,17 +272,14 @@ def generate_substitutions_from_package(
 
     # Build-type specific substitutions.
     build_type = package.get_build_type()
-    if build_type == 'catkin':
-        pass
-    elif build_type == 'cmake':
-        pass
-    elif build_type == 'meson':
-        pass
-    elif build_type == 'ament_cmake':
-        pass
-    elif build_type == 'ament_python':
-        pass
-    else:
+    if build_type not in (
+        'cargo',
+        'catkin',
+        'cmake',
+        'meson',
+        'ament_cmake',
+        'ament_python',
+    ):
         error(
             "Build type '{}' is not supported by this version of bloom.".
             format(build_type), exit=True)
