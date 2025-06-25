@@ -58,12 +58,7 @@ from bloom.util import change_directory
 from bloom.util import handle_global_arguments
 from bloom.util import temporary_directory
 
-try:
-    from vcstools.vcs_abstraction import get_vcs_client
-except ImportError:
-    debug(traceback.format_exc())
-    error("vcstools was not detected, please install it.", file=sys.stderr,
-          exit=True)
+from bloom.vcs import get_vcs_client
 
 
 def get_argument_parser():
