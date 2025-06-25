@@ -34,8 +34,8 @@
 from __future__ import print_function
 
 import argparse
+import importlib.metadata
 import sys
-import pkg_resources
 
 from bloom.util import add_global_arguments
 from bloom.util import handle_global_arguments
@@ -45,13 +45,13 @@ BLOOM_GENERATE_CMDS_GROUP = 'bloom.generate_cmds'
 
 def list_generator_commands():
     generators = []
-    for entry_point in pkg_resources.iter_entry_points(group=BLOOM_GENERATE_CMDS_GROUP):
+    for entry_point in importlib.metadata.entry_points(group=BLOOM_GENERATE_CMDS_GROUP):
         generators.append(entry_point.name)
     return generators
 
 
 def load_generator_description(generator_name):
-    for entry_point in pkg_resources.iter_entry_points(group=BLOOM_GENERATE_CMDS_GROUP):
+    for entry_point in importlib.metadata.entry_points(group=BLOOM_GENERATE_CMDS_GROUP):
         if entry_point.name == generator_name:
             return entry_point.load()
 

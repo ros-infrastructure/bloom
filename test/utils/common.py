@@ -196,7 +196,7 @@ def user_bloom(cmd, args=None, directory=None, auto_assert=True,
     assert type(args) in [list, tuple, str], \
         "user_bloom args takes [list, tuple, str] only, got " + \
         str(type(args))
-    from pkg_resources import load_entry_point
+    from importlib.metadata import entry_points
     from bloom import __version__ as ver
     if not cmd.startswith('git-bloom-'):
         cmd = 'git-bloom-' + cmd
@@ -206,7 +206,13 @@ def user_bloom(cmd, args=None, directory=None, auto_assert=True,
         args = list(args)
     with change_directory(directory if directory is not None else os.getcwd()):
         with redirected_stdio() as (out, err):
-            func = load_entry_point('bloom==' + ver, 'console_scripts', cmd)
+            # importlib can't filter entry points by distribution because they
+            # don't compare. So get all matching entry points and filter by
+            # distribution version and name after.
+            eps = [ep for ep in entry_points(group="console_scripts", name=cmd)
+                   if ep.dist.version == ver and ep.dist.name == 'bloom']
+            assert len(eps) == 1, f"Multiple entry points found for command '{cmd}'."
+            func = eps[0].load()
             try:
                 with change_environ(env):
                     ret = func(args) or 0

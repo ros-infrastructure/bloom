@@ -32,7 +32,7 @@
 
 from __future__ import print_function
 
-import pkg_resources
+import importlib.metadata
 import sys
 import traceback
 
@@ -63,13 +63,13 @@ DEFAULT_ROS_DISTRO = 'indigo'
 
 def list_generators():
     generators = []
-    for entry_point in pkg_resources.iter_entry_points(group=BLOOM_GROUP):
+    for entry_point in importlib.metadata.entry_points(group=BLOOM_GROUP):
         generators.append(entry_point.name)
     return generators
 
 
 def load_generator(generator_name):
-    for entry_point in pkg_resources.iter_entry_points(group=BLOOM_GROUP):
+    for entry_point in importlib.metadata.entry_points(group=BLOOM_GROUP):
         if entry_point.name == generator_name:
             return entry_point.load()
 
