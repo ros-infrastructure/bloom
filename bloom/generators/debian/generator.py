@@ -342,6 +342,11 @@ def generate_substitutions_from_package(
     data['format'] = 'native' if native else 'quilt'
     # Package name
     data['Package'] = sanitize_package_name(package.name)
+    # Architecture
+    exported_tags = [e.tagname for e in package.exports]
+    architecture_independent = 'metapackage' in exported_tags or \
+        'architecture_independent' in exported_tags
+    data['Architecture'] = 'all' if architecture_independent else 'any'
     # Installation prefix
     data['InstallationPrefix'] = installation_prefix
     # Resolve dependencies
