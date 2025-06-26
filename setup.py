@@ -22,6 +22,7 @@ setup(
         'setuptools',
         'empy < 4',
         'importlib-metadata; python_version < "3.8"',
+        'importlib-resources; python_version < "3.8"',
         'packaging',
         'python-dateutil',
         'PyYAML',
