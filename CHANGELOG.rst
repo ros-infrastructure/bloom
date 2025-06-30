@@ -1,3 +1,9 @@
+0.13.0 (2025-06-29 21:30:00 -0700)
+----------------------------------
+- Add bloom templates for meson build system. `#691 <https://github.com/ros-infrastructure/bloom/issues/691>`_
+- Updates for python3. `#736 <https://github.com/ros-infrastructure/bloom/issues/736>`_
+- Fix a typo. `#735 <https://github.com/ros-infrastructure/bloom/issues/735`_
+
 0.12.0 (2024-03-29 17:20:00 -0500)
 ----------------------------------
 - Fix regression in RHEL 8 / Python3.6 support. `#700 <https://github.com/ros-infrastructure/bloom/issues/700>`_
