@@ -38,8 +38,8 @@ import argparse
 import atexit
 import datetime
 import difflib
+import importlib.metadata
 import os
-import pkg_resources
 import platform
 import shutil
 import subprocess
@@ -865,7 +865,7 @@ Versions of tools used:
         bloom_v=bloom.__version__,
         catkin_pkg_v=catkin_pkg.__version__,
         # Until https://github.com/ros-infrastructure/rosdistro/issues/16
-        rosdistro_v=pkg_resources.require("rosdistro")[0].version,
+        rosdistro_v=importlib.metadata.metadata("rosdistro").version,
         rosdep_v=rosdep2.__version__,
         vcstools_v=vcstools.__version__.version
     )

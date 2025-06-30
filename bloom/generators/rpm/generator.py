@@ -34,15 +34,15 @@ from __future__ import print_function
 
 import collections
 import datetime
+import importlib.resources
 import io
 import json
 import os
-import pkg_resources
 import re
 import shutil
 import sys
-import traceback
 import textwrap
+import traceback
 
 from dateutil import tz
 from packaging.version import Version
@@ -102,19 +102,20 @@ TEMPLATE_EXTENSION = '.em'
 
 
 def __place_template_folder(group, src, dst, gbp=False):
-    template_files = pkg_resources.resource_listdir(group, src)
+    template_files = [os.path.basename(file)
+                      for file in importlib.resources.files(f'{group}.{src.replace("/", ".")}').iterdir()]
     # For each template, place
     for template_file in template_files:
         template_path = os.path.join(src, template_file)
         template_dst = os.path.join(dst, template_file)
-        if pkg_resources.resource_isdir(group, template_path):
+        if importlib.resources.files(group).joinpath(template_path).is_dir():
             debug("Recursing on folder '{0}'".format(template_path))
             __place_template_folder(group, template_path, template_dst, gbp)
         else:
             try:
                 debug("Placing template '{0}'".format(template_path))
-                template = pkg_resources.resource_string(group, template_path)
-                template_abs_path = pkg_resources.resource_filename(group, template_path)
+                template = importlib.resources.files(group).joinpath(template_path).open().read()
+                template_abs_path = importlib.resources.files(group).joinpath(template_path)
             except IOError as err:
                 error("Failed to load template "
                       "'{0}': {1}".format(template_file, str(err)), exit=True)
