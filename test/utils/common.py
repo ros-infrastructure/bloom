@@ -196,7 +196,10 @@ def user_bloom(cmd, args=None, directory=None, auto_assert=True,
     assert type(args) in [list, tuple, str], \
         "user_bloom args takes [list, tuple, str] only, got " + \
         str(type(args))
-    from importlib.metadata import entry_points
+    if sys.version_info[0:2] < (3, 10):
+        from importlib_metadata import entry_points
+    else:
+        from importlib.metadata import entry_points
     from bloom import __version__ as ver
     if not cmd.startswith('git-bloom-'):
         cmd = 'git-bloom-' + cmd

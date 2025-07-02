@@ -32,9 +32,13 @@
 
 from __future__ import print_function
 
-import importlib.metadata
 import sys
 import traceback
+
+if sys.version_info[0:2] < (3, 10):
+    from importlib_metadata import entry_points
+else:
+    from importlib.metadata import entry_points
 
 from bloom.logging import debug
 from bloom.logging import error
@@ -63,13 +67,13 @@ DEFAULT_ROS_DISTRO = 'indigo'
 
 def list_generators():
     generators = []
-    for entry_point in importlib.metadata.entry_points(group=BLOOM_GROUP):
+    for entry_point in entry_points(group=BLOOM_GROUP):
         generators.append(entry_point.name)
     return generators
 
 
 def load_generator(generator_name):
-    for entry_point in importlib.metadata.entry_points(group=BLOOM_GROUP):
+    for entry_point in entry_points(group=BLOOM_GROUP):
         if entry_point.name == generator_name:
             return entry_point.load()
 

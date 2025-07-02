@@ -21,7 +21,7 @@ setup(
         'catkin_pkg >= 0.4.3',
         'setuptools',
         'empy < 4',
-        'importlib-metadata; python_version < "3.10"',
+        'importlib-metadata >= 3.6; python_version < "3.10"',
         'importlib-resources; python_version < "3.10"',
         'packaging',
         'python-dateutil',
