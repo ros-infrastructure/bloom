@@ -48,12 +48,6 @@ import traceback
 import webbrowser
 import yaml
 
-if sys.version_info[0:2] < (3, 10):
-  import importlib_metadata
-else:
-  import importlib.metadata as importlib_metadata
-
-
 # python2/3 compatibility
 try:
     from urllib.error import HTTPError, URLError
@@ -143,6 +137,11 @@ except ImportError:
           file=sys.stderr, exit=True)
 
 from catkin_pkg.changelog import get_changelog_from_path
+
+if sys.version_info[0:2] < (3, 10):
+    import importlib_metadata
+else:
+    import importlib.metadata as importlib_metadata
 
 _repositories = {}
 
