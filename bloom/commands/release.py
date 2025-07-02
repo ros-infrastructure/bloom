@@ -38,7 +38,6 @@ import argparse
 import atexit
 import datetime
 import difflib
-import importlib.metadata
 import os
 import platform
 import shutil
@@ -48,6 +47,12 @@ import tempfile
 import traceback
 import webbrowser
 import yaml
+
+if sys.version_info[0:2] < (3, 10):
+  import importlib_metadata
+else:
+  import importlib.metadata as importlib_metadata
+
 
 # python2/3 compatibility
 try:
@@ -865,7 +870,7 @@ Versions of tools used:
         bloom_v=bloom.__version__,
         catkin_pkg_v=catkin_pkg.__version__,
         # Until https://github.com/ros-infrastructure/rosdistro/issues/16
-        rosdistro_v=importlib.metadata.metadata("rosdistro").version,
+        rosdistro_v=importlib_metadata.metadata("rosdistro").version,
         rosdep_v=rosdep2.__version__,
         vcstools_v=vcstools.__version__.version
     )
