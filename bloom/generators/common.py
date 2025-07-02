@@ -35,11 +35,6 @@ from __future__ import print_function
 import sys
 import traceback
 
-if sys.version_info[0:2] < (3, 10):
-    from importlib_metadata import entry_points
-else:
-    from importlib.metadata import entry_points
-
 from bloom.logging import debug
 from bloom.logging import error
 from bloom.logging import info
@@ -60,6 +55,11 @@ try:
 except ImportError as err:
     debug(traceback.format_exc())
     error("rosdep was not detected, please install it.", exit=True)
+
+if sys.version_info[0:2] < (3, 10):
+    from importlib_metadata import entry_points
+else:
+    from importlib.metadata import entry_points
 
 BLOOM_GROUP = 'bloom.generators'
 DEFAULT_ROS_DISTRO = 'indigo'

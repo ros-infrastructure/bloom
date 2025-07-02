@@ -36,13 +36,13 @@ from __future__ import print_function
 import argparse
 import sys
 
+from bloom.util import add_global_arguments
+from bloom.util import handle_global_arguments
+
 if sys.version_info[0:2] < (3, 10):
     from importlib_metadata import entry_points
 else:
     from importlib.metadata import entry_points
-
-from bloom.util import add_global_arguments
-from bloom.util import handle_global_arguments
 
 BLOOM_GENERATE_CMDS_GROUP = 'bloom.generate_cmds'
 
