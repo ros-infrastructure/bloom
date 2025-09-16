@@ -59,10 +59,10 @@ from bloom.util import handle_global_arguments
 from bloom.util import temporary_directory
 
 try:
-    from vcstools.vcs_abstraction import get_vcs_client
+    from vcs2l.clients import get_vcs_client
 except ImportError:
     debug(traceback.format_exc())
-    error("vcstools was not detected, please install it.", file=sys.stderr,
+    error("vcs2l was not detected, please install it.", file=sys.stderr,
           exit=True)
 
 

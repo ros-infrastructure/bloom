@@ -26,7 +26,7 @@ setup(
         'PyYAML',
         'rosdep >= 0.15.0',
         'rosdistro >= 0.8.0',
-        'vcstools >= 0.1.22',
+        'vcs2l @ git+https://github.com/ros-infrastructure/vcs2l.git@leander-dsouza/vcstools-port',
     ],
     extras_require={
         'test': [
