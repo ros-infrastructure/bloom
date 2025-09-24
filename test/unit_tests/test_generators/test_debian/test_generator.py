@@ -27,6 +27,18 @@ def test_unicode_templating():
         em.expand(template, {'changelog': chlogs[0][2]})
 
 
+def test_empy4_unicode_support():
+    """Test EmPy 4 unicode support with various unicode characters and emojis"""
+    # Test mixed unicode and ASCII
+    template = "Maintainer: @maintainer\nDescription: @description"
+    result = em.expand(template, locals={
+        'maintainer': 'José García <josé@example.com>',
+        'description': 'A tëst packägé with ümlauts and 🌍 emoji'
+    })
+    expected = "Maintainer: José García <josé@example.com>\nDescription: A tëst packägé with ümlauts and 🌍 emoji"
+    assert result == expected
+
+
 def test_format_description():
     assert '' == format_description('')
     assert '.' == format_description('.')
