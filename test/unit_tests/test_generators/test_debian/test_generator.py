@@ -2,9 +2,9 @@ import os
 
 from ....utils.common import redirected_stdio
 
-from bloom.generators.debian.generator import em
 from bloom.generators.debian.generator import get_changelogs
 from bloom.generators.debian.generator import format_description
+from bloom.util import expand_template_em
 
 from catkin_pkg.packages import find_packages
 
@@ -24,14 +24,14 @@ def test_unicode_templating():
         assert 'bad_changelog_pkg' in packages
         chlogs = get_changelogs(packages['bad_changelog_pkg'])
         template = "@(changelog)"
-        em.expand(template, {'changelog': chlogs[0][2]})
+        expand_template_em(template, {'changelog': chlogs[0][2]})
 
 
 def test_empy4_unicode_support():
-    """Test EmPy 4 unicode support with various unicode characters and emojis"""
+    """Test EmPy 3/4 compatibility with unicode support including various unicode characters and emojis"""
     # Test mixed unicode and ASCII
     template = "Maintainer: @maintainer\nDescription: @description"
-    result = em.expand(template, locals={
+    result = expand_template_em(template, {
         'maintainer': 'José García <josé@example.com>',
         'description': 'A tëst packägé with ümlauts and 🌍 emoji'
     })

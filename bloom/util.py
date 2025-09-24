@@ -84,6 +84,25 @@ except NameError:
     to_unicode = str
 
 
+def expand_template_em(template, subs):
+    """
+    Compatibility function for EmPy 3 and 4.
+    EmPy 3: em.expand(template, **kwargs)
+    EmPy 4: em.expand(template, locals=dict)
+    """
+    try:
+        import em
+    except ImportError:
+        error("empy was not detected, please install it.", exit=True)
+
+    try:
+        # Try EmPy 4 API first
+        return em.expand(template, locals=subs)
+    except (TypeError, NameError):
+        # Fall back to EmPy 3 API
+        return em.expand(template, **subs)
+
+
 def flush_stdin():
     try:
         from termios import tcflush, TCIFLUSH
