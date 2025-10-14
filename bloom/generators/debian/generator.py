@@ -326,9 +326,9 @@ def generate_substitutions_from_package(
     data['Description'] = format_description(package.description)
     # Websites
     websites = [str(url) for url in package.urls if url.type == 'website']
-    homepage = websites[0] if websites else ''
-    if homepage == '':
-        warning("No homepage set, defaulting to ''")
+    homepage = websites[0] if websites else 'https://index.ros.org/p/%s/#%s' % (package, ros_distro)
+    if not websites:
+        warning("No homepage set, defaulting to %s" % homepage)
     data['Homepage'] = homepage
     repositories = [str(url) for url in package.urls if url.type == 'repository']
     repository = repositories[0] if repositories else ''
