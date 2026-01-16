@@ -9,9 +9,9 @@ import re
 import sys
 
 try:
-    from vcstools.vcs_abstraction import get_vcs_client
+    from vcs2l.clients import get_vcs_client
 except ImportError:
-    print("vcstools was not detected, please install it.", file=sys.stderr)
+    print("vcs2l was not detected, please install it.", file=sys.stderr)
     sys.exit(1)
 
 from .common import create_release_repo
