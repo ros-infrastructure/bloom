@@ -220,7 +220,7 @@ def generate_substitutions_from_package(
     data['LicenseFiles'] = sorted(set(l.file for l in package.licenses if l.file))
     # Websites
     websites = [str(url) for url in package.urls if url.type == 'website']
-    homepage = websites[0] if websites else 'https://index.ros.org/p/%s/#%s' % (package, ros_distro)
+    homepage = websites[0] if websites else 'https://index.ros.org/p/%s/#%s' % (package.name, ros_distro)
     if not websites:
         warning("No homepage set, defaulting to %s" % homepage)
     data['Homepage'] = homepage
