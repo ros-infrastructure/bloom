@@ -330,7 +330,7 @@ def check_for_multiple_remotes():
     if get_root() is None:
         return
     remotes = get_remotes()
-    if len(remotes) < 0:
+    if len(remotes) == 0:
         error("Current git repository has no remotes. "
               "If you are running bloom-release, please change directories.",
               exit=True)
