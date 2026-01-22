@@ -82,11 +82,17 @@ def create_upstream_repository(packages, directory=None, format_versions=None):
                 os.symlink('../{0}.h'.format(package), 'include/sym/{0}.h'.format(package))
                 user('mkdir debian')
                 user('touch debian/something.udev')
-                user('echo "{0} license" > LICENSE'.format(package))
+                user('echo "{0} license text" > LICENSE'.format(package))
+                user('echo "(c) 2010 {0} Inc.\n//comment\nsome sourcecode" > include/file.h'.format(package))
                 user('git add package.xml .cproject .project include debian "white space.txt~" LICENSE')
         user('git commit -m "Releasing version 0.1.0" --allow-empty')
         user('git tag 0.1.0 -m "Releasing version 0.1.0"')
         return os.getcwd()
+
+
+def _check_string_for_content(string, to_check):
+    assert string.count(to_check) == 1, \
+        ">" + to_check + "< not found in:\n---\n" + string + "\n---"
 
 
 def _test_unary_package_repository(release_dir, version, directory=None, env=None):
@@ -236,7 +242,8 @@ def test_multi_package_repository(directory=None):
     env.update(set_up_fake_rosdep(rosdep_dir, fake_distros, fake_rosdeps))
     # Setup
     pkgs = ['foo', 'bar_ros', 'baz']
-    upstream_dir = create_upstream_repository(pkgs, directory, format_versions=[1, 2, 3])
+    upstream_dir = create_upstream_repository(
+        pkgs, directory, format_versions=[1, 2, 3])
     upstream_url = 'file://' + upstream_dir
     release_url = create_release_repo(
         upstream_url,
@@ -379,8 +386,15 @@ def test_multi_package_repository(directory=None):
                                                    package_xml).group(1))
                 # Is there a copyright file for this pkg?
                 with open('debian/copyright', 'r') as f:
-                    assert (format_version <= 2) ^ (pkg + ' license' in f.read()), \
-                        "debian/copyright does not include right license text"
+                    copyright_file = f.read()
+                    _check_string_for_content(copyright_file,
+                                            "Format: https://www.debian.org/doc/")
+                    _check_string_for_content(copyright_file,
+                                            "License: BSD")
+                    _check_string_for_content(copyright_file,
+                                            'Copyright: (c) 2010 ' + pkg + ' Inc.')
+                    _check_string_for_content(copyright_file,
+                                            pkg + ' license text')
 
 @in_temporary_directory
 def test_upstream_tag_special_tag(directory=None):
