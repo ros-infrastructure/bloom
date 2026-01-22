@@ -741,9 +741,18 @@ Increasing version of package(s) in repository `{repository}` to `{version}`:
             rosdistro_url = 'https://{gh.token}:x-oauth-basic@github.com/{base_repo_id}.git'.format(**locals())
             fork_template = 'https://{gh.token}:x-oauth-basic@github.com/{head_org}/{head_repo}.git'
             rosdistro_fork_url = fork_template.format(**locals())
-            _my_run("mkdir -p {base_info[repo]}".format(**locals()))
+            # Use partial clone if available to speed up cloning large rosdistro repo
+            try:
+                cmd = "git clone --filter=blob:none {rosdistro_url} " \
+                      "--branch {base_info[branch]} --single-branch {base_info[repo]}"
+                _my_run(cmd.format(**locals()), "Cloning rosdistro")
+            except subprocess.CalledProcessError:
+                cmd = "git clone {rosdistro_url} " \
+                      "--branch {base_info[branch]} --single-branch {base_info[repo]}"
+                _my_run(cmd.format(**locals()), "Cloning rosdistro (fallback to full clone)")
             with change_directory(base_info['repo']):
-                _my_run('git init')
+                # Remove the remote to avoid storing the oauth token in the git config
+                _my_run("git remote remove origin")
                 branches = [x['name'] for x in gh.list_branches(head_org, head_repo)]
                 new_branch = 'bloom-{repository}-{count}'
                 count = 0
@@ -763,8 +772,6 @@ Increasing version of package(s) in repository `{repository}` to `{version}`:
                     warning("Skipping the pull request...")
                     return
                 _my_run('git checkout -b {new_branch}'.format(**locals()))
-                _my_run("git pull {rosdistro_url} {base_info[branch]}".format(**locals()),
-                        "Pulling latest rosdistro branch")
                 rosdistro_index_commit = get_rosdistro_index_commit()
                 if rosdistro_index_commit is not None:
                     _my_run('git reset --hard {rosdistro_index_commit}'.format(**locals()))
