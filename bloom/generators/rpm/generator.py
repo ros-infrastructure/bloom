@@ -580,7 +580,10 @@ class RpmGenerator(BloomGenerator):
                                            retry=False)
                     if rule is None:
                         continue
-                    if installer_key != default_installer_key:
+                    if 'BLOOM_SKIP_PIP' in os.environ and os.environ['BLOOM_SKIP_PIP'] == '1' and \
+                       installer_key == 'pip':
+                        pass
+                    elif installer_key != default_installer_key:
                         error("Key '{0}' resolved to '{1}' with installer '{2}', "
                               "which does not match the default installer '{3}'."
                               .format(key, rule, installer_key, default_installer_key))

@@ -32,6 +32,7 @@
 
 from __future__ import print_function
 
+from os import environ
 import pkg_resources
 import sys
 import traceback
@@ -39,6 +40,7 @@ import traceback
 from bloom.logging import debug
 from bloom.logging import error
 from bloom.logging import info
+from bloom.logging import warning
 
 from bloom.rosdistro_api import get_distribution_type
 from bloom.rosdistro_api import get_index
@@ -118,6 +120,11 @@ def resolve_more_for_os(rosdep_key, view, installer, os_name, os_version):
                                              os_installers,
                                              default_os_installer)
     assert inst_key in os_installers
+    if 'BLOOM_SKIP_PIP' in environ and environ['BLOOM_SKIP_PIP'] == '1' and inst_key == 'pip':
+        warning("Key '{0}' resolved to '{1}' with installer '{2}' for os '{3}' '{4}', "
+                "but with the 'BLOOM_SKIP_PIP' environment variable set, this key is intentionally skipped."
+                .format(rosdep_key, installer.resolve(rule), inst_key, os_name, os_version))
+        return [], inst_key, default_os_installer
     return installer.resolve(rule), inst_key, default_os_installer
 
 
