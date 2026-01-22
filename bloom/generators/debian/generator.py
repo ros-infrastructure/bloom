@@ -195,7 +195,7 @@ def summarize_dependency_mapping(data, deps, build_deps, resolved_deps):
             info(template.format(key, resolved_deps[key]))
 
 
-def format_depends(depends, resolved_deps):
+def format_depends(depends, resolved_deps, ros_distro=""):
     versions = {
         'version_lt': '<<',
         'version_lte': '<=',
@@ -206,6 +206,8 @@ def format_depends(depends, resolved_deps):
     formatted = []
     for d in depends:
         for resolved_dep in resolved_deps[d.name]:
+            if ros_distro and resolved_dep.startswith(f"ros-{ros_distro}"):
+                resolved_dep = f"{resolved_dep}-runtime"
             version_depends = [k
                                for k in versions.keys()
                                if getattr(d, k, None) is not None]
@@ -316,7 +318,8 @@ def generate_substitutions_from_package(
     peer_packages=None,
     releaser_history=None,
     fallback_resolver=None,
-    native=False
+    native=False,
+    runtime_pkg=False,
 ):
     peer_packages = peer_packages or []
     data = {}
@@ -346,8 +349,18 @@ def generate_substitutions_from_package(
     data['InstallationPrefix'] = installation_prefix
     # Resolve dependencies
     evaluate_package_conditions(package, ros_distro)
+
+    if runtime_pkg:
+        exec_depends = [
+            dep for dep in (package.exec_depends)
+            if dep.evaluated_condition is not False]
+        run_depends = package.build_export_depends
+    else:
+        exec_depends = []
+        run_depends = package.run_depends
+
     depends = [
-        dep for dep in (package.run_depends + package.buildtool_export_depends)
+        dep for dep in (run_depends + package.buildtool_export_depends)
         if dep.evaluated_condition is not False]
     build_depends = [
         dep for dep in (package.build_depends + package.buildtool_depends)
@@ -361,12 +374,15 @@ def generate_substitutions_from_package(
     conflicts = [
         dep for dep in package.conflicts
         if dep.evaluated_condition is not False]
-    unresolved_keys = depends + build_depends + test_depends + replaces + conflicts
+    unresolved_keys = exec_depends + depends + build_depends + test_depends + replaces + conflicts
     # The installer key is not considered here, but it is checked when the keys are checked before this
     resolved_deps = resolve_dependencies(unresolved_keys, os_name,
                                          os_version, ros_distro,
                                          peer_packages + [d.name for d in (replaces + conflicts)],
                                          fallback_resolver)
+    data['RuntimeDepends'] = sorted(
+        set(format_depends(exec_depends, resolved_deps, ros_distro))
+    )
     data['Depends'] = sorted(
         set(format_depends(depends, resolved_deps))
     )
@@ -374,7 +390,7 @@ def generate_substitutions_from_package(
     # https://wiki.debian.org/BuildProfileSpec
     data['BuildDepends'] = sorted(
         set(format_depends(build_depends, resolved_deps)) |
-        set(p + ' <!nocheck>' for p in format_depends(test_depends, resolved_deps))
+        set(p + ' <!nocheck>' for p in format_depends(test_depends, resolved_deps, ros_distro if runtime_pkg else ""))
     )
     data['Replaces'] = sorted(
         set(format_depends(replaces, resolved_deps))
@@ -481,6 +497,7 @@ def generate_substitutions_from_package(
         else:
             licenses.append((str(l), 'See repository for full license text'))
     data['Licenses'] = licenses
+    data['RuntimePackage'] = runtime_pkg
 
     def convertToUnicode(obj):
         if sys.version_info.major == 2:
@@ -557,6 +574,8 @@ def process_template_files(path, subs):
     if not os.path.exists(debian_dir):
         sys.exit("No debian directory found at '{0}', cannot process templates."
                  .format(debian_dir))
+    with open(os.path.join(debian_dir, f"{subs['Package']}-runtime.install"), "w", encoding="utf-8") as f:
+        f.write("debian/tmp/*")
     return __process_template_folder(debian_dir, subs)
 
 
@@ -635,6 +654,8 @@ class DebianGenerator(BloomGenerator):
             help='A list of debian (ubuntu) distros to generate for')
         add('--install-prefix', default=None,
             help="overrides the default installation prefix (/usr)")
+        add('-r', '--runtime-pkg', default=False, action="store_true",
+            help="Generate -runtime package")
         add('--os-name', default='ubuntu',
             help="overrides os_name, set to 'ubuntu' by default")
         add('--os-not-required', default=False, action="store_true",
@@ -662,6 +683,7 @@ class DebianGenerator(BloomGenerator):
         if args.install_prefix is None:
             self.install_prefix = self.default_install_prefix
         self.prefix = args.prefix
+        self.runtime_pkg = args.runtime_pkg
         self.branches = match_branches_with_prefix(self.prefix, get_branches, prune=not args.match_all)
         if len(self.branches) == 0:
             error(
@@ -930,7 +952,8 @@ class DebianGenerator(BloomGenerator):
             self.debian_inc,
             [p.name for p in self.packages.values()],
             releaser_history=releaser_history,
-            fallback_resolver=missing_dep_resolver
+            fallback_resolver=missing_dep_resolver,
+            runtime_pkg=self.runtime_pkg,
         )
 
     def generate_debian(self, package, debian_distro):
