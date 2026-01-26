@@ -95,12 +95,10 @@ def expand_template_em(template, subs):
     except ImportError:
         error("empy was not detected, please install it.", exit=True)
 
-    try:
-        # Try EmPy 4 API first
-        return em.expand(template, locals=subs)
-    except (TypeError, NameError):
-        # Fall back to EmPy 3 API
+    if em.__version__.startswith('3'):
         return em.expand(template, **subs)
+    else:
+        return em.expand(template, locals=subs)
 
 
 def flush_stdin():
