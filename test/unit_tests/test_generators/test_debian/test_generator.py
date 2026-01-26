@@ -2,9 +2,9 @@ import os
 
 from ....utils.common import redirected_stdio
 
-from bloom.generators.debian.generator import em
 from bloom.generators.debian.generator import get_changelogs
 from bloom.generators.debian.generator import format_description
+from bloom.util import expand_template_em
 
 from catkin_pkg.packages import find_packages
 
@@ -24,7 +24,7 @@ def test_unicode_templating():
         assert 'bad_changelog_pkg' in packages
         chlogs = get_changelogs(packages['bad_changelog_pkg'])
         template = "@(changelog)"
-        em.expand(template, {'changelog': chlogs[0][2]})
+        expand_template_em(template, {'changelog': chlogs[0][2]})
 
 
 def test_format_description():

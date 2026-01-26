@@ -78,6 +78,8 @@ from bloom.logging import info
 from bloom.logging import is_debug
 from bloom.logging import warning
 
+from bloom.util import expand_template_em
+
 from bloom.commands.git.patch.common import get_patch_config
 from bloom.commands.git.patch.common import set_patch_config
 
@@ -101,23 +103,6 @@ try:
 except ImportError as err:
     debug(traceback.format_exc())
     error("rosdistro was not detected, please install it.", exit=True)
-
-try:
-    import em
-except ImportError:
-    debug(traceback.format_exc())
-    error("empy was not detected, please install it.", exit=True)
-
-# Fix unicode bug in empy
-# This should be removed once upstream empy is fixed
-# See: https://github.com/ros-infrastructure/bloom/issues/196
-try:
-    em.str = unicode
-    em.Stream.write_old = em.Stream.write
-    em.Stream.write = lambda self, data: em.Stream.write_old(self, data.encode('utf8'))
-except NameError:
-    pass
-# End fix
 
 # Drop the first log prefix for this command
 enable_drop_first_log_prefix(True)
@@ -151,10 +136,7 @@ def __place_template_folder(group, src, dst, gbp=False):
                 debug("Not overwriting existing file '{0}'".format(template_dst))
             else:
                 with io.open(template_dst, 'w', encoding='utf-8') as f:
-                    if not isinstance(template, str):
-                        template = template.decode('utf-8')
-                    # Python 2 API needs a `unicode` not a utf-8 string.
-                    elif sys.version_info.major == 2:
+                    if isinstance(template, bytes):
                         template = template.decode('utf-8')
                     f.write(template)
                 shutil.copystat(template_abs_path, template_dst)
@@ -483,17 +465,11 @@ def generate_substitutions_from_package(
     data['Licenses'] = licenses
 
     def convertToUnicode(obj):
-        if sys.version_info.major == 2:
-            if isinstance(obj, str):
-                return unicode(obj.decode('utf8'))
-            elif isinstance(obj, unicode):
-                return obj
-        else:
-            if isinstance(obj, bytes):
-                return str(obj.decode('utf8'))
-            elif isinstance(obj, str):
-                return obj
-        if isinstance(obj, list):
+        if isinstance(obj, bytes):
+            return str(obj.decode('utf8'))
+        elif isinstance(obj, str):
+            return obj
+        elif isinstance(obj, list):
             for i, val in enumerate(obj):
                 obj[i] = convertToUnicode(val)
             return obj
@@ -534,7 +510,7 @@ def __process_template_folder(path, subs):
         info("Expanding '{0}' -> '{1}'".format(
             os.path.relpath(item),
             os.path.relpath(template_path)))
-        result = em.expand(template, **subs)
+        result = expand_template_em(template, subs)
         # Don't write an empty file
         if len(result) == 0 and \
            os.path.basename(template_path) in ['copyright']:
@@ -542,8 +518,6 @@ def __process_template_folder(path, subs):
             continue
         # Write the result
         with io.open(template_path, 'w', encoding='utf-8') as f:
-            if sys.version_info.major == 2:
-                result = result.decode('utf-8')
             f.write(result)
         # Copy the permissions
         shutil.copymode(item, template_path)

@@ -81,6 +81,7 @@ from bloom.packages import get_package_data
 
 from bloom.util import code
 from bloom.util import execute_command
+from bloom.util import expand_template_em
 from bloom.util import maybe_continue
 
 try:
@@ -88,12 +89,6 @@ try:
 except ImportError as err:
     debug(traceback.format_exc())
     error("rosdistro was not detected, please install it.", exit=True)
-
-try:
-    import em
-except ImportError:
-    debug(traceback.format_exc())
-    error("empy was not detected, please install it.", exit=True)
 
 # Drop the first log prefix for this command
 enable_drop_first_log_prefix(True)
@@ -326,17 +321,11 @@ def generate_substitutions_from_package(
     summarize_dependency_mapping(data, depends, build_depends, resolved_deps)
 
     def convertToUnicode(obj):
-        if sys.version_info.major == 2:
-            if isinstance(obj, str):
-                return unicode(obj.decode('utf8'))
-            elif isinstance(obj, unicode):
-                return obj
-        else:
-            if isinstance(obj, bytes):
-                return str(obj.decode('utf8'))
-            elif isinstance(obj, str):
-                return obj
-        if isinstance(obj, list):
+        if isinstance(obj, bytes):
+            return str(obj.decode('utf8'))
+        elif isinstance(obj, str):
+            return obj
+        elif isinstance(obj, list):
             for i, val in enumerate(obj):
                 obj[i] = convertToUnicode(val)
             return obj
@@ -379,11 +368,9 @@ def __process_template_folder(path, subs):
         info("Expanding '{0}' -> '{1}'".format(
             os.path.relpath(item),
             os.path.relpath(template_path)))
-        result = em.expand(template, **subs)
+        result = expand_template_em(template, subs)
         # Write the result
         with io.open(template_path, 'w', encoding='utf-8') as f:
-            if sys.version_info.major == 2:
-                result = result.decode('utf-8')
             f.write(result)
         # Copy the permissions
         shutil.copymode(item, template_path)
