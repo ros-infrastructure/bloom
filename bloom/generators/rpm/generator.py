@@ -320,11 +320,17 @@ def generate_substitutions_from_package(
     summarize_dependency_mapping(data, depends, build_depends, resolved_deps)
 
     def convertToUnicode(obj):
-        if isinstance(obj, bytes):
-            return str(obj.decode('utf8'))
-        elif isinstance(obj, str):
-            return obj
-        elif isinstance(obj, list):
+        if sys.version_info.major == 2:
+            if isinstance(obj, str):
+                return unicode(obj.decode('utf8'))
+            elif isinstance(obj, unicode):
+                return obj
+        else:
+            if isinstance(obj, bytes):
+                return str(obj.decode('utf8'))
+            elif isinstance(obj, str):
+                return obj
+        if isinstance(obj, list):
             for i, val in enumerate(obj):
                 obj[i] = convertToUnicode(val)
             return obj
@@ -370,6 +376,8 @@ def __process_template_folder(path, subs):
         result = expand_template_em(template, subs)
         # Write the result
         with io.open(template_path, 'w', encoding='utf-8') as f:
+            if sys.version_info.major == 2:
+                result = result.decode('utf-8')
             f.write(result)
         # Copy the permissions
         shutil.copymode(item, template_path)
