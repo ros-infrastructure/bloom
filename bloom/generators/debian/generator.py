@@ -37,7 +37,6 @@ import datetime
 import io
 import json
 import os
-import pkg_resources
 import re
 import shutil
 import sys
@@ -91,6 +90,12 @@ from bloom.util import execute_command
 from bloom.util import get_rfc_2822_date
 from bloom.util import maybe_continue
 
+if sys.version_info[0:2] < (3, 10):
+    import importlib_resources
+else:
+    import importlib.resources as importlib_resources
+
+
 try:
     from catkin_pkg.changelog import get_changelog_from_path
     from catkin_pkg.changelog import CHANGELOG_FILENAME
@@ -128,7 +133,8 @@ TEMPLATE_EXTENSION = '.em'
 
 
 def __place_template_folder(group, src, dst, gbp=False):
-    template_files = pkg_resources.resource_listdir(group, src)
+    template_files = [os.path.basename(file)
+                      for file in importlib_resources.files(f'{group}.{src.replace("/", ".")}').iterdir()]
     # For each template, place
     for template_file in template_files:
         if not gbp and os.path.basename(template_file) == 'gbp.conf.em':
@@ -136,14 +142,14 @@ def __place_template_folder(group, src, dst, gbp=False):
             continue
         template_path = os.path.join(src, template_file)
         template_dst = os.path.join(dst, template_file)
-        if pkg_resources.resource_isdir(group, template_path):
+        if importlib_resources.files(group).joinpath(template_path).is_dir():
             debug("Recursing on folder '{0}'".format(template_path))
             __place_template_folder(group, template_path, template_dst, gbp)
         else:
             try:
                 debug("Placing template '{0}'".format(template_path))
-                template = pkg_resources.resource_string(group, template_path)
-                template_abs_path = pkg_resources.resource_filename(group, template_path)
+                template = importlib_resources.files(group).joinpath(template_path).open().read()
+                template_abs_path = importlib_resources.files(group).joinpath(template_path)
             except IOError as err:
                 error("Failed to load template "
                       "'{0}': {1}".format(template_file, str(err)), exit=True)

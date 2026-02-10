@@ -39,7 +39,6 @@ import atexit
 import datetime
 import difflib
 import os
-import pkg_resources
 import platform
 import shutil
 import subprocess
@@ -138,6 +137,11 @@ except ImportError:
           file=sys.stderr, exit=True)
 
 from catkin_pkg.changelog import get_changelog_from_path
+
+if sys.version_info[0:2] < (3, 10):
+    import importlib_metadata
+else:
+    import importlib.metadata as importlib_metadata
 
 _repositories = {}
 
@@ -865,7 +869,7 @@ Versions of tools used:
         bloom_v=bloom.__version__,
         catkin_pkg_v=catkin_pkg.__version__,
         # Until https://github.com/ros-infrastructure/rosdistro/issues/16
-        rosdistro_v=pkg_resources.require("rosdistro")[0].version,
+        rosdistro_v=importlib_metadata.metadata("rosdistro").get("version"),
         rosdep_v=rosdep2.__version__,
         vcstools_v=vcstools.__version__.version
     )
