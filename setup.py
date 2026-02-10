@@ -31,6 +31,7 @@ setup(
         'test': [
             'pep8',
             'pytest',
+            'setuptools',
         ]},
     author='Tully Foote, William Woodall',
     author_email='tfoote@openrobotics.org, william@openrobotics.org',
