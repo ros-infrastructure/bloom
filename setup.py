@@ -18,9 +18,8 @@ setup(
     },
     install_requires=[
         'catkin_pkg >= 0.4.3',
-        'empy',
         'setuptools < 82',
-        'empy < 4',
+        'empy',
         'packaging',
         'python-dateutil',
         'PyYAML',
