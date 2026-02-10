@@ -3,7 +3,7 @@ name: Run tests
 
 on:  # yamllint disable-line rule:truthy
   push:
-    branches: ['master']
+    branches: ['master', 'jrivero/empy34_setuptools']
   pull_request:
   workflow_call:
 
