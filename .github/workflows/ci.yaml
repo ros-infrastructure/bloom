@@ -12,6 +12,22 @@ jobs:
     uses: ros-infrastructure/ci/.github/workflows/pytest.yaml@main
     with:
       matrix-filter: del(.matrix.os[] | select(contains("windows")))
+
+  # Dedicated job for testing with empy < 4
+  pytest-empy-legacy:
+    runs-on: ubuntu-latest
+    name: Test empy < 4 compatibility
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+      - name: Install dependencies with empy < 4
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[test] 'empy<4'
+      - name: Run tests
+        run: |
+          python -m pytest test/ -v
   yamllint:
     runs-on: ubuntu-latest
     steps:

@@ -77,6 +77,8 @@ from bloom.logging import info
 from bloom.logging import is_debug
 from bloom.logging import warning
 
+from bloom.util import expand_template_em
+
 from bloom.commands.git.patch.common import get_patch_config
 from bloom.commands.git.patch.common import set_patch_config
 
@@ -332,9 +334,9 @@ def generate_substitutions_from_package(
     data['Description'] = format_description(package.description)
     # Websites
     websites = [str(url) for url in package.urls if url.type == 'website']
-    homepage = websites[0] if websites else ''
-    if homepage == '':
-        warning("No homepage set, defaulting to ''")
+    homepage = websites[0] if websites else 'https://index.ros.org/p/%s/#%s' % (package.name, ros_distro)
+    if not websites:
+        warning("No homepage set, defaulting to %s" % homepage)
     data['Homepage'] = homepage
     repositories = [str(url) for url in package.urls if url.type == 'repository']
     repository = repositories[0] if repositories else ''
@@ -540,7 +542,7 @@ def __process_template_folder(path, subs):
         info("Expanding '{0}' -> '{1}'".format(
             os.path.relpath(item),
             os.path.relpath(template_path)))
-        result = em.expand(template, **subs)
+        result = expand_template_em(template, subs)
         # Don't write an empty file
         if len(result) == 0 and \
            os.path.basename(template_path) in ['copyright']:
