@@ -18,7 +18,6 @@ setup(
     },
     install_requires=[
         'catkin_pkg >= 0.4.3',
-        'setuptools < 82',
         'empy',
         'importlib-metadata >= 3.6; python_version < "3.10"',
         'importlib-resources >= 5; python_version < "3.10"',
