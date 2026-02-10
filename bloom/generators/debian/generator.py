@@ -78,6 +78,8 @@ from bloom.logging import info
 from bloom.logging import is_debug
 from bloom.logging import warning
 
+from bloom.util import expand_template_em
+
 from bloom.commands.git.patch.common import get_patch_config
 from bloom.commands.git.patch.common import set_patch_config
 
@@ -534,7 +536,7 @@ def __process_template_folder(path, subs):
         info("Expanding '{0}' -> '{1}'".format(
             os.path.relpath(item),
             os.path.relpath(template_path)))
-        result = em.expand(template, **subs)
+        result = expand_template_em(template, subs)
         # Don't write an empty file
         if len(result) == 0 and \
            os.path.basename(template_path) in ['copyright']:

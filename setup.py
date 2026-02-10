@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import sys
 from setuptools import find_packages, setup
 
 
@@ -20,7 +19,7 @@ setup(
     install_requires=[
         'catkin_pkg >= 0.4.3',
         'setuptools < 82',
-        'empy < 4',
+        'empy',
         'packaging',
         'python-dateutil',
         'PyYAML',
