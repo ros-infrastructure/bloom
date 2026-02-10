@@ -18,7 +18,6 @@ setup(
     },
     install_requires=[
         'catkin_pkg >= 0.4.3',
-        'setuptools',
         'empy',
         'setuptools < 82',
         'empy < 4',
