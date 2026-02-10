@@ -8,12 +8,6 @@ import os
 import re
 import sys
 
-try:
-    from vcstools.vcs_abstraction import get_vcs_client
-except ImportError:
-    print("vcstools was not detected, please install it.", file=sys.stderr)
-    sys.exit(1)
-
 from .common import create_release_repo
 
 from ..utils.common import bloom_answer
@@ -33,6 +27,8 @@ from bloom.commands.git.patch import import_cmd
 from bloom.commands.git.patch import remove_cmd
 
 from bloom.generators.debian.generator import sanitize_package_name
+
+from bloom.vcs import get_vcs_client
 
 
 def create_upstream_repository(packages, directory=None, format_versions=None):

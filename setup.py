@@ -26,7 +26,7 @@ setup(
         'PyYAML',
         'rosdep >= 0.15.0',
         'rosdistro >= 0.8.0',
-        'vcstools >= 0.1.22',
+        'vcstool >= 0.3.0',
     ],
     extras_require={
         'test': [
