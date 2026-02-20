@@ -243,7 +243,7 @@ def get_repo_uri(repository, distro):
         info("You can continue the release process by manually specifying the location of the RELEASE repository.")
         info("To be clear this is the url of the RELEASE repository not the upstream repository.")
         info("For release repositories on GitHub, you should provide the `https://` url which should end in `.git`.")
-        info("Here is the url for a typical release repository on GitHub: https://github.com/ros-gbp/rviz-release.git")
+        info("Here is the url for a typical release repository on GitHub: https://github.com/ros2-gbp/rviz-release.git")
         # Calculate a reasonable default from the list of previous distros
         info(fmt("@{gf}@!==> @|") + "Looking for a release of this repository in a different distribution...")
         default_distro, default_release = get_most_recent('release', repository, distro)
