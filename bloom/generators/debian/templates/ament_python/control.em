@@ -7,7 +7,7 @@ Homepage: @(Homepage)
 Standards-Version: 3.9.2
 
 Package: @(Package)
-Architecture: any
+Architecture: @(Architecture)
 Depends: ${python3:Depends}, ${misc:Depends}, @(', '.join(Depends))
 @[if Conflicts]Conflicts: @(', '.join(Conflicts))@\n@[end if]@
 @[if Replaces]Replaces: @(', '.join(Replaces))@\n@[end if]@
