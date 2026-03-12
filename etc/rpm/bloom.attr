@@ -1,0 +1,7 @@
+%__bloom_conflicts	%{?__bloom_package:%{_rpmconfigdir}/bloom-deps.py '%{_builddir}/%{buildsubdir}/package.xml' '%{name}' --conflicts %{?_bloom_skip_keys:--skip-keys %{_bloom_skip_keys}}}
+%__bloom_obsoletes	%{?__bloom_package:%{_rpmconfigdir}/bloom-deps.py '%{_builddir}/%{buildsubdir}/package.xml' '%{name}' --obsoletes %{?_bloom_skip_keys:--skip-keys %{_bloom_skip_keys}}}
+%__bloom_provides	%{?__bloom_package:%{_rpmconfigdir}/bloom-deps.py '%{_builddir}/%{buildsubdir}/package.xml' '%{name}' --provides %{?_bloom_skip_keys:--skip-keys %{_bloom_skip_keys}}}
+%__bloom_requires	%{?__bloom_package:%{_rpmconfigdir}/bloom-deps.py '%{_builddir}/%{buildsubdir}/package.xml' '%{name}' --requires --requires-devel %{!?_bloom_disable_groups:--resolve-groups} %{?_bloom_skip_keys:--skip-keys %{_bloom_skip_keys}}}
+%__bloom_supplements	%{?__bloom_package:%{_rpmconfigdir}/bloom-deps.py '%{_builddir}/%{buildsubdir}/package.xml' '%{name}' --supplements %{?_bloom_skip_keys:--skip-keys %{_bloom_skip_keys}}}
+
+%__bloom_path		^/opt/ros/[^/]+$
