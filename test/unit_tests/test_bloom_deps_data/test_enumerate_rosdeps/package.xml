@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>my_pkg</name>
+  <version>1.0.0</version>
+  <description>Test</description>
+  <maintainer email="test@test.com">Test</maintainer>
+  <license>BSD</license>
+  <conflict>conflict_a</conflict>
+  <replace>replace_a</replace>
+  <exec_depend>exec_a</exec_depend>
+  <test_depend>test_a</test_depend>
+  <doc_depend>doc_a</doc_depend>
+  <build_depend>build_a</build_depend>
+  <buildtool_depend>buildtool_a</buildtool_depend>
+  <build_export_depend>export_a</build_export_depend>
+  <buildtool_export_depend>tool_export_a</buildtool_export_depend>
+</package>

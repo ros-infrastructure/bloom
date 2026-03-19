@@ -2,7 +2,7 @@
 
 # Software License Agreement (BSD License)
 #
-# Copyright (c) 2024, Open Source Robotics Foundation, Inc.
+# Copyright (c) 2026, Open Source Robotics Foundation, Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
