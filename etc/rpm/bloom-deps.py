@@ -260,7 +260,7 @@ def _parse_args(argv):
     # resolve derivative arguments
     rpm_name_split = args.rpm_name.split('-')
     if len(rpm_name_split) < 3 or rpm_name_split[0] != 'ros':
-        print("Ignoring non-ROS package '{args.rpm_name}'", file=sys.stderr)
+        print(f"Ignoring non-ROS package '{args.rpm_name}'", file=sys.stderr)
         sys.exit(0)
     args.ros_distro = rpm_name_split[1]
     args.is_devel = rpm_name_split[-1] == 'devel'
@@ -275,7 +275,7 @@ def main(argv=sys.argv[1:]):
 
     if os.environ.get('ROS_DISTRO') not in (None, '', args.ros_distro):
         print(
-            "Environment variable 'ROS_DISTRO' does not package name",
+            "Environment variable 'ROS_DISTRO' does not match package name",
             file=sys.stderr)
         return 1
 
