@@ -108,14 +108,9 @@ from bloom.util import safe_input
 from bloom.util import temporary_directory
 from bloom.util import to_unicode
 
-try:
-    import vcstools
-except ImportError:
-    debug(traceback.format_exc())
-    error("vcstools was not detected, please install it.", file=sys.stderr,
-          exit=True)
-import vcstools.__version__
-from vcstools.vcs_abstraction import get_vcs_client
+from bloom.vcs import get_vcs_client
+from bloom.vcs import vcs_name
+from bloom.vcs import vcs_version
 
 from rosdistro import DistributionFile
 from rosdistro import get_distribution_files
@@ -858,7 +853,7 @@ Versions of tools used:
 - catkin_pkg version: `{catkin_pkg_v}`
 - rosdep version: `{rosdep_v}`
 - rosdistro version: `{rosdistro_v}`
-- vcstools version: `{vcstools_v}`
+- {vcs_n} version: `{vcs_v}`
 """.format(
         repo=repository,
         upstream_repo_url=track_dict['vcs_uri'],
@@ -871,7 +866,8 @@ Versions of tools used:
         # Until https://github.com/ros-infrastructure/rosdistro/issues/16
         rosdistro_v=importlib_metadata.metadata("rosdistro").get("version"),
         rosdep_v=rosdep2.__version__,
-        vcstools_v=vcstools.__version__.version
+        vcs_n=vcs_name,
+        vcs_v=vcs_version
     )
     summary_file.write(msg)
 
