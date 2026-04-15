@@ -253,7 +253,7 @@ ACTION_LIST_HISTORY = [
         'git-bloom-generate -y rosrpm --prefix release/:{ros_distro}'
         ' :{ros_distro} -i :{release_inc} --os-name rhel',
         'git-bloom-generate -y rosdynrpm --prefix release/:{ros_distro}'
-        ' :{ros_distro} -i :{release_inc} --only-os-names fedora rhel',
+        ' :{ros_distro} -i :{release_inc} --require-os fedora rhel',
     ]
 ]
 
