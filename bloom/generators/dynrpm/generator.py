@@ -371,10 +371,21 @@ class DynRpmGenerator(BloomGenerator):
                  "even if not in current upstream")
         add('--install-prefix', default=None,
             help="overrides the default installation prefix (/usr)")
+        add('--only-os-names', nargs='*', required=False,
+            help="skip generation if rosdistro doesn't have any of "
+                 "these platforms listed")
 
     def handle_arguments(self, args):
         self.interactive = args.interactive
         self.rpm_inc = args.rpm_inc
+        if args.only_os_names:
+            index = rosdistro.get_index(rosdistro.get_index_url())
+            distribution_file = rosdistro.get_distribution_file(index, self.rosdistro)
+            if not set(args.only_os_names).intersection(distribution_file.release_platforms):
+                warning("No platforms defined for given OS filter in release file for the '{0}' distro."
+                        "\nNot performing dynamic RPM generation."
+                        .format(self.rosdistro))
+                sys.exit(0)
         self.install_prefix = args.install_prefix
         if args.install_prefix is None:
             self.install_prefix = self.default_install_prefix
