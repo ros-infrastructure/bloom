@@ -235,6 +235,25 @@ ACTION_LIST_HISTORY = [
         ' :{ros_distro} -i :{release_inc} --os-name fedora',
         'git-bloom-generate -y rosrpm --prefix release/:{ros_distro}'
         ' :{ros_distro} -i :{release_inc} --os-name rhel',
+    ],
+    [
+        'bloom-export-upstream :{vcs_local_uri} :{vcs_type}'
+        ' --tag :{release_tag} --display-uri :{vcs_uri}'
+        ' --name :{name} --output-dir :{archive_dir_path}',
+        'git-bloom-import-upstream :{archive_path} :{patches}'
+        ' --release-version :{version} --replace',
+        'git-bloom-generate -y rosrelease :{ros_distro}'
+        ' --source upstream -i :{release_inc}',
+        'git-bloom-generate -y rosdebian --prefix release/:{ros_distro}'
+        ' :{ros_distro} -i :{release_inc} --os-name ubuntu',
+        'git-bloom-generate -y rosdebian --prefix release/:{ros_distro}'
+        ' :{ros_distro} -i :{release_inc} --os-name debian --os-not-required',
+        'git-bloom-generate -y rosrpm --prefix release/:{ros_distro}'
+        ' :{ros_distro} -i :{release_inc} --os-name fedora',
+        'git-bloom-generate -y rosrpm --prefix release/:{ros_distro}'
+        ' :{ros_distro} -i :{release_inc} --os-name rhel',
+        'git-bloom-generate -y rosdynrpm --prefix release/:{ros_distro}'
+        ' :{ros_distro} -i :{release_inc} --require-os fedora rhel',
     ]
 ]
 
