@@ -772,7 +772,8 @@ Increasing version of package(s) in repository `{repository}` to `{version}`:
                     return
                 # Use partial fetch if available to speed up cloning large rosdistro repo
                 try:
-                    _my_run('git fetch --filter=blob:none {rosdistro_url} {base_info[branch]}:{new_branch} -n'.format(**locals()))
+                    _my_run('git fetch --filter=blob:none {rosdistro_url} {base_info[branch]}:{new_branch} -n'
+                            .format(**locals()))
                 except subprocess.CalledProcessError:
                     info('Partial fetch failed, falling back to regular fetch...')
                     _my_run('git fetch {rosdistro_url} {base_info[branch]}:{new_branch} -n'.format(**locals()))
