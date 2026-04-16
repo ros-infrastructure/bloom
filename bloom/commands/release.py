@@ -39,7 +39,6 @@ import atexit
 import datetime
 import difflib
 import os
-import pkg_resources
 import platform
 import shutil
 import subprocess
@@ -138,6 +137,11 @@ except ImportError:
           file=sys.stderr, exit=True)
 
 from catkin_pkg.changelog import get_changelog_from_path
+
+if sys.version_info[0:2] < (3, 10):
+    import importlib_metadata
+else:
+    import importlib.metadata as importlib_metadata
 
 _repositories = {}
 
@@ -239,7 +243,7 @@ def get_repo_uri(repository, distro):
         info("You can continue the release process by manually specifying the location of the RELEASE repository.")
         info("To be clear this is the url of the RELEASE repository not the upstream repository.")
         info("For release repositories on GitHub, you should provide the `https://` url which should end in `.git`.")
-        info("Here is the url for a typical release repository on GitHub: https://github.com/ros-gbp/rviz-release.git")
+        info("Here is the url for a typical release repository on GitHub: https://github.com/ros2-gbp/rviz-release.git")
         # Calculate a reasonable default from the list of previous distros
         info(fmt("@{gf}@!==> @|") + "Looking for a release of this repository in a different distribution...")
         default_distro, default_release = get_most_recent('release', repository, distro)
@@ -753,7 +757,11 @@ Increasing version of package(s) in repository `{repository}` to `{version}`:
             with change_directory(base_info['repo']):
                 # Remove the remote to avoid storing the oauth token in the git config
                 _my_run("git remote remove origin")
-                branches = [x['name'] for x in gh.list_branches(head_org, head_repo)]
+                # Use git ls-remote to find existing branches on the fork
+                ls_remote_cmd = "git ls-remote --heads {rosdistro_fork_url}".format(**locals())
+                from bloom.util import check_output
+                branches_out = check_output(ls_remote_cmd, shell=True)
+                branches = [l.split()[1].replace('refs/heads/', '') for l in branches_out.splitlines()]
                 new_branch = 'bloom-{repository}-{count}'
                 count = 0
                 while new_branch.format(repository=repository, count=count) in branches:
@@ -872,7 +880,7 @@ Versions of tools used:
         bloom_v=bloom.__version__,
         catkin_pkg_v=catkin_pkg.__version__,
         # Until https://github.com/ros-infrastructure/rosdistro/issues/16
-        rosdistro_v=pkg_resources.require("rosdistro")[0].version,
+        rosdistro_v=importlib_metadata.metadata("rosdistro").get("version"),
         rosdep_v=rosdep2.__version__,
         vcstools_v=vcstools.__version__.version
     )
