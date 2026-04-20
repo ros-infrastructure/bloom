@@ -1,3 +1,16 @@
+0.14.0 (2026-04-20 11:45:00 -0500)
+----------------------------------
+- Speed up rosdistro cloning with blobless partial clones. `#755 <https://github.com/ros-infrastructure/bloom/issues/755>`_
+- Optimize PR branch calculation. `#756 <https://github.com/ros-infrastructure/bloom/issues/756>`_
+- Enable dynamic RPM generator. `#764 <https://github.com/ros-infrastructure/bloom/issues/764>`_
+- Add dynamic RPM generator for Bloom. `#762 <https://github.com/ros-infrastructure/bloom/issues/762>`_
+- Add dynamic dependency infrastructure for RPM packages. `#759 <https://github.com/ros-infrastructure/bloom/issues/759>`_
+- Use github.com/ros2-gbp instaed of ros-gbp. `#758 <https://github.com/ros-infrastructure/bloom/issues/758>`_
+- Replace pkg_resources usage with importlib. `#747 <https://github.com/ros-infrastructure/bloom/issues/747>`_
+- Support empy4 together with empy3. `#753 <https://github.com/ros-infrastructure/bloom/issues/753>`_
+- Pin setuptools < 82 for pkg_resources. `#757 <https://github.com/ros-infrastructure/bloom/issues/757>`_
+- Default the homepage in the packaging metadata if not otherwise declared by the package. `#754 <https://github.com/ros-infrastructure/bloom/issues/754>`_
+
 0.13.0 (2025-06-29 21:30:00 -0700)
 ----------------------------------
 - Add bloom templates for meson build system. `#691 <https://github.com/ros-infrastructure/bloom/issues/691>`_
