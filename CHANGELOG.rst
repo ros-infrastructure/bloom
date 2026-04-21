@@ -1,3 +1,7 @@
+0.14.2 (2026-04-21 10:35:00 -0500)
+----------------------------------
+- Drop Ubuntu Focal, disable Python 2 deb package. `#767 <https://github.com/ros-infrastructure/bloom/issues/767>`_
+
 0.14.1 (2026-04-20 21:29:00 -0500)
 ----------------------------------
 - Switch dynrpm generator to use central empy logic. `#766 <https://github.com/ros-infrastructure/bloom/issues/766>`_
