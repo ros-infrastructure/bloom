@@ -1,3 +1,7 @@
+0.14.1 (2026-04-20 21:29:00 -0500)
+----------------------------------
+- Switch dynrpm generator to use central empy logic. `#766 <https://github.com/ros-infrastructure/bloom/issues/766>`_
+
 0.14.0 (2026-04-20 11:45:00 -0500)
 ----------------------------------
 - Speed up rosdistro cloning with blobless partial clones. `#755 <https://github.com/ros-infrastructure/bloom/issues/755>`_
@@ -15,7 +19,7 @@
 ----------------------------------
 - Add bloom templates for meson build system. `#691 <https://github.com/ros-infrastructure/bloom/issues/691>`_
 - Updates for python3. `#736 <https://github.com/ros-infrastructure/bloom/issues/736>`_
-- Fix a typo. `#735 <https://github.com/ros-infrastructure/bloom/issues/735`_
+- Fix a typo. `#735 <https://github.com/ros-infrastructure/bloom/issues/735>`_
 
 0.12.0 (2024-03-29 17:20:00 -0500)
 ----------------------------------
