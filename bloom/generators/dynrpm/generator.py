@@ -305,7 +305,7 @@ def match_branches_with_prefix(prefix, get_branches, prune=False, release_inc='1
         # Prune listed branches by packages in latest upstream
         with inbranch('upstream'):
             pkg_names, version, pkgs_dict = get_package_data('upstream')
-            for branch in branches:
+            for branch in branches.copy():
                 if branch.split(prefix)[-1].strip('/') not in pkg_names:
                     branches.remove(branch)
         branches = [
