@@ -73,12 +73,7 @@ from bloom.util import maybe_continue
 from bloom.util import quiet_git_clone_warning
 from bloom.util import safe_input
 
-try:
-    from vcstools.vcs_abstraction import get_vcs_client
-except ImportError:
-    debug(traceback.format_exc())
-    error("vcstools was not detected, please install it.", file=sys.stderr,
-          exit=True)
+from bloom.vcs import get_vcs_client
 
 upstream_repos = {}
 
