@@ -99,6 +99,7 @@ else:
 try:
     from catkin_pkg.changelog import get_changelog_from_path
     from catkin_pkg.changelog import CHANGELOG_FILENAME
+    from catkin_pkg.package import Person
 except ImportError as err:
     debug(traceback.format_exc())
     error("catkin_pkg was not detected, please install it.", exit=True)
@@ -299,7 +300,8 @@ def get_changelogs(package, releaser_history=None):
             # Each entry has (version, date, changes, releaser, releaser_email)
             releaser, email = releaser_history.get(version, maintainer)
             changelogs.append((
-                version, date_str, '\n'.join(changes_str), releaser, email
+                version, date_str, '\n'.join(changes_str),
+                ('"' + releaser + '"') if releaser and not releaser[0] == '"' else releaser, email
             ))
         return changelogs
     else:
@@ -312,6 +314,12 @@ def missing_dep_resolver(key, peer_packages):
     if key in peer_packages:
         return [sanitize_package_name(key)]
     return default_fallback_resolver(key, peer_packages)
+
+
+def _ensure_rfc5322_compliant(person):
+    if person.name and not person.name[0] == '"':
+        return Person('"' + person.name + '"', person.email)
+    return person
 
 
 def generate_substitutions_from_package(
@@ -428,7 +436,7 @@ def generate_substitutions_from_package(
     # Maintainers
     maintainers = []
     for m in package.maintainers:
-        maintainers.append(str(m))
+        maintainers.append(str(_ensure_rfc5322_compliant(m)))
     data['Maintainer'] = maintainers[0]
     data['Maintainers'] = ', '.join(maintainers)
     # Changelog
