@@ -5,7 +5,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='bloom',
-    version='0.14.2',
+    version='0.14.3',
     packages=find_packages(exclude=['test', 'test.*']),
     package_data={
         'bloom.generators.debian': [

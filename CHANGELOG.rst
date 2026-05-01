@@ -1,3 +1,11 @@
+0.14.3 (2026-05-01 15:29:00 -0500)
+----------------------------------
+- Optimize track_branches to avoid git checkout operation. `#773 <https://github.com/ros-infrastructure/bloom/issues/773>`_
+- Don't target release tags for dynrpm branches. `#772 <https://github.com/ros-infrastructure/bloom/issues/772>`_
+- Ensure that E-mails in Debian metadata are RFC 5322 compliant. `#770 <https://github.com/ros-infrastructure/bloom/issues/770>`_
+- Add 'meson' template to 'dynrpm' generator. `#769 <https://github.com/ros-infrastructure/bloom/issues/769>`_
+- Duplicate branch list to avoid skipping entries. `#768 <https://github.com/ros-infrastructure/bloom/issues/768>`_
+
 0.14.2 (2026-04-21 10:35:00 -0500)
 ----------------------------------
 - Drop Ubuntu Focal, disable Python 2 deb package. `#767 <https://github.com/ros-infrastructure/bloom/issues/767>`_
