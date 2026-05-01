@@ -291,7 +291,7 @@ def process_template_files(path, subs):
     return __process_template_folder(rpm_dir, subs)
 
 
-def match_branches_with_prefix(prefix, get_branches, prune=False, release_inc='1'):
+def match_branches_with_prefix(prefix, get_branches, prune=False):
     debug("match_branches_with_prefix(" + str(prefix) + ", " +
           str(get_branches()) + ")")
     branches = []
@@ -310,10 +310,6 @@ def match_branches_with_prefix(prefix, get_branches, prune=False, release_inc='1
             for branch in branches.copy():
                 if branch.split(prefix)[-1].strip('/') not in pkg_names:
                     branches.remove(branch)
-        branches = [
-            branch + '/' + version + '-' + release_inc
-            for branch in branches
-        ]
     return branches
 
 
@@ -387,8 +383,7 @@ class DynRpmGenerator(BloomGenerator):
         if args.install_prefix is None:
             self.install_prefix = self.default_install_prefix
         self.prefix = args.prefix
-        self.branches = match_branches_with_prefix(
-            self.prefix, get_branches, prune=not args.match_all, release_inc=self.rpm_inc)
+        self.branches = match_branches_with_prefix(self.prefix, get_branches, prune=not args.match_all)
         if len(self.branches) == 0:
             error(
                 "No packages found, check your --prefix or --src arguments.",
