@@ -637,36 +637,46 @@ def track_branches(branches=None, directory=None):
     debug("track_branches(" + str(branches) + ", " + str(directory) + ")")
     if branches == []:
         return
-    # Save the current branch
-    current_branch = get_current_branch(directory)
-    try:
-        # Get the local branches
-        local_branches = get_branches(local_only=True, directory=directory)
-        # Get the remote and local branches
-        all_branches = get_branches(local_only=False, directory=directory)
-        # Calculate the untracked branches
-        untracked_branches = []
-        for branch in all_branches:
-            if branch.startswith('remotes/'):
-                if branch.count('/') >= 2:
-                    branch = '/'.join(branch.split('/')[2:])
-            if branch not in local_branches:
-                untracked_branches.append(branch)
-        # Prune any untracked branches by specified branches
-        if branches is not None:
-            branches_to_track = []
-            for untracked in untracked_branches:
-                if untracked in branches:
-                    branches_to_track.append(untracked)
-        else:
-            branches_to_track = untracked_branches
-        # Track branches
-        debug("Tracking branches: " + str(branches_to_track))
-        for branch in branches_to_track:
-            checkout(branch, directory=directory)
-    finally:
-        if current_branch:
-            checkout(current_branch, directory=directory)
+    # Get the local branches
+    local_branches = get_branches(local_only=True, directory=directory)
+    # Get the remote and local branches
+    all_branches = get_branches(local_only=False, directory=directory)
+    # Calculate the untracked branches
+    untracked_branches = {}
+    ambiguous_branches = {}
+    for branch in all_branches:
+        if branch.startswith('remotes/') and branch.count('/') >= 2:
+            local_name = '/'.join(branch.split('/')[2:])
+            if local_name not in local_branches:
+                if local_name in untracked_branches:
+                    if local_name not in ambiguous_branches:
+                        ambiguous_branches[local_name] = [untracked_branches[local_name]]
+                    ambiguous_branches[local_name].append(branch)
+                else:
+                    untracked_branches[local_name] = branch
+    # Prune any untracked branches by specified branches
+    branches_to_track = {}
+    if branches is not None:
+        for untracked, remote_ref in untracked_branches.items():
+            if untracked in branches:
+                if untracked in ambiguous_branches:
+                    raise RuntimeError(
+                        "Ambiguous tracking branch for '{0}'. Found on multiple remotes: {1}"
+                        .format(untracked, ambiguous_branches[untracked])
+                    )
+                branches_to_track[untracked] = remote_ref
+    else:
+        for untracked, remote_ref in untracked_branches.items():
+            if untracked in ambiguous_branches:
+                raise RuntimeError(
+                    "Ambiguous tracking branch for '{0}'. Found on multiple remotes: {1}"
+                    .format(untracked, ambiguous_branches[untracked])
+                )
+            branches_to_track[untracked] = remote_ref
+    # Track branches
+    debug("Tracking branches: " + str(list(branches_to_track.keys())))
+    for branch, remote_ref in branches_to_track.items():
+        execute_command('git branch --track {0} {1}'.format(branch, remote_ref), cwd=directory)
 
 
 def get_last_tag_by_version(directory=None):
