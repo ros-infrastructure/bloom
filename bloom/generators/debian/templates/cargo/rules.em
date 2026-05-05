@@ -27,8 +27,6 @@ override_dh_auto_configure:
 	# dh-cargo's configure step expects these two files to exist, even when
 	# we aren't vendoring dependencies. Touching an empty cargo-checksum.json
 	# and Cargo.lock is the canonical workaround (see Debian wiki: Rust Packaging).
-	# TODO: once bloom grows a proper vendoring story, the checksum file
-	# should be generated from the vendored crates instead of stubbed out.
 	touch debian/cargo-checksum.json Cargo.lock
 	# In case we're installing to a non-standard location, look for a setup.sh
 	# in the install tree and source it.  It will set things like
@@ -36,7 +34,7 @@ override_dh_auto_configure:
 	if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi && \
 	dh_auto_configure
 	# Generate a pallet-patcher config so that, once we have a viable
-	# vendoring solution, we can point cargo at a ROS-local registry.
+	# vendoring solution, we can point cargo to local deps
 	pallet-patcher --output-format=toml Cargo.toml > pallet-patcher.toml
 
 override_dh_auto_clean:
