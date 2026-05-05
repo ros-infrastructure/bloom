@@ -393,7 +393,9 @@ def generate_substitutions_from_package(
 
     # Build-type specific substitutions.
     build_type = package.get_build_type()
-    if build_type == 'catkin':
+    if build_type == 'cargo':
+        pass
+    elif build_type == 'catkin':
         pass
     elif build_type == 'cmake':
         pass
