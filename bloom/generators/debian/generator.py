@@ -393,17 +393,14 @@ def generate_substitutions_from_package(
 
     # Build-type specific substitutions.
     build_type = package.get_build_type()
-    if build_type == 'cargo':
-        pass
-    elif build_type == 'catkin':
-        pass
-    elif build_type == 'cmake':
-        pass
-    elif build_type == 'meson':
-        pass
-    elif build_type == 'ament_cmake':
-        pass
-    elif build_type == 'ament_python':
+    if build_type in (
+        'cargo',
+        'catkin',
+        'cmake',
+        'meson',
+        'ament_cmake',
+        'ament_python',
+    ):
         # Don't set the install-scripts flag if it's already set in setup.cfg.
         package_path = os.path.abspath(os.path.dirname(package.filename))
         setup_cfg_path = os.path.join(package_path, 'setup.cfg')
