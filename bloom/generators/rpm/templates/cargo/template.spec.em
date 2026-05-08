@@ -34,7 +34,7 @@ Source0:        %{name}-%{version}.tar.gz
 
 %prep
 %autosetup -p1
-%cargo_prep -v /usr/share/cargo/registry
+%cargo_prep -N
 pallet-patcher --output-format=toml Cargo.toml %{cargo_registry} > pallet-patcher.toml
 
 %build
