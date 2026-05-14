@@ -64,18 +64,37 @@ override_dh_auto_test:
 	cargo test || true
 
 override_dh_auto_install:
-	# In case we're installing to a non-standard location, look for a setup.sh
-	# in the install tree and source it.  It will set things like
-	# CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
-	if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi
-	# Call cargo install directly rather than through dh_auto_install so that
-	# the dh-cargo Python wrapper does not interfere with registry resolution.
-	# --no-track suppresses .crates.toml/.crates2.json metadata in the package.
-	# `cargo auditable` wraps cargo and embeds a compressed JSON dependency
-	# tree into the resulting binary's `.dep-v0` ELF section. This replaces
-	# the previous hand-rolled `cargo tree` manifest: the embedded data is
-	# the canonical SBOM, can't drift from the binary, and is consumed by
-	# `cargo audit bin`, trivy, grype, syft, osv-scanner, and `rust-audit-info`.
-	cargo auditable install --path . \
-		--root "$(CURDIR)/debian/@(Package)@(InstallationPrefix)" \
-		--no-track
+	# Classify the crate's targets ourselves rather than rely on dh-cargo's
+	# libpkg/binpkg dispatch, which keys on Debian package-name heuristics
+	# (librust-*-dev vs. others) that bloom-generated ROS package names don't
+	# satisfy. We then run whichever of the two install branches apply:
+	#   - HAS_LIB: lay down the unpacked crate source under
+	#     <prefix>/share/cargo/registry/<name>-<version>/ so downstream ROS
+	#     Rust packages can resolve this crate via pallet-patcher. Mirrors
+	#     dh-cargo cargo.pm:install() libpkg branch.
+	#   - HAS_BIN: run `cargo auditable install`, which wraps cargo and
+	#     embeds a compressed JSON SBOM into each binary's .dep-v0 ELF
+	#     section. Tools that read it: cargo audit bin, trivy, grype, syft,
+	#     osv-scanner, rust-audit-info. --no-track suppresses .crates.toml.
+	set -e ; \
+	if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi ; \
+	META=$$(cargo metadata --no-deps --format-version 1) ; \
+	CRATE_NAME=$$(printf '%s' "$$META" | python3 -c "import sys,json;print(json.load(sys.stdin)['packages'][0]['name'])") ; \
+	CRATE_VER=$$(printf '%s' "$$META" | python3 -c "import sys,json;print(json.load(sys.stdin)['packages'][0]['version'])") ; \
+	HAS_LIB=$$(printf '%s' "$$META" | python3 -c "import sys,json;p=json.load(sys.stdin)['packages'][0];L={'lib','rlib','dylib','cdylib','staticlib','proc-macro'};print(int(any(k in L for t in p['targets'] for k in t['kind'])))") ; \
+	HAS_BIN=$$(printf '%s' "$$META" | python3 -c "import sys,json;p=json.load(sys.stdin)['packages'][0];print(int(any('bin' in t['kind'] for t in p['targets'])))") ; \
+	if [ "$$HAS_LIB" = "1" ]; then \
+		TARGET="$(CURDIR)/debian/@(Package)@(InstallationPrefix)/share/cargo/registry/$$CRATE_NAME-$$CRATE_VER" ; \
+		install -d "$$TARGET" ; \
+		find . -mindepth 1 -maxdepth 1 \
+			\! -name target \! -name debian \! -name .git \
+			-exec cp -a -t "$$TARGET" {} + ; \
+		rm -rf "$$TARGET/target" ; \
+		cp debian/cargo-checksum.json "$$TARGET/.cargo-checksum.json" ; \
+		[ -z "$$SOURCE_DATE_EPOCH" ] || touch -d@$$SOURCE_DATE_EPOCH "$$TARGET/Cargo.toml" ; \
+	fi ; \
+	if [ "$$HAS_BIN" = "1" ]; then \
+		cargo auditable install --path . \
+			--root "$(CURDIR)/debian/@(Package)@(InstallationPrefix)" \
+			--no-track ; \
+	fi
