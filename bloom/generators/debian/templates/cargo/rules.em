@@ -35,7 +35,7 @@ override_dh_auto_configure:
 	dh_auto_configure
 	# Generate a pallet-patcher config so that, once we have a viable
 	# vendoring solution, we can point cargo to local deps
-	pallet-patcher --output-format=toml Cargo.toml > pallet-patcher.toml
+	pallet-patcher --output-format=toml Cargo.toml @(InstallationPrefix)/share/cargo/registry > pallet-patcher.toml
 
 override_dh_auto_clean:
 	dh_auto_clean
