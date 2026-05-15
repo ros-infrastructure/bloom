@@ -88,6 +88,7 @@ override_dh_auto_install:
 		install -d "$$TARGET" ; \
 		find . -mindepth 1 -maxdepth 1 \
 			\! -name target \! -name debian \! -name .git \
+			\! -name '.obj-*' \! -name 'pallet-patcher.toml' \
 			-exec cp -a -t "$$TARGET" {} + ; \
 		rm -rf "$$TARGET/target" ; \
 		cp debian/cargo-checksum.json "$$TARGET/.cargo-checksum.json" ; \
