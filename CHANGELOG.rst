@@ -1,8 +1,37 @@
+0.14.3 (2026-05-01 15:29:00 -0500)
+----------------------------------
+- Optimize track_branches to avoid git checkout operation. `#773 <https://github.com/ros-infrastructure/bloom/issues/773>`_
+- Don't target release tags for dynrpm branches. `#772 <https://github.com/ros-infrastructure/bloom/issues/772>`_
+- Ensure that E-mails in Debian metadata are RFC 5322 compliant. `#770 <https://github.com/ros-infrastructure/bloom/issues/770>`_
+- Add 'meson' template to 'dynrpm' generator. `#769 <https://github.com/ros-infrastructure/bloom/issues/769>`_
+- Duplicate branch list to avoid skipping entries. `#768 <https://github.com/ros-infrastructure/bloom/issues/768>`_
+
+0.14.2 (2026-04-21 10:35:00 -0500)
+----------------------------------
+- Drop Ubuntu Focal, disable Python 2 deb package. `#767 <https://github.com/ros-infrastructure/bloom/issues/767>`_
+
+0.14.1 (2026-04-20 21:29:00 -0500)
+----------------------------------
+- Switch dynrpm generator to use central empy logic. `#766 <https://github.com/ros-infrastructure/bloom/issues/766>`_
+
+0.14.0 (2026-04-20 11:45:00 -0500)
+----------------------------------
+- Speed up rosdistro cloning with blobless partial clones. `#755 <https://github.com/ros-infrastructure/bloom/issues/755>`_
+- Optimize PR branch calculation. `#756 <https://github.com/ros-infrastructure/bloom/issues/756>`_
+- Enable dynamic RPM generator. `#764 <https://github.com/ros-infrastructure/bloom/issues/764>`_
+- Add dynamic RPM generator for Bloom. `#762 <https://github.com/ros-infrastructure/bloom/issues/762>`_
+- Add dynamic dependency infrastructure for RPM packages. `#759 <https://github.com/ros-infrastructure/bloom/issues/759>`_
+- Use github.com/ros2-gbp instaed of ros-gbp. `#758 <https://github.com/ros-infrastructure/bloom/issues/758>`_
+- Replace pkg_resources usage with importlib. `#747 <https://github.com/ros-infrastructure/bloom/issues/747>`_
+- Support empy4 together with empy3. `#753 <https://github.com/ros-infrastructure/bloom/issues/753>`_
+- Pin setuptools < 82 for pkg_resources. `#757 <https://github.com/ros-infrastructure/bloom/issues/757>`_
+- Default the homepage in the packaging metadata if not otherwise declared by the package. `#754 <https://github.com/ros-infrastructure/bloom/issues/754>`_
+
 0.13.0 (2025-06-29 21:30:00 -0700)
 ----------------------------------
 - Add bloom templates for meson build system. `#691 <https://github.com/ros-infrastructure/bloom/issues/691>`_
 - Updates for python3. `#736 <https://github.com/ros-infrastructure/bloom/issues/736>`_
-- Fix a typo. `#735 <https://github.com/ros-infrastructure/bloom/issues/735`_
+- Fix a typo. `#735 <https://github.com/ros-infrastructure/bloom/issues/735>`_
 
 0.12.0 (2024-03-29 17:20:00 -0500)
 ----------------------------------

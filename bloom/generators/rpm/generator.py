@@ -413,7 +413,7 @@ def match_branches_with_prefix(prefix, get_branches, prune=False):
         # Prune listed branches by packages in latest upstream
         with inbranch('upstream'):
             pkg_names, version, pkgs_dict = get_package_data('upstream')
-            for branch in branches:
+            for branch in branches.copy():
                 if branch.split(prefix)[-1].strip('/') not in pkg_names:
                     branches.remove(branch)
     return branches
@@ -479,6 +479,14 @@ class RpmGenerator(BloomGenerator):
             help="dependency keys which should be skipped and"
                  " discluded from the RPM dependencies")
 
+    @staticmethod
+    def _filter_dynrpm_distros(os_name, distros):
+        if os_name == 'fedora':
+            return list(filter(lambda d: not d.isdigit() or int(d) < 43, distros))
+        elif os_name == 'rhel':
+            return list(filter(lambda d: not d.isdigit() or int(d) < 10, distros))
+        return distros
+
     def handle_arguments(self, args):
         self.interactive = args.interactive
         self.rpm_inc = args.rpm_inc
@@ -494,6 +502,12 @@ class RpmGenerator(BloomGenerator):
                         .format(self.os_name, self.rosdistro))
                 sys.exit(0)
             self.distros = distribution_file.release_platforms[self.os_name]
+            self.distros = self._filter_dynrpm_distros(self.os_name, self.distros)
+            if not self.distros:
+                warning("All platforms defined for os '{0}' have migrated to the 'dynrpm' generator."
+                        "\nNot performing (legacy) RPM generation."
+                        .format(self.os_name))
+                sys.exit(0)
         self.install_prefix = args.install_prefix
         if args.install_prefix is None:
             self.install_prefix = self.default_install_prefix

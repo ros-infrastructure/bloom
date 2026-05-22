@@ -748,7 +748,11 @@ Increasing version of package(s) in repository `{repository}` to `{version}`:
             _my_run("mkdir -p {base_info[repo]}".format(**locals()))
             with change_directory(base_info['repo']):
                 _my_run('git init')
-                branches = [x['name'] for x in gh.list_branches(head_org, head_repo)]
+                # Use git ls-remote to find existing branches on the fork
+                ls_remote_cmd = "git ls-remote --heads {rosdistro_fork_url}".format(**locals())
+                from bloom.util import check_output
+                branches_out = check_output(ls_remote_cmd, shell=True)
+                branches = [l.split()[1].replace('refs/heads/', '') for l in branches_out.splitlines()]
                 new_branch = 'bloom-{repository}-{count}'
                 count = 0
                 while new_branch.format(repository=repository, count=count) in branches:
@@ -766,9 +770,14 @@ Increasing version of package(s) in repository `{repository}` to `{version}`:
                 if interactive and not maybe_continue():
                     warning("Skipping the pull request...")
                     return
-                _my_run('git checkout -b {new_branch}'.format(**locals()))
-                _my_run("git pull {rosdistro_url} {base_info[branch]}".format(**locals()),
-                        "Pulling latest rosdistro branch")
+                # Use partial fetch if available to speed up cloning large rosdistro repo
+                try:
+                    _my_run('git fetch --filter=blob:none {rosdistro_url} {base_info[branch]}:{new_branch} -n'
+                            .format(**locals()))
+                except subprocess.CalledProcessError:
+                    info('Partial fetch failed, falling back to regular fetch...')
+                    _my_run('git fetch {rosdistro_url} {base_info[branch]}:{new_branch} -n'.format(**locals()))
+                _my_run('git checkout {new_branch}'.format(**locals()))
                 rosdistro_index_commit = get_rosdistro_index_commit()
                 if rosdistro_index_commit is not None:
                     _my_run('git reset --hard {rosdistro_index_commit}'.format(**locals()))

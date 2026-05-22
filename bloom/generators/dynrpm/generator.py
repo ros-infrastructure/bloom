@@ -72,6 +72,7 @@ from bloom.commands.git.patch.common import set_patch_config
 from bloom.packages import get_package_data
 
 from bloom.util import execute_command
+from bloom.util import expand_template_em
 from bloom.util import maybe_continue
 
 if sys.version_info[0:2] < (3, 10):
@@ -84,12 +85,6 @@ try:
 except ImportError as err:
     debug(traceback.format_exc())
     error("rosdistro was not detected, please install it.", exit=True)
-
-try:
-    import em
-except ImportError:
-    debug(traceback.format_exc())
-    error("empy was not detected, please install it.", exit=True)
 
 # Drop the first log prefix for this command
 enable_drop_first_log_prefix(True)
@@ -177,6 +172,8 @@ def generate_substitutions_from_package(
     if build_type == 'catkin':
         pass
     elif build_type == 'cmake':
+        pass
+    elif build_type == 'meson':
         pass
     elif build_type == 'ament_cmake':
         pass
@@ -273,7 +270,7 @@ def __process_template_folder(path, subs):
         info("Expanding '{0}' -> '{1}'".format(
             os.path.relpath(item),
             os.path.relpath(template_path)))
-        result = em.expand(template, **subs)
+        result = expand_template_em(template, subs)
         # Write the result
         with io.open(template_path, 'w', encoding='utf-8') as f:
             if sys.version_info.major == 2:
@@ -294,7 +291,7 @@ def process_template_files(path, subs):
     return __process_template_folder(rpm_dir, subs)
 
 
-def match_branches_with_prefix(prefix, get_branches, prune=False, release_inc='1'):
+def match_branches_with_prefix(prefix, get_branches, prune=False):
     debug("match_branches_with_prefix(" + str(prefix) + ", " +
           str(get_branches()) + ")")
     branches = []
@@ -310,13 +307,9 @@ def match_branches_with_prefix(prefix, get_branches, prune=False, release_inc='1
         # Prune listed branches by packages in latest upstream
         with inbranch('upstream'):
             pkg_names, version, pkgs_dict = get_package_data('upstream')
-            for branch in branches:
+            for branch in branches.copy():
                 if branch.split(prefix)[-1].strip('/') not in pkg_names:
                     branches.remove(branch)
-        branches = [
-            branch + '/' + version + '-' + release_inc
-            for branch in branches
-        ]
     return branches
 
 
@@ -371,16 +364,26 @@ class DynRpmGenerator(BloomGenerator):
                  "even if not in current upstream")
         add('--install-prefix', default=None,
             help="overrides the default installation prefix (/usr)")
+        add('--require-os', nargs='*', required=False,
+            help="skip generation if rosdistro doesn't have any of "
+                 "these platforms listed")
 
     def handle_arguments(self, args):
         self.interactive = args.interactive
         self.rpm_inc = args.rpm_inc
+        if args.require_os:
+            index = rosdistro.get_index(rosdistro.get_index_url())
+            distribution_file = rosdistro.get_distribution_file(index, self.rosdistro)
+            if not set(args.require_os).intersection(distribution_file.release_platforms):
+                warning("No platforms defined for given OS filter in release file for the '{0}' distro."
+                        "\nNot performing dynamic RPM generation."
+                        .format(self.rosdistro))
+                sys.exit(0)
         self.install_prefix = args.install_prefix
         if args.install_prefix is None:
             self.install_prefix = self.default_install_prefix
         self.prefix = args.prefix
-        self.branches = match_branches_with_prefix(
-            self.prefix, get_branches, prune=not args.match_all, release_inc=self.rpm_inc)
+        self.branches = match_branches_with_prefix(self.prefix, get_branches, prune=not args.match_all)
         if len(self.branches) == 0:
             error(
                 "No packages found, check your --prefix or --src arguments.",
