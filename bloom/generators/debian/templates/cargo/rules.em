@@ -92,7 +92,7 @@ override_dh_auto_install:
 			-exec cp -a -t "$$TARGET" {} + ; \
 		rm -rf "$$TARGET/target" ; \
 		cp debian/cargo-checksum.json "$$TARGET/.cargo-checksum.json" ; \
-		[ -z "$$SOURCE_DATE_EPOCH" ] || touch -d@$$SOURCE_DATE_EPOCH "$$TARGET/Cargo.toml" ; \
+		[ -z "$$SOURCE_DATE_EPOCH" ] || touch -d@@$$SOURCE_DATE_EPOCH "$$TARGET/Cargo.toml" ; \
 	fi ; \
 	if [ "$$HAS_BIN" = "1" ]; then \
 		cargo auditable install --path . \

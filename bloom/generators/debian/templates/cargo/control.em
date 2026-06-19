@@ -2,7 +2,7 @@ Source: @(Package)
 Section: misc
 Priority: optional
 Maintainer: @(Maintainer)
-Build-Depends: debhelper (>= @(debhelper_version).0.0), @(', '.join(sorted(set(BuildDepends) | {'cargo', 'cargo-auditable', 'dh-cargo', 'pallet-patcher', 'rustc'})))
+Build-Depends: debhelper (>= @(debhelper_version).0.0), @(', '.join(sorted(set(BuildDepends) | {'cargo', 'cargo-auditable', 'dh-cargo', 'python3-pallet-patcher', 'rustc'})))
 Homepage: @(Homepage)
 Standards-Version: 4.6.0
 
