@@ -53,7 +53,7 @@ override_dh_auto_build:
 	# binary. Tools like `cargo audit bin`, trivy, grype, syft, and
 	# `rust-audit-info` can read it back. URLs and local paths are redacted
 	# by design, so no `/work/...` style paths leak into shipped artifacts.
-	cargo auditable build --release
+	cargo auditable build --release --config pallet-patcher.toml
 
 override_dh_auto_test:
 	# In case we're installing to a non-standard location, look for a setup.sh
