@@ -54,7 +54,7 @@ if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.
 
 %if 0%{?with_tests}
 %check
-%cargo_test || echo "RPM TESTS FAILED"
+%cargo_test -- --config=pallet-patcher.toml || echo "RPM TESTS FAILED"
 %endif
 
 %files
