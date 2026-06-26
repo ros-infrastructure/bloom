@@ -32,7 +32,16 @@
 
 from __future__ import print_function
 
+import os
 import traceback
+
+import tomli_w
+
+try:
+    import tomllib
+except ImportError:
+    # For python < 3.11
+    import tomli as tomllib
 
 from bloom.generators import BloomGenerator
 
@@ -126,6 +135,9 @@ each package in the upstream repository, so the source branch should be set to
         # Execute trim
         if trim_d in ['', '.']:
             return
+        ret = self._normalize_cargo_manifest(trim_d)
+        if ret:
+            return ret
         return trim(trim_d)
 
     def post_patch(self, destination):
@@ -168,3 +180,31 @@ Please checkout the release branch and then create a tag manually with:""")
                     # Check for valid CMakeLists.txt if a metapackage
                     self.metapackage_check(path, pkg)
             return name if type(name) is list else [name]
+
+    def _normalize_cargo_manifest(self, sub_dir=None):
+        if sub_dir:
+            manifest = os.path.join(sub_dir, 'Cargo.toml')
+        else:
+            manifest = 'Cargo.toml'
+        if not os.path.isfile(manifest):
+            return
+
+        print('Normalizing Cargo.toml')
+        with open(manifest, 'rb') as f:
+            data = tomllib.load(f)
+
+        for spec in (
+            spec for category in (
+                'dependenices',
+                'dev-dependencies',
+                'build-dependencies',
+            ) for spec in data.get('dependencies', {}).values()
+        ):
+            if not isinstance(spec, dict):
+                continue
+
+            if spec.pop('path', None):
+                spec.setdefault('version', '*')
+
+        with open(manifest, 'wb') as f:
+            tomli_w.dump(data, f)
