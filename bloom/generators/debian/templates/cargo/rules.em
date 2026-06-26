@@ -61,7 +61,7 @@ override_dh_auto_test:
 	# CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
 	echo -- Running tests. Even if one of them fails the build is not canceled.
 	if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi
-	cargo test || true
+	cargo test --config pallet-patcher.toml || true
 
 override_dh_auto_install:
 	# Classify the crate's targets ourselves rather than rely on dh-cargo's
@@ -95,7 +95,7 @@ override_dh_auto_install:
 		[ -z "$$SOURCE_DATE_EPOCH" ] || touch -d@@$$SOURCE_DATE_EPOCH "$$TARGET/Cargo.toml" ; \
 	fi ; \
 	if [ "$$HAS_BIN" = "1" ]; then \
-		cargo auditable install --path . \
+		cargo auditable install --path . --config pallet-patcher.toml \
 			--root "$(CURDIR)/debian/@(Package)@(InstallationPrefix)" \
 			--no-track ; \
 	fi
