@@ -35,6 +35,7 @@ Source0:        %{name}-%{version}.tar.gz
 %prep
 %autosetup -p1
 %cargo_prep -N
+sed -i 's/^offline = true$/offline = false/' .cargo/config.toml
 pallet-patcher --output-format=toml Cargo.toml %{cargo_registry} > pallet-patcher.toml
 
 %build
