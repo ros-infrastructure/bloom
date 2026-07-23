@@ -32,7 +32,6 @@
 
 from __future__ import print_function
 
-import pkg_resources
 import sys
 import traceback
 
@@ -57,19 +56,24 @@ except ImportError as err:
     debug(traceback.format_exc())
     error("rosdep was not detected, please install it.", exit=True)
 
+if sys.version_info[0:2] < (3, 10):
+    from importlib_metadata import entry_points
+else:
+    from importlib.metadata import entry_points
+
 BLOOM_GROUP = 'bloom.generators'
 DEFAULT_ROS_DISTRO = 'indigo'
 
 
 def list_generators():
     generators = []
-    for entry_point in pkg_resources.iter_entry_points(group=BLOOM_GROUP):
+    for entry_point in entry_points(group=BLOOM_GROUP):
         generators.append(entry_point.name)
     return generators
 
 
 def load_generator(generator_name):
-    for entry_point in pkg_resources.iter_entry_points(group=BLOOM_GROUP):
+    for entry_point in entry_points(group=BLOOM_GROUP):
         if entry_point.name == generator_name:
             return entry_point.load()
 

@@ -8,5 +8,6 @@ def test_pep8_conformance():
     report = pep8style.options.report
     report.start()
     pep8style.input_dir(os.path.join(os.path.dirname(__file__), '..', 'bloom'))
+    pep8style.input_dir(os.path.join(os.path.dirname(__file__), '..', 'etc', 'rpm'))
     report.stop()
     assert report.total_errors == 0, "Found '{0}' code style errors (and warnings).".format(report.total_errors)

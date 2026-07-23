@@ -1,17 +1,19 @@
 #!/usr/bin/env python
 
-import sys
 from setuptools import find_packages, setup
 
 
 setup(
     name='bloom',
-    version='0.12.0',
+    version='0.14.3',
     packages=find_packages(exclude=['test', 'test.*']),
     package_data={
         'bloom.generators.debian': [
             'templates/*/*',
             'templates/*/source/*',
+        ],
+        'bloom.generators.dynrpm': [
+            'templates/*/*.em',
         ],
         'bloom.generators.rpm': [
             'templates/*/*.em',
@@ -19,8 +21,9 @@ setup(
     },
     install_requires=[
         'catkin_pkg >= 0.4.3',
-        'setuptools',
-        'empy < 4',
+        'empy',
+        'importlib-metadata >= 3.6; python_version < "3.10"',
+        'importlib-resources >= 5; python_version < "3.10"',
         'packaging',
         'python-dateutil',
         'PyYAML',
@@ -68,12 +71,16 @@ generation of platform specific source packages, like debian's src-debs.""",
             'rosrelease = bloom.generators.rosrelease:RosReleaseGenerator',
             'debian = bloom.generators.debian:DebianGenerator',
             'rosdebian = bloom.generators.rosdebian:RosDebianGenerator',
+            'dynrpm = bloom.generators.dynrpm:DynRpmGenerator',
+            'rosdynrpm = bloom.generators.rosdynrpm:RosDynRpmGenerator',
             'rpm = bloom.generators.rpm:RpmGenerator',
             'rosrpm = bloom.generators.rosrpm:RosRpmGenerator'
         ],
         'bloom.generate_cmds': [
             'debian = bloom.generators.debian.generate_cmd:description',
             'rosdebian = bloom.generators.rosdebian:description',
+            'dynrpm = bloom.generators.dynrpm.generate_cmd:description',
+            'rosdynrpm = bloom.generators.rosdynrpm:description',
             'rpm = bloom.generators.rpm.generate_cmd:description',
             'rosrpm = bloom.generators.rosrpm:description'
         ]

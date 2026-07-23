@@ -37,7 +37,6 @@ import datetime
 import io
 import json
 import os
-import pkg_resources
 import re
 import shutil
 import sys
@@ -78,6 +77,8 @@ from bloom.logging import info
 from bloom.logging import is_debug
 from bloom.logging import warning
 
+from bloom.util import expand_template_em
+
 from bloom.commands.git.patch.common import get_patch_config
 from bloom.commands.git.patch.common import set_patch_config
 
@@ -89,9 +90,16 @@ from bloom.util import execute_command
 from bloom.util import get_rfc_2822_date
 from bloom.util import maybe_continue
 
+if sys.version_info[0:2] < (3, 10):
+    import importlib_resources
+else:
+    import importlib.resources as importlib_resources
+
+
 try:
     from catkin_pkg.changelog import get_changelog_from_path
     from catkin_pkg.changelog import CHANGELOG_FILENAME
+    from catkin_pkg.package import Person
 except ImportError as err:
     debug(traceback.format_exc())
     error("catkin_pkg was not detected, please install it.", exit=True)
@@ -126,7 +134,8 @@ TEMPLATE_EXTENSION = '.em'
 
 
 def __place_template_folder(group, src, dst, gbp=False):
-    template_files = pkg_resources.resource_listdir(group, src)
+    template_files = [os.path.basename(file)
+                      for file in importlib_resources.files(f'{group}.{src.replace("/", ".")}').iterdir()]
     # For each template, place
     for template_file in template_files:
         if not gbp and os.path.basename(template_file) == 'gbp.conf.em':
@@ -134,14 +143,14 @@ def __place_template_folder(group, src, dst, gbp=False):
             continue
         template_path = os.path.join(src, template_file)
         template_dst = os.path.join(dst, template_file)
-        if pkg_resources.resource_isdir(group, template_path):
+        if importlib_resources.files(group).joinpath(template_path).is_dir():
             debug("Recursing on folder '{0}'".format(template_path))
             __place_template_folder(group, template_path, template_dst, gbp)
         else:
             try:
                 debug("Placing template '{0}'".format(template_path))
-                template = pkg_resources.resource_string(group, template_path)
-                template_abs_path = pkg_resources.resource_filename(group, template_path)
+                template = importlib_resources.files(group).joinpath(template_path).open().read()
+                template_abs_path = importlib_resources.files(group).joinpath(template_path)
             except IOError as err:
                 error("Failed to load template "
                       "'{0}': {1}".format(template_file, str(err)), exit=True)
@@ -291,7 +300,8 @@ def get_changelogs(package, releaser_history=None):
             # Each entry has (version, date, changes, releaser, releaser_email)
             releaser, email = releaser_history.get(version, maintainer)
             changelogs.append((
-                version, date_str, '\n'.join(changes_str), releaser, email
+                version, date_str, '\n'.join(changes_str),
+                ('"' + releaser + '"') if releaser and not releaser[0] == '"' else releaser, email
             ))
         return changelogs
     else:
@@ -304,6 +314,12 @@ def missing_dep_resolver(key, peer_packages):
     if key in peer_packages:
         return [sanitize_package_name(key)]
     return default_fallback_resolver(key, peer_packages)
+
+
+def _ensure_rfc5322_compliant(person):
+    if person.name and not person.name[0] == '"':
+        return Person('"' + person.name + '"', person.email)
+    return person
 
 
 def generate_substitutions_from_package(
@@ -326,9 +342,9 @@ def generate_substitutions_from_package(
     data['Description'] = format_description(package.description)
     # Websites
     websites = [str(url) for url in package.urls if url.type == 'website']
-    homepage = websites[0] if websites else ''
-    if homepage == '':
-        warning("No homepage set, defaulting to ''")
+    homepage = websites[0] if websites else 'https://index.ros.org/p/%s/#%s' % (package.name, ros_distro)
+    if not websites:
+        warning("No homepage set, defaulting to %s" % homepage)
     data['Homepage'] = homepage
     repositories = [str(url) for url in package.urls if url.type == 'repository']
     repository = repositories[0] if repositories else ''
@@ -420,7 +436,7 @@ def generate_substitutions_from_package(
     # Maintainers
     maintainers = []
     for m in package.maintainers:
-        maintainers.append(str(m))
+        maintainers.append(str(_ensure_rfc5322_compliant(m)))
     data['Maintainer'] = maintainers[0]
     data['Maintainers'] = ', '.join(maintainers)
     # Changelog
@@ -434,11 +450,12 @@ def generate_substitutions_from_package(
         # Ensure at least a minimal changelog
         changelogs = []
     if package.version not in [x[0] for x in changelogs]:
+        maintainer_name = package.maintainers[0].name
         changelogs.insert(0, (
             package.version,
             get_rfc_2822_date(datetime.datetime.now()),
             '  * Autogenerated, no changelog for this version found in CHANGELOG.rst.',
-            package.maintainers[0].name,
+            ('"' + maintainer_name + '"') if maintainer_name else maintainer_name,
             package.maintainers[0].email
         ))
     bad_changelog = False
@@ -534,7 +551,7 @@ def __process_template_folder(path, subs):
         info("Expanding '{0}' -> '{1}'".format(
             os.path.relpath(item),
             os.path.relpath(template_path)))
-        result = em.expand(template, **subs)
+        result = expand_template_em(template, subs)
         # Don't write an empty file
         if len(result) == 0 and \
            os.path.basename(template_path) in ['copyright']:
@@ -576,7 +593,7 @@ def match_branches_with_prefix(prefix, get_branches, prune=False):
         # Prune listed branches by packages in latest upstream
         with inbranch('upstream'):
             pkg_names, version, pkgs_dict = get_package_data('upstream')
-            for branch in branches:
+            for branch in branches.copy():
                 if branch.split(prefix)[-1].strip('/') not in pkg_names:
                     branches.remove(branch)
     return branches
