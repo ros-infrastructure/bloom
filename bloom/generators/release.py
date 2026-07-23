@@ -195,7 +195,7 @@ Please checkout the release branch and then create a tag manually with:""")
 
         for spec in (
             spec for category in (
-                'dependenices',
+                'dependencies',
                 'dev-dependencies',
                 'build-dependencies',
             ) for spec in data.get('dependencies', {}).values()
