@@ -29,6 +29,8 @@ setup(
         'PyYAML',
         'rosdep >= 0.15.0',
         'rosdistro >= 0.8.0',
+        'tomli >= 1.0.0; python_version < "3.11"',
+        'tomli-w',
         'vcstools >= 0.1.22',
     ],
     extras_require={
