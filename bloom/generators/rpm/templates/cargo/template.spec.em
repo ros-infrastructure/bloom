@@ -1,8 +1,10 @@
 %bcond_without tests
 %bcond_without weak_deps
-%bcond_with vendored
-
-%global cargo_vendor_file %(if [ -n "%{?cargo_vendor_source}" ]; then echo "%{cargo_vendor_source}"; elif [ 0%{?with_vendored} -ne 0 ] || [ -f "%{_sourcedir}/cargo-vendor.tar.gz" ]; then echo "cargo-vendor.tar.gz"; else echo ""; fi)
+%if %(test -f "%{_sourcedir}/cargo-vendor.tar.gz" && echo 1 || echo 0)
+%bcond_without cargo_vendor
+%else
+%bcond_with cargo_vendor
+%endif
 
 %global __os_install_post %(echo '%{__os_install_post}' | sed -e 's!/usr/lib[^[:space:]]*/brp-python-bytecompile[[:space:]].*$!!g')
 %global __provides_exclude_from ^@(InstallationPrefix)/.*$
@@ -18,8 +20,8 @@ Summary:        ROS @(Name) package
 License:        @(License)
 @[if Homepage and Homepage != '']URL:            @(Homepage)@\n@[end if]@
 Source0:        %{name}-%{version}.tar.gz
-%if "%{cargo_vendor_file}" != ""
-Source1:        %{cargo_vendor_file}
+%if 0%{?with_cargo_vendor}
+Source1:        cargo-vendor.tar.gz
 %endif
 @[if NoArch]@\nBuildArch:      noarch@\n@[end if]@
 
@@ -41,30 +43,13 @@ Source1:        %{cargo_vendor_file}
 %prep
 %autosetup -p1
 
-# Handle vendored cargo sources
-if [ -n "%{?SOURCE1}" ] && [ -f "%{SOURCE1}" ]; then
-  echo "Using vendored cargo sources from %{SOURCE1}"
-  tar -xf "%{SOURCE1}"
-fi
+%if 0%{?with_cargo_vendor}
+echo "Using vendored cargo sources from %{SOURCE1}"
+tar -xf %{SOURCE1}
+%endif
 
 %cargo_prep -N
-sed -i 's/^offline = true$/offline = false/' .cargo/config.toml
-
-if [ -d "vendor" ]; then
-  echo "Configuring cargo to use local vendor directory"
-  cat << 'EOF' > pallet-patcher.toml
-[build]
-offline = true
-
-[source.crates-io]
-replace-with = "vendored-sources"
-
-[source.vendored-sources]
-directory = "vendor"
-EOF
-else
-  pallet-patcher --output-format=toml Cargo.toml %{cargo_registry} > pallet-patcher.toml
-fi
+pallet-patcher --output-format=toml Cargo.toml %{cargo_registry} %{?with_cargo_vendor:vendor} %{_datadir}/cargo/registry > pallet-patcher.toml
 
 %build
 # In case we're installing to a non-standard location, look for a setup.sh
@@ -79,6 +64,11 @@ if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.
 # CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
 if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi
 %cargo_install -- --config=pallet-patcher.toml --config="install.root='%{buildroot}@(InstallationPrefix)'"
+
+%if 0%{?with_cargo_vendor}
+install -d -m 0755 %{buildroot}@(InstallationPrefix)/share/@(Name)/cargo
+cp -a vendor %{buildroot}@(InstallationPrefix)/share/@(Name)/cargo/
+%endif
 
 %if 0%{?with_tests}
 %check
