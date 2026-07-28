@@ -4,6 +4,9 @@
 
 %global cargo_registry @(InstallationPrefix)/share/cargo/registry
 
+%bcond_with vendored
+%global cargo_vendor_file %(if [ -n "%{?cargo_vendor_source}" ]; then echo "%{cargo_vendor_source}"; elif [ 0%{?with_vendored} -ne 0 ] || [ -f "%{_sourcedir}/cargo-vendor.tar.gz" ]; then echo "cargo-vendor.tar.gz"; else echo ""; fi)
+
 Name:           @(Package)
 Version:        @(Version)
 Release:        @(RPMInc)%{?dist}
@@ -12,6 +15,9 @@ Summary:        ROS %{pkg_name} package
 License:        @(License)
 @[if Homepage and Homepage != '']URL:            @(Homepage)@\n@[end if]@
 Source0:        %{name}-%{version}.tar.gz
+%if "%{cargo_vendor_file}" != ""
+Source1:        %{cargo_vendor_file}
+%endif
 @[if NoArch]@\nBuildArch:      noarch@\n@[end if]@
 
 BuildRequires:  bloom-rpm-macros
@@ -45,9 +51,31 @@ Summary:        %{summary}
 
 %prep
 %autosetup -p1
+
+# Handle vendored cargo sources
+if [ -n "%{?SOURCE1}" ] && [ -f "%{SOURCE1}" ]; then
+  echo "Using vendored cargo sources from %{SOURCE1}"
+  tar -xf "%{SOURCE1}"
+fi
+
 %cargo_prep -N
 sed -i 's/^offline = true$/offline = false/' .cargo/config.toml
-pallet-patcher --output-format=toml Cargo.toml %{cargo_registry} > pallet-patcher.toml
+
+if [ -d "vendor" ]; then
+  echo "Configuring cargo to use local vendor directory"
+  cat << 'EOF' > pallet-patcher.toml
+[build]
+offline = true
+
+[source.crates-io]
+replace-with = "vendored-sources"
+
+[source.vendored-sources]
+directory = "vendor"
+EOF
+else
+  pallet-patcher --output-format=toml Cargo.toml %{cargo_registry} > pallet-patcher.toml
+fi
 
 
 %generate_buildrequires
