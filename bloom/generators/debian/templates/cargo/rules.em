@@ -33,9 +33,24 @@ override_dh_auto_configure:
 	# CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
 	if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi && \
 	dh_auto_configure
-	# Generate a pallet-patcher config so that, once we have a viable
-	# vendoring solution, we can point cargo to local deps
-	pallet-patcher --output-format=toml Cargo.toml @(InstallationPrefix)/share/cargo/registry > pallet-patcher.toml
+	# Generate a pallet-patcher config pointing cargo at the crates that are
+	# already on disk. The search paths are consulted in the order given, so
+	# crates from other ROS packages win over the ones the platform ships.
+	pallet-patcher --output-format=toml Cargo.toml \
+		@(InstallationPrefix)/share/cargo/registry \
+		/usr/share/cargo/registry > pallet-patcher.toml
+	# The sourcedeb job vendors the crates.io dependencies into debian/vendor
+	# and rejects crates from any other source, so the replacement cargo needs
+	# to build against them is always this one stanza. It covers every crate
+	# left unpatched above, which is deliberately the only way the vendored
+	# copies are reached: patching them in would turn them into path
+	# dependencies, and cargo-auditable redacts local paths from the .dep-v0
+	# section, losing them from the SBOM. Note the directory has to be
+	# absolute: cargo resolves relative paths in a file passed to '--config'
+	# against that file's grandparent directory, not the working directory.
+	if [ -d debian/vendor ]; then \
+		printf '\n[source.crates-io]\nreplace-with = "vendored-sources"\n\n[source.vendored-sources]\ndirectory = "$(CURDIR)/debian/vendor"\n' >> pallet-patcher.toml ; \
+	fi
 
 override_dh_auto_clean:
 	dh_auto_clean
