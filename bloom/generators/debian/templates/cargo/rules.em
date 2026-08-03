@@ -24,10 +24,10 @@ DEB_HOST_GNU_TYPE ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
 	dh $@@ -v --buildsystem=cargo --builddirectory=.obj-$(DEB_HOST_GNU_TYPE)
 
 override_dh_auto_configure:
-	# dh-cargo's configure step expects these two files to exist, even when
-	# we aren't vendoring dependencies. Touching an empty cargo-checksum.json
-	# and Cargo.lock is the canonical workaround (see Debian wiki: Rust Packaging).
-	touch debian/cargo-checksum.json Cargo.lock
+	# dh-cargo's configure step copies this file into place, so it has to
+	# exist even when we aren't vendoring dependencies (see Debian wiki: Rust
+	# Packaging). It does not need a Cargo.lock: that same step removes one.
+	touch debian/cargo-checksum.json
 	# In case we're installing to a non-standard location, look for a setup.sh
 	# in the install tree and source it.  It will set things like
 	# CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
@@ -51,6 +51,12 @@ override_dh_auto_configure:
 	if [ -d debian/vendor ]; then \
 		printf '\n[source.crates-io]\nreplace-with = "vendored-sources"\n\n[source.vendored-sources]\ndirectory = "$(CURDIR)/debian/vendor"\n' >> pallet-patcher.toml ; \
 	fi
+	# Every crate has to be on disk by now, so refuse to reach the network.
+	# Set as config rather than passing --offline so that it also covers the
+	# cargo invocations we do not spell out ourselves. This stops cargo
+	# fetching, it does NOT stop build scripts or proc macros from opening
+	# their own connections; that needs an isolated build container.
+	printf '\n[net]\noffline = true\n' >> pallet-patcher.toml
 
 override_dh_auto_clean:
 	dh_auto_clean
