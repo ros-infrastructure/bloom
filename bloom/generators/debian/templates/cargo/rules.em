@@ -92,7 +92,10 @@ override_dh_auto_install:
 	#   - HAS_LIB: lay down the unpacked crate source under
 	#     <prefix>/share/cargo/registry/<name>-<version>/ so downstream ROS
 	#     Rust packages can resolve this crate via pallet-patcher. Mirrors
-	#     dh-cargo cargo.pm:install() libpkg branch.
+	#     dh-cargo cargo.pm:install() libpkg branch, except that we also
+	#     carry the vendored crates: a downstream package recompiles this
+	#     crate from source, so it needs whatever this crate could not source
+	#     from the platform. pallet-patcher looks for them in 'vendor'.
 	#   - HAS_BIN: run `cargo auditable install`, which wraps cargo and
 	#     embeds a compressed JSON SBOM into each binary's .dep-v0 ELF
 	#     section. Tools that read it: cargo audit bin, trivy, grype, syft,
@@ -112,6 +115,7 @@ override_dh_auto_install:
 			\! -name '.obj-*' \! -name 'pallet-patcher.toml' \
 			-exec cp -a -t "$$TARGET" {} + ; \
 		rm -rf "$$TARGET/target" ; \
+		[ ! -d debian/vendor ] || cp -a debian/vendor "$$TARGET/vendor" ; \
 		cp debian/cargo-checksum.json "$$TARGET/.cargo-checksum.json" ; \
 		[ -z "$$SOURCE_DATE_EPOCH" ] || touch -d@@$$SOURCE_DATE_EPOCH "$$TARGET/Cargo.toml" ; \
 	fi ; \
