@@ -59,7 +59,11 @@ override_dh_shlibdeps:
 	# in the install tree and source it.  It will set things like
 	# CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
 	if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi && \
+@[if RuntimePackage]
+	dh_shlibdeps -l$(CURDIR)/debian/@(Package)-runtime@(InstallationPrefix)/lib/:$(CURDIR)/debian/@(Package)-runtime@(InstallationPrefix)/lib/${DEB_HOST_MULTIARCH}
+@[else]
 	dh_shlibdeps -l$(CURDIR)/debian/@(Package)/@(InstallationPrefix)/lib/:$(CURDIR)/debian/@(Package)/@(InstallationPrefix)/lib/${DEB_HOST_MULTIARCH}
+@[end if]
 
 override_dh_auto_install:
 	# In case we're installing to a non-standard location, look for a setup.sh
@@ -67,3 +71,12 @@ override_dh_auto_install:
 	# CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
 	if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi && \
 	dh_auto_install
+@[if RuntimePackage]
+
+execute_after_dh_install:
+	true  # no op needed for make
+ifneq (,$(realpath debian/@(Package)-runtime@(InstallationPrefix)/include))
+	install -d "debian/@(Package)@(InstallationPrefix)/include"
+	mv "debian/@(Package)-runtime@(InstallationPrefix)/include" "debian/@(Package)@(InstallationPrefix)"
+endif
+@[end if]
