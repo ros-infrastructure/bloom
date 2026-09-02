@@ -189,22 +189,39 @@ Please checkout the release branch and then create a tag manually with:""")
         if not os.path.isfile(manifest):
             return
 
-        print('Normalizing Cargo.toml')
+        pkg = None
+        if isinstance(self.packages, dict):
+            pkg = self.packages.get(sub_dir)
+            if pkg is None:
+                pkg = self.packages.get('.') or self.packages.get('')
+            if pkg is None and len(self.packages) == 1:
+                pkg = list(self.packages.values())[0]
+
+        if pkg is None or pkg.get_build_type() != 'cargo':
+            return
+
         with open(manifest, 'rb') as f:
             data = tomllib.load(f)
 
-        for spec in (
-            spec for category in (
-                'dependencies',
-                'dev-dependencies',
-                'build-dependencies',
-            ) for spec in data.get('dependencies', {}).values()
+        modified = False
+        for category in (
+            'dependencies',
+            'dev-dependencies',
+            'build-dependencies',
         ):
-            if not isinstance(spec, dict):
-                continue
+            for spec in data.get(category, {}).values():
+                if not isinstance(spec, dict):
+                    continue
 
-            if spec.pop('path', None):
-                spec.setdefault('version', '*')
+                path_val = spec.get('path')
+                if path_val:
+                    norm_path = os.path.normpath(path_val)
+                    if not os.path.isabs(norm_path) and norm_path.split(os.sep)[0] == '..':
+                        spec.pop('path', None)
+                        spec.setdefault('version', '*')
+                        modified = True
 
-        with open(manifest, 'wb') as f:
-            tomli_w.dump(data, f)
+        if modified:
+            print('Normalizing Cargo.toml')
+            with open(manifest, 'wb') as f:
+                tomli_w.dump(data, f)
