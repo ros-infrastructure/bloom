@@ -29,7 +29,7 @@ def test_normalize_cargo_manifest():
         original_manifest = {
             'dependencies': {
                 'absolute_dep': {'path': '/abs/path/to/dep'},
-                'parent_dep': {'path': '../parent/dep'},
+                'sibling_nested_dep': {'path': '../parent/dep'},
                 'sibling_dep': {'path': '../sibling'},
                 'subdir_dep': {'path': 'subdir/dep'},
                 'dot_subdir_dep': {'path': './subdir/dep'},
@@ -37,11 +37,11 @@ def test_normalize_cargo_manifest():
                 'not_dict_dep': '1.0.0',
             },
             'dev-dependencies': {
-                'dev_parent_dep': {'path': '../dev-dep'},
+                'dev_sibling_dep': {'path': '../dev-dep'},
                 'dev_subdir_dep': {'path': 'dev-subdir'},
             },
             'build-dependencies': {
-                'build_parent_dep': {'path': '../build-dep'},
+                'build_sibling_dep': {'path': '../build-dep'},
                 'build_subdir_dep': {'path': 'build-subdir'},
             }
         }
@@ -65,15 +65,15 @@ def test_normalize_cargo_manifest():
         assert data == original_manifest
         assert os.path.getmtime(manifest_path) == past_time
 
-        # Case 2: Package of type 'cargo' with no relative parent dependencies (should NOT be modified or written to)
-        manifest_no_parent_deps = {
+        # Case 2: Package of type 'cargo' with no relative dependencies (should NOT be modified or written to)
+        manifest_no_sibling_deps = {
             'dependencies': {
                 'absolute_dep': {'path': '/abs/path/to/dep'},
                 'subdir_dep': {'path': 'subdir/dep'},
             }
         }
         with open(manifest_path, 'wb') as f:
-            tomli_w.dump(manifest_no_parent_deps, f)
+            tomli_w.dump(manifest_no_sibling_deps, f)
 
         os.utime(manifest_path, (past_time, past_time))
 
@@ -83,7 +83,7 @@ def test_normalize_cargo_manifest():
         # Assert no change to content and no write (modification time remains the same)
         with open(manifest_path, 'rb') as f:
             data = tomllib.load(f)
-        assert data == manifest_no_parent_deps
+        assert data == manifest_no_sibling_deps
         assert os.path.getmtime(manifest_path) == past_time
 
         # Case 3: Package of type 'cargo' with parent relative dependencies (should normalize only parent relative dependencies)
@@ -103,8 +103,8 @@ def test_normalize_cargo_manifest():
         assert 'version' not in deps['absolute_dep']
 
         # Parent referencing path - dropped and version set to *
-        assert 'path' not in deps['parent_dep']
-        assert deps['parent_dep']['version'] == '*'
+        assert 'path' not in deps['sibling_nested_dep']
+        assert deps['sibling_nested_dep']['version'] == '*'
 
         assert 'path' not in deps['sibling_dep']
         assert deps['sibling_dep']['version'] == '*'
@@ -121,14 +121,14 @@ def test_normalize_cargo_manifest():
 
         # dev-dependencies
         dev_deps = data['dev-dependencies']
-        assert 'path' not in dev_deps['dev_parent_dep']
-        assert dev_deps['dev_parent_dep']['version'] == '*'
+        assert 'path' not in dev_deps['dev_sibling_dep']
+        assert dev_deps['dev_sibling_dep']['version'] == '*'
         assert dev_deps['dev_subdir_dep']['path'] == 'dev-subdir'
 
         # build-dependencies
         build_deps = data['build-dependencies']
-        assert 'path' not in build_deps['build_parent_dep']
-        assert build_deps['build_parent_dep']['version'] == '*'
+        assert 'path' not in build_deps['build_sibling_dep']
+        assert build_deps['build_sibling_dep']['version'] == '*'
         assert build_deps['build_subdir_dep']['path'] == 'build-subdir'
 
     finally:
