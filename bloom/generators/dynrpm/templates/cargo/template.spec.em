@@ -61,7 +61,7 @@ tar -xf %{SOURCE1}
 %endif
 
 %cargo_prep -N
-pallet-patcher --output-format=toml Cargo.toml %{cargo_registry} %{?with_cargo_vendor:vendor} %{_datadir}/cargo/registry > pallet-patcher.toml
+pallet-patcher --output-format=toml Cargo.toml %{cargo_registry} %{_datadir}/cargo/registry %{?with_cargo_vendor:vendor} > pallet-patcher.toml
 
 
 %generate_buildrequires
@@ -76,8 +76,10 @@ pallet-patcher --output-format=toml Cargo.toml %{cargo_registry} %{?with_cargo_v
 %cargo_install -- --config=pallet-patcher.toml --config="install.root='%{buildroot}@(InstallationPrefix)'"
 
 %if 0%{?with_cargo_vendor}
-install -d -m 0755 %{buildroot}@(InstallationPrefix)/share/@(Name)/cargo
-cp -a vendor %{buildroot}@(InstallationPrefix)/share/@(Name)/cargo/
+CRATE_NAME=$(%{__cargo_to_rpm} --path Cargo.toml name)            \
+CRATE_VERSION=$(%{__cargo_to_rpm} --path Cargo.toml version)      \
+REG_DIR=%{buildroot}%{cargo_registry}/$CRATE_NAME-$CRATE_VERSION  \
+cp -a vendor $REG_DIR/
 %endif
 
 
