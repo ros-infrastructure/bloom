@@ -1,5 +1,10 @@
 %bcond_without tests
 %bcond_without weak_deps
+%if %(test -f "%{_sourcedir}/cargo-vendor.tar.gz" && echo 1 || echo 0)
+%bcond_without cargo_vendor
+%else
+%bcond_with cargo_vendor
+%endif
 
 %global __os_install_post %(echo '%{__os_install_post}' | sed -e 's!/usr/lib[^[:space:]]*/brp-python-bytecompile[[:space:]].*$!!g')
 %global __provides_exclude_from ^@(InstallationPrefix)/.*$
@@ -15,6 +20,9 @@ Summary:        ROS @(Name) package
 License:        @(License)
 @[if Homepage and Homepage != '']URL:            @(Homepage)@\n@[end if]@
 Source0:        %{name}-%{version}.tar.gz
+%if 0%{?with_cargo_vendor}
+Source1:        cargo-vendor.tar.gz
+%endif
 @[if NoArch]@\nBuildArch:      noarch@\n@[end if]@
 
 @[for p in Depends]Requires:       @p@\n@[end for]@
@@ -34,9 +42,14 @@ Source0:        %{name}-%{version}.tar.gz
 
 %prep
 %autosetup -p1
+
+%if 0%{?with_cargo_vendor}
+echo "Using vendored cargo sources from %{SOURCE1}"
+tar -xf %{SOURCE1}
+%endif
+
 %cargo_prep -N
-sed -i 's/^offline = true$/offline = false/' .cargo/config.toml
-pallet-patcher --output-format=toml Cargo.toml %{cargo_registry} > pallet-patcher.toml
+pallet-patcher --output-format=toml Cargo.toml %{cargo_registry} %{_datadir}/cargo/registry %{?with_cargo_vendor:vendor} > pallet-patcher.toml
 
 %build
 # In case we're installing to a non-standard location, look for a setup.sh
@@ -51,6 +64,13 @@ if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.
 # CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
 if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi
 %cargo_install -- --config=pallet-patcher.toml --config="install.root='%{buildroot}@(InstallationPrefix)'"
+
+%if 0%{?with_cargo_vendor}
+CRATE_NAME=$(%{__cargo_to_rpm} --path Cargo.toml name)            \
+CRATE_VERSION=$(%{__cargo_to_rpm} --path Cargo.toml version)      \
+REG_DIR=%{buildroot}%{cargo_registry}/$CRATE_NAME-$CRATE_VERSION  \
+cp -a vendor $REG_DIR/
+%endif
 
 %if 0%{?with_tests}
 %check
