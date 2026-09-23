@@ -229,7 +229,9 @@ def process_track_settings(track_dict, release_inc_override, interactive=True):
     settings['release_tag'] = release_tag
     # Transfer other settings
     settings['devel_branch'] = track_dict['devel_branch']
-    settings['patches'] = track_dict['patches'] or ''
+    patches = track_dict['patches'] or ''
+    patches = patches.replace(':{version}', version)
+    settings['patches'] = patches
     settings['ros_distro'] = track_dict['ros_distro']
     # Release increment
     if 'last_version' in track_dict and track_dict['last_version'] != version:
