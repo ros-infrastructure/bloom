@@ -1,3 +1,9 @@
+%if %(test -f "%{_sourcedir}/cargo-vendor.tar.gz" && echo 1 || echo 0)
+%bcond_without cargo_vendor
+%else
+%bcond_with cargo_vendor
+%endif
+
 %{?!ros_distro:%global ros_distro @(Rosdistro)}
 %global pkg_name @(Name)
 %global normalized_pkg_name %{lua:return (string.gsub(rpm.expand('%{pkg_name}'), '_', '-'))}
@@ -12,6 +18,9 @@ Summary:        ROS %{pkg_name} package
 License:        @(License)
 @[if Homepage and Homepage != '']URL:            @(Homepage)@\n@[end if]@
 Source0:        %{name}-%{version}.tar.gz
+%if 0%{?with_cargo_vendor}
+Source1:        cargo-vendor.tar.gz
+%endif
 @[if NoArch]@\nBuildArch:      noarch@\n@[end if]@
 
 BuildRequires:  bloom-rpm-macros
@@ -45,9 +54,14 @@ Summary:        %{summary}
 
 %prep
 %autosetup -p1
+
+%if 0%{?with_cargo_vendor}
+echo "Using vendored cargo sources from %{SOURCE1}"
+tar -xf %{SOURCE1}
+%endif
+
 %cargo_prep -N
-sed -i 's/^offline = true$/offline = false/' .cargo/config.toml
-pallet-patcher --output-format=toml Cargo.toml %{cargo_registry} > pallet-patcher.toml
+pallet-patcher --output-format=toml Cargo.toml %{cargo_registry} %{_datadir}/cargo/registry %{?with_cargo_vendor:vendor} > pallet-patcher.toml
 
 
 %generate_buildrequires
@@ -60,6 +74,13 @@ pallet-patcher --output-format=toml Cargo.toml %{cargo_registry} > pallet-patche
 
 %install
 %cargo_install -- --config=pallet-patcher.toml --config="install.root='%{buildroot}@(InstallationPrefix)'"
+
+%if 0%{?with_cargo_vendor}
+CRATE_NAME=$(%{__cargo_to_rpm} --path Cargo.toml name)            \
+CRATE_VERSION=$(%{__cargo_to_rpm} --path Cargo.toml version)      \
+REG_DIR=%{buildroot}%{cargo_registry}/$CRATE_NAME-$CRATE_VERSION  \
+cp -a vendor $REG_DIR/
+%endif
 
 
 %if 0%{?with_tests}
