@@ -192,14 +192,12 @@ class DependencyResolver:
 
     @classmethod
     def enumerate_rosdeps(
-        cls, pkg, *, conflicts=False, obsoletes=False, requires=False,
+        cls, pkg, *, conflicts=False, requires=False,
         requires_check=False, requires_doc=False, requires_build=False,
         requires_devel=False, resolve_groups=False,
     ):
         if conflicts:
             yield from pkg.conflicts
-        if obsoletes:
-            yield from pkg.replaces
         if requires:
             yield from pkg.exec_depends
             if pkg.name not in _BOOTSTRAP_PKGS:
@@ -269,18 +267,7 @@ def _parse_args(argv):
     return args
 
 
-def main(argv=sys.argv[1:]):
-    args = _parse_args(argv)
-    skip_keys = set(args.skip_keys or ())
-
-    if os.environ.get('ROS_DISTRO') not in (None, '', args.ros_distro):
-        print(
-            "Environment variable 'ROS_DISTRO' does not match package name",
-            file=sys.stderr)
-        return 1
-
-    os.environ['ROS_DISTRO'] = args.ros_distro
-
+def get_dependencies(args, skip_keys):
     resolver = DependencyResolver()
 
     pkg = parse_package(args.manifest_path)
@@ -292,7 +279,7 @@ def main(argv=sys.argv[1:]):
     # Runtime deps
     if not args.is_devel:
         for dep in resolver.enumerate_rosdeps(
-            pkg, conflicts=args.conflicts, obsoletes=args.obsoletes,
+            pkg, conflicts=args.conflicts,
             requires=args.requires, resolve_groups=args.resolve_groups,
         ):
             if str(dep) in skip_keys:
@@ -307,7 +294,7 @@ def main(argv=sys.argv[1:]):
     # Devel deps
     if not args.is_runtime:
         for dep in resolver.enumerate_rosdeps(
-            pkg, conflicts=args.conflicts, obsoletes=args.obsoletes,
+            pkg, conflicts=args.conflicts,
             requires_devel=args.requires_devel,
             resolve_groups=args.resolve_groups,
         ):
@@ -336,6 +323,23 @@ def main(argv=sys.argv[1:]):
             dep, args.ros_distro, '(devel)',
         ):
             sysdeps[sysdep].update(constraints)
+
+    if args.obsoletes:
+        for dep in pkg.replaces:
+            if dep.evaluated_condition is not True:
+                continue
+            if str(dep.name) in skip_keys:
+                print(f'Skipping dependency: {dep.name}', file=sys.stderr)
+                continue
+
+            dep_name_sanitized = dep.name.replace('_', '-')
+            constraints = set(resolver.enumerate_constraints(dep))
+            if args.is_runtime:
+                sysdep = f"ros-{args.ros_distro}-{dep_name_sanitized}-runtime"
+                sysdeps[sysdep].update(constraints)
+            else:
+                sysdep = f"ros-{args.ros_distro}-{dep_name_sanitized}-devel"
+                sysdeps[sysdep].update(constraints)
 
     if args.provides:
         if not args.is_devel:
@@ -372,6 +376,23 @@ def main(argv=sys.argv[1:]):
                     continue
                 groupprov = f'ros-{args.ros_distro}({group})(devel)(all)'
                 sysdeps.setdefault(groupprov, set())
+
+    return dict(sysdeps)
+
+
+def main(argv=sys.argv[1:]):
+    args = _parse_args(argv)
+    skip_keys = set(args.skip_keys or ())
+
+    if os.environ.get('ROS_DISTRO') not in (None, '', args.ros_distro):
+        print(
+            "Environment variable 'ROS_DISTRO' does not match package name",
+            file=sys.stderr)
+        return 1
+
+    os.environ['ROS_DISTRO'] = args.ros_distro
+
+    sysdeps = get_dependencies(args, skip_keys)
 
     for sysdep, constraints in sorted(sysdeps.items()):
         if not constraints:

@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>my_pkg</name>
+  <version>1.2.3</version>
+  <description>Test package for replaces</description>
+  <maintainer email="test@test.com">Tester</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <replace>foobar</replace>
+  <replace version_lt="2.0">foo_bar</replace>
+</package>

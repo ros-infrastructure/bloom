@@ -1,3 +1,10 @@
+0.14.4 (2026-09-11 16:15:00 -0500)
+----------------------------------
+- Fix dynrpm handling of '<replaces>'. `#780 <https://github.com/ros-infrastructure/bloom/issues/780>`_
+- Drop 'path' from Cargo dependencies during rebase. `#777 <https://github.com/ros-infrastructure/bloom/issues/777>`_
+- Add Debian template for 'cargo' build type. `#774 <https://github.com/ros-infrastructure/bloom/issues/774>`_
+- Add RPM templates for 'cargo' build type. `#763 <https://github.com/ros-infrastructure/bloom/issues/763>`_
+
 0.14.3 (2026-05-01 15:29:00 -0500)
 ----------------------------------
 - Optimize track_branches to avoid git checkout operation. `#773 <https://github.com/ros-infrastructure/bloom/issues/773>`_

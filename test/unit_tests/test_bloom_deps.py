@@ -183,3 +183,18 @@ class TestBloomDeps(unittest.TestCase):
         resolver.evaluate_conditions(pkg, 'rolling')
         deps = bloom_deps.DependencyResolver.enumerate_msg_pkg_workaround_deps(pkg)
         self.assertCountEqual(deps, ('rosidl_default_generators',))
+
+    def test_replaces(self):
+        # 1. Runtime subpackage with --obsoletes
+        argv = [self.package_xml_path, 'ros-rolling-my-pkg-runtime', '--obsoletes']
+        args = bloom_deps._parse_args(argv)
+        sysdeps = bloom_deps.get_dependencies(args, set())
+        self.assertEqual(sysdeps['ros-rolling-foobar-runtime'], set())
+        self.assertEqual(sysdeps['ros-rolling-foo-bar-runtime'], {'< 2.0'})
+
+        # 2. Devel/non-runtime subpackage with --obsoletes
+        argv = [self.package_xml_path, 'ros-rolling-my-pkg-devel', '--obsoletes']
+        args = bloom_deps._parse_args(argv)
+        sysdeps = bloom_deps.get_dependencies(args, set())
+        self.assertEqual(sysdeps['ros-rolling-foobar-devel'], set())
+        self.assertEqual(sysdeps['ros-rolling-foo-bar-devel'], {'< 2.0'})
