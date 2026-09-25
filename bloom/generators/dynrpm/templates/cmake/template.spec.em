@@ -62,7 +62,7 @@ Summary:        %{summary}
     -DBUILD_TESTING=OFF \
 %endif
 
-%cmake3_build
+%cmake_build
 
 
 %install
