@@ -7,6 +7,9 @@
 %define __bloom_package 1 \
 %global __provides_exclude_from ^%{bloom_prefix}/.*$ \
 %global __requires_exclude_from ^%{bloom_prefix}/.*$ \
+%{!?cmake3: %global cmake3 %cmake} \
+%{!?cmake3_build: %global cmake3_build %cmake_build} \
+%{!?cmake3_install: %global cmake3_install %cmake_install} \
 %global ___build_pre %___build_pre \\\
 %{expand:%define _prefix %{bloom_prefix} \
   if [ -f "%{_prefix}/setup.sh" ]; then . "%{_prefix}/setup.sh"; else PYTHONPATH=$PYTHONPATH:%{python3_sitelib}; export PYTHONPATH; fi \\\
